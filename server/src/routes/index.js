@@ -5,6 +5,7 @@ import { environment } from "../config/environment.js";
 import { createAuthRouter } from "../modules/auth/auth.routes.js";
 import { createTouristRouter } from "../modules/tourist/tourist.routes.js";
 import { createTripRouter } from "../modules/trip/trip.routes.js";
+import { createGroupRouter } from "../modules/group/group.routes.js";
 
 export const createApiRouter = (config = environment) => {
   const router = Router();
@@ -28,6 +29,9 @@ export const createApiRouter = (config = environment) => {
         phase4: {
           trips: `${config.API_PREFIX}/trips`,
         },
+        phase5: {
+          groups: `${config.API_PREFIX}/groups`,
+        },
       },
     }),
   );
@@ -35,6 +39,7 @@ export const createApiRouter = (config = environment) => {
   router.use("/auth", createAuthRouter());
   router.use("/tourists", createTouristRouter());
   router.use("/trips", createTripRouter());
+  router.use("/groups", createGroupRouter());
 
   return router;
 };
