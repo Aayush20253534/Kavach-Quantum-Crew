@@ -4,15 +4,6 @@ import { AuthLayout } from './layouts/AuthLayout';
 import { TouristLayout } from './layouts/TouristLayout';
 import { AuthorityLayout } from './layouts/AuthorityLayout';
 
-<<<<<<< HEAD
-import { HomePage } from '../features/public/pages/HomePage';
-import LoginPage from '../features/auth/pages/LoginPage';
-import { RegisterPage } from '../features/auth/pages/RegisterPage';
-import { TouristDashboardPage } from '../features/tourist/pages/TouristDashboardPage';
-import { AuthorityDashboardPage } from '../features/authority/pages/AuthorityDashboardPage';
-import { NotFoundPage } from '../features/public/pages/NotFoundPage';
-
-=======
 // Guards
 import { PublicRoute } from './guards/PublicRoute';
 import { ProtectedRoute } from './guards/ProtectedRoute';
@@ -24,7 +15,7 @@ import { HomePage } from '../features/public/pages/HomePage';
 import { NotFoundPage } from '../features/public/pages/NotFoundPage';
 
 // Pages - Auth
-import { LoginPage } from '../features/auth/pages/LoginPage';
+import LoginPage from '../features/auth/pages/LoginPage';
 import { RegisterPage } from '../features/auth/pages/RegisterPage';
 
 // Pages - Onboarding
@@ -44,7 +35,6 @@ import { ProfilePage } from '../features/profile/pages/ProfilePage';
 // Pages - Authority
 import { AuthorityDashboardPage } from '../features/authority/pages/AuthorityDashboardPage';
 
->>>>>>> 49c12ff8e761bf868f772210a5186b9bb53cbbfe
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -54,12 +44,6 @@ export const router = createBrowserRouter([
     ],
   },
   {
-<<<<<<< HEAD
-    element: <AuthLayout />,
-    children: [
-      { path: 'login', element: <LoginPage /> },
-      { path: 'register', element: <RegisterPage /> },
-=======
     element: <PublicRoute />,
     children: [
       {
@@ -68,35 +52,21 @@ export const router = createBrowserRouter([
           { path: 'login', element: <LoginPage /> },
           { path: 'register', element: <RegisterPage /> },
         ],
-      }
-    ]
+      },
+    ],
   },
   {
     element: <OnboardingRoute />,
     children: [
       { path: 'onboarding', element: <OnboardingPage /> },
->>>>>>> 49c12ff8e761bf868f772210a5186b9bb53cbbfe
     ],
   },
   {
     path: '/tourist',
-<<<<<<< HEAD
-    element: <TouristLayout />,
-    children: [
-      { path: 'dashboard', element: <TouristDashboardPage /> },
-    ],
-  },
-  {
-    path: '/authority',
-    element: <AuthorityLayout />,
-    children: [
-      { path: 'dashboard', element: <AuthorityDashboardPage /> },
-    ],
-=======
     element: <ProtectedRoute />,
     children: [
       {
-        element: <RoleRoute allowedRoles={['TOURIST']} />,
+        element: <RoleRoute allowedRoles={['TOURIST', 'ADMIN', 'AUTHORITY']} />,
         children: [
           {
             element: <TouristLayout />,
@@ -110,29 +80,28 @@ export const router = createBrowserRouter([
               { path: 'incidents/report', element: <ReportIncidentPage /> },
               { path: 'incidents/history', element: <IncidentHistoryPage /> },
               { path: 'profile', element: <ProfilePage /> },
-            ]
-          }
-        ]
-      }
-    ]
+            ],
+          },
+        ],
+      },
+    ],
   },
   {
     path: '/authority',
     element: <ProtectedRoute />,
     children: [
       {
-        element: <RoleRoute allowedRoles={['AUTHORITY']} />,
+        element: <RoleRoute allowedRoles={['AUTHORITY', 'ADMIN', 'TOURIST']} />,
         children: [
           {
             element: <AuthorityLayout />,
             children: [
               { path: 'dashboard', element: <AuthorityDashboardPage /> },
-            ]
-          }
-        ]
-      }
-    ]
->>>>>>> 49c12ff8e761bf868f772210a5186b9bb53cbbfe
+            ],
+          },
+        ],
+      },
+    ],
   },
   {
     path: '*',
