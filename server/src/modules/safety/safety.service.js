@@ -1,5 +1,5 @@
 import { ApiError } from "../../common/errors/ApiError.js";
-import { haversineDistanceM } from "../../common/utils/geo.js";
+import { zoneContainsPoint, zoneIsEffective } from "../../common/utils/geofence.js";
 import { incidentService } from "../incident/incident.service.js";
 import { safetyRepository } from "./safety.repository.js";
 
@@ -141,15 +141,12 @@ export const createSafetyService = ({
       await requireTrip(repository, tripId, userId, ["ACTIVE"]);
       const now = clock();
       await processDueCheckIns(tripId, now);
-      const zones = await repository.listActiveZones();
+      const zones = (await repository.listActiveZones()).filter((zone) => zoneIsEffective(zone, now));
       const events = [];
       const activeRiskZones = [];
 
       for (const zone of zones) {
-        const inside = haversineDistanceM(
-          { latitude, longitude },
-          { latitude: zone.latitude, longitude: zone.longitude },
-        ) <= zone.radiusM;
+        const inside = zoneContainsPoint(zone, { latitude, longitude });
         const last = await repository.findLastGeofenceEvent(tripId, userId, zone.id);
         const wasInside = last?.type === "ENTER";
         if (inside !== wasInside) {

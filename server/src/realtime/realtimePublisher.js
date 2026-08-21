@@ -61,6 +61,12 @@ export const realtimePublisher = Object.freeze({
     socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("hazard:updated", payload);
     if (hazard.reporterId) socketServer.to(accountRoom("TOURIST", hazard.reporterId)).emit("hazard:updated", payload);
   },
+  publishRiskZoneUpdated(zone, change = {}) {
+    if (!socketServer || !zone?.id) return;
+    const payload = { zone, change };
+    socketServer.to(roleRoom("DISASTER_MANAGER")).emit("risk-zone:updated", payload);
+    socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("risk-zone:updated", payload);
+  },
   publishResponderStatus(responder) {
     if (!socketServer || !responder?.id) return;
     socketServer.to(roleRoom("DISASTER_MANAGER")).emit("responder:status", { responder });
