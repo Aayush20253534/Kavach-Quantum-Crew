@@ -283,3 +283,18 @@ Endpoints:
 - `POST /api/v1/incidents/:incidentId/messages` - send a message while the incident is open, acknowledged, or in progress.
 
 Resolved and dismissed incidents remain readable but reject new messages. The history endpoint returns messages in chronological order with `nextBefore` for loading older pages. Run `npm run test:phase16` for the dedicated suite.
+
+## Phase 17 - Evidence and Attachments
+
+Phase 17 adds secure incident/hazard evidence storage. The API accepts one multipart file plus exactly one `incidentId` or `hazardId`, validates MIME type and size, stores bytes behind the object-storage adapter, and persists only attachment metadata plus a SHA-256 checksum in PostgreSQL.
+
+Supported upload MIME types are JPEG, PNG, WebP, MP4, and PDF. The default maximum size is 10 MiB and can be configured with `EVIDENCE_MAX_FILE_BYTES`; local development storage defaults to `storage/evidence` via `EVIDENCE_STORAGE_DIR`.
+
+Endpoints under `/api/v1/evidence`:
+- `POST /` - multipart evidence upload (`file` plus `incidentId` or `hazardId`).
+- `GET /` - list authorized evidence for one incident/hazard.
+- `GET /:attachmentId` - attachment metadata.
+- `GET /:attachmentId/content` - authorized evidence download.
+- `DELETE /:attachmentId` - uploader or system-admin deletion.
+
+Incident evidence follows the same participant visibility rules as incident communication. Hazard evidence is restricted to the reporter and emergency staff. Closed incidents and rejected/resolved hazards remain readable but reject new evidence. Realtime events: `evidence:created` and `evidence:deleted`. Run `npm run test:phase17` for the dedicated suite.

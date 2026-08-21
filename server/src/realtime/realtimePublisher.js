@@ -32,6 +32,29 @@ export const realtimePublisher = Object.freeze({
   publishIncidentMessage(incident, message) {
     emitIncident("incident:message", incident, { message });
   },
+  publishEvidenceCreated(attachment, target) {
+    if (!socketServer || !attachment?.id) return;
+    const payload = { attachment };
+    if (attachment.incidentId) {
+      socketServer.to(incidentRoom(attachment.incidentId)).emit("evidence:created", payload);
+      socketServer.to(roleRoom("DISASTER_MANAGER")).emit("evidence:created", payload);
+      socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("evidence:created", payload);
+      if (target?.userId) socketServer.to(accountRoom("TOURIST", target.userId)).emit("evidence:created", payload);
+      return;
+    }
+    socketServer.to(roleRoom("DISASTER_MANAGER")).emit("evidence:created", payload);
+    socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("evidence:created", payload);
+    if (target?.reporterId && target?.reporterRole) {
+      socketServer.to(accountRoom(target.reporterRole, target.reporterId)).emit("evidence:created", payload);
+    }
+  },
+  publishEvidenceDeleted(attachment) {
+    if (!socketServer || !attachment?.id) return;
+    const payload = { attachmentId: attachment.id, incidentId: attachment.incidentId, hazardId: attachment.hazardId };
+    if (attachment.incidentId) socketServer.to(incidentRoom(attachment.incidentId)).emit("evidence:deleted", payload);
+    socketServer.to(roleRoom("DISASTER_MANAGER")).emit("evidence:deleted", payload);
+    socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("evidence:deleted", payload);
+  },
   publishNotificationCreated(notification) {
     if (!socketServer || !notification?.targetAccountId || !notification?.targetRole) return;
     socketServer
