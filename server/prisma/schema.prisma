@@ -587,6 +587,7 @@ model Notification {
   message         String             @db.VarChar(500)
   readAt          DateTime?
   createdAt       DateTime           @default(now())
+  deliveries      NotificationDelivery[]
   @@index([targetAccountId, targetRole, readAt, createdAt])
   @@index([incidentId, createdAt])
   @@map("notifications")
@@ -626,6 +627,65 @@ enum NotificationType {
   INCIDENT_DISMISSED
   INCIDENT_ESCALATED
   GROUP_MEMBER_EMERGENCY
+}
+
+
+enum NotificationDeliveryChannel {
+  IN_APP
+  EMAIL
+  SMS
+  PUSH
+  WHATSAPP
+}
+
+enum NotificationDeliveryStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+  RETRY_SCHEDULED
+}
+
+model NotificationDelivery {
+  id               String                      @id @default(uuid()) @db.Uuid
+  notificationId   String                      @db.Uuid
+  channel          NotificationDeliveryChannel
+  status           NotificationDeliveryStatus  @default(PENDING)
+  attemptsCount    Int                         @default(0)
+  provider         String?                     @db.VarChar(80)
+  externalId       String?                     @db.VarChar(200)
+  nextAttemptAt    DateTime?
+  lastAttemptAt    DateTime?
+  lastErrorCode    String?                     @db.VarChar(100)
+  lastErrorMessage String?                     @db.VarChar(500)
+  sentAt           DateTime?
+  failedAt         DateTime?
+  createdAt        DateTime                    @default(now())
+  updatedAt        DateTime                    @updatedAt
+  notification     Notification                @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  attempts         NotificationDeliveryAttempt[]
+
+  @@unique([notificationId, channel])
+  @@index([status, nextAttemptAt])
+  @@index([notificationId, createdAt])
+  @@map("notification_deliveries")
+}
+
+model NotificationDeliveryAttempt {
+  id            String                     @id @default(uuid()) @db.Uuid
+  deliveryId    String                     @db.Uuid
+  attemptNumber Int
+  status        NotificationDeliveryStatus
+  provider      String?                    @db.VarChar(80)
+  externalId    String?                    @db.VarChar(200)
+  errorCode     String?                    @db.VarChar(100)
+  errorMessage  String?                    @db.VarChar(500)
+  attemptedAt   DateTime                   @default(now())
+  delivery      NotificationDelivery       @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@unique([deliveryId, attemptNumber])
+  @@index([deliveryId, attemptedAt])
+  @@map("notification_delivery_attempts")
 }
 
 
