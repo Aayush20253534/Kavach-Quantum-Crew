@@ -4,6 +4,23 @@ import { environment } from "../../src/config/environment.js";
 import { createApiRateLimiter } from "../../src/middleware/rateLimiter.middleware.js";
 
 describe("Phase 0 HTTP application", () => {
+  test("serves a friendly service document at the root path", async () => {
+    const response = await request(createTestApp()).get("/").expect(200);
+
+    expect(response.body).toMatchObject({
+      success: true,
+      message: "Smart Tourist Safety backend is running",
+      data: {
+        service: "smart-tourist-safety-backend-test",
+        api: "/api/v1",
+        health: "/health",
+        readiness: "/health/ready",
+      },
+    });
+    expect(response.body.requestId).toEqual(expect.any(String));
+    expect(response.body.timestamp).toEqual(expect.any(String));
+  });
+
   test("returns liveness in the standard response envelope", async () => {
     const response = await request(createTestApp()).get("/health").expect(200);
 

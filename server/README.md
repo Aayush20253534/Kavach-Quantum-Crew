@@ -1,346 +1,249 @@
 # Smart Tourist Safety System — Backend
 
-Phase 0 provides the production-shaped foundation for the SIH prototype. It is a Node.js
-ESM service built with Express, PostgreSQL, Prisma, Socket.IO, Pino, Jest, and Supertest.
+Backend service for a tourist-safety platform that manages tourist accounts, trips, consent, Safety IDs, group travel, trusted location tracking, deterministic safety monitoring, SOS incidents, disaster-management response, emergency dispatch, evidence, notifications, analytics, administration, external AI/blockchain contracts, audit trails, and operational observability.
 
-This phase intentionally contains no authentication or tourist/disaster-management/admin
-business flows yet. AI and blockchain also remain separate services and are not part of
-this backend.
+The service is designed as a **modular Node.js backend**. AI models, blockchain clients/contracts, frontend applications, and concrete external notification vendors are separate integrations behind explicit backend boundaries.
 
-## What Phase 0 includes
+## What the backend does
 
-- Validated environment configuration with clear fail-fast startup errors
-- PostgreSQL connection lifecycle through Prisma 7 and `@prisma/adapter-pg`
-- Express app separated from the HTTP server for easy testing
-- Helmet, explicit CORS allow-listing, request size limits, rate limiting, and request IDs
-- Structured JSON application and request logging with secret redaction
-- Standard success/error envelopes plus centralized 404 and error handling
-- Liveness, readiness, and database health probes
-- Socket.IO server bootstrap with no sensitive business events enabled yet
-- Graceful shutdown for HTTP, Socket.IO, and PostgreSQL
-- Jest/Supertest Phase 0 tests, ESLint, Docker, and local PostgreSQL Compose files
+### Tourist safety
+- Tourist registration, login, refresh sessions, logout, and profile onboarding
+- SOLO and GROUP trip lifecycle management
+- Explicit location/emergency-sharing consent
+- Trip-scoped Safety ID issuance
+- Group invitations and membership
+- Trusted location ingestion and group tracking
+- Scheduled safety check-ins
+- Circular and polygon geofencing
+- Risk-zone evaluation
+- Tracking-interruption, inactivity, overtime, route-deviation, and group-separation monitoring
+- Safety alerts and manual SOS
+
+### Emergency response
+- Incident creation from safety alerts and SOS
+- Incident acknowledgement, response start, resolution, dismissal, notes, and assignments
+- Disaster-manager availability/capacity
+- Emergency-unit inventory and dispatch lifecycle
+- Incident-scoped tourist/staff communication
+- Hazard reporting, verification, rejection, resolution, and nearby discovery
+- Evidence upload/download with authorization and SHA-256 checksums
+
+### Platform operations
+- In-app notifications
+- Provider-neutral EMAIL/SMS/PUSH/WHATSAPP delivery jobs with retry history
+- Escalation sweep for overdue incidents
+- Realtime Socket.IO events
+- Staff analytics and response-time reporting
+- System-admin account/resource management
+- AI and blockchain integration contracts
+- Central audit querying
+- HTTP metrics and safe runtime/database diagnostics
+- Security hardening, rate limiting, privacy headers, request-shape protection, and JWT validation
+
+## Roles
+
+| Role | Primary responsibility |
+|---|---|
+| `TOURIST` | Own profile/trips, share consented location, receive safety alerts, trigger SOS, communicate during incidents, report hazards, upload authorized evidence |
+| `DISASTER_MANAGER` | Monitor incidents, coordinate response, manage hazards/risk zones, self-assign within capacity, dispatch units, review analytics |
+| `SYSTEM_ADMIN` | Platform administration, privileged response operations, account controls, delivery queue processing, audit access, observability |
+
+See [`documentation/ROLE-PERMISSIONS.md`](documentation/ROLE-PERMISSIONS.md) for the full matrix.
+
+## Technology stack
+
+- Node.js 20.19+
+- Express 5
+- PostgreSQL
+- Prisma 7 with `@prisma/adapter-pg`
+- Socket.IO 4
+- Zod validation
+- Argon2id password hashing
+- JSON Web Tokens with refresh-session persistence
+- Pino structured logging
+- Multer evidence upload boundary
+- Jest + Supertest
+- ESLint + Prettier
+
+## Architecture
+
+```text
+Client
+  -> Express route
+  -> authentication / authorization
+  -> request validation
+  -> controller
+  -> domain service
+  -> repository
+  -> Prisma
+  -> PostgreSQL
+```
+
+Domain services publish realtime events through a centralized Socket.IO publisher when appropriate. External delivery, AI, and blockchain capabilities use provider/adaptor boundaries rather than embedding vendor logic into the domain layer.
+
+See [`documentation/ARCHITECTURE.md`](documentation/ARCHITECTURE.md).
+
+## Project structure
+
+```text
+server/
+├── prisma/
+├── scripts/
+├── src/
+│   ├── common/
+│   ├── config/
+│   ├── constants/
+│   ├── middleware/
+│   ├── modules/
+│   ├── observability/
+│   ├── realtime/
+│   ├── routes/
+│   ├── app.js
+│   └── server.js
+├── storage/
+├── tests/
+├── documentation/
+├── openapi.yaml
+├── package.json
+└── README.md
+```
 
 ## Prerequisites
 
-- Node.js 20.19 or newer
-- npm 10 or newer
-- PostgreSQL 15+ (or Docker Desktop)
+- Node.js `>=20.19.0`
+- npm `>=10`
+- PostgreSQL/Neon database
+- Valid environment configuration
 
-## First run (PowerShell)
+## Local setup
+
+PowerShell:
 
 ```powershell
 Copy-Item .env.example .env
-npm install
+npm ci
 npm run prisma:generate
 npm run prisma:validate
-npm test
+npm run prisma:migrate:deploy
 npm run dev
 ```
 
-## First run (bash)
+bash:
 
 ```bash
 cp .env.example .env
-npm install
+npm ci
 npm run prisma:generate
 npm run prisma:validate
-npm test
+npm run prisma:migrate:deploy
 npm run dev
 ```
 
-The API listens at `http://localhost:4000` by default. A database must be reachable before
-the server starts. To start the provided local database:
+Default API URL:
 
-```bash
-docker compose up -d postgres
+```text
+http://localhost:4000/api/v1
 ```
 
-## Health endpoints
+## Authentication
 
-| Endpoint               | Purpose                                     | Healthy status |
-| ---------------------- | ------------------------------------------- | -------------- |
-| `GET /health`          | Process liveness; does not touch PostgreSQL | `200`          |
-| `GET /health/ready`    | Whether required dependencies are ready     | `200` or `503` |
-| `GET /health/database` | Direct PostgreSQL probe and latency         | `200` or `503` |
-| `GET /api/v1/health/*` | API-prefixed aliases of the same probes     | Same as above  |
+The backend uses short-lived access JWTs and persisted refresh sessions.
 
-All JSON responses include `success`, `requestId`, and `timestamp`. Send an
-`X-Request-ID` header to correlate frontend and backend logs; unsafe values are replaced.
+- Access tokens are signed with `HS256`, issuer/audience validation, and supported-role validation.
+- Passwords are hashed with Argon2id.
+- Refresh tokens are rotated and only token hashes are persisted.
+- Tourist self-registration cannot create staff accounts.
+- Suspended/disabled accounts lose active refresh sessions through admin controls.
 
-## Useful commands
+## API and realtime
 
-| Command                      | What it does                                        |
-| ---------------------------- | --------------------------------------------------- |
-| `npm run env:check`          | Validates configuration without starting the server |
-| `npm run env:check:database` | Also opens and probes PostgreSQL                    |
-| `npm run dev`                | Starts with automatic reload                        |
-| `npm start`                  | Starts normally                                     |
-| `npm test`                   | Runs the Phase 0 test suite                         |
-| `npm run test:coverage`      | Runs tests and enforces coverage thresholds         |
-| `npm run lint`               | Checks JavaScript quality rules                     |
-| `npm run format:check`       | Checks Prettier formatting                          |
-| `npm run prisma:generate`    | Generates Prisma Client                             |
-| `npm run prisma:validate`    | Validates Prisma configuration/schema               |
+- REST base: `/api/v1`
+- OpenAPI source: [`openapi.yaml`](openapi.yaml)
+- Full endpoint catalogue: [`documentation/ENDPOINTS.md`](documentation/ENDPOINTS.md)
+- Socket.IO events and rooms: [`documentation/REALTIME-EVENTS.md`](documentation/REALTIME-EVENTS.md)
 
-## Environment safety
+## Health and operations
 
-Commit example files only. Never commit `.env`, database credentials, tokens, service
-accounts, private keys, or uploaded evidence. In production, use explicit HTTPS origins;
-wildcard CORS is rejected when credentials are enabled and is always rejected in production.
+Infrastructure probes:
+- `GET /health`
+- `GET /health/ready`
+- `GET /health/database`
 
-## Phase 1 - Tourist authentication and onboarding
-
-Phase 1 adds the permanent tourist account and onboarding/profile foundation required before trips, groups, tracking, SOS, and incidents. Tourist profile fields are stored directly on `users`; privileged staff accounts are stored separately in `disaster_managers` and `system_admins`.
-
-### Implemented API
-
-- `POST /api/v1/auth/register` - tourist signup with name, username, email, phone, password, and confirm password.
-- `POST /api/v1/auth/login` - sign in using username or email plus password.
-- `POST /api/v1/auth/refresh` - rotate the refresh token and return a new access token.
-- `POST /api/v1/auth/logout` - revoke the current refresh session.
-- `GET /api/v1/auth/me` - return the authenticated permanent account.
-- `POST /api/v1/tourists/me/onboarding` - save gender, age, medical history, emergency phone, and nationality.
-- `GET /api/v1/tourists/me` - return the tourist profile used by the Profile screen.
-- `PATCH /api/v1/tourists/me` - update supported profile fields.
-
-Access tokens expire after 15 minutes. Refresh tokens expire after 15 days, are rotated on refresh, stored only as SHA-256 hashes in PostgreSQL, and are also issued as HttpOnly cookies. Passwords use Argon2id. Tourist self-registration cannot create privileged staff accounts.
-
-### Database migration
-
-After setting `DATABASE_URL` and `DIRECT_URL` for Neon:
-
-```powershell
-npm run prisma:generate
-npm run prisma:validate
-npm run prisma:migrate
-```
-
-For a deployed environment, apply already-created migrations with:
-
-```powershell
-npm run prisma:migrate:deploy
-```
-
-### Optional staff seed accounts
-
-`SYSTEM_ADMIN` and `DISASTER_MANAGER` are authenticated from their own database tables, separate from tourist `users`. Set the optional `SEED_ADMIN_*` and `SEED_DM_*` variables in `.env`, then run `npm run prisma:seed`. If email/password values are left blank, that staff account is not created.
-
-### Not part of Phase 1
-
-Tourist dashboard live location, nearby safe zones, risk scoring, SOS/incident workflow, trip history, trip creation, group QR join/create, tracking, chatbot, and responder dispatch remain later phases. Their module placeholders stay untouched so Phase 1 does not pretend the emergency system exists before its foundations do.
-
-## Phase 4: Trips, Safety ID and Consent
-
-Phase 4 adds the backend-owned trip lifecycle only. AI/ML, blockchain anchoring, and QR generation remain separate team-owned integrations and are intentionally not implemented here.
-
-Tourist endpoints:
-
-- `POST /api/v1/trips` — create one `PLANNED` solo/group trip.
-- `GET /api/v1/trips/current` — fetch the current `PLANNED` or `ACTIVE` trip.
-- `GET /api/v1/trips/history` — paginated completed/cancelled history.
-- `GET /api/v1/trips/:tripId` — fetch an owned trip.
-- `POST /api/v1/trips/:tripId/consents` — grant `LOCATION_TRACKING` or `EMERGENCY_SHARING` consent.
-- `DELETE /api/v1/trips/:tripId/consents/:consentId` — withdraw consent.
-- `POST /api/v1/trips/:tripId/safety-id` — issue/reissue an opaque trip-scoped Safety ID after both consents are granted.
-- `POST /api/v1/trips/:tripId/start` — start after consent + active Safety ID checks.
-- `POST /api/v1/trips/:tripId/complete` — complete and revoke temporary sharing/ID access.
-- `POST /api/v1/trips/:tripId/cancel` — cancel a planned/active trip and revoke temporary access.
-
-### Partner integration boundary
-
-The core backend stores the authoritative `Trip`, `TripSafetyId`, and `TripConsent` records. It does **not** generate a QR, call a blockchain contract, hash/anchor the Safety ID, run AI scoring, or implement `/assess`. Those partner-owned services should consume these backend records through later integration adapters without changing the Phase 4 lifecycle.
-
-The agreed AI contract remains a later backend integration around `POST /trips/:id/safety-assessments` -> AI service `POST /assess`. The blockchain team owns Safety ID proof issuance/revocation/verification and consent anchoring. No raw PII, medical data, or GPS is added to any blockchain payload by this phase.
-
-## Phase 5 - Group management
-
-Phase 5 adds backend-owned group membership for `GROUP` trips: group creation, leader/member authorization, expiring invitation tokens, join/leave/remove-member flows, and automatic group closure when a trip ends. The backend deliberately does not generate QR images; clients or the separately owned QR component can encode the returned `inviteToken`.
-
-Routes are under `/api/v1/groups`. Invitation tokens are returned only when created; only SHA-256 token hashes are persisted.
-
-## Phase 8 - Alerts, SOS, and Incident Response
-
-Phase 8 turns Phase 7 deterministic safety alerts into operational incidents and adds a manual SOS path.
-
-### Tourist endpoints
-
-- `GET /api/v1/alerts` - list own Phase 7 safety alerts.
-- `GET /api/v1/alerts/:alertId` - read an own safety alert.
-- `POST /api/v1/alerts/:alertId/acknowledge` - acknowledge an own alert.
-- `POST /api/v1/alerts/:alertId/resolve` - resolve an own alert.
-- `POST /api/v1/sos` - create a CRITICAL SOS incident for an active trip.
-- `GET /api/v1/sos/:sosId` - read an SOS when authorized.
-- `GET /api/v1/incidents/mine` - list own and active-group incidents.
-- `GET /api/v1/incidents/:incidentId` - read an authorized incident and its lifecycle events.
-
-### Disaster Management / System Admin endpoints
-
-- `GET /api/v1/incidents/queue` - active emergency queue.
-- `POST /api/v1/incidents/:incidentId/acknowledge`
-- `POST /api/v1/incidents/:incidentId/start`
-- `POST /api/v1/incidents/:incidentId/resolve`
-- `POST /api/v1/incidents/:incidentId/dismiss`
-- Equivalent operational routes are also exposed under `/api/v1/disaster-management/incidents`.
-
-### Lifecycle
-
-`OPEN -> ACKNOWLEDGED -> IN_PROGRESS -> RESOLVED`
-
-False positives can be moved to `DISMISSED` by Disaster Management or a System Admin. Every operational transition writes an immutable `IncidentEvent`, while major actions also write to the existing audit log.
-
-### Phase 7 integration
-
-When Phase 7 creates or reuses an active `SafetyAlert`, Phase 8 idempotently creates the matching incident using `sourceSafetyAlertId` as the unique key. Manual SOS incidents are always `CRITICAL` and use an explicitly supplied coordinate pair or the tourist's latest trusted location.
-
-### Migration
-
-Apply the new forward migration after pulling Phase 8:
-
-```powershell
-npm run prisma:generate
-npm run prisma:validate
-npm run prisma:migrate:deploy
-```
-
-The Phase 8 migration also repairs the missing Phase 6 tracking DDL found in the uploaded migration history using guarded `IF NOT EXISTS`/duplicate-object handling.
-
-## Phase 9 - Notifications and Response Coordination
-Phase 9 adds idempotent in-app incident notifications, unread/read APIs, disaster-manager assignment history, response notes, and configurable overdue incident escalation. Configure `INCIDENT_ACK_TIMEOUT_MINUTES` and `INCIDENT_ESCALATION_INTERVAL_MINUTES`. A system admin can trigger the scheduler-ready sweep with `POST /api/v1/escalations/run`. Run `npm run test:phase9` for the dedicated suite.
-
-## Phase 10 - Realtime coordination
-
-Phase 10 extends the existing Socket.IO tracking channel into an authenticated realtime coordination layer. Authenticated accounts automatically join account and role scoped rooms. Tourists may subscribe only to incidents they can already view through the REST API; disaster managers and system administrators may subscribe to emergency incidents.
-
-Server events include `system:ready`, `location:updated`, `incident:created`, `incident:updated`, `incident:note`, `incident:message`, `notification:created`, `notification:read`, and `notification:read-all`. Client subscription commands include `tracking:subscribe`, `tracking:unsubscribe`, `incident:subscribe`, `incident:unsubscribe`, and `group:unsubscribe`.
-
-Use `npm run test:phase10` for the realtime-specific test suite.
-
-
-## Phase 11 - Disaster Management and Responder Operations
-
-Phase 11 completes the responder-facing backend. Disaster managers now expose operational availability, workload and organization metadata without introducing Phase 15 dispatch-unit concepts.
-
-Responder endpoints under `/api/v1/disaster-management`:
-
-- `GET /dashboard` - active/critical/unassigned incident counts, personal workload, resolved-today count and available responder count.
-- `GET /responders` - filtered active responder directory with computed workload/capacity.
-- `GET /responders/me` - authenticated disaster-manager profile plus active workload.
-- `PATCH /responders/me/status` - set `AVAILABLE`, `BUSY`, or `OFF_DUTY`; audited and published over Socket.IO as `responder:status`.
-- `GET /responders/me/incidents` - incidents assigned to the authenticated responder.
-- `GET /responders/:responderId` - responder details and current workload.
-- `GET /incidents?scope=ALL|UNASSIGNED|MINE` - workload-aware emergency queue.
-
-Incident assignment now rejects off-duty/busy responders and responders who reached `maxActiveIncidents`. The database migration adds `ResponderStatus`, `department`, `maxActiveIncidents`, and status-change metadata to `disaster_managers`.
-
-Run `npm run test:phase11` for the dedicated Phase 11 suite.
-
-
-## Phase 12 - Hazard Reporting and Management
-
-Phase 12 adds tourist hazard reporting, staff verification/rejection/resolution, verified nearby hazard discovery, audit records, and real-time `hazard:created` / `hazard:updated` events. Tourist public listings expose verified hazards only; reporters can still inspect their own pending reports.
-
-Main endpoints: `POST /api/v1/hazards`, `GET /api/v1/hazards`, `GET /api/v1/hazards/nearby`, `GET /api/v1/hazards/:hazardId`, and staff moderation endpoints under `/:hazardId/{verify,reject,resolve}`.
-
-## Phase 13 - Risk Zones and Geofencing
-
-Phase 13 promotes the original circle-only safety zones into managed risk zones with `CIRCLE` and `POLYGON` geometry, activation/deactivation, optional validity windows, audit records, realtime `risk-zone:updated` events, point evaluation, and automatic trusted-location geofence evaluation through the existing safety alert/incident pipeline.
-
-Main endpoints:
-- `GET /api/v1/risk-zones`
-- `POST /api/v1/risk-zones`
-- `GET /api/v1/risk-zones/:zoneId`
-- `PATCH /api/v1/risk-zones/:zoneId`
-- `POST /api/v1/risk-zones/:zoneId/activate`
-- `POST /api/v1/risk-zones/:zoneId/deactivate`
-- `POST /api/v1/risk-zones/evaluate`
-
-Existing Phase 7 circle zones remain valid and migrate as `CIRCLE` automatically.
-
-## Phase 14 - Advanced Trip Safety Monitoring
-
-Phase 14 adds per-trip monitoring policies and deterministic rules for tracking interruption, prolonged inactivity, trip overtime, group separation, and optional planned-route deviation. Findings create normal `SafetyAlert` records and therefore continue through the existing incident, notification, escalation, and realtime response pipeline.
-
-Main endpoints under `/api/v1/monitoring`:
-- `GET /trips/:tripId/policy`
-- `PATCH /trips/:tripId/policy`
-- `POST /trips/:tripId/evaluate`
-- `POST /sweep` - system-admin sweep for active trips; suitable for a scheduler later.
-
-Trusted location submissions also invoke the advanced evaluator after the existing Phase 7 geofence evaluation. Run `npm run test:phase14` for the dedicated suite.
-
-
-## Phase 15 - Emergency Dispatch
-
-Phase 15 adds emergency units and dispatch lifecycle management. Staff can request a unit for an open incident, assign an available matching unit, and advance the dispatch through ASSIGNED, DISPATCHED, EN_ROUTE, ON_SCENE, and COMPLETED. Cancellation and completion release the unit back to AVAILABLE. System administrators manage emergency-unit inventory/status. Realtime events: `dispatch:updated` and `emergency-unit:updated`.
-
-
-## Phase 16 - Incident Communication
-
-Phase 16 adds persistent incident-scoped communication between authorized tourists/group participants and emergency staff. Messages are separate from staff-only operational `IncidentNote` records, are audit logged, and are published over Socket.IO as `incident:message`.
-
-Endpoints:
-- `GET /api/v1/incidents/:incidentId/messages` - paginated authorized message history.
-- `POST /api/v1/incidents/:incidentId/messages` - send a message while the incident is open, acknowledged, or in progress.
-
-Resolved and dismissed incidents remain readable but reject new messages. The history endpoint returns messages in chronological order with `nextBefore` for loading older pages. Run `npm run test:phase16` for the dedicated suite.
-
-## Phase 17 - Evidence and Attachments
-
-Phase 17 adds secure incident/hazard evidence storage. The API accepts one multipart file plus exactly one `incidentId` or `hazardId`, validates MIME type and size, stores bytes behind the object-storage adapter, and persists only attachment metadata plus a SHA-256 checksum in PostgreSQL.
-
-Supported upload MIME types are JPEG, PNG, WebP, MP4, and PDF. The default maximum size is 10 MiB and can be configured with `EVIDENCE_MAX_FILE_BYTES`; local development storage defaults to `storage/evidence` via `EVIDENCE_STORAGE_DIR`.
-
-Endpoints under `/api/v1/evidence`:
-- `POST /` - multipart evidence upload (`file` plus `incidentId` or `hazardId`).
-- `GET /` - list authorized evidence for one incident/hazard.
-- `GET /:attachmentId` - attachment metadata.
-- `GET /:attachmentId/content` - authorized evidence download.
-- `DELETE /:attachmentId` - uploader or system-admin deletion.
-
-Incident evidence follows the same participant visibility rules as incident communication. Hazard evidence is restricted to the reporter and emergency staff. Closed incidents and rejected/resolved hazards remain readable but reject new evidence. Realtime events: `evidence:created` and `evidence:deleted`. Run `npm run test:phase17` for the dedicated suite.
-
-
-## Phase 18 - System Admin backend
-
-System administrators have a dedicated `/api/v1/admin` surface for platform-wide dashboard counts, safe account search and inspection, account status management, and read-only inspection of core operational resources. Suspending or disabling an account revokes active refresh sessions. Admin responses never expose password hashes.
-
-Key routes: `GET /admin/dashboard`, `GET /admin/accounts`, `GET /admin/accounts/:role/:accountId`, `PATCH /admin/accounts/:role/:accountId/status`, and `GET /admin/resources/:resource`.
-
-
-## Phase 19 - Analytics and Reporting
-
-Phase 19 exposes staff-only, read-only operational analytics under `/api/v1/analytics`. Disaster Managers and System Admins can query platform overview metrics, incident/trip/hazard/SOS breakdowns, dispatch performance, responder workload, and response-time aggregates. Optional `from` and `to` ISO timestamps constrain time-based reports.
-
-Endpoints: `GET /analytics/overview`, `/incidents`, `/trips`, `/hazards`, `/sos`, `/dispatch`, `/responders`, and `/response-times`. Run `npm run test:phase19` for the dedicated suite.
-
-
-## Phases 20-21 - AI and Blockchain Integration Contracts
-
-These phases define backend-only extension contracts under `/api/v1/integrations`. No AI model, inference runtime, blockchain client, wallet, smart contract, or chain transaction is implemented. Default providers return `501 INTEGRATION_PROVIDER_NOT_CONFIGURED`; future teams inject provider implementations behind the stable service interface.
-
-Contracts: `POST /integrations/ai/risk-assessment`, `POST /integrations/ai/hazard-analysis`, blockchain proof endpoints for Safety ID, incidents and evidence, `GET /integrations/blockchain/verification/:reference`, and `GET /integrations/capabilities`.
-
-
-## Phase 22 - Notification delivery abstraction
-
-Phase 22 adds durable provider-neutral delivery jobs on top of the existing in-app notification domain. Delivery channels are `IN_APP`, `EMAIL`, `SMS`, `PUSH`, and `WHATSAPP`. External providers are injected behind a channel adapter; no vendor is hard-coded into business logic.
-
-Operational endpoints are exposed under `/api/v1/notification-deliveries` for capabilities, enqueueing, status/history lookup, manual retry, and administrator queue processing. Failed retryable sends use bounded exponential retry scheduling and every provider attempt is persisted. Raw destination values are resolved from the target account at send time rather than copied into the delivery table.
-
-## Phase 23 - Security and privacy hardening
-
-The backend applies a second rate-limit envelope to high-impact mutation routes, rejects prototype-pollution keys and abusive request object depth/size, pins JWT signing and verification to HS256, rejects unknown token roles before account lookup, marks API responses as non-cacheable, and includes regression coverage for evidence-storage path traversal. These controls complement the existing RBAC, resource ownership, CORS, Helmet, body-size, account-status and Socket.IO authorization protections.
-
-
-## Phase 24 - Audit and observability
-
-System administrators can inspect persisted audit events and operational diagnostics through `/api/v1/audit` and `/api/v1/observability`. HTTP request metrics are maintained in-process and include request totals, status classes, active requests, and average request duration. Diagnostics expose bounded process memory, uptime, database health, and the metrics snapshot. Audit metadata can carry the request ID for correlation without changing the existing `AuditLog` schema.
-
-Key endpoints:
-
-- `GET /api/v1/audit`
-- `GET /api/v1/audit/summary`
+System-admin observability:
 - `GET /api/v1/observability/metrics`
 - `GET /api/v1/observability/diagnostics`
+- `GET /api/v1/audit`
+- `GET /api/v1/audit/summary`
 
-All Phase 24 endpoints require the `SYSTEM_ADMIN` role.
+## External integration boundaries
+
+### AI
+The backend defines validated contracts for trip/location risk assessment and hazard analysis. No inference model is implemented here. See [`documentation/AI-CATALOGUE.md`](documentation/AI-CATALOGUE.md).
+
+### Blockchain
+The backend defines contracts for Safety ID proof, incident proof, evidence proof, and proof verification. No wallet, smart contract, private-key handling, chain SDK, or transaction implementation is included. See [`documentation/BLOCKCHAIN-CATALOGUE.md`](documentation/BLOCKCHAIN-CATALOGUE.md).
+
+### Notification providers
+`IN_APP` delivery is internal. `EMAIL`, `SMS`, `PUSH`, and `WHATSAPP` are provider-neutral delivery channels. See [`documentation/NOTIFICATION-DELIVERY.md`](documentation/NOTIFICATION-DELIVERY.md).
+
+## Security characteristics
+
+The backend includes:
+- explicit CORS allow-listing
+- Helmet headers
+- API privacy/no-cache headers
+- global and sensitive-route rate limiting
+- request-body limits
+- request object-depth/key-count limits
+- forbidden prototype-pollution keys
+- role and ownership authorization
+- evidence path traversal protections
+- safe centralized error normalization
+- request IDs for correlation
+- secret redaction in structured logs
+
+## Testing and quality
+
+```powershell
+npm test
+npm run lint
+npm run format:check
+npm run prisma:generate
+npm run prisma:validate
+npx prisma migrate status
+```
+
+Dedicated domain suites remain available for targeted debugging, but `npm test` is the final regression command.
+
+## Documentation index
+
+| Document | Purpose |
+|---|---|
+| [`ARCHITECTURE.md`](documentation/ARCHITECTURE.md) | Finished backend architecture and major boundaries |
+| [`ENDPOINTS.md`](documentation/ENDPOINTS.md) | All mounted HTTP API routes |
+| [`SYSTEM-FLOW.md`](documentation/SYSTEM-FLOW.md) | End-to-end system explanation for non-specialists |
+| [`ROLE-PERMISSIONS.md`](documentation/ROLE-PERMISSIONS.md) | Role and authorization matrix |
+| [`DATABASE-OVERVIEW.md`](documentation/DATABASE-OVERVIEW.md) | Main data entities and relationships |
+| [`REALTIME-EVENTS.md`](documentation/REALTIME-EVENTS.md) | Socket.IO rooms, commands, and server events |
+| [`ERROR-CATALOGUE.md`](documentation/ERROR-CATALOGUE.md) | Error envelope and important error codes |
+| [`ENVIRONMENT.md`](documentation/ENVIRONMENT.md) | Environment-variable reference |
+| [`AI-CATALOGUE.md`](documentation/AI-CATALOGUE.md) | AI integration inputs and handoff guidance |
+| [`BLOCKCHAIN-CATALOGUE.md`](documentation/BLOCKCHAIN-CATALOGUE.md) | Blockchain proof boundaries |
+| [`NOTIFICATION-DELIVERY.md`](documentation/NOTIFICATION-DELIVERY.md) | Delivery jobs/providers/retries |
+| [`TESTING.md`](documentation/TESTING.md) | Test strategy and commands |
+| [`DEPLOYMENT.md`](documentation/DEPLOYMENT.md) | Deployment/readiness checklist |
+| [`INTEGRATION-HANDOFF.md`](documentation/INTEGRATION-HANDOFF.md) | Frontend/AI/blockchain/provider handoff |
+| [`FINAL-QA-CHECKLIST.md`](documentation/FINAL-QA-CHECKLIST.md) | Final backend acceptance checklist |
+
+## Scope boundary
+
+This repository owns the **backend API, persistence, security rules, deterministic safety logic, realtime server, and integration contracts**.
+
+It intentionally does not own:
+- frontend implementation
+- AI model training/inference implementation
+- blockchain smart-contract/wallet implementation
+- deployment of external notification vendors
+- client-device GPS acquisition
+
+Those systems connect through the documented API, Socket.IO, and provider interfaces.
