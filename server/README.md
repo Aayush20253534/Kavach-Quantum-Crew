@@ -319,3 +319,10 @@ Endpoints: `GET /analytics/overview`, `/incidents`, `/trips`, `/hazards`, `/sos`
 These phases define backend-only extension contracts under `/api/v1/integrations`. No AI model, inference runtime, blockchain client, wallet, smart contract, or chain transaction is implemented. Default providers return `501 INTEGRATION_PROVIDER_NOT_CONFIGURED`; future teams inject provider implementations behind the stable service interface.
 
 Contracts: `POST /integrations/ai/risk-assessment`, `POST /integrations/ai/hazard-analysis`, blockchain proof endpoints for Safety ID, incidents and evidence, `GET /integrations/blockchain/verification/:reference`, and `GET /integrations/capabilities`.
+
+
+## Phase 22 - Notification delivery abstraction
+
+Phase 22 adds durable provider-neutral delivery jobs on top of the existing in-app notification domain. Delivery channels are `IN_APP`, `EMAIL`, `SMS`, `PUSH`, and `WHATSAPP`. External providers are injected behind a channel adapter; no vendor is hard-coded into business logic.
+
+Operational endpoints are exposed under `/api/v1/notification-deliveries` for capabilities, enqueueing, status/history lookup, manual retry, and administrator queue processing. Failed retryable sends use bounded exponential retry scheduling and every provider attempt is persisted. Raw destination values are resolved from the target account at send time rather than copied into the delivery table.
