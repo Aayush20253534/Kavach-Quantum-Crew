@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand --testMatch=\"**/tests/phase*/**/*.test.js\"",
     "test:phase0": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/phase0 --runInBand",
     "test:phase8": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/phase8 --runInBand",
     "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
@@ -32,7 +32,8 @@
     "test:phase10": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/phase10 --runInBand",
     "test:phase11": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/phase11 --runInBand",
     "test:phase12": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/phase12 --runInBand",
-    "test:phase13": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/phase13 --runInBand"
+    "test:phase13": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/phase13 --runInBand",
+    "test:phase14": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand --testMatch=\"**/tests/phase14/**/*.test.js\""
   },
   "keywords": [
     "tourism",
