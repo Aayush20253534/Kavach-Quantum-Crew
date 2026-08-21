@@ -1,0 +1,177 @@
+# ==========================================================
+# Smart Tourist Safety System - Backend
+# Node.js + Express + PostgreSQL + Prisma + Jest + Socket.IO
+# ==========================================================
+
+# ----------------------------------------------------------
+# Node.js dependencies
+# ----------------------------------------------------------
+node_modules/
+.pnp/
+.pnp.js
+.yarn/cache/
+.yarn/install-state.gz
+
+# ----------------------------------------------------------
+# Environment variables and secrets
+# Keep example files so other developers know what to set.
+# ----------------------------------------------------------
+.env
+.env.*
+!.env.example
+.env.test.example
+!.env.development.example
+!.env.production.example
+
+secrets/
+credentials.json
+credentials-*.json
+service-account*.json
+firebase-adminsdk-*.json
+google-credentials*.json
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+
+# ----------------------------------------------------------
+# Logs and runtime process files
+# ----------------------------------------------------------
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+pids/
+*.pid
+*.pid.lock
+*.seed
+
+# ----------------------------------------------------------
+# Generated builds and caches
+# ----------------------------------------------------------
+dist/
+build/
+out/
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+.turbo/
+.swc/
+tmp/
+temp/
+*.tmp
+
+# ----------------------------------------------------------
+# Prisma and local database files
+# Prisma migrations must be committed and are NOT ignored.
+# ----------------------------------------------------------
+prisma/dev.db
+prisma/dev.db-journal
+prisma/test.db
+prisma/test.db-journal
+prisma/generated/
+src/generated/prisma/
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+
+# ----------------------------------------------------------
+# Tests, coverage and generated reports
+# ----------------------------------------------------------
+coverage/
+.nyc_output/
+test-results/
+junit.xml
+junit-*.xml
+reports/
+tests/load/results/
+*.k6.json
+*.lcov
+
+# ----------------------------------------------------------
+# Temporary uploads and locally stored evidence
+# Keep .gitkeep so the empty temporary folder remains in Git.
+# ----------------------------------------------------------
+storage/temporary/*
+!storage/temporary/.gitkeep
+storage/evidence/
+storage/uploads/
+uploads/
+
+# Common uploaded media types if accidentally placed at root
+*.upload
+*.part
+
+# ----------------------------------------------------------
+# Docker-generated local data
+# Dockerfile and compose YAML files remain tracked.
+# ----------------------------------------------------------
+.docker/
+docker-data/
+postgres-data/
+pgdata/
+redis-data/
+
+# ----------------------------------------------------------
+# IDE and editor settings
+# ----------------------------------------------------------
+.idea/
+.fleet/
+.history/
+*.iml
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*~
+
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+
+# ----------------------------------------------------------
+# Operating-system generated files
+# ----------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+Thumbs.db:encryptable
+Desktop.ini
+$RECYCLE.BIN/
+
+# ----------------------------------------------------------
+# Package-manager and tool caches
+# package-lock.json must be committed and is NOT ignored.
+# ----------------------------------------------------------
+.npm/
+.yarn/unplugged/
+.pnpm-store/
+.node_repl_history
+
+# ----------------------------------------------------------
+# Local deployment/provider metadata
+# ----------------------------------------------------------
+.vercel/
+.netlify/
+.render/
+
+# ----------------------------------------------------------
+# Miscellaneous local-only files
+# ----------------------------------------------------------
+*.local
+*.bak
+*.backup
+*.orig
+*.rej
+

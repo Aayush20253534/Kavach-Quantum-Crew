@@ -6,7 +6,16 @@
 }
 
 @layer base {
+<<<<<<< HEAD
   html, body {
     @apply h-full antialiased bg-gray-50 text-gray-900;
   }
 }
+=======
+
+  html,
+  body {
+    @apply h-full antialiased bg-gray-50 text-gray-900;
+  }
+}
+>>>>>>> 49c12ff8e761bf868f772210a5186b9bb53cbbfe
