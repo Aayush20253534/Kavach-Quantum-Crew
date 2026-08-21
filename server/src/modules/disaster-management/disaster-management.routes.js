@@ -1,0 +1,10 @@
+import { Router } from "express";
+import { asyncHandler } from "../../common/utils/asyncHandler.js";
+import { ROLES } from "../../constants/roles.js";
+import { authenticate } from "../../middleware/authenticate.middleware.js";
+import { authorize } from "../../middleware/authorize.middleware.js";
+import { validate } from "../../middleware/validate.middleware.js";
+import { disasterManagementController } from "./disaster-management.controller.js";
+import { incidentListQuerySchema,incidentParamsSchema,incidentResolutionBodySchema,incidentTransitionBodySchema } from "./disaster-management.validation.js";
+export const createDisasterManagementRouter=({controller=disasterManagementController}={})=>{const r=Router();r.use(authenticate,authorize(ROLES.DISASTER_MANAGER,ROLES.SYSTEM_ADMIN));r.get("/incidents",validate({query:incidentListQuerySchema}),asyncHandler(controller.queue));r.get("/incidents/:incidentId",validate({params:incidentParamsSchema}),asyncHandler(controller.get));r.post("/incidents/:incidentId/acknowledge",validate({params:incidentParamsSchema,body:incidentTransitionBodySchema}),asyncHandler(controller.acknowledge));r.post("/incidents/:incidentId/start",validate({params:incidentParamsSchema,body:incidentTransitionBodySchema}),asyncHandler(controller.start));r.post("/incidents/:incidentId/resolve",validate({params:incidentParamsSchema,body:incidentResolutionBodySchema}),asyncHandler(controller.resolve));return r;};
+export const disasterManagementRouter=createDisasterManagementRouter(); export default disasterManagementRouter;

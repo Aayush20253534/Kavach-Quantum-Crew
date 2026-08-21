@@ -3,6 +3,10 @@ import { Router } from "express";
 import { ApiResponse } from "../common/responses/ApiResponse.js";
 import { environment } from "../config/environment.js";
 
+import { createAlertRouter } from "../modules/alert/alert.routes.js";
+import { createDisasterManagementRouter } from "../modules/disaster-management/disaster-management.routes.js";
+import { createIncidentRouter } from "../modules/incident/incident.routes.js";
+import { createSosRouter } from "../modules/sos/sos.routes.js";
 import { createAuthRouter } from "../modules/auth/auth.routes.js";
 import { createGroupRouter } from "../modules/group/group.routes.js";
 import { createHealthRouter } from "../modules/health/health.routes.js";
@@ -45,9 +49,8 @@ export const createApiRouter = (config = environment) => {
           tracking: `${config.API_PREFIX}/tracking`,
         },
 
-        phase7: {
-          safety: `${config.API_PREFIX}/safety`,
-        },
+        phase7: { safety: `${config.API_PREFIX}/safety` },
+        phase8: { alerts: `${config.API_PREFIX}/alerts`, sos: `${config.API_PREFIX}/sos`, incidents: `${config.API_PREFIX}/incidents`, disasterManagement: `${config.API_PREFIX}/disaster-management` },
       },
     }),
   );
@@ -82,10 +85,11 @@ export const createApiRouter = (config = environment) => {
     createTrackingRouter(),
   );
 
-  router.use(
-    "/safety",
-    createSafetyRouter(),
-  );
+  router.use("/safety", createSafetyRouter());
+  router.use("/alerts", createAlertRouter());
+  router.use("/sos", createSosRouter());
+  router.use("/incidents", createIncidentRouter());
+  router.use("/disaster-management", createDisasterManagementRouter());
 
   return router;
 };

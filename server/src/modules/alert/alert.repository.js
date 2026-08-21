@@ -1,0 +1,3 @@
+import { prisma } from "../../config/database.js";
+export const createAlertRepository=({db=prisma}={})=>({find:(id)=>db.safetyAlert.findUnique({where:{id}}),list:(userId,{status,limit})=>db.safetyAlert.findMany({where:{userId,...(status?{status}:{})},orderBy:{createdAt:"desc"},take:limit}),acknowledge:(id,now)=>db.safetyAlert.update({where:{id},data:{status:"ACKNOWLEDGED",acknowledgedAt:now}}),resolve:(id,now)=>db.safetyAlert.update({where:{id},data:{status:"RESOLVED",resolvedAt:now}}),audit:(userId,action,id)=>db.auditLog.create({data:{actorId:userId,actorRole:"TOURIST",action,entityType:"SafetyAlert",entityId:id}})});
+export const alertRepository=createAlertRepository(); export default alertRepository;

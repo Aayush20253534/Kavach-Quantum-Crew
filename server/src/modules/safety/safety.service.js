@@ -1,5 +1,6 @@
 import { ApiError } from "../../common/errors/ApiError.js";
 import { haversineDistanceM } from "../../common/utils/geo.js";
+import { incidentService } from "../incident/incident.service.js";
 import { safetyRepository } from "./safety.repository.js";
 
 export const SAFETY_LIMITS = Object.freeze({
@@ -38,11 +39,13 @@ export const createSafetyService = ({
   repository = safetyRepository,
   clock = () => new Date(),
   limits = SAFETY_LIMITS,
+  incidentReporter = null,
 } = {}) => {
   const ensureAlert = async ({ tripId, userId, type, level, sourceId, message, details }) => {
     const existing = await repository.findOpenAlert(tripId, userId, type, sourceId);
-    if (existing) return existing;
-    return repository.createAlert({ tripId, userId, type, level, sourceId, message, details });
+    const alert = existing ?? (await repository.createAlert({ tripId, userId, type, level, sourceId, message, details }));
+    if (incidentReporter) await incidentReporter.ingestSafetyAlert(alert);
+    return alert;
   };
 
   const processDueCheckIns = async (tripId, now = clock()) => {
@@ -247,5 +250,5 @@ export const createSafetyService = ({
   });
 };
 
-export const safetyService = createSafetyService();
+export const safetyService = createSafetyService({ incidentReporter: incidentService });
 export default safetyService;
