@@ -1,0 +1,13 @@
+import { ApiResponse } from "../../common/responses/ApiResponse.js";
+import { groupService } from "./group.service.js";
+export const createGroupController = ({ service = groupService } = {}) => ({
+  create: async (req,res) => ApiResponse.success(res,{statusCode:201,message:"Group created",data:await service.createGroup(req.user.id,req.params.tripId)}),
+  getById: async (req,res) => ApiResponse.success(res,{message:"Group",data:await service.getGroup(req.user.id,req.params.groupId)}),
+  getByTrip: async (req,res) => ApiResponse.success(res,{message:"Trip group",data:await service.getTripGroup(req.user.id,req.params.tripId)}),
+  invite: async (req,res) => ApiResponse.success(res,{statusCode:201,message:"Group invitation created",data:await service.createInvitation(req.user.id,req.params.groupId,req.body.expiresInMinutes)}),
+  revokeInvite: async (req,res) => ApiResponse.success(res,{message:"Group invitation revoked",data:await service.revokeInvitation(req.user.id,req.params.groupId,req.params.invitationId)}),
+  join: async (req,res) => ApiResponse.success(res,{message:"Group joined",data:await service.joinGroup(req.user.id,req.body.inviteToken)}),
+  leave: async (req,res) => ApiResponse.success(res,{message:"Group left",data:await service.leaveGroup(req.user.id,req.params.groupId)}),
+  removeMember: async (req,res) => ApiResponse.success(res,{message:"Group member removed",data:await service.removeMember(req.user.id,req.params.groupId,req.params.memberId)}),
+});
+export const groupController = createGroupController();

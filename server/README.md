@@ -151,3 +151,9 @@ Tourist endpoints:
 The core backend stores the authoritative `Trip`, `TripSafetyId`, and `TripConsent` records. It does **not** generate a QR, call a blockchain contract, hash/anchor the Safety ID, run AI scoring, or implement `/assess`. Those partner-owned services should consume these backend records through later integration adapters without changing the Phase 4 lifecycle.
 
 The agreed AI contract remains a later backend integration around `POST /trips/:id/safety-assessments` -> AI service `POST /assess`. The blockchain team owns Safety ID proof issuance/revocation/verification and consent anchoring. No raw PII, medical data, or GPS is added to any blockchain payload by this phase.
+
+## Phase 5 - Group management
+
+Phase 5 adds backend-owned group membership for `GROUP` trips: group creation, leader/member authorization, expiring invitation tokens, join/leave/remove-member flows, and automatic group closure when a trip ends. The backend deliberately does not generate QR images; clients or the separately owned QR component can encode the returned `inviteToken`.
+
+Routes are under `/api/v1/groups`. Invitation tokens are returned only when created; only SHA-256 token hashes are persisted.
