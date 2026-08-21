@@ -2,6 +2,8 @@
 
 ## Connection rooms
 
+Only accounts accepted by Socket.IO authentication join rooms. A `TOURIST` with `emailVerifiedAt = null` is rejected before joining authenticated rooms.
+
 Authenticated sockets join:
 - `account:<ROLE>:<ACCOUNT_ID>`
 - `role:<ROLE>`
@@ -42,3 +44,7 @@ Sensitive tracking/incident rooms require subscription authorization.
 | `evidence:deleted` | Evidence deleted |
 
 REST remains the authoritative recovery/read path. Realtime does not bypass REST authorization.
+
+## Tourist verification prerequisite
+
+Email OTP itself is handled over REST, not Socket.IO. After successful `POST /api/v1/auth/verify-email`, the issued session/access token can be used for authenticated realtime connections.

@@ -1,5 +1,8 @@
 # Notification Delivery
 
+> Tourist signup OTP email is **not** a `NotificationDelivery` job. Account verification uses the dedicated Gmail mailer in the auth module so verification can happen before the tourist has a normal authenticated session.
+
+
 `Notification` is the application message. `NotificationDelivery` is the operational delivery attempt.
 
 ```text

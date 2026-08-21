@@ -27,6 +27,14 @@
 - [ ] Health/readiness/database probes work.
 - [ ] CORS is production allow-listed.
 - [ ] JWT unsupported roles rejected.
+- [ ] New tourist registration sends a real six-digit Gmail OTP.
+- [ ] Registration does not issue a normal session before verification.
+- [ ] Login/refresh/Socket.IO reject an unverified tourist.
+- [ ] Correct OTP verifies email and issues the initial session.
+- [ ] Wrong/expired/exhausted OTP behavior matches documented errors.
+- [ ] Resend cooldown and replacement-code behavior work.
+- [ ] Plaintext OTP is not stored in PostgreSQL.
+- [ ] Changing tourist email resets verification.
 - [ ] Sensitive route limits configured.
 - [ ] Request-shape protections enabled.
 - [ ] Evidence authorization/path-security tests pass.

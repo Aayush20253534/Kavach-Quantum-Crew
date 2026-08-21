@@ -37,6 +37,13 @@ Use `.env.example` as the source of defaults. Never commit real `.env` secrets.
 | `SEED_DM_*` | Optional Disaster Manager seed |
 | `INCIDENT_ACK_TIMEOUT_MINUTES` | Escalation acknowledgement threshold |
 | `INCIDENT_ESCALATION_INTERVAL_MINUTES` | Repeat escalation interval |
+| `GMAIL_USER` | Gmail sender/login account used by Nodemailer |
+| `GMAIL_APP_PASSWORD` | Google 16-character App Password; never use the normal Gmail password |
+| `EMAIL_FROM` | Visible From address; normally the same as `GMAIL_USER` |
+| `EMAIL_OTP_SECRET` | Secret used to key/hash OTP values; strong unique production value required |
+| `EMAIL_OTP_TTL_MINUTES` | OTP validity period; default 10 minutes |
+| `EMAIL_OTP_RESEND_COOLDOWN_SECONDS` | Minimum resend interval; default 60 seconds |
+| `EMAIL_OTP_MAX_ATTEMPTS` | Maximum wrong attempts before active OTP invalidation; default 5 |
 
 Production rules:
 - use separate strong access/refresh secrets,
@@ -58,3 +65,14 @@ Production rules:
 | `EMAIL_OTP_MAX_ATTEMPTS` | Wrong-code attempt limit before current OTP is invalidated; default 5 |
 
 Do not use the normal Gmail account password. Use a dedicated Google App Password and keep it only in deployment secrets.
+
+## Gmail OTP setup
+
+1. Use a dedicated Gmail sender account where possible.
+2. Enable Google 2-Step Verification.
+3. Generate an App Password for the backend mailer.
+4. Set `GMAIL_USER` and `EMAIL_FROM` to the sender Gmail address.
+5. Set `GMAIL_APP_PASSWORD` to the App Password, not the account password.
+6. Generate a strong independent `EMAIL_OTP_SECRET`.
+
+In production, Gmail and OTP secrets are validated at startup. Gmail SMTP is suitable for project/demo volume; a transactional email provider can later replace the mailer without changing the OTP domain logic.
