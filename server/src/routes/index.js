@@ -5,6 +5,7 @@ import { environment } from "../config/environment.js";
 
 import { createAlertRouter } from "../modules/alert/alert.routes.js";
 import { createDisasterManagementRouter } from "../modules/disaster-management/disaster-management.routes.js";
+import { createDispatchRouter } from "../modules/dispatch/dispatch.routes.js";
 import { createIncidentRouter } from "../modules/incident/incident.routes.js";
 import { createNotificationRouter } from "../modules/notification/notification.routes.js";
 import { createEscalationRouter } from "../modules/escalation/escalation.routes.js";
@@ -62,6 +63,7 @@ export const createApiRouter = (config = environment) => {
         phase12: { hazards: `${config.API_PREFIX}/hazards` },
         phase13: { riskZones: `${config.API_PREFIX}/risk-zones` },
         phase14: { monitoring: `${config.API_PREFIX}/monitoring` },
+        phase15: { dispatch: `${config.API_PREFIX}/dispatch` },
       },
     }),
   );
@@ -106,6 +108,7 @@ export const createApiRouter = (config = environment) => {
   router.use("/hazards", createHazardRouter());
   router.use("/risk-zones", createRiskZoneRouter());
   router.use("/monitoring", createMonitoringRouter());
+  router.use("/dispatch", createDispatchRouter());
 
   return router;
 };

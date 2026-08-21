@@ -73,6 +73,19 @@ export const realtimePublisher = Object.freeze({
     socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("responder:status", { responder });
     socketServer.to(accountRoom("DISASTER_MANAGER", responder.id)).emit("responder:status", { responder });
   },
+  publishDispatchUpdated(dispatch, change = {}) {
+    if (!socketServer || !dispatch?.id) return;
+    const payload = { dispatch, change };
+    socketServer.to(roleRoom("DISASTER_MANAGER")).emit("dispatch:updated", payload);
+    socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("dispatch:updated", payload);
+    if (dispatch.incidentId) socketServer.to(incidentRoom(dispatch.incidentId)).emit("dispatch:updated", payload);
+  },
+  publishEmergencyUnitUpdated(unit, change = {}) {
+    if (!socketServer || !unit?.id) return;
+    const payload = { unit, change };
+    socketServer.to(roleRoom("DISASTER_MANAGER")).emit("emergency-unit:updated", payload);
+    socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("emergency-unit:updated", payload);
+  },
 });
 
 export const realtimeRooms = Object.freeze({ accountRoom, incidentRoom, roleRoom });
