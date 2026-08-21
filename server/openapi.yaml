@@ -1,13 +1,15 @@
 openapi: 3.1.0
 info:
   title: Smart Tourist Safety API
-  version: 0.1.0
-  description: Phase 0 operational endpoints. Business APIs begin in later phases.
+  version: 0.2.0
+  description: Phase 0 infrastructure plus Phase 1 tourist authentication and onboarding.
 servers:
   - url: http://localhost:4000
     description: Local development
 tags:
   - name: Health
+  - name: Auth
+  - name: Tourist
 paths:
   /health:
     get:
@@ -57,8 +59,202 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a tourist account
+      operationId: registerTourist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Tourist account created.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+        "400":
+          description: Invalid signup data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Username, email, or phone is already registered.
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Sign in using username or email
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier, password]
+              properties:
+                identifier:
+                  type: string
+                  example: tourist.one
+                password:
+                  type: string
+                  format: password
+      responses:
+        "200":
+          description: Signed in successfully.
+        "401":
+          description: Invalid credentials.
+  /api/v1/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Rotate refresh session
+      operationId: refreshSession
+      responses:
+        "200":
+          description: New access token issued and refresh cookie rotated.
+        "401":
+          description: Refresh session is invalid or expired.
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke current refresh session
+      operationId: logout
+      responses:
+        "200":
+          description: Signed out successfully.
+  /api/v1/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get permanent account details
+      operationId: getAuthenticatedAccount
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Authenticated account.
+        "401":
+          description: Access token is missing, invalid, or expired.
+  /api/v1/tourists/me/onboarding:
+    post:
+      tags: [Tourist]
+      summary: Complete tourist onboarding
+      operationId: completeTouristOnboarding
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OnboardingRequest"
+      responses:
+        "200":
+          description: Onboarding completed.
+        "403":
+          description: Tourist role is required.
+  /api/v1/tourists/me:
+    get:
+      tags: [Tourist]
+      summary: Get tourist profile
+      operationId: getTouristProfile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Tourist profile.
+    patch:
+      tags: [Tourist]
+      summary: Update tourist profile
+      operationId: updateTouristProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdateRequest"
+      responses:
+        "200":
+          description: Tourist profile updated.
+        "400":
+          description: Onboarding must be completed first or data is invalid.
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
+    RegisterRequest:
+      type: object
+      required: [name, username, email, phone, password, confirmPassword]
+      properties:
+        name:
+          type: string
+          example: Tourist One
+        username:
+          type: string
+          example: tourist.one
+        email:
+          type: string
+          format: email
+          example: tourist@example.com
+        phone:
+          type: string
+          example: "+919876543210"
+        password:
+          type: string
+          format: password
+        confirmPassword:
+          type: string
+          format: password
+    OnboardingRequest:
+      type: object
+      required: [gender, age, emergencyPhone, nationality]
+      properties:
+        gender:
+          type: string
+          enum: [MALE, FEMALE, OTHER, PREFER_NOT_TO_SAY]
+        age:
+          type: integer
+          minimum: 1
+          maximum: 120
+        medicalHistory:
+          type: [string, "null"]
+        emergencyPhone:
+          type: string
+          example: "+919876543211"
+        nationality:
+          type: string
+          example: Indian
+    ProfileUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        profilePicUrl:
+          type: [string, "null"]
+          format: uri
+        gender:
+          type: string
+          enum: [MALE, FEMALE, OTHER, PREFER_NOT_TO_SAY]
+        age:
+          type: integer
+        medicalHistory:
+          type: [string, "null"]
+        emergencyPhone:
+          type: string
+        nationality:
+          type: string
     SuccessResponse:
       type: object
       required: [success, message, data, requestId, timestamp]
@@ -73,7 +269,7 @@ components:
           additionalProperties: true
         requestId:
           type: string
-          description: Server-generated UUID or a validated caller-provided correlation ID.
+          description: Server-generated UUID or validated caller-provided correlation ID.
         timestamp:
           type: string
           format: date-time
