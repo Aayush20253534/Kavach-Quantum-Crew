@@ -5,6 +5,20 @@ export const createTouristRepository = ({ db = prisma } = {}) => ({
     return db.user.findUnique({ where: { id: userId } });
   },
 
+  findUsernameConflict(username, exceptUserId) {
+    return db.user.findFirst({
+      where: { username, NOT: { id: exceptUserId } },
+      select: { id: true },
+    });
+  },
+
+  findEmailConflict(email, exceptUserId) {
+    return db.user.findFirst({
+      where: { email, NOT: { id: exceptUserId } },
+      select: { id: true },
+    });
+  },
+
   findPhoneConflict(phone, exceptUserId) {
     return db.user.findFirst({
       where: { phone, NOT: { id: exceptUserId } },
