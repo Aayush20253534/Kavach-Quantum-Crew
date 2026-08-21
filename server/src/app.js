@@ -22,6 +22,7 @@ import {
   requestSecurityMiddleware,
 } from "./middleware/requestSecurity.middleware.js";
 import { requestIdMiddleware } from "./middleware/requestId.middleware.js";
+import { observabilityMiddleware } from "./middleware/observability.middleware.js";
 import { createHealthRouter } from "./modules/health/health.routes.js";
 import { createApiRouter } from "./routes/index.js";
 
@@ -38,6 +39,7 @@ export const createApp = ({
   app.set("trust proxy", config.TRUST_PROXY);
 
   app.use(requestIdMiddleware);
+  app.use(observabilityMiddleware);
   app.use(httpLogger);
   app.use(helmet(helmetOptions));
   app.use(cors(buildCorsOptions(config)));
