@@ -7,6 +7,7 @@ const toProfile = (user) => ({
   username: user.username,
   name: user.name,
   email: user.email,
+  emailVerified: Boolean(user.emailVerifiedAt),
   phone: user.phone,
   emergencyContact: user.emergencyPhone ?? null,
   gender: user.gender ?? null,
@@ -95,7 +96,10 @@ export const createTouristService = ({ repository = touristRepository } = {}) =>
       const data = {};
       if (input.name !== undefined) data.name = input.name;
       if (input.username !== undefined) data.username = input.username;
+      const emailChanged =
+        input.email !== undefined && input.email !== existing.email;
       if (input.email !== undefined) data.email = input.email;
+      if (emailChanged) data.emailVerifiedAt = null;
       if (input.phone !== undefined) data.phone = input.phone;
       if (input.profilePicUrl !== undefined) data.profilePicUrl = input.profilePicUrl;
       if (input.gender !== undefined) data.gender = input.gender;
@@ -105,7 +109,9 @@ export const createTouristService = ({ repository = touristRepository } = {}) =>
       if (input.emergencyPhone !== undefined) data.emergencyPhone = input.emergencyPhone;
       if (input.nationality !== undefined) data.nationality = input.nationality;
 
-      return toProfile(await repository.updateProfile(userId, data));
+      const updated = await repository.updateProfile(userId, data);
+      if (emailChanged) await repository.revokeSessions?.(userId);
+      return toProfile(updated);
     },
   });
 

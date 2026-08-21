@@ -14,6 +14,13 @@ const booleanFromEnvironment = z.preprocess((value) => {
 const integerFromEnvironment = (minimum, maximum) =>
   z.coerce.number().int().min(minimum).max(maximum);
 
+const optionalString = (schema) =>
+  z.preprocess(
+    (value) =>
+      typeof value === "string" && value.trim() === "" ? undefined : value,
+    schema.optional(),
+  );
+
 const environmentSchema = z
   .object({
     NODE_ENV: z
@@ -71,6 +78,18 @@ const environmentSchema = z
     INCIDENT_ESCALATION_INTERVAL_MINUTES: integerFromEnvironment(1, 1440).default(5),
     EVIDENCE_MAX_FILE_BYTES: integerFromEnvironment(1024, 52428800).default(10485760),
     EVIDENCE_STORAGE_DIR: z.string().trim().min(1).default("storage/evidence"),
+    GMAIL_USER: optionalString(z.string().trim().email()),
+    GMAIL_APP_PASSWORD: optionalString(
+      z.string().trim().transform((value) => value.replace(/\s+/g, "")).refine(
+        (value) => value.length >= 16,
+        "must contain at least 16 characters",
+      ),
+    ),
+    EMAIL_FROM: optionalString(z.string().trim().email()),
+    EMAIL_OTP_SECRET: z.string().min(16).default("dev-email-otp-secret-change-me"),
+    EMAIL_OTP_TTL_MINUTES: integerFromEnvironment(1, 60).default(10),
+    EMAIL_OTP_RESEND_COOLDOWN_SECONDS: integerFromEnvironment(10, 3600).default(60),
+    EMAIL_OTP_MAX_ATTEMPTS: integerFromEnvironment(1, 20).default(5),
   })
   .superRefine((value, context) => {
     const origins = value.CORS_ORIGINS.split(",").map((origin) =>
@@ -94,7 +113,7 @@ const environmentSchema = z
     }
 
     if (value.NODE_ENV === "production") {
-      for (const key of ["ACCESS_TOKEN_SECRET", "REFRESH_TOKEN_SECRET"]) {
+      for (const key of ["ACCESS_TOKEN_SECRET", "REFRESH_TOKEN_SECRET", "EMAIL_OTP_SECRET"]) {
         if (value[key].length < 32 || value[key].includes("change-me")) {
           context.addIssue({
             code: "custom",
@@ -102,6 +121,21 @@ const environmentSchema = z
             message: "must be at least 32 characters and use a non-default production secret",
           });
         }
+      }
+
+      if (!value.GMAIL_USER) {
+        context.addIssue({
+          code: "custom",
+          path: ["GMAIL_USER"],
+          message: "is required in production for tourist email verification",
+        });
+      }
+      if (!value.GMAIL_APP_PASSWORD) {
+        context.addIssue({
+          code: "custom",
+          path: ["GMAIL_APP_PASSWORD"],
+          message: "is required in production for tourist email verification",
+        });
       }
     }
   });
