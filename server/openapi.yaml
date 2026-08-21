@@ -13,6 +13,7 @@ tags:
   - name: Trips
   - name: Notifications
   - name: Incidents
+  - name: Evidence
   - name: Escalations
   - name: Disaster Management
 paths:
@@ -624,6 +625,82 @@ paths:
       responses:
         "200": { description: Dispatch updated }
 
+  /api/v1/evidence:
+    get:
+      tags: [Evidence]
+      summary: List authorized evidence for one incident or hazard
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: incidentId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: hazardId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        "200": { description: Evidence attachments }
+    post:
+      tags: [Evidence]
+      summary: Upload evidence to one incident or hazard
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                incidentId: { type: string, format: uuid }
+                hazardId: { type: string, format: uuid }
+                file: { type: string, format: binary }
+      responses:
+        "201": { description: Evidence uploaded }
+  /api/v1/evidence/{attachmentId}:
+    get:
+      tags: [Evidence]
+      summary: Get evidence metadata
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: attachmentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Evidence metadata }
+    delete:
+      tags: [Evidence]
+      summary: Delete evidence uploaded by the caller, or as system admin
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: attachmentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Evidence deleted }
+  /api/v1/evidence/{attachmentId}/content:
+    get:
+      tags: [Evidence]
+      summary: Download authorized evidence bytes
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: attachmentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Evidence content
+          content:
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/png: { schema: { type: string, format: binary } }
+            image/webp: { schema: { type: string, format: binary } }
+            video/mp4: { schema: { type: string, format: binary } }
+            application/pdf: { schema: { type: string, format: binary } }
 components:
   securitySchemes:
     bearerAuth:
