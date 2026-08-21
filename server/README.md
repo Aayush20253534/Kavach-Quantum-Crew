@@ -233,3 +233,10 @@ Responder endpoints under `/api/v1/disaster-management`:
 Incident assignment now rejects off-duty/busy responders and responders who reached `maxActiveIncidents`. The database migration adds `ResponderStatus`, `department`, `maxActiveIncidents`, and status-change metadata to `disaster_managers`.
 
 Run `npm run test:phase11` for the dedicated Phase 11 suite.
+
+
+## Phase 12 - Hazard Reporting and Management
+
+Phase 12 adds tourist hazard reporting, staff verification/rejection/resolution, verified nearby hazard discovery, audit records, and real-time `hazard:created` / `hazard:updated` events. Tourist public listings expose verified hazards only; reporters can still inspect their own pending reports.
+
+Main endpoints: `POST /api/v1/hazards`, `GET /api/v1/hazards`, `GET /api/v1/hazards/nearby`, `GET /api/v1/hazards/:hazardId`, and staff moderation endpoints under `/:hazardId/{verify,reject,resolve}`.
