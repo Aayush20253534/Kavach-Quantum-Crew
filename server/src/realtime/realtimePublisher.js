@@ -47,6 +47,20 @@ export const realtimePublisher = Object.freeze({
       .to(accountRoom(actor.role, actor.id))
       .emit("notification:read-all", { readAt });
   },
+  publishHazardCreated(hazard) {
+    if (!socketServer || !hazard?.id) return;
+    const payload = { hazard };
+    socketServer.to(roleRoom("DISASTER_MANAGER")).emit("hazard:created", payload);
+    socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("hazard:created", payload);
+    if (hazard.reporterId) socketServer.to(accountRoom("TOURIST", hazard.reporterId)).emit("hazard:created", payload);
+  },
+  publishHazardUpdated(hazard, change = {}) {
+    if (!socketServer || !hazard?.id) return;
+    const payload = { hazard, change };
+    socketServer.to(roleRoom("DISASTER_MANAGER")).emit("hazard:updated", payload);
+    socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("hazard:updated", payload);
+    if (hazard.reporterId) socketServer.to(accountRoom("TOURIST", hazard.reporterId)).emit("hazard:updated", payload);
+  },
   publishResponderStatus(responder) {
     if (!socketServer || !responder?.id) return;
     socketServer.to(roleRoom("DISASTER_MANAGER")).emit("responder:status", { responder });
