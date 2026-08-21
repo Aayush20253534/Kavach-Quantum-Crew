@@ -63,6 +63,8 @@ const environmentSchema = z
     JWT_ISSUER: z.string().trim().min(1).default("smart-tourist-safety"),
     JWT_AUDIENCE: z.string().trim().min(1).default("smart-tourist-safety-client"),
     REFRESH_COOKIE_NAME: z.string().trim().min(1).default("sts_refresh"),
+    INCIDENT_ACK_TIMEOUT_MINUTES: integerFromEnvironment(1, 1440).default(5),
+    INCIDENT_ESCALATION_INTERVAL_MINUTES: integerFromEnvironment(1, 1440).default(5),
   })
   .superRefine((value, context) => {
     const origins = value.CORS_ORIGINS.split(",").map((origin) =>

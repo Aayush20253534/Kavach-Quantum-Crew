@@ -11,6 +11,9 @@ tags:
   - name: Auth
   - name: Tourist
   - name: Trips
+  - name: Notifications
+  - name: Incidents
+  - name: Escalations
 paths:
   /health:
     get:
@@ -312,6 +315,60 @@ paths:
         '200': { description: Incident resolved }
 
 
+  /api/v1/notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications for the authenticated account
+      responses:
+        "200": { description: Notification history }
+  /api/v1/notifications/unread-count:
+    get:
+      tags: [Notifications]
+      summary: Count unread notifications
+      responses:
+        "200": { description: Unread notification count }
+  /api/v1/notifications/read-all:
+    patch:
+      tags: [Notifications]
+      summary: Mark all notifications as read
+      responses:
+        "200": { description: Notifications marked read }
+  /api/v1/notifications/{notificationId}/read:
+    patch:
+      tags: [Notifications]
+      summary: Mark one owned notification as read
+      parameters:
+        - in: path
+          name: notificationId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Notification marked read }
+  /api/v1/incidents/{incidentId}/assign:
+    post:
+      tags: [Incidents]
+      summary: Assign incident to an active disaster manager
+      responses:
+        "200": { description: Incident assigned }
+  /api/v1/incidents/{incidentId}/unassign:
+    post:
+      tags: [Incidents]
+      summary: Remove active responder assignment
+      responses:
+        "200": { description: Incident unassigned }
+  /api/v1/incidents/{incidentId}/notes:
+    post:
+      tags: [Incidents]
+      summary: Add a response coordination note
+      responses:
+        "200": { description: Response note recorded }
+  /api/v1/escalations/run:
+    post:
+      tags: [Escalations]
+      summary: Run overdue incident escalation sweep
+      description: System-admin endpoint intended for cron or a deployment scheduler.
+      responses:
+        "200": { description: Escalation sweep completed }
 components:
   securitySchemes:
     bearerAuth:
