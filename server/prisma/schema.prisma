@@ -43,14 +43,20 @@ model DisasterManager {
   passwordHash      String
   status            AccountStatus @default(ACTIVE)
   organization      String?       @db.VarChar(160)
+  department        String?       @db.VarChar(120)
   jurisdiction      String?       @db.VarChar(160)
   staffInfo         String?
+  responderStatus   ResponderStatus @default(AVAILABLE)
+  maxActiveIncidents Int          @default(5)
+  statusChangedAt   DateTime?
   lastLoginAt       DateTime?
   passwordChangedAt DateTime?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
   @@index([status])
+  @@index([responderStatus, status])
+  @@index([organization, jurisdiction])
   @@map("disaster_managers")
 }
 
@@ -216,6 +222,12 @@ enum AccountStatus {
   ACTIVE
   SUSPENDED
   DISABLED
+}
+
+enum ResponderStatus {
+  AVAILABLE
+  BUSY
+  OFF_DUTY
 }
 
 enum Gender {
