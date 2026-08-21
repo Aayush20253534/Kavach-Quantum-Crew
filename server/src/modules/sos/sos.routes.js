@@ -1,0 +1,10 @@
+import { Router } from "express";
+import { asyncHandler } from "../../common/utils/asyncHandler.js";
+import { ROLES } from "../../constants/roles.js";
+import { authenticate } from "../../middleware/authenticate.middleware.js";
+import { authorize } from "../../middleware/authorize.middleware.js";
+import { validate } from "../../middleware/validate.middleware.js";
+import { sosController } from "./sos.controller.js";
+import { createSosBodySchema,sosParamsSchema } from "./sos.validation.js";
+export const createSosRouter=({controller=sosController}={})=>{const r=Router();r.use(authenticate);r.post("/",authorize(ROLES.TOURIST),validate({body:createSosBodySchema}),asyncHandler(controller.trigger));r.get("/:sosId",validate({params:sosParamsSchema}),asyncHandler(controller.get));return r;};
+export const sosRouter=createSosRouter(); export default sosRouter;

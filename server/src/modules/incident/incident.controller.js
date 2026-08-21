@@ -1,0 +1,12 @@
+import { ApiResponse } from "../../common/responses/ApiResponse.js";
+import { incidentService } from "./incident.service.js";
+export const createIncidentController = ({ service = incidentService } = {}) => ({
+  mine: async (r,s) => ApiResponse.success(s,{message:"My incidents",data:await service.listMine(r.user.id,r.query)}),
+  queue: async (r,s) => ApiResponse.success(s,{message:"Emergency incident queue",data:await service.listQueue(r.user,r.query)}),
+  get: async (r,s) => ApiResponse.success(s,{message:"Incident",data:await service.get(r.user,r.params.incidentId)}),
+  acknowledge: async (r,s) => ApiResponse.success(s,{message:"Incident acknowledged",data:await service.acknowledge(r.user,r.params.incidentId,r.body.note)}),
+  start: async (r,s) => ApiResponse.success(s,{message:"Incident response started",data:await service.startResponse(r.user,r.params.incidentId,r.body.note)}),
+  resolve: async (r,s) => ApiResponse.success(s,{message:"Incident resolved",data:await service.resolve(r.user,r.params.incidentId,r.body.note)}),
+  dismiss: async (r,s) => ApiResponse.success(s,{message:"Incident dismissed",data:await service.dismiss(r.user,r.params.incidentId,r.body.note)}),
+});
+export const incidentController = createIncidentController(); export default incidentController;
