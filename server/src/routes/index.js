@@ -2,6 +2,8 @@ import { Router } from "express";
 
 import { ApiResponse } from "../common/responses/ApiResponse.js";
 import { environment } from "../config/environment.js";
+import { createAuthRouter } from "../modules/auth/auth.routes.js";
+import { createTouristRouter } from "../modules/tourist/tourist.routes.js";
 
 export const createApiRouter = (config = environment) => {
   const router = Router();
@@ -18,9 +20,16 @@ export const createApiRouter = (config = environment) => {
           ready: `${config.API_PREFIX}/health/ready`,
           database: `${config.API_PREFIX}/health/database`,
         },
+        phase1: {
+          auth: `${config.API_PREFIX}/auth`,
+          tourist: `${config.API_PREFIX}/tourists`,
+        },
       },
     }),
   );
+
+  router.use("/auth", createAuthRouter());
+  router.use("/tourists", createTouristRouter());
 
   return router;
 };

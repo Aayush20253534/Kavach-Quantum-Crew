@@ -56,6 +56,13 @@ const environmentSchema = z
       .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
       .default("info"),
     SHUTDOWN_TIMEOUT_MS: integerFromEnvironment(1000, 120000).default(10000),
+    ACCESS_TOKEN_SECRET: z.string().min(16).default("dev-access-token-secret-change-me"),
+    REFRESH_TOKEN_SECRET: z.string().min(16).default("dev-refresh-token-secret-change-me"),
+    ACCESS_TOKEN_TTL: z.string().trim().min(2).default("15m"),
+    REFRESH_TOKEN_TTL_DAYS: integerFromEnvironment(1, 365).default(15),
+    JWT_ISSUER: z.string().trim().min(1).default("smart-tourist-safety"),
+    JWT_AUDIENCE: z.string().trim().min(1).default("smart-tourist-safety-client"),
+    REFRESH_COOKIE_NAME: z.string().trim().min(1).default("sts_refresh"),
   })
   .superRefine((value, context) => {
     const origins = value.CORS_ORIGINS.split(",").map((origin) =>
@@ -76,6 +83,18 @@ const environmentSchema = z
         path: ["CORS_ORIGINS"],
         message: "cannot contain * in production",
       });
+    }
+
+    if (value.NODE_ENV === "production") {
+      for (const key of ["ACCESS_TOKEN_SECRET", "REFRESH_TOKEN_SECRET"]) {
+        if (value[key].length < 32 || value[key].includes("change-me")) {
+          context.addIssue({
+            code: "custom",
+            path: [key],
+            message: "must be at least 32 characters and use a non-default production secret",
+          });
+        }
+      }
     }
   });
 
