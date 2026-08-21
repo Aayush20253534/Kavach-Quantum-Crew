@@ -572,3 +572,59 @@ enum NotificationType {
   INCIDENT_ESCALATED
   GROUP_MEMBER_EMERGENCY
 }
+
+
+model HazardReport {
+  id             String         @id @default(uuid()) @db.Uuid
+  reporterId     String         @db.Uuid
+  reporterRole   Role
+  type           HazardType
+  severity       HazardSeverity @default(MEDIUM)
+  status         HazardStatus   @default(PENDING)
+  title          String         @db.VarChar(160)
+  description    String         @db.VarChar(1000)
+  latitude       Float
+  longitude      Float
+  locationName   String?        @db.VarChar(200)
+  occurredAt     DateTime
+  reviewedById   String?        @db.Uuid
+  reviewedByRole Role?
+  moderationNote String?        @db.VarChar(1000)
+  verifiedAt     DateTime?
+  rejectedAt     DateTime?
+  resolvedAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([status, severity, createdAt])
+  @@index([type, status, createdAt])
+  @@index([reporterId, reporterRole, createdAt])
+  @@index([latitude, longitude, status])
+  @@map("hazard_reports")
+}
+
+enum HazardType {
+  FLOOD
+  LANDSLIDE
+  FIRE
+  ROAD_BLOCK
+  WEATHER
+  CROWD
+  UNSAFE_AREA
+  MEDICAL
+  OTHER
+}
+
+enum HazardSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum HazardStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  RESOLVED
+}
