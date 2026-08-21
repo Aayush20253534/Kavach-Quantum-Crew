@@ -4,6 +4,7 @@ import { ApiResponse } from "../common/responses/ApiResponse.js";
 import { environment } from "../config/environment.js";
 
 import { createAlertRouter } from "../modules/alert/alert.routes.js";
+import { createAnalyticsRouter } from "../modules/analytics/analytics.routes.js";
 import { createDisasterManagementRouter } from "../modules/disaster-management/disaster-management.routes.js";
 import { createDispatchRouter } from "../modules/dispatch/dispatch.routes.js";
 import { createIncidentRouter } from "../modules/incident/incident.routes.js";
@@ -69,6 +70,7 @@ export const createApiRouter = (config = environment) => {
         phase16: { incidentCommunication: `${config.API_PREFIX}/incidents/:incidentId/messages` },
         phase17: { evidence: `${config.API_PREFIX}/evidence` },
         phase18: { systemAdmin: `${config.API_PREFIX}/admin` },
+        phase19: { analytics: `${config.API_PREFIX}/analytics` },
       },
     }),
   );
@@ -116,6 +118,7 @@ export const createApiRouter = (config = environment) => {
   router.use("/dispatch", createDispatchRouter());
   router.use("/evidence", createEvidenceRouter());
   router.use("/admin", createSystemAdminRouter());
+  router.use("/analytics", createAnalyticsRouter());
 
   return router;
 };
