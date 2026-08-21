@@ -203,3 +203,6 @@ npm run prisma:migrate:deploy
 ```
 
 The Phase 8 migration also repairs the missing Phase 6 tracking DDL found in the uploaded migration history using guarded `IF NOT EXISTS`/duplicate-object handling.
+
+## Phase 9 - Notifications and Response Coordination
+Phase 9 adds idempotent in-app incident notifications, unread/read APIs, disaster-manager assignment history, response notes, and configurable overdue incident escalation. Configure `INCIDENT_ACK_TIMEOUT_MINUTES` and `INCIDENT_ESCALATION_INTERVAL_MINUTES`. A system admin can trigger the scheduler-ready sweep with `POST /api/v1/escalations/run`. Run `npm run test:phase9` for the dedicated suite.
