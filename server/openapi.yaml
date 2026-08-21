@@ -765,6 +765,57 @@ paths:
         - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
       responses:
         "200": { description: Resource collection }
+  /api/v1/analytics/overview:
+    get:
+      tags: [Analytics]
+      summary: Platform safety overview
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: from, schema: { type: string, format: date-time } }
+        - { in: query, name: to, schema: { type: string, format: date-time } }
+      responses: { '200': { description: Analytics overview } }
+  /api/v1/analytics/incidents:
+    get:
+      tags: [Analytics]
+      summary: Incident breakdown and response times
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Incident analytics } }
+  /api/v1/analytics/trips:
+    get:
+      tags: [Analytics]
+      summary: Trip status and type analytics
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Trip analytics } }
+  /api/v1/analytics/hazards:
+    get:
+      tags: [Analytics]
+      summary: Hazard status, type and severity analytics
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Hazard analytics } }
+  /api/v1/analytics/sos:
+    get:
+      tags: [Analytics]
+      summary: SOS requests by emergency type
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: SOS analytics } }
+  /api/v1/analytics/dispatch:
+    get:
+      tags: [Analytics]
+      summary: Dispatch performance analytics
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Dispatch analytics } }
+  /api/v1/analytics/responders:
+    get:
+      tags: [Analytics]
+      summary: Responder availability and active workload
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Responder analytics } }
+  /api/v1/analytics/response-times:
+    get:
+      tags: [Analytics]
+      summary: Incident and dispatch response-time aggregates
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Response-time analytics } }
 components:
   securitySchemes:
     bearerAuth:
