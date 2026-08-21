@@ -518,6 +518,75 @@ paths:
       responses:
         "200": { description: Monitoring sweep completed }
 
+  /dispatch/units:
+    get:
+      summary: List emergency units
+      responses:
+        "200": { description: Emergency units }
+    post:
+      summary: Create emergency unit (system admin)
+      responses:
+        "201": { description: Emergency unit created }
+  /dispatch/units/{unitId}/status:
+    patch:
+      summary: Update emergency unit operational status
+      parameters:
+        - in: path
+          name: unitId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Emergency unit updated }
+  /dispatch/incidents/{incidentId}:
+    get:
+      summary: List dispatches for an incident
+      parameters:
+        - in: path
+          name: incidentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Incident dispatches }
+    post:
+      summary: Request emergency dispatch for an incident
+      parameters:
+        - in: path
+          name: incidentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "201": { description: Dispatch created }
+  /dispatch/{dispatchId}:
+    get:
+      summary: Get emergency dispatch
+      parameters:
+        - in: path
+          name: dispatchId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Dispatch }
+  /dispatch/{dispatchId}/assign:
+    post:
+      summary: Assign an available emergency unit
+      parameters:
+        - in: path
+          name: dispatchId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Unit assigned }
+  /dispatch/{dispatchId}/status:
+    patch:
+      summary: Advance or cancel a dispatch lifecycle
+      parameters:
+        - in: path
+          name: dispatchId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Dispatch updated }
+
 components:
   securitySchemes:
     bearerAuth:

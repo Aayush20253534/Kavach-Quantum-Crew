@@ -441,6 +441,7 @@ model Incident {
   lastEscalatedAt     DateTime?
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
+  dispatches           Dispatch[]
   @@index([status, severity, createdAt])
   @@index([tripId, userId, status])
   @@map("incidents")
@@ -667,4 +668,94 @@ enum HazardStatus {
   VERIFIED
   REJECTED
   RESOLVED
+}
+
+model EmergencyUnit {
+  id            String              @id @default(uuid()) @db.Uuid
+  name          String              @db.VarChar(120)
+  type          EmergencyUnitType
+  status        EmergencyUnitStatus @default(AVAILABLE)
+  organization  String?             @db.VarChar(160)
+  jurisdiction  String?             @db.VarChar(160)
+  contactPhone  String?             @db.VarChar(20)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  dispatches     Dispatch[]
+  @@index([type, status])
+  @@index([jurisdiction, status])
+  @@map("emergency_units")
+}
+
+model Dispatch {
+  id                String            @id @default(uuid()) @db.Uuid
+  incidentId        String            @db.Uuid
+  requestedUnitType EmergencyUnitType
+  unitId            String?           @db.Uuid
+  status            DispatchStatus    @default(REQUESTED)
+  requestedById     String            @db.Uuid
+  requestedByRole   Role
+  requestedAt       DateTime          @default(now())
+  assignedAt        DateTime?
+  dispatchedAt      DateTime?
+  enRouteAt         DateTime?
+  onSceneAt         DateTime?
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  incident          Incident          @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  unit              EmergencyUnit?    @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  events            DispatchEvent[]
+  @@index([incidentId, createdAt])
+  @@index([unitId, status])
+  @@index([status, requestedAt])
+  @@map("dispatches")
+}
+
+model DispatchEvent {
+  id         String            @id @default(uuid()) @db.Uuid
+  dispatchId String            @db.Uuid
+  type       DispatchEventType
+  actorId    String?           @db.Uuid
+  actorRole  Role?
+  note       String?           @db.VarChar(1000)
+  metadata   Json?
+  createdAt  DateTime          @default(now())
+  dispatch   Dispatch          @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
+  @@index([dispatchId, createdAt])
+  @@map("dispatch_events")
+}
+
+enum EmergencyUnitType {
+  POLICE
+  AMBULANCE
+  FIRE
+  RESCUE
+  OTHER
+}
+
+enum EmergencyUnitStatus {
+  AVAILABLE
+  DISPATCHED
+  OUT_OF_SERVICE
+}
+
+enum DispatchStatus {
+  REQUESTED
+  ASSIGNED
+  DISPATCHED
+  EN_ROUTE
+  ON_SCENE
+  COMPLETED
+  CANCELLED
+}
+
+enum DispatchEventType {
+  REQUESTED
+  ASSIGNED
+  DISPATCHED
+  EN_ROUTE
+  ON_SCENE
+  COMPLETED
+  CANCELLED
 }

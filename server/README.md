@@ -267,3 +267,8 @@ Main endpoints under `/api/v1/monitoring`:
 - `POST /sweep` - system-admin sweep for active trips; suitable for a scheduler later.
 
 Trusted location submissions also invoke the advanced evaluator after the existing Phase 7 geofence evaluation. Run `npm run test:phase14` for the dedicated suite.
+
+
+## Phase 15 - Emergency Dispatch
+
+Phase 15 adds emergency units and dispatch lifecycle management. Staff can request a unit for an open incident, assign an available matching unit, and advance the dispatch through ASSIGNED, DISPATCHED, EN_ROUTE, ON_SCENE, and COMPLETED. Cancellation and completion release the unit back to AVAILABLE. System administrators manage emergency-unit inventory/status. Realtime events: `dispatch:updated` and `emergency-unit:updated`.
