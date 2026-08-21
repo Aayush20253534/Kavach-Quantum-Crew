@@ -498,6 +498,26 @@ paths:
       summary: Deactivate a risk zone
       responses:
         "200": { description: Risk zone deactivated }
+  /monitoring/trips/{tripId}/policy:
+    get:
+      summary: Get effective advanced monitoring policy for a trip
+      responses:
+        "200": { description: Monitoring policy }
+    patch:
+      summary: Update trip monitoring thresholds or planned route
+      responses:
+        "200": { description: Monitoring policy updated }
+  /monitoring/trips/{tripId}/evaluate:
+    post:
+      summary: Evaluate advanced deterministic safety rules for a trip participant
+      responses:
+        "200": { description: Monitoring evaluation }
+  /monitoring/sweep:
+    post:
+      summary: Evaluate advanced monitoring rules across active trips
+      responses:
+        "200": { description: Monitoring sweep completed }
+
 components:
   securitySchemes:
     bearerAuth:
