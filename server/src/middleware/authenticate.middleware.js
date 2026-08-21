@@ -57,7 +57,12 @@ export const createAuthenticate = ({ db = prisma } = {}) =>
         });
       }
 
-      if (payload.type !== "access" || !payload.sub || !payload.role) {
+      if (
+        payload.type !== "access" ||
+        !payload.sub ||
+        !payload.role ||
+        !Object.values(ROLES).includes(payload.role)
+      ) {
         throw ApiError.unauthorized("Access token is invalid", {
           code: "INVALID_ACCESS_TOKEN",
         });

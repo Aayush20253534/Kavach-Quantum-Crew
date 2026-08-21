@@ -326,3 +326,7 @@ Contracts: `POST /integrations/ai/risk-assessment`, `POST /integrations/ai/hazar
 Phase 22 adds durable provider-neutral delivery jobs on top of the existing in-app notification domain. Delivery channels are `IN_APP`, `EMAIL`, `SMS`, `PUSH`, and `WHATSAPP`. External providers are injected behind a channel adapter; no vendor is hard-coded into business logic.
 
 Operational endpoints are exposed under `/api/v1/notification-deliveries` for capabilities, enqueueing, status/history lookup, manual retry, and administrator queue processing. Failed retryable sends use bounded exponential retry scheduling and every provider attempt is persisted. Raw destination values are resolved from the target account at send time rather than copied into the delivery table.
+
+## Phase 23 - Security and privacy hardening
+
+The backend applies a second rate-limit envelope to high-impact mutation routes, rejects prototype-pollution keys and abusive request object depth/size, pins JWT signing and verification to HS256, rejects unknown token roles before account lookup, marks API responses as non-cacheable, and includes regression coverage for evidence-storage path traversal. These controls complement the existing RBAC, resource ownership, CORS, Helmet, body-size, account-status and Socket.IO authorization protections.
