@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-smart_tourist_safety}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - smart-tourist-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      APP_NAME: smart-tourist-safety-backend
+      APP_VERSION: 0.1.0
+      HOST: 0.0.0.0
+      PORT: 4000
+      API_PREFIX: /api/v1
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-smart_tourist_safety}?schema=public
+      DATABASE_POOL_MAX: 10
+      DATABASE_CONNECTION_TIMEOUT_MS: 5000
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      CORS_CREDENTIALS: "true"
+      SOCKET_IO_ENABLED: "true"
+      JSON_BODY_LIMIT: 1mb
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX: 100
+      TRUST_PROXY: "false"
+      LOG_LEVEL: info
+      SHUTDOWN_TIMEOUT_MS: 10000
+    ports:
+      - "${BACKEND_PORT:-4000}:4000"
+
+volumes:
+  smart-tourist-postgres:
