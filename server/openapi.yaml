@@ -252,6 +252,66 @@ paths:
       security: [{ bearerAuth: [] }]
       responses:
         "200": { description: Trip cancelled }
+  /alerts:
+    get:
+      summary: List the authenticated tourist's safety alerts
+      tags: [Phase 8 Alerts]
+      responses:
+        '200': { description: Safety alerts }
+  /alerts/{alertId}/acknowledge:
+    post:
+      summary: Acknowledge an own safety alert
+      tags: [Phase 8 Alerts]
+      parameters:
+        - in: path
+          name: alertId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Alert acknowledged }
+  /sos:
+    post:
+      summary: Trigger a CRITICAL SOS incident for an active trip
+      tags: [Phase 8 SOS]
+      responses:
+        '201': { description: SOS incident created }
+  /incidents/mine:
+    get:
+      summary: List incidents visible to the authenticated tourist
+      tags: [Phase 8 Incidents]
+      responses:
+        '200': { description: Visible incidents }
+  /incidents/queue:
+    get:
+      summary: List the active emergency response queue
+      tags: [Phase 8 Incidents]
+      responses:
+        '200': { description: Emergency queue }
+  /incidents/{incidentId}/acknowledge:
+    post:
+      summary: Acknowledge an incident as emergency staff
+      tags: [Phase 8 Incidents]
+      parameters:
+        - in: path
+          name: incidentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Incident acknowledged }
+  /incidents/{incidentId}/start:
+    post:
+      summary: Start emergency response
+      tags: [Phase 8 Incidents]
+      responses:
+        '200': { description: Response started }
+  /incidents/{incidentId}/resolve:
+    post:
+      summary: Resolve an incident
+      tags: [Phase 8 Incidents]
+      responses:
+        '200': { description: Incident resolved }
+
+
 components:
   securitySchemes:
     bearerAuth:
