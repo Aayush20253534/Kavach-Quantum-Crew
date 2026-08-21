@@ -6,6 +6,8 @@ import { environment } from "../config/environment.js";
 import { createAlertRouter } from "../modules/alert/alert.routes.js";
 import { createDisasterManagementRouter } from "../modules/disaster-management/disaster-management.routes.js";
 import { createIncidentRouter } from "../modules/incident/incident.routes.js";
+import { createNotificationRouter } from "../modules/notification/notification.routes.js";
+import { createEscalationRouter } from "../modules/escalation/escalation.routes.js";
 import { createSosRouter } from "../modules/sos/sos.routes.js";
 import { createAuthRouter } from "../modules/auth/auth.routes.js";
 import { createGroupRouter } from "../modules/group/group.routes.js";
@@ -51,6 +53,7 @@ export const createApiRouter = (config = environment) => {
 
         phase7: { safety: `${config.API_PREFIX}/safety` },
         phase8: { alerts: `${config.API_PREFIX}/alerts`, sos: `${config.API_PREFIX}/sos`, incidents: `${config.API_PREFIX}/incidents`, disasterManagement: `${config.API_PREFIX}/disaster-management` },
+        phase9: { notifications: `${config.API_PREFIX}/notifications`, escalations: `${config.API_PREFIX}/escalations` },
       },
     }),
   );
@@ -90,6 +93,8 @@ export const createApiRouter = (config = environment) => {
   router.use("/sos", createSosRouter());
   router.use("/incidents", createIncidentRouter());
   router.use("/disaster-management", createDisasterManagementRouter());
+  router.use("/notifications", createNotificationRouter());
+  router.use("/escalations", createEscalationRouter());
 
   return router;
 };

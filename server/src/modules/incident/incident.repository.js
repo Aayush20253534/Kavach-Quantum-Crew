@@ -43,6 +43,12 @@ export const createIncidentRepository = ({ db = prisma } = {}) => ({
   },
   findSos(id) { return db.sosRequest.findUnique({ where: { id } }); },
   listEvents(incidentId) { return db.incidentEvent.findMany({ where: { incidentId }, orderBy: { createdAt: "asc" } }); },
+  listNotes(incidentId) { return db.incidentNote.findMany({ where: { incidentId }, orderBy: { createdAt: "asc" } }); },
+  addNote(incidentId, actor, note) { return db.incidentNote.create({ data: { incidentId, authorId: actor.id, authorRole: actor.role, note } }); },
+  findResponder(id) { return db.disasterManager.findFirst({ where: { id, status: "ACTIVE" }, select: { id: true } }); },
+  async assign(id, responderId, responderRole, actor, now) { return db.$transaction(async tx => { await tx.incidentAssignment.updateMany({where:{incidentId:id,unassignedAt:null},data:{unassignedAt:now}}); await tx.incidentAssignment.create({data:{incidentId:id,responderId,responderRole,assignedById:actor.id,assignedByRole:actor.role,assignedAt:now}}); return tx.incident.update({where:{id},data:{assignedToId:responderId,assignedToRole:responderRole,assignedAt:now}}); }); },
+  async unassign(id, _actor, now) { return db.$transaction(async tx => { await tx.incidentAssignment.updateMany({where:{incidentId:id,unassignedAt:null},data:{unassignedAt:now}}); return tx.incident.update({where:{id},data:{assignedToId:null,assignedToRole:null,assignedAt:null}}); }); },
+  listAssignments(incidentId) { return db.incidentAssignment.findMany({ where: { incidentId }, orderBy: { assignedAt: "asc" } }); },
   listForTourist(userId, { status, limit }) {
     return db.incident.findMany({ where: { userId, ...(status ? { status } : {}) }, orderBy: { createdAt: "desc" }, take: limit });
   },
