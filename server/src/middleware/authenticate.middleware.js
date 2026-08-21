@@ -23,7 +23,11 @@ const findAccount = async (db, id, role) => {
   if (role === ROLES.TOURIST) {
     const user = await db.user.findUnique({
       where: { id },
-      select: { ...baseSelect, onboardingCompleted: true },
+      select: {
+        ...baseSelect,
+        onboardingCompleted: true,
+        emailVerifiedAt: true,
+      },
     });
     return user ? { ...user, role } : null;
   }
@@ -77,6 +81,11 @@ export const createAuthenticate = ({ db = prisma } = {}) =>
       if (user.status !== "ACTIVE") {
         throw ApiError.forbidden("Account is not active", {
           code: "ACCOUNT_INACTIVE",
+        });
+      }
+      if (user.role === ROLES.TOURIST && !user.emailVerifiedAt) {
+        throw ApiError.forbidden("Email verification is required", {
+          code: "EMAIL_VERIFICATION_REQUIRED",
         });
       }
 
