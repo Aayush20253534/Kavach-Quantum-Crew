@@ -127,10 +127,31 @@ model Trip {
   group          TripGroup?
   safetyId       TripSafetyId?
   tourist        User          @relation(fields: [touristId], references: [id], onDelete: Cascade)
+  monitoringPolicy TripMonitoringPolicy?
 
   @@index([touristId, status, createdAt])
   @@index([plannedStartAt, plannedEndAt])
   @@map("trips")
+}
+
+
+model TripMonitoringPolicy {
+  id                       String   @id @default(uuid()) @db.Uuid
+  tripId                   String   @unique @db.Uuid
+  enabled                  Boolean  @default(true)
+  trackingGapAfterMinutes  Int      @default(5)
+  inactivityAfterMinutes   Int      @default(15)
+  inactivityRadiusM        Float    @default(50)
+  groupSeparationM         Float    @default(500)
+  routeDeviationM          Float    @default(300)
+  overtimeGraceMinutes     Int      @default(15)
+  plannedRoute             Json?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  trip                     Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([enabled, updatedAt])
+  @@map("trip_monitoring_policies")
 }
 
 model TripSafetyId {
@@ -491,6 +512,11 @@ enum SafetyAlertType {
   RISK_ZONE_ENTRY
   MISSED_CHECK_IN
   STALE_LOCATION
+  TRACKING_INTERRUPTION
+  INACTIVITY
+  TRIP_OVERTIME
+  GROUP_SEPARATION
+  ROUTE_DEVIATION
 }
 enum SafetyAlertLevel {
   WARNING
