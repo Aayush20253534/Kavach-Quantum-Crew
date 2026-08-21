@@ -11,6 +11,7 @@ export const signAccessToken = (user, config = environment) =>
       expiresIn: config.ACCESS_TOKEN_TTL,
       issuer: config.JWT_ISSUER,
       audience: config.JWT_AUDIENCE,
+      algorithm: "HS256",
     },
   );
 
@@ -22,6 +23,7 @@ export const signRefreshToken = ({ userId, sessionId }, config = environment) =>
       expiresIn: `${config.REFRESH_TOKEN_TTL_DAYS}d`,
       issuer: config.JWT_ISSUER,
       audience: config.JWT_AUDIENCE,
+      algorithm: "HS256",
     },
   );
 
@@ -29,10 +31,12 @@ export const verifyAccessToken = (token, config = environment) =>
   jwt.verify(token, config.ACCESS_TOKEN_SECRET, {
     issuer: config.JWT_ISSUER,
     audience: config.JWT_AUDIENCE,
+    algorithms: ["HS256"],
   });
 
 export const verifyRefreshToken = (token, config = environment) =>
   jwt.verify(token, config.REFRESH_TOKEN_SECRET, {
     issuer: config.JWT_ISSUER,
     audience: config.JWT_AUDIENCE,
+    algorithms: ["HS256"],
   });
