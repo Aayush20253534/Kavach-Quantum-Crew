@@ -51,6 +51,10 @@ const environmentSchema = z
       900000,
     ),
     RATE_LIMIT_MAX: integerFromEnvironment(1, 100000).default(100),
+    SENSITIVE_RATE_LIMIT_WINDOW_MS: integerFromEnvironment(1000, 86400000).default(60000),
+    SENSITIVE_RATE_LIMIT_MAX: integerFromEnvironment(1, 10000).default(20),
+    SECURITY_MAX_OBJECT_DEPTH: integerFromEnvironment(2, 100).default(20),
+    SECURITY_MAX_OBJECT_KEYS: integerFromEnvironment(10, 100000).default(2000),
     TRUST_PROXY: booleanFromEnvironment.default(false),
     LOG_LEVEL: z
       .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
