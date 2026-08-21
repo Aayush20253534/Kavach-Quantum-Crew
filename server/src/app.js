@@ -3,6 +3,8 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 
+import { ApiResponse } from "./common/responses/ApiResponse.js";
+
 import { buildCorsOptions } from "./config/cors.js";
 import { environment } from "./config/environment.js";
 import { httpLogger } from "./config/logger.js";
@@ -57,6 +59,19 @@ export const createApp = ({
 
   const healthRouter = createHealthRouter(
     healthService === undefined ? {} : { service: healthService },
+  );
+
+  app.get("/", (_request, response) =>
+    ApiResponse.success(response, {
+      message: "Smart Tourist Safety backend is running",
+      data: {
+        service: config.APP_NAME,
+        version: config.APP_VERSION,
+        api: config.API_PREFIX,
+        health: "/health",
+        readiness: "/health/ready",
+      },
+    }),
   );
 
   // Root probes are convenient for orchestrators; prefixed probes keep the API consistent.
