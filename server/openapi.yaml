@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Smart Tourist Safety API
   version: 0.2.0
-  description: Phase 0 infrastructure plus Phase 1 tourist authentication and onboarding.
+  description: Phase 0 infrastructure plus authentication, tourist profile, and Phase 4 trip lifecycle.
 servers:
   - url: http://localhost:4000
     description: Local development
@@ -10,6 +10,7 @@ tags:
   - name: Health
   - name: Auth
   - name: Tourist
+  - name: Trips
 paths:
   /health:
     get:
@@ -184,6 +185,73 @@ paths:
           description: Tourist profile updated.
         "400":
           description: Onboarding must be completed first or data is invalid.
+  /api/v1/trips:
+    post:
+      tags: [Trips]
+      summary: Create a planned solo or group trip
+      security: [{ bearerAuth: [] }]
+      responses:
+        "201": { description: Trip created }
+  /api/v1/trips/current:
+    get:
+      tags: [Trips]
+      summary: Get the tourist's current planned or active trip
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Current trip or null }
+  /api/v1/trips/history:
+    get:
+      tags: [Trips]
+      summary: Get completed and cancelled trip history
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Trip history }
+  /api/v1/trips/{tripId}/consents:
+    post:
+      tags: [Trips]
+      summary: Grant location-tracking or emergency-sharing consent
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: tripId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Consent granted }
+  /api/v1/trips/{tripId}/safety-id:
+    post:
+      tags: [Trips]
+      summary: Issue an opaque trip-scoped Safety ID after required consents
+      description: Does not generate QR or perform blockchain anchoring. Those remain partner-owned integrations.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: tripId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "201": { description: Safety ID issued }
+  /api/v1/trips/{tripId}/start:
+    post:
+      tags: [Trips]
+      summary: Start a planned trip after consent and Safety ID checks
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Trip started }
+  /api/v1/trips/{tripId}/complete:
+    post:
+      tags: [Trips]
+      summary: Complete an active trip and revoke temporary access
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Trip completed }
+  /api/v1/trips/{tripId}/cancel:
+    post:
+      tags: [Trips]
+      summary: Cancel a planned or active trip and revoke temporary access
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Trip cancelled }
 components:
   securitySchemes:
     bearerAuth:
