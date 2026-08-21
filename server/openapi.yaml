@@ -14,6 +14,7 @@ tags:
   - name: Notifications
   - name: Incidents
   - name: Escalations
+  - name: Disaster Management
 paths:
   /health:
     get:
@@ -369,6 +370,60 @@ paths:
       description: System-admin endpoint intended for cron or a deployment scheduler.
       responses:
         "200": { description: Escalation sweep completed }
+  /api/v1/disaster-management/dashboard:
+    get:
+      tags: [Disaster Management]
+      summary: Get emergency operations dashboard metrics
+      responses:
+        "200": { description: Dashboard summary returned }
+  /api/v1/disaster-management/responders:
+    get:
+      tags: [Disaster Management]
+      summary: List active responders with workload and capacity
+      parameters:
+        - { in: query, name: status, schema: { type: string, enum: [AVAILABLE, BUSY, OFF_DUTY] } }
+        - { in: query, name: organization, schema: { type: string } }
+        - { in: query, name: jurisdiction, schema: { type: string } }
+      responses:
+        "200": { description: Responder directory returned }
+  /api/v1/disaster-management/responders/me:
+    get:
+      tags: [Disaster Management]
+      summary: Get authenticated disaster-manager profile and workload
+      responses:
+        "200": { description: Responder profile returned }
+  /api/v1/disaster-management/responders/me/status:
+    patch:
+      tags: [Disaster Management]
+      summary: Update authenticated responder availability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [AVAILABLE, BUSY, OFF_DUTY] }
+      responses:
+        "200": { description: Responder status updated }
+  /api/v1/disaster-management/responders/me/incidents:
+    get:
+      tags: [Disaster Management]
+      summary: List incidents assigned to the authenticated responder
+      responses:
+        "200": { description: Assigned incidents returned }
+  /api/v1/disaster-management/responders/{responderId}:
+    get:
+      tags: [Disaster Management]
+      summary: Get responder details and workload
+      parameters:
+        - in: path
+          name: responderId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Responder returned }
 components:
   securitySchemes:
     bearerAuth:

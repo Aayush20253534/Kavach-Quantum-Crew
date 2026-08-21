@@ -12,6 +12,7 @@ module.exports = {
     "<rootDir>/tests/phase8/**/*.test.js",
     "<rootDir>/tests/phase9/**/*.test.js",
     "<rootDir>/tests/phase10/**/*.test.js",
+    "<rootDir>/tests/phase11/**/*.test.js",
   ],
   clearMocks: true,
   restoreMocks: true,
