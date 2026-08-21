@@ -70,6 +70,8 @@ model User {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
   trips               Trip[]
+  ledGroups           TripGroup[]   @relation("GroupLeader")
+  groupMemberships    GroupMember[]
 
   @@index([status])
   @@index([nationality])
@@ -166,6 +168,7 @@ model Trip {
   tourist  User           @relation(fields: [touristId], references: [id], onDelete: Cascade)
   safetyId TripSafetyId?
   consents TripConsent[]
+  group    TripGroup?
 
   @@index([touristId, status, createdAt])
   @@index([plannedStartAt, plannedEndAt])
@@ -203,4 +206,65 @@ model TripConsent {
   @@unique([tripId, type])
   @@index([tripId, status])
   @@map("trip_consents")
+}
+
+enum GroupStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum GroupMemberRole {
+  LEADER
+  MEMBER
+}
+
+model TripGroup {
+  id        String      @id @default(uuid()) @db.Uuid
+  tripId    String      @unique @db.Uuid
+  leaderId  String      @db.Uuid
+  status    GroupStatus @default(ACTIVE)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  closedAt  DateTime?
+
+  trip        Trip              @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  leader      User              @relation("GroupLeader", fields: [leaderId], references: [id], onDelete: Cascade)
+  members     GroupMember[]
+  invitations GroupInvitation[]
+
+  @@index([leaderId, status])
+  @@map("trip_groups")
+}
+
+model GroupMember {
+  id        String          @id @default(uuid()) @db.Uuid
+  groupId   String          @db.Uuid
+  userId    String          @db.Uuid
+  role      GroupMemberRole @default(MEMBER)
+  joinedAt  DateTime        @default(now())
+  leftAt    DateTime?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  group TripGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([userId, leftAt])
+  @@map("group_members")
+}
+
+model GroupInvitation {
+  id        String   @id @default(uuid()) @db.Uuid
+  groupId   String   @db.Uuid
+  code      String   @unique @db.VarChar(32)
+  tokenHash String   @unique @db.VarChar(64)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  group TripGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, expiresAt, revokedAt])
+  @@map("group_invitations")
 }
