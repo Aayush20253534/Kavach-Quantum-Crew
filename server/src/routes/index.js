@@ -54,6 +54,7 @@ export const createApiRouter = (config = environment) => {
         phase7: { safety: `${config.API_PREFIX}/safety` },
         phase8: { alerts: `${config.API_PREFIX}/alerts`, sos: `${config.API_PREFIX}/sos`, incidents: `${config.API_PREFIX}/incidents`, disasterManagement: `${config.API_PREFIX}/disaster-management` },
         phase9: { notifications: `${config.API_PREFIX}/notifications`, escalations: `${config.API_PREFIX}/escalations` },
+        phase10: { realtime: "Socket.IO authenticated realtime events" },
       },
     }),
   );
