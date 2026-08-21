@@ -101,3 +101,7 @@ The backend currently forwards provider output rather than enforcing this respon
 - stable provider response
 
 Use the minimum personal/location data required for the model.
+
+## Authentication baseline
+
+These staff-only integration endpoints are unaffected by the public tourist signup OTP flow. Tourist accounts cannot call them, and unverified tourists cannot establish normal authenticated sessions in the first place.
