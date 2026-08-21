@@ -13,6 +13,7 @@ import { createAuthRouter } from "../modules/auth/auth.routes.js";
 import { createGroupRouter } from "../modules/group/group.routes.js";
 import { createHealthRouter } from "../modules/health/health.routes.js";
 import { createHazardRouter } from "../modules/hazard/hazard.routes.js";
+import { createRiskZoneRouter } from "../modules/risk-zone/risk-zone.routes.js";
 import { createSafetyRouter } from "../modules/safety/safety.routes.js";
 import { createTouristRouter } from "../modules/tourist/tourist.routes.js";
 import { createTrackingRouter } from "../modules/tracking/tracking.routes.js";
@@ -58,6 +59,7 @@ export const createApiRouter = (config = environment) => {
         phase10: { realtime: "Socket.IO authenticated realtime events" },
         phase11: { disasterManagement: `${config.API_PREFIX}/disaster-management` },
         phase12: { hazards: `${config.API_PREFIX}/hazards` },
+        phase13: { riskZones: `${config.API_PREFIX}/risk-zones` },
       },
     }),
   );
@@ -100,6 +102,7 @@ export const createApiRouter = (config = environment) => {
   router.use("/notifications", createNotificationRouter());
   router.use("/escalations", createEscalationRouter());
   router.use("/hazards", createHazardRouter());
+  router.use("/risk-zones", createRiskZoneRouter());
 
   return router;
 };

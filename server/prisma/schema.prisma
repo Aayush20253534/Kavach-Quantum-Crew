@@ -320,18 +320,26 @@ model LatestTrustedLocation {
 }
 
 model SafetyZone {
-  id          String         @id @default(uuid()) @db.Uuid
-  name        String         @db.VarChar(120)
-  description String?
-  type        SafetyZoneType
-  severity    SafetySeverity @default(LOW)
-  latitude    Float
-  longitude   Float
-  radiusM     Float
-  active      Boolean        @default(true)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id            String           @id @default(uuid()) @db.Uuid
+  name          String           @db.VarChar(120)
+  description   String?
+  type          SafetyZoneType
+  severity      SafetySeverity   @default(LOW)
+  geometryType  RiskZoneGeometry @default(CIRCLE)
+  latitude      Float?
+  longitude     Float?
+  radiusM       Float?
+  polygon       Json?
+  active        Boolean          @default(true)
+  validFrom     DateTime?
+  validUntil    DateTime?
+  createdById   String?          @db.Uuid
+  createdByRole Role?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
   @@index([active, type])
+  @@index([active, severity, geometryType])
+  @@index([validFrom, validUntil])
   @@map("safety_zones")
 }
 
@@ -355,11 +363,13 @@ model GeofenceEvent {
   tripId     String            @db.Uuid
   userId     String            @db.Uuid
   zoneId     String            @db.Uuid
+  locationPingId String?       @db.Uuid
   type       GeofenceEventType
   occurredAt DateTime          @default(now())
   createdAt  DateTime          @default(now())
   @@index([tripId, userId, zoneId, occurredAt])
   @@index([zoneId, occurredAt])
+  @@index([locationPingId])
   @@map("geofence_events")
 }
 
@@ -457,6 +467,10 @@ enum LocationTrustStatus {
 enum SafetyZoneType {
   SAFE
   RISK
+}
+enum RiskZoneGeometry {
+  CIRCLE
+  POLYGON
 }
 enum SafetySeverity {
   LOW
