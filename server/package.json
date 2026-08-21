@@ -14,6 +14,7 @@
     "format:check": "prettier --check .",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
     "test:phase0": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/phase0 --runInBand",
+    "test:phase8": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/phase8 --runInBand",
     "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage --runInBand",
     "test:unit": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/unit --runInBand",
