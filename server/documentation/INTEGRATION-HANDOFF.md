@@ -3,13 +3,14 @@
 ## Frontend team
 
 Read:
-1. `ENDPOINTS.md`
-2. `ROLE-PERMISSIONS.md`
-3. `REALTIME-EVENTS.md`
-4. `ERROR-CATALOGUE.md`
-5. `openapi.yaml`
+1. `EMAIL-VERIFICATION.md`
+2. `ENDPOINTS.md`
+3. `ROLE-PERMISSIONS.md`
+4. `REALTIME-EVENTS.md`
+5. `ERROR-CATALOGUE.md`
+6. `openapi.yaml`
 
-Frontend owns device GPS acquisition, UI state, access-token usage/refresh flow, multipart evidence upload, and Socket.IO reconnect/subscription behavior.
+Frontend must implement the signup verification UX: register -> OTP entry -> verify-email, expose resend after cooldown, and only enter the authenticated app after verification succeeds. Future normal login does not require OTP. Frontend also owns device GPS acquisition, UI state, access-token usage/refresh flow, multipart evidence upload, and Socket.IO reconnect/subscription behavior.
 
 ## AI team
 

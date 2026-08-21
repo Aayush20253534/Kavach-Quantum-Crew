@@ -19,6 +19,13 @@
 | Code | Meaning |
 |---|---|
 | `INVALID_ACCESS_TOKEN` | Invalid/expired/malformed token or unsupported role. |
+| `EMAIL_VERIFICATION_REQUIRED` | Tourist credentials are valid but the current email has not been verified. |
+| `EMAIL_OTP_INVALID` | OTP is wrong, missing from active state, or intentionally returned generically. |
+| `EMAIL_OTP_EXPIRED` | Active verification OTP expired. |
+| `EMAIL_OTP_ATTEMPTS_EXCEEDED` | Maximum invalid OTP attempts were reached. |
+| `EMAIL_ALREADY_VERIFIED` | Verification was requested for an already verified email. |
+| `EMAIL_PROVIDER_NOT_CONFIGURED` | Mail provider configuration is unavailable. |
+| `EMAIL_DELIVERY_FAILED` | Gmail SMTP delivery failed. |
 | `REQUEST_KEY_FORBIDDEN` | Forbidden prototype-pollution-shaped key. |
 | `REQUEST_STRUCTURE_TOO_DEEP` | Request nesting exceeds configured maximum. |
 | `REQUEST_STRUCTURE_TOO_LARGE` | Request contains too many fields. |

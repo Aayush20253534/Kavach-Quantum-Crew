@@ -73,3 +73,7 @@ Recommended proof response:
   "status": "ACCEPTED"
 }
 ```
+
+## Authentication baseline
+
+These staff-only integration endpoints are unaffected by the public tourist signup OTP flow. Tourist accounts cannot call them, and unverified tourists cannot establish normal authenticated sessions in the first place.
