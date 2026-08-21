@@ -2,7 +2,7 @@
 
 > Base prefix: `/api/v1` unless explicitly shown otherwise.
 
-This catalogue documents **145 mounted HTTP routes/aliases** in the current backend. Authorization shown here is the effective high-level rule; individual services also enforce ownership, membership, lifecycle, consent, and resource-visibility checks.
+This catalogue documents **148 mounted HTTP routes/aliases** in the current backend. Authorization shown here is the effective high-level rule; individual services also enforce ownership, membership, lifecycle, consent, and resource-visibility checks.
 
 ## Conventions
 
@@ -16,6 +16,7 @@ This catalogue documents **145 mounted HTTP routes/aliases** in the current back
 
 | Method | Endpoint | Access | Purpose |
 |---|---|---|---|
+| `GET` | `/` | Public | Friendly service landing response with API and health entry points. |
 | `GET` | `/api/v1` | Public | API discovery document with service/version and major route groups. |
 | `GET` | `/health` | Public | Process liveness probe; does not require PostgreSQL. |
 | `GET` | `/health/live` | Public | Alias of the liveness probe. |
@@ -32,8 +33,10 @@ This catalogue documents **145 mounted HTTP routes/aliases** in the current back
 
 | Method | Endpoint | Access | Purpose |
 |---|---|---|---|
-| `POST` | `/api/v1/auth/register` | Public | Create a TOURIST account. |
-| `POST` | `/api/v1/auth/login` | Public | Authenticate by supported identifier and password. |
+| `POST` | `/api/v1/auth/register` | Public | Create an unverified TOURIST account and send a six-digit email OTP; no normal session is issued yet. |
+| `POST` | `/api/v1/auth/verify-email` | Public | Verify the tourist email with the six-digit OTP and issue the initial access/refresh session. |
+| `POST` | `/api/v1/auth/resend-verification` | Public | Request a replacement verification OTP subject to cooldown; response is intentionally generic. |
+| `POST` | `/api/v1/auth/login` | Public | Authenticate by supported identifier and password; unverified tourists receive `EMAIL_VERIFICATION_REQUIRED`. |
 | `POST` | `/api/v1/auth/refresh` | Public / refresh session | Rotate refresh session and issue a new access token. |
 | `POST` | `/api/v1/auth/logout` | Refresh session | Revoke the supplied/current refresh session. |
 | `GET` | `/api/v1/auth/me` | Authenticated | Return the current account identity. |
