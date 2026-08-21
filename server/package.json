@@ -41,7 +41,8 @@
     "test:phase19": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand --testMatch=\"**/tests/phase19/**/*.test.js\"",
     "test:phase20-21": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand --testMatch=\"**/tests/phase20-21/**/*.test.js\"",
     "test:phase22": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand --testMatch=\"**/tests/phase22/**/*.test.js\"",
-    "test:phase23": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand --testMatch=\"**/tests/phase23/**/*.test.js\""
+    "test:phase23": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand --testMatch=\"**/tests/phase23/**/*.test.js\"",
+    "test:phase24": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand --testMatch=\"**/tests/phase24/**/*.test.js\""
   },
   "keywords": [
     "tourism",
