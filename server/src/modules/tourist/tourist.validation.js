@@ -17,6 +17,8 @@ export const onboardingBodySchema = z.object({
 export const updateTouristProfileBodySchema = z
   .object({
     name: z.string().trim().min(2).max(120).optional(),
+    username: z.string().trim().min(3).max(40).regex(/^[a-zA-Z0-9._-]+$/).optional(),
+    email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()).optional(),
     phone: phone.optional(),
     profilePicUrl: z.string().trim().url().max(2048).optional().nullable(),
     gender: gender.optional(),
