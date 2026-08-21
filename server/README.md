@@ -128,3 +128,26 @@ npm run prisma:migrate:deploy
 ### Not part of Phase 1
 
 Tourist dashboard live location, nearby safe zones, risk scoring, SOS/incident workflow, trip history, trip creation, group QR join/create, tracking, chatbot, and responder dispatch remain later phases. Their module placeholders stay untouched so Phase 1 does not pretend the emergency system exists before its foundations do.
+
+## Phase 4: Trips, Safety ID and Consent
+
+Phase 4 adds the backend-owned trip lifecycle only. AI/ML, blockchain anchoring, and QR generation remain separate team-owned integrations and are intentionally not implemented here.
+
+Tourist endpoints:
+
+- `POST /api/v1/trips` — create one `PLANNED` solo/group trip.
+- `GET /api/v1/trips/current` — fetch the current `PLANNED` or `ACTIVE` trip.
+- `GET /api/v1/trips/history` — paginated completed/cancelled history.
+- `GET /api/v1/trips/:tripId` — fetch an owned trip.
+- `POST /api/v1/trips/:tripId/consents` — grant `LOCATION_TRACKING` or `EMERGENCY_SHARING` consent.
+- `DELETE /api/v1/trips/:tripId/consents/:consentId` — withdraw consent.
+- `POST /api/v1/trips/:tripId/safety-id` — issue/reissue an opaque trip-scoped Safety ID after both consents are granted.
+- `POST /api/v1/trips/:tripId/start` — start after consent + active Safety ID checks.
+- `POST /api/v1/trips/:tripId/complete` — complete and revoke temporary sharing/ID access.
+- `POST /api/v1/trips/:tripId/cancel` — cancel a planned/active trip and revoke temporary access.
+
+### Partner integration boundary
+
+The core backend stores the authoritative `Trip`, `TripSafetyId`, and `TripConsent` records. It does **not** generate a QR, call a blockchain contract, hash/anchor the Safety ID, run AI scoring, or implement `/assess`. Those partner-owned services should consume these backend records through later integration adapters without changing the Phase 4 lifecycle.
+
+The agreed AI contract remains a later backend integration around `POST /trips/:id/safety-assessments` -> AI service `POST /assess`. The blockchain team owns Safety ID proof issuance/revocation/verification and consent anchoring. No raw PII, medical data, or GPS is added to any blockchain payload by this phase.
