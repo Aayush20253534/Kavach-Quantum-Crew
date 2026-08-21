@@ -330,3 +330,17 @@ Operational endpoints are exposed under `/api/v1/notification-deliveries` for ca
 ## Phase 23 - Security and privacy hardening
 
 The backend applies a second rate-limit envelope to high-impact mutation routes, rejects prototype-pollution keys and abusive request object depth/size, pins JWT signing and verification to HS256, rejects unknown token roles before account lookup, marks API responses as non-cacheable, and includes regression coverage for evidence-storage path traversal. These controls complement the existing RBAC, resource ownership, CORS, Helmet, body-size, account-status and Socket.IO authorization protections.
+
+
+## Phase 24 - Audit and observability
+
+System administrators can inspect persisted audit events and operational diagnostics through `/api/v1/audit` and `/api/v1/observability`. HTTP request metrics are maintained in-process and include request totals, status classes, active requests, and average request duration. Diagnostics expose bounded process memory, uptime, database health, and the metrics snapshot. Audit metadata can carry the request ID for correlation without changing the existing `AuditLog` schema.
+
+Key endpoints:
+
+- `GET /api/v1/audit`
+- `GET /api/v1/audit/summary`
+- `GET /api/v1/observability/metrics`
+- `GET /api/v1/observability/diagnostics`
+
+All Phase 24 endpoints require the `SYSTEM_ADMIN` role.
