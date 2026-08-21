@@ -13,6 +13,7 @@ import { createAuthRouter } from "../modules/auth/auth.routes.js";
 import { createGroupRouter } from "../modules/group/group.routes.js";
 import { createHealthRouter } from "../modules/health/health.routes.js";
 import { createHazardRouter } from "../modules/hazard/hazard.routes.js";
+import { createMonitoringRouter } from "../modules/monitoring/monitoring.routes.js";
 import { createRiskZoneRouter } from "../modules/risk-zone/risk-zone.routes.js";
 import { createSafetyRouter } from "../modules/safety/safety.routes.js";
 import { createTouristRouter } from "../modules/tourist/tourist.routes.js";
@@ -60,6 +61,7 @@ export const createApiRouter = (config = environment) => {
         phase11: { disasterManagement: `${config.API_PREFIX}/disaster-management` },
         phase12: { hazards: `${config.API_PREFIX}/hazards` },
         phase13: { riskZones: `${config.API_PREFIX}/risk-zones` },
+        phase14: { monitoring: `${config.API_PREFIX}/monitoring` },
       },
     }),
   );
@@ -103,6 +105,7 @@ export const createApiRouter = (config = environment) => {
   router.use("/escalations", createEscalationRouter());
   router.use("/hazards", createHazardRouter());
   router.use("/risk-zones", createRiskZoneRouter());
+  router.use("/monitoring", createMonitoringRouter());
 
   return router;
 };
