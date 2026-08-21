@@ -39,7 +39,6 @@ CREATE TABLE "geofence_events" (
   "tripId" UUID NOT NULL,
   "userId" UUID NOT NULL,
   "zoneId" UUID NOT NULL,
-  "locationPingId" UUID,
   "type" "GeofenceEventType" NOT NULL,
   "occurredAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -76,6 +75,5 @@ ALTER TABLE "trip_check_ins" ADD CONSTRAINT "trip_check_ins_userId_fkey" FOREIGN
 ALTER TABLE "geofence_events" ADD CONSTRAINT "geofence_events_tripId_fkey" FOREIGN KEY ("tripId") REFERENCES "trips"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "geofence_events" ADD CONSTRAINT "geofence_events_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "geofence_events" ADD CONSTRAINT "geofence_events_zoneId_fkey" FOREIGN KEY ("zoneId") REFERENCES "safety_zones"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "geofence_events" ADD CONSTRAINT "geofence_events_locationPingId_fkey" FOREIGN KEY ("locationPingId") REFERENCES "location_pings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE "safety_alerts" ADD CONSTRAINT "safety_alerts_tripId_fkey" FOREIGN KEY ("tripId") REFERENCES "trips"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "safety_alerts" ADD CONSTRAINT "safety_alerts_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
