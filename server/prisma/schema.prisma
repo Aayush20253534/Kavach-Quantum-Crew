@@ -1,0 +1,9 @@
+generator client {
+  // This JavaScript backend uses the legacy JS generator for runtime compatibility.
+  // Prisma 7 still supports it; migrate to `prisma-client` when the app moves to TS.
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}

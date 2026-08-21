@@ -1,0 +1,100 @@
+openapi: 3.1.0
+info:
+  title: Smart Tourist Safety API
+  version: 0.1.0
+  description: Phase 0 operational endpoints. Business APIs begin in later phases.
+servers:
+  - url: http://localhost:4000
+    description: Local development
+tags:
+  - name: Health
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Process liveness
+      operationId: getLiveness
+      responses:
+        "200":
+          description: The Node.js process is alive.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+  /health/ready:
+    get:
+      tags: [Health]
+      summary: Service readiness
+      operationId: getReadiness
+      responses:
+        "200":
+          description: Required dependencies are ready.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "503":
+          description: At least one required dependency is unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+  /health/database:
+    get:
+      tags: [Health]
+      summary: PostgreSQL health and latency
+      operationId: getDatabaseHealth
+      responses:
+        "200":
+          description: PostgreSQL responded to a probe.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "503":
+          description: PostgreSQL did not respond.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+components:
+  schemas:
+    SuccessResponse:
+      type: object
+      required: [success, message, data, requestId, timestamp]
+      properties:
+        success:
+          type: boolean
+          const: true
+        message:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        requestId:
+          type: string
+          description: Server-generated UUID or a validated caller-provided correlation ID.
+        timestamp:
+          type: string
+          format: date-time
+    ErrorResponse:
+      type: object
+      required: [success, error, requestId, timestamp]
+      properties:
+        success:
+          type: boolean
+          const: false
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details: {}
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
