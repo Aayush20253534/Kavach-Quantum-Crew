@@ -31,7 +31,8 @@
     "test:phase9": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/phase9 --runInBand",
     "test:phase10": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/phase10 --runInBand",
     "test:phase11": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/phase11 --runInBand",
-    "test:phase12": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/phase12 --runInBand"
+    "test:phase12": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/phase12 --runInBand",
+    "test:phase13": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/phase13 --runInBand"
   },
   "keywords": [
     "tourism",

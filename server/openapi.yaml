@@ -465,6 +465,39 @@ paths:
         "200": { description: Hazard resolved }
 
 
+  /risk-zones:
+    get:
+      summary: List effective risk zones
+      responses:
+        "200": { description: Risk zone list }
+    post:
+      summary: Create a circle or polygon risk zone
+      responses:
+        "201": { description: Risk zone created }
+  /risk-zones/evaluate:
+    post:
+      summary: Evaluate coordinates against effective risk zones
+      responses:
+        "200": { description: Geofence evaluation }
+  /risk-zones/{zoneId}:
+    get:
+      summary: Get a risk zone
+      responses:
+        "200": { description: Risk zone }
+    patch:
+      summary: Update a risk zone
+      responses:
+        "200": { description: Risk zone updated }
+  /risk-zones/{zoneId}/activate:
+    post:
+      summary: Activate a risk zone
+      responses:
+        "200": { description: Risk zone activated }
+  /risk-zones/{zoneId}/deactivate:
+    post:
+      summary: Deactivate a risk zone
+      responses:
+        "200": { description: Risk zone deactivated }
 components:
   securitySchemes:
     bearerAuth:
