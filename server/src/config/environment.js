@@ -65,6 +65,8 @@ const environmentSchema = z
     REFRESH_COOKIE_NAME: z.string().trim().min(1).default("sts_refresh"),
     INCIDENT_ACK_TIMEOUT_MINUTES: integerFromEnvironment(1, 1440).default(5),
     INCIDENT_ESCALATION_INTERVAL_MINUTES: integerFromEnvironment(1, 1440).default(5),
+    EVIDENCE_MAX_FILE_BYTES: integerFromEnvironment(1024, 52428800).default(10485760),
+    EVIDENCE_STORAGE_DIR: z.string().trim().min(1).default("storage/evidence"),
   })
   .superRefine((value, context) => {
     const origins = value.CORS_ORIGINS.split(",").map((origin) =>
