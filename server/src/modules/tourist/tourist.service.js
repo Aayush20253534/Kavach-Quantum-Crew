@@ -36,6 +36,12 @@ export const createTouristService = ({ repository = touristRepository } = {}) =>
         });
       }
 
+      if (user.onboardingCompleted) {
+        throw ApiError.conflict("Tourist onboarding is already complete", {
+          code: "ONBOARDING_ALREADY_COMPLETED",
+        });
+      }
+
       const updated = await repository.completeOnboarding(userId, {
         gender: input.gender,
         age: input.age,
@@ -59,6 +65,24 @@ export const createTouristService = ({ repository = touristRepository } = {}) =>
         });
       }
 
+      if (input.username && input.username !== existing.username) {
+        const conflict = await repository.findUsernameConflict(input.username, userId);
+        if (conflict) {
+          throw ApiError.conflict("Username is already in use", {
+            code: "USERNAME_ALREADY_EXISTS",
+          });
+        }
+      }
+
+      if (input.email && input.email !== existing.email) {
+        const conflict = await repository.findEmailConflict(input.email, userId);
+        if (conflict) {
+          throw ApiError.conflict("Email is already in use", {
+            code: "EMAIL_ALREADY_EXISTS",
+          });
+        }
+      }
+
       if (input.phone && input.phone !== existing.phone) {
         const conflict = await repository.findPhoneConflict(input.phone, userId);
         if (conflict) {
@@ -70,6 +94,8 @@ export const createTouristService = ({ repository = touristRepository } = {}) =>
 
       const data = {};
       if (input.name !== undefined) data.name = input.name;
+      if (input.username !== undefined) data.username = input.username;
+      if (input.email !== undefined) data.email = input.email;
       if (input.phone !== undefined) data.phone = input.phone;
       if (input.profilePicUrl !== undefined) data.profilePicUrl = input.profilePicUrl;
       if (input.gender !== undefined) data.gender = input.gender;
