@@ -255,3 +255,15 @@ Main endpoints:
 - `POST /api/v1/risk-zones/evaluate`
 
 Existing Phase 7 circle zones remain valid and migrate as `CIRCLE` automatically.
+
+## Phase 14 - Advanced Trip Safety Monitoring
+
+Phase 14 adds per-trip monitoring policies and deterministic rules for tracking interruption, prolonged inactivity, trip overtime, group separation, and optional planned-route deviation. Findings create normal `SafetyAlert` records and therefore continue through the existing incident, notification, escalation, and realtime response pipeline.
+
+Main endpoints under `/api/v1/monitoring`:
+- `GET /trips/:tripId/policy`
+- `PATCH /trips/:tripId/policy`
+- `POST /trips/:tripId/evaluate`
+- `POST /sweep` - system-admin sweep for active trips; suitable for a scheduler later.
+
+Trusted location submissions also invoke the advanced evaluator after the existing Phase 7 geofence evaluation. Run `npm run test:phase14` for the dedicated suite.
