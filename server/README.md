@@ -305,3 +305,10 @@ Incident evidence follows the same participant visibility rules as incident comm
 System administrators have a dedicated `/api/v1/admin` surface for platform-wide dashboard counts, safe account search and inspection, account status management, and read-only inspection of core operational resources. Suspending or disabling an account revokes active refresh sessions. Admin responses never expose password hashes.
 
 Key routes: `GET /admin/dashboard`, `GET /admin/accounts`, `GET /admin/accounts/:role/:accountId`, `PATCH /admin/accounts/:role/:accountId/status`, and `GET /admin/resources/:resource`.
+
+
+## Phase 19 - Analytics and Reporting
+
+Phase 19 exposes staff-only, read-only operational analytics under `/api/v1/analytics`. Disaster Managers and System Admins can query platform overview metrics, incident/trip/hazard/SOS breakdowns, dispatch performance, responder workload, and response-time aggregates. Optional `from` and `to` ISO timestamps constrain time-based reports.
+
+Endpoints: `GET /analytics/overview`, `/incidents`, `/trips`, `/hazards`, `/sos`, `/dispatch`, `/responders`, and `/response-times`. Run `npm run test:phase19` for the dedicated suite.
