@@ -256,3 +256,248 @@ enum GroupMemberRole {
   LEADER
   MEMBER
 }
+
+
+model TripParticipantConsent {
+  id        String   @id @default(uuid()) @db.Uuid
+  tripId    String   @db.Uuid
+  userId    String   @db.Uuid
+  grantedAt DateTime @default(now())
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([tripId, userId])
+  @@index([userId, revokedAt])
+  @@map("trip_participant_consents")
+}
+
+model LocationPing {
+  id            String              @id @default(uuid()) @db.Uuid
+  tripId        String              @db.Uuid
+  userId        String              @db.Uuid
+  latitude      Float
+  longitude     Float
+  accuracyM     Float
+  altitudeM     Float?
+  headingDeg    Float?
+  speedMps      Float?
+  batteryLevel  Int?
+  networkStatus NetworkStatus?
+  capturedAt    DateTime
+  receivedAt    DateTime            @default(now())
+  trustStatus   LocationTrustStatus @default(TRUSTED)
+  createdAt     DateTime            @default(now())
+  @@unique([tripId, userId, capturedAt])
+  @@index([tripId, userId, capturedAt])
+  @@map("location_pings")
+}
+
+model LatestTrustedLocation {
+  id             String   @id @default(uuid()) @db.Uuid
+  tripId         String   @db.Uuid
+  userId         String   @db.Uuid
+  locationPingId String   @db.Uuid
+  latitude       Float
+  longitude      Float
+  accuracyM      Float
+  capturedAt     DateTime
+  updatedAt      DateTime @updatedAt
+  @@unique([tripId, userId])
+  @@index([locationPingId])
+  @@map("latest_trusted_locations")
+}
+
+model SafetyZone {
+  id          String         @id @default(uuid()) @db.Uuid
+  name        String         @db.VarChar(120)
+  description String?
+  type        SafetyZoneType
+  severity    SafetySeverity @default(LOW)
+  latitude    Float
+  longitude   Float
+  radiusM     Float
+  active      Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  @@index([active, type])
+  @@map("safety_zones")
+}
+
+model TripCheckIn {
+  id          String        @id @default(uuid()) @db.Uuid
+  tripId      String        @db.Uuid
+  userId      String        @db.Uuid
+  dueAt       DateTime
+  status      CheckInStatus @default(PENDING)
+  checkedInAt DateTime?
+  missedAt    DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  @@index([tripId, userId, status, dueAt])
+  @@index([status, dueAt])
+  @@map("trip_check_ins")
+}
+
+model GeofenceEvent {
+  id         String            @id @default(uuid()) @db.Uuid
+  tripId     String            @db.Uuid
+  userId     String            @db.Uuid
+  zoneId     String            @db.Uuid
+  type       GeofenceEventType
+  occurredAt DateTime          @default(now())
+  createdAt  DateTime          @default(now())
+  @@index([tripId, userId, zoneId, occurredAt])
+  @@index([zoneId, occurredAt])
+  @@map("geofence_events")
+}
+
+model SafetyAlert {
+  id             String            @id @default(uuid()) @db.Uuid
+  tripId         String            @db.Uuid
+  userId         String            @db.Uuid
+  type           SafetyAlertType
+  level          SafetyAlertLevel
+  status         SafetyAlertStatus @default(OPEN)
+  sourceId       String?           @db.VarChar(100)
+  message        String            @db.VarChar(240)
+  details        Json?
+  acknowledgedAt DateTime?
+  resolvedAt     DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  @@index([tripId, userId, status, createdAt])
+  @@index([type, sourceId, status])
+  @@map("safety_alerts")
+}
+
+model Incident {
+  id                  String             @id @default(uuid()) @db.Uuid
+  tripId              String             @db.Uuid
+  userId              String             @db.Uuid
+  sourceType          IncidentSourceType
+  sourceSafetyAlertId String?            @unique @db.Uuid
+  severity            IncidentSeverity
+  status              IncidentStatus     @default(OPEN)
+  title               String             @db.VarChar(160)
+  description         String?            @db.VarChar(1000)
+  latitude            Float?
+  longitude           Float?
+  acknowledgedById    String?            @db.Uuid
+  acknowledgedByRole  Role?
+  acknowledgedAt      DateTime?
+  startedAt           DateTime?
+  resolvedById        String?            @db.Uuid
+  resolvedByRole      Role?
+  resolvedAt          DateTime?
+  dismissedAt         DateTime?
+  resolutionNote      String?            @db.VarChar(1000)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  @@index([status, severity, createdAt])
+  @@index([tripId, userId, status])
+  @@map("incidents")
+}
+
+model IncidentEvent {
+  id         String            @id @default(uuid()) @db.Uuid
+  incidentId String            @db.Uuid
+  type       IncidentEventType
+  actorId    String?           @db.Uuid
+  actorRole  Role?
+  note       String?           @db.VarChar(1000)
+  metadata   Json?
+  createdAt  DateTime          @default(now())
+  @@index([incidentId, createdAt])
+  @@map("incident_events")
+}
+
+model SosRequest {
+  id            String        @id @default(uuid()) @db.Uuid
+  incidentId    String        @unique @db.Uuid
+  tripId        String        @db.Uuid
+  userId        String        @db.Uuid
+  emergencyType EmergencyType
+  message       String?       @db.VarChar(500)
+  latitude      Float?
+  longitude     Float?
+  accuracyM     Float?
+  triggeredAt   DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+  @@index([tripId, userId, triggeredAt])
+  @@map("sos_requests")
+}
+
+enum NetworkStatus {
+  WIFI
+  CELLULAR
+  OFFLINE
+  UNKNOWN
+}
+enum LocationTrustStatus {
+  TRUSTED
+  REJECTED
+}
+enum SafetyZoneType {
+  SAFE
+  RISK
+}
+enum SafetySeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+enum CheckInStatus {
+  PENDING
+  COMPLETED
+  MISSED
+}
+enum GeofenceEventType {
+  ENTER
+  EXIT
+}
+enum SafetyAlertType {
+  RISK_ZONE_ENTRY
+  MISSED_CHECK_IN
+  STALE_LOCATION
+}
+enum SafetyAlertLevel {
+  WARNING
+  DANGER
+}
+enum SafetyAlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+enum IncidentSourceType {
+  SAFETY_ALERT
+  SOS
+}
+enum IncidentSeverity {
+  WARNING
+  DANGER
+  CRITICAL
+}
+enum IncidentStatus {
+  OPEN
+  ACKNOWLEDGED
+  IN_PROGRESS
+  RESOLVED
+  DISMISSED
+}
+enum IncidentEventType {
+  CREATED
+  ACKNOWLEDGED
+  RESPONSE_STARTED
+  RESOLVED
+  DISMISSED
+}
+enum EmergencyType {
+  MEDICAL
+  LOST
+  THREAT
+  ACCIDENT
+  NATURAL_DISASTER
+  OTHER
+}

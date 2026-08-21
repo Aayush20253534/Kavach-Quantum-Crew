@@ -1,0 +1,13 @@
+import { jest } from "@jest/globals";
+import { createIncidentService } from "../../src/modules/incident/incident.service.js";
+const now=new Date("2026-08-21T15:30:00.000Z");
+const trip={id:"t1",touristId:"u1",status:"ACTIVE",group:null};
+const repo=()=>({findTripContext:jest.fn().mockResolvedValue(trip),findLatestLocation:jest.fn().mockResolvedValue({latitude:25,longitude:81,accuracyM:10}),findById:jest.fn(),findBySafetyAlert:jest.fn().mockResolvedValue(null),findOpenSos:jest.fn().mockResolvedValue(null),createFromSafetyAlert:jest.fn().mockResolvedValue({id:"i1"}),createSos:jest.fn().mockResolvedValue({incident:{id:"i1",severity:"CRITICAL",status:"OPEN"},sos:{id:"s1"}}),findSos:jest.fn(),listEvents:jest.fn().mockResolvedValue([]),listForTourist:jest.fn().mockResolvedValue([]),listVisibleTripIds:jest.fn().mockResolvedValue([]),listForTrips:jest.fn().mockResolvedValue([]),listQueue:jest.fn().mockResolvedValue([]),transition:jest.fn().mockImplementation(async(id,data)=>({id,...data})),createAudit:jest.fn().mockResolvedValue({})});
+describe("Phase 8 incident response",()=>{
+ test("converts a safety alert to an incident",async()=>{const r=repo();const s=createIncidentService({repository:r});const a={id:"a1",tripId:"t1",userId:"u1",level:"DANGER",message:"Risk"};await s.ingestSafetyAlert(a);expect(r.createFromSafetyAlert).toHaveBeenCalledWith(a,expect.objectContaining({latitude:25}));});
+ test("creates a CRITICAL SOS",async()=>{const r=repo();const s=createIncidentService({repository:r,clock:()=>now});const out=await s.triggerSos("u1",{tripId:"t1",emergencyType:"MEDICAL"});expect(out.incident.severity).toBe("CRITICAL");});
+ test("prevents duplicate active SOS",async()=>{const r=repo();r.findOpenSos.mockResolvedValue({id:"i-old"});const s=createIncidentService({repository:r});await expect(s.triggerSos("u1",{tripId:"t1",emergencyType:"LOST"})).rejects.toMatchObject({code:"SOS_ALREADY_ACTIVE"});});
+ test("only staff can acknowledge",async()=>{const r=repo();const s=createIncidentService({repository:r});await expect(s.acknowledge({id:"u1",role:"TOURIST"},"i1")).rejects.toMatchObject({code:"INCIDENT_ACK_FORBIDDEN"});});
+ test("manager can acknowledge",async()=>{const r=repo();r.findById.mockResolvedValue({id:"i1",status:"OPEN"});const s=createIncidentService({repository:r,clock:()=>now});const out=await s.acknowledge({id:"d1",role:"DISASTER_MANAGER"},"i1","Dispatching");expect(out.status).toBe("ACKNOWLEDGED");});
+ test("manager can resolve",async()=>{const r=repo();r.findById.mockResolvedValue({id:"i1",status:"IN_PROGRESS"});const s=createIncidentService({repository:r,clock:()=>now});const out=await s.resolve({id:"d1",role:"DISASTER_MANAGER"},"i1","Tourist safe");expect(out.status).toBe("RESOLVED");});
+});
