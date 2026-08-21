@@ -3,6 +3,8 @@
 ### Single Source of Truth for the Blockchain Trust Layer
 
 > This document is **not code**. It is the complete functional specification for every file that must exist inside the `blockchain/` folder (at the repo root, alongside `apps/`, `packages/`, `prisma/`). Anyone — human or AI — should be able to implement the actual code from this document alone, with no other reference needed. Every file below states: its purpose, its exact inputs/outputs, its internal logic step-by-step, its error conditions, and how it's tested.
+>
+> **Stack for this version:** Solidity + Hardhat + ethers.js for the contract layer, and **TypeScript** (not Python) for the adapter layer, so the same backend developer who owns Node/Express can read and maintain the entire `blockchain/` folder without a language switch.
 
 ---
 
@@ -13,29 +15,29 @@ blockchain/
 ├── contracts/
 │   └── TrustAnchor.sol
 ├── scripts/
-│   ├── deploy.js
-│   ├── issue.js
-│   ├── revoke.js
-│   ├── verify.js
-│   ├── anchorEvidence.js
-│   ├── anchorIncident.js
-│   └── seedDemo.js
+│   ├── deploy.ts
+│   ├── issue.ts
+│   ├── revoke.ts
+│   ├── verify.ts
+│   ├── anchorEvidence.ts
+│   ├── anchorIncident.ts
+│   └── seedDemo.ts
 ├── test/
-│   ├── issueRevoke.test.js
-│   ├── evidenceAnchor.test.js
-│   ├── incidentAnchor.test.js
-│   ├── accessControl.test.js
-│   └── idempotency.test.js
-├── adapter/                          (Python, imported by the backend AI/BC service — see §9 for language note)
-│   ├── __init__.py
-│   ├── canonicalize.py
-│   ├── hasher.py
-│   ├── chain_client.py
-│   ├── job_queue.py
-│   ├── models.py
-│   └── privacy_scan.py
+│   ├── issueRevoke.test.ts
+│   ├── evidenceAnchor.test.ts
+│   ├── incidentAnchor.test.ts
+│   ├── accessControl.test.ts
+│   └── idempotency.test.ts
+├── adapter/
+│   ├── index.ts
+│   ├── canonicalize.ts
+│   ├── hasher.ts
+│   ├── chainClient.ts
+│   ├── jobQueue.ts
+│   ├── types.ts
+│   └── privacyScan.ts
 ├── config/
-│   ├── hardhat.config.js
+│   ├── hardhat.config.ts
 │   └── .env.example
 ├── deployments/
 │   └── <network>.json                (generated at deploy time — not hand-written)
@@ -44,7 +46,7 @@ blockchain/
 └── README.md
 ```
 
-**Language note (§9 explains fully):** Prateek's stated preference is Python. Hardhat/Solidity tooling is JavaScript-native and non-negotiable (contracts, deploy scripts, contract-level tests must be `.js`/`.sol` — there is no practical Python substitute for Hardhat). Everything **above** the contract boundary — canonicalization, hashing, the backend-facing adapter, the job queue, the privacy scanner — is specified here to be implemented in **Python**, callable from the Node/Express backend as a small internal service or CLI (see §9 for the exact integration shape). This keeps 100% of Prateek's own code in Python while leaving only the unavoidable Solidity/Hardhat scaffolding in JS.
+**Language note:** Everything in `blockchain/` is now JavaScript/TypeScript end to end — contracts in Solidity (unavoidable), everything else in TypeScript. The `adapter/` package is imported **directly** into the Node/Express backend as a regular internal module (no separate microservice, no HTTP boundary, no second process to run or deploy). This is simpler than a cross-language design: one runtime, one package manager, one person can own the whole folder.
 
 ---
 
@@ -63,11 +65,11 @@ blockchain/
 ## 2. `contracts/TrustAnchor.sol`
 
 ### Purpose
-The single on-chain contract. Stores only hashes/timestamps/status for three anchor types: digital IDs, evidence files, and incident timelines. No PII, ever, at the Solidity level — enforced structurally by only accepting `bytes32` hash parameters, never strings or arbitrary bytes.
+The single on-chain contract. Stores only hashes/timestamps/status for three anchor types: digital IDs, evidence files, and incident timelines (plus consent receipts). No PII, ever, at the Solidity level — enforced structurally by only accepting `bytes32` hash parameters, never strings or arbitrary bytes.
 
 ### Solidity version & tooling
 - `pragma solidity ^0.8.19;`
-- No external dependencies beyond OpenZeppelin `AccessControl` (optional convenience) — a hand-rolled `onlyAuthorizedIssuer` modifier is sufficient and keeps the surface minimal; OpenZeppelin is acceptable if the team wants a more auditable access-control pattern, but is not required.
+- No external dependencies required beyond plain Solidity. OpenZeppelin `AccessControl` is an acceptable optional swap for the hand-rolled `onlyAuthorizedIssuer` modifier if the team wants a more auditable pattern, but is not required.
 
 ### State variables
 
@@ -164,10 +166,10 @@ event IssuerRevoked(address indexed issuer);
 
 ---
 
-## 3. `scripts/deploy.js`
+## 3. `scripts/deploy.ts`
 
 ### Purpose
-Deploys `TrustAnchor.sol` to whichever network Hardhat is pointed at (local Hardhat node by default; testnet optional/secondary per Invariant 7) and writes deployment metadata to disk for the backend to consume.
+Deploys `TrustAnchor.sol` to whichever network Hardhat is pointed at (local Hardhat node by default; testnet optional/secondary per Invariant 7) and writes deployment metadata to disk for the rest of the app to consume. Written against `hardhat` + `ethers` using Hardhat's built-in TypeScript support (`ts-node` + `@nomicfoundation/hardhat-toolbox`).
 
 ### Inputs
 - Reads `CHAIN_RPC_URL`, `ISSUER_PRIVATE_KEY`, `CHAIN_ID` from environment (via `config/.env.example` → real `.env`, never committed).
@@ -195,40 +197,40 @@ Deploys `TrustAnchor.sol` to whichever network Hardhat is pointed at (local Hard
 7. Print the contract address and a copy-pasteable `CONTRACT_ADDRESS=` line to stdout for the backend `.env`.
 
 ### Output
-- The deployment JSON file (consumed by `adapter/chain_client.py`, see §7).
+- The deployment JSON file (consumed by `adapter/chainClient.ts`, see §7).
 - Non-zero exit code and a clear stderr message on any failure (RPC unreachable, insufficient funds, compile error).
 
 ---
 
-## 4. `scripts/issue.js`, `scripts/revoke.js`, `scripts/verify.js`, `scripts/anchorEvidence.js`, `scripts/anchorIncident.js`
+## 4. `scripts/issue.ts`, `scripts/revoke.ts`, `scripts/verify.ts`, `scripts/anchorEvidence.ts`, `scripts/anchorIncident.ts`
 
 ### Purpose
-Thin, **standalone, demo-runnable** CLI scripts that each perform exactly one contract operation, for use in (a) the judge-facing demo drill, (b) manual smoke-testing without booting the whole backend, and (c) as the reference implementation the Python adapter's transaction-building logic mirrors.
+Thin, **standalone, demo-runnable** CLI scripts that each perform exactly one contract operation, for use in (a) the judge-facing demo drill, (b) manual smoke-testing without booting the whole backend, and (c) as a living reference for the adapter's own transaction-building logic — since both now live in the same language, these scripts and `adapter/chainClient.ts` can literally share the same ethers.js call helpers via a small shared module if desired (optional refactor, not required for MVP).
 
 Each script:
 - Loads `deployments/<network>.json` to get the contract address + ABI path.
 - Connects with `ethers.js` using `CHAIN_RPC_URL` + `ISSUER_PRIVATE_KEY`.
-- Accepts its specific arguments via CLI flags (documented per-script below) so they're runnable in isolation: `node scripts/issue.js --idHash 0x... --tripHash 0x... --expiresInHours 168`.
+- Accepts its specific arguments via CLI flags so they're runnable in isolation: `npx ts-node scripts/issue.ts --idHash 0x... --tripHash 0x... --expiresInHours 168`.
 - Prints a structured JSON result to stdout (`{ "txHash": "...", "status": "CONFIRMED", ... }`) so it can be piped/parsed by a shell demo runner.
 
-**`issue.js`** — computes `issuedAt = now`, `expiresAt = now + expiresInHours`, calls `issueId`, waits for 1 confirmation, prints the emitted `IdIssued` event fields.
+**`issue.ts`** — computes `issuedAt = now`, `expiresAt = now + expiresInHours`, calls `issueId`, waits for 1 confirmation, prints the emitted `IdIssued` event fields.
 
-**`revoke.js`** — calls `revokeId(idHash, reasonCode)`, prints the emitted `IdRevoked` fields.
+**`revoke.ts`** — calls `revokeId(idHash, reasonCode)`, prints the emitted `IdRevoked` fields.
 
-**`verify.js`** — calls the **view** function `verifyId(idHash)` (no gas, no wait), prints status/issuer/window in the exact JSON shape shown in §6 of the source blueprint (`idHash`, `status`, `issuer`, `issuedAt`, `expiresAt`, `chain`, `contractVersion`).
+**`verify.ts`** — calls the **view** function `verifyId(idHash)` (no gas, no wait), prints status/issuer/window in the exact JSON shape from §6/§13 of the source blueprint (`idHash`, `status`, `issuer`, `issuedAt`, `expiresAt`, `chain`, `contractVersion`).
 
-**`anchorEvidence.js`** / **`anchorIncident.js`** — accept the pre-computed hash (these scripts do **not** hash — hashing happens in the Python adapter, §7 — they only anchor a hash you already have), call the respective anchor function, print the emitted event and idempotency outcome (`"alreadyAnchored": true/false`).
+**`anchorEvidence.ts`** / **`anchorIncident.ts`** — accept the pre-computed hash (these scripts do **not** hash — hashing happens in `adapter/hasher.ts`, §7 — they only anchor a hash you already have), call the respective anchor function, print the emitted event and idempotency outcome (`"alreadyAnchored": true/false`).
 
 ---
 
-## 5. `scripts/seedDemo.js`
+## 5. `scripts/seedDemo.ts`
 
 ### Purpose
 One-command deterministic setup for the judge demo: deploys (if not already deployed), issues one fictional tourist ID, leaves it active, and prints every value needed to drive the 5-minute demo runbook (§13 of the source blueprint) — so the demo never depends on live typing.
 
 ### Logic
 1. Run (or detect an existing) deployment.
-2. Compute a deterministic `idHash`/`tripHash` from fixed demo seed data (fictional tourist, fixed trip ID) using the **same** canonicalize+hash logic as the Python adapter (the script calls into a tiny mirrored JS helper — see the note in §7 about keeping the two hash implementations byte-identical, with a cross-language test in `test/idempotency.test.js`).
+2. Compute a deterministic `idHash`/`tripHash` from fixed demo seed data (fictional tourist, fixed trip ID) by importing and calling `adapter/hasher.ts` directly — since the script and the adapter are the same language, there is exactly **one** hashing implementation in the whole codebase, eliminating any risk of the demo script and the backend computing different digests for the same logical data.
 3. Calls `issueId`.
 4. Prints a demo cheat-sheet block:
    ```
@@ -245,12 +247,13 @@ A fixed, reproducible on-chain state the whole team can rely on for rehearsal, m
 
 ---
 
-## 6. `config/hardhat.config.js` and `config/.env.example`
+## 6. `config/hardhat.config.ts` and `config/.env.example`
 
-### `hardhat.config.js`
+### `hardhat.config.ts`
 - Declares two networks: `hardhat` (in-memory, default — instant blocks, no config needed) and `localhost` (persistent local node via `npx hardhat node`, used so the backend can stay connected across script runs during a live demo).
 - Optionally declares a `testnet` network entry reading `CHAIN_RPC_URL`/`ISSUER_PRIVATE_KEY`/`CHAIN_ID` from env — commented out / clearly marked optional, consistent with Invariant 7.
 - Solidity compiler version pinned to match the contract's pragma (`0.8.19`), optimizer enabled (low `runs` value is fine — this contract is tiny).
+- TypeScript support enabled via `@nomicfoundation/hardhat-toolbox` (bundles ethers, chai matchers, typechain type generation) — `typechain` output feeds typed contract bindings straight into `adapter/chainClient.ts`, so the adapter gets compile-time-checked function signatures instead of untyped ABI calls.
 
 ### `.env.example`
 ```
@@ -264,119 +267,120 @@ CONTRACT_VERSION=trust-anchor-v1
 
 ---
 
-## 7. Python Adapter Package — `blockchain/adapter/`
+## 7. TypeScript Adapter Package — `blockchain/adapter/`
 
-This is the layer the Node/Express backend actually calls. It owns canonicalization, hashing, salting, transaction submission, async state tracking, retries, and the privacy self-check. Implemented as an installable Python package (or a small FastAPI microservice if the team prefers an HTTP boundary — see §9 for the integration decision) so **all of Prateek's own logic is Python**, with `ethers`-level chain calls happening either (a) by shelling out to the `scripts/*.js` CLI tools in §4, or (b) via a Python web3 library (`web3.py`) pointed at the same Hardhat RPC. **Recommended: `web3.py` directly** — it avoids a Node subprocess dependency entirely and keeps the whole adapter self-contained. Both options are documented in §9; the rest of this section is written against the `web3.py` approach since it's the recommended path.
+This is the layer the Node/Express backend calls **in-process** — imported as a normal local package (e.g. `import { enqueueAnchorEvidence } from "../../blockchain/adapter"` or published internally as a workspace package if the repo uses a monorepo tool like `pnpm`/`turborepo`). It owns canonicalization, hashing, salting, transaction submission, async state tracking, retries, and the privacy self-check. No separate process, no HTTP boundary, no second language — the backend's Express route handlers call these functions directly and `await` only the fast, synchronous "enqueue" part; the actual chain confirmation happens on a background interval within the same Node process (or a small worker script sharing the same codebase).
 
-### 7.1 `adapter/canonicalize.py`
+### 7.1 `adapter/canonicalize.ts`
 
 **Purpose:** Deterministic, versioned JSON canonicalization — the single function every other module hashes through, so two callers of the same logical payload always produce byte-identical input to SHA-256.
 
-**Function: `canonicalize(payload: dict, version: str) -> bytes`**
+**Function: `canonicalize(payload: Record<string, JsonPrimitive>, version: string): Buffer`**
 - Logic:
-  1. Wrap: `envelope = {"version": version, "data": payload}`.
-  2. Serialize with `json.dumps(envelope, sort_keys=True, separators=(",", ":"), ensure_ascii=True)`.
-  3. Encode to UTF-8 bytes.
-  4. Return the bytes.
+  1. Wrap: `const envelope = { version, data: payload };`
+  2. Serialize with a **deterministic stringify** — plain `JSON.stringify` does **not** guarantee key order, so this must use a canonical-JSON library (e.g. `json-stable-stringify` or `canonicalize` npm package) or a hand-rolled recursive key-sorter, producing output equivalent to Python's `sort_keys=True, separators=(",", ":")`: no whitespace, keys sorted lexicographically at every nesting level.
+  3. Encode the resulting string to a UTF-8 `Buffer`.
+  4. Return the buffer.
 - Requirements:
-  - `sort_keys=True` is mandatory — field order must never affect the digest.
-  - No whitespace (`separators` strips it) — formatting must never affect the digest.
-  - `payload` must contain only JSON-primitive values (str, int, float, bool, None, nested dict/list) — the function raises `TypeError` early (via a recursive validator) if it encounters anything else (e.g., a `datetime` object passed by mistake), because silent `str()` coercion of a datetime would break determinism across timezones/formats.
-  - Numeric values that represent timestamps must already be normalized to `int` (Unix epoch seconds) by the caller **before** calling this function — this module does not do timestamp parsing.
-- Output: raw bytes, ready for hashing or salting-then-hashing.
+  - Key order must never affect the digest — enforced by the canonical stringify step, not left to insertion order.
+  - No whitespace in the serialized output — formatting must never affect the digest.
+  - `payload` must contain only JSON-primitive values (`string`, `number`, `boolean`, `null`, nested object/array) — the function throws a `TypeError` early (via a recursive validator) if it encounters anything else (e.g., a `Date` object passed by mistake), because silently calling `.toString()` on a `Date` would break determinism across timezones/formats.
+  - Numeric values that represent timestamps must already be normalized to an `integer` (Unix epoch seconds, `number` type, not `Date`) by the caller **before** calling this function — this module does not do timestamp parsing.
+- Output: a `Buffer`, ready for hashing or salting-then-hashing.
 
-### 7.2 `adapter/hasher.py`
+### 7.2 `adapter/hasher.ts`
 
-**Purpose:** Turns canonical bytes into the `0x`-prefixed hex digest the contract expects, with optional salting for low-entropy fields.
+**Purpose:** Turns canonical bytes into the `0x`-prefixed hex digest the contract expects, with optional salting for low-entropy fields. Uses Node's built-in `crypto` module — no extra dependency needed for SHA-256.
 
-**Function: `hash_payload(payload: dict, version: str, salt: str | None = None) -> str`**
+**Function: `hashPayload(payload: Record<string, JsonPrimitive>, version: string, salt?: string): string`**
 - Logic:
-  1. `raw = canonicalize(payload, version)`.
-  2. If `salt` is provided: `raw = salt.encode("utf-8") + raw`.
-  3. `digest = hashlib.sha256(raw).hexdigest()`.
+  1. `let raw = canonicalize(payload, version);`
+  2. If `salt` is provided: `raw = Buffer.concat([Buffer.from(salt, "utf-8"), raw]);`
+  3. `const digest = crypto.createHash("sha256").update(raw).digest("hex");`
   4. Return `"0x" + digest`.
-- Salting policy (must be enforced by callers, documented here for reference): any payload whose entropy is dominated by a short/sequential identifier (a tourist's internal sequence number, a short trip code) **must** pass a per-record random salt (generated once at record-creation time and stored in PostgreSQL alongside the record — never on-chain, never derivable from the hash alone). Payloads that are already high-entropy (e.g., contain a UUID) do not strictly need salting but salting them anyway is harmless and the adapter defaults to "always salt if a salt is supplied by the caller."
-- **Function: `hash_id_payload(tourist_id_seq: int, trip_id: str, version: str, salt: str) -> str`** — a named convenience wrapper for the digital-ID case specifically, so call sites can't accidentally skip salting for the low-entropy `tourist_id_seq` field. Internally builds `{"touristIdSeq": tourist_id_seq, "tripId": trip_id}` and calls `hash_payload` with the salt required (not optional) in this wrapper's signature.
-- **Function: `hash_evidence_manifest(file_checksum_sha256: str, actor_id: str, org_id: str, transferred_at: int, version: str) -> str`** — builds the evidence manifest dict and hashes it (no salt needed — a file checksum is already high-entropy).
-- **Function: `hash_incident_snapshot(incident_id: str, state: str, transitioned_at: int, actor_id: str, version: str) -> str`** — builds and hashes one incident-timeline state-transition snapshot.
-- **Function: `hash_consent_receipt(trip_id: str, consent_version: str, org_id: str, role: str, window_start: int, window_end: int, version: str) -> str`** — builds and hashes a consent/access receipt.
+- Salting policy (must be enforced by callers, documented here for reference): any payload whose entropy is dominated by a short/sequential identifier (a tourist's internal sequence number, a short trip code) **must** pass a per-record random salt (generated once at record-creation time and stored in PostgreSQL alongside the record — never on-chain, never derivable from the hash alone). Payloads that are already high-entropy (e.g., contain a UUID) do not strictly need salting but salting them anyway is harmless.
+- **Function: `hashIdPayload(touristIdSeq: number, tripId: string, version: string, salt: string): string`** — a named convenience wrapper for the digital-ID case specifically, so call sites can't accidentally skip salting for the low-entropy `touristIdSeq` field. Internally builds `{ touristIdSeq, tripId }` and calls `hashPayload` with `salt` **required** (not optional) in this wrapper's own type signature.
+- **Function: `hashEvidenceManifest(fileChecksumSha256: string, actorId: string, orgId: string, transferredAt: number, version: string): string`** — builds the evidence manifest object and hashes it (no salt needed — a file checksum is already high-entropy).
+- **Function: `hashIncidentSnapshot(incidentId: string, state: string, transitionedAt: number, actorId: string, version: string): string`** — builds and hashes one incident-timeline state-transition snapshot.
+- **Function: `hashConsentReceipt(tripId: string, consentVersion: string, orgId: string, role: string, windowStart: number, windowEnd: number, version: string): string`** — builds and hashes a consent/access receipt.
 
-### 7.3 `adapter/models.py`
+### 7.3 `adapter/types.ts`
 
-**Purpose:** Typed data structures shared across the adapter (using Python `dataclasses` or `pydantic` — `pydantic` recommended since the backend likely already validates JSON this way elsewhere).
+**Purpose:** Shared TypeScript types/enums used across the adapter.
 
 **Types to define:**
-- `AnchorType` — enum: `ID_ISSUE`, `ID_REVOKE`, `EVIDENCE`, `INCIDENT`, `CONSENT`.
-- `AnchorState` — enum: `PENDING`, `CONFIRMED`, `FAILED`.
-- `AnchorJob` — fields: `job_id: str` (UUID), `anchor_type: AnchorType`, `payload_hash: str`, `extra_args: dict` (e.g., `tripHash`/`expiresAt` for issuance, `reasonCode` for revoke), `state: AnchorState`, `tx_hash: str | None`, `attempts: int`, `created_at: int`, `last_error: str | None`.
-- `VerificationResult` — fields mirroring the contract's `verifyId` return shape plus `chain: str` and `contractVersion: str`, matching the exact JSON example in §6/§13 of the source blueprint.
+- `AnchorType` — union type: `"ID_ISSUE" | "ID_REVOKE" | "EVIDENCE" | "INCIDENT" | "CONSENT"`.
+- `AnchorState` — union type: `"PENDING" | "CONFIRMED" | "FAILED"`.
+- `AnchorJob` — interface: `{ jobId: string; anchorType: AnchorType; payloadHash: string; extraArgs: Record<string, unknown>; state: AnchorState; txHash: string | null; attempts: number; createdAt: number; lastError: string | null; }`.
+- `VerificationResult` — interface mirroring the contract's `verifyId` return shape plus `chain: string` and `contractVersion: string`, matching the exact JSON example in §6/§13 of the source blueprint.
+- `JsonPrimitive` — recursive type alias used by `canonicalize.ts`/`hasher.ts` to constrain payload shapes at compile time (`string | number | boolean | null | JsonPrimitive[] | { [key: string]: JsonPrimitive }`).
 
-### 7.4 `adapter/chain_client.py`
+### 7.4 `adapter/chainClient.ts`
 
-**Purpose:** The only module that actually talks to the chain. Everything else in the adapter goes through this module — no other file imports `web3` directly.
+**Purpose:** The only module that actually talks to the chain. Everything else in the adapter goes through this module — no other file imports `ethers` directly.
 
 **Class: `ChainClient`**
-- **`__init__(self)`**: reads `CHAIN_RPC_URL`, `CONTRACT_ADDRESS`, `ISSUER_PRIVATE_KEY`, `CHAIN_ID`, `CONTRACT_VERSION` from environment; loads the ABI JSON from the path recorded in `deployments/<network>.json`; constructs a `web3.Web3` instance and a contract object; derives the issuer address from the private key.
-- **`issue_id(id_hash: str, trip_hash: str, issued_at: int, expires_at: int, version: int) -> str`**: builds, signs, and sends the `issueId` transaction; returns the transaction hash immediately **without waiting for confirmation** (the caller/job queue handles the wait asynchronously — Invariant 4). Raises a typed `ChainSubmissionError` on RPC failure at submission time (not on eventual revert — that's handled by `wait_for_receipt`).
-- **`revoke_id(id_hash: str, reason_code: int) -> str`**: same pattern for `revokeId`.
-- **`anchor_evidence(evidence_hash: str, version: int) -> str`**: same pattern for `anchorEvidence`.
-- **`anchor_incident(incident_hash: str, version: int) -> str`**: same pattern for `anchorIncident`.
-- **`anchor_consent(consent_hash: str, version: int) -> str`**: same pattern for `anchorConsent`.
-- **`wait_for_receipt(tx_hash: str, timeout_seconds: int = 30) -> dict`**: polls for the transaction receipt; returns `{"status": "CONFIRMED" | "FAILED", "blockNumber": int | None, "gasUsed": int | None}`. A reverted transaction (`receipt.status == 0`) maps to `"FAILED"`, not an exception — failure is a normal, expected outcome the job queue must handle gracefully.
-- **`verify_id(id_hash: str) -> VerificationResult`**: calls the read-only `verifyId`; if the contract returns the zero-address issuer, maps to a `NOT_FOUND`-shaped result rather than raising; if `expiresAt < now`, overrides the returned status to `EXPIRED` even if the contract's raw storage still says `ACTIVE` (mirrors the lazy-expiry read pattern from §2).
-- **`verify_evidence(evidence_hash: str) -> dict`** / **`verify_incident(incident_hash: str) -> dict`** / **`verify_consent(consent_hash: str) -> bool`**: thin wrappers over the corresponding view functions.
+- **`constructor()`**: reads `CHAIN_RPC_URL`, `CONTRACT_ADDRESS`, `ISSUER_PRIVATE_KEY`, `CHAIN_ID`, `CONTRACT_VERSION` from environment; loads the ABI (ideally the typechain-generated typed contract factory from §6) using the path recorded in `deployments/<network>.json`; constructs an `ethers.JsonRpcProvider` and `ethers.Wallet`, and a typed contract instance connected to that wallet.
+- **`async issueId(idHash: string, tripHash: string, issuedAt: number, expiresAt: number, version: number): Promise<string>`**: builds and sends the `issueId` transaction; returns the transaction hash immediately **without awaiting confirmation** (the caller/job queue handles the wait asynchronously — Invariant 4). Throws a typed `ChainSubmissionError` on RPC failure at submission time (not on eventual revert — that's handled by `waitForReceipt`).
+- **`async revokeId(idHash: string, reasonCode: number): Promise<string>`**: same pattern for `revokeId`.
+- **`async anchorEvidence(evidenceHash: string, version: number): Promise<string>`**: same pattern for `anchorEvidence`.
+- **`async anchorIncident(incidentHash: string, version: number): Promise<string>`**: same pattern for `anchorIncident`.
+- **`async anchorConsent(consentHash: string, version: number): Promise<string>`**: same pattern for `anchorConsent`.
+- **`async waitForReceipt(txHash: string, timeoutMs = 30000): Promise<{ status: "CONFIRMED" | "FAILED"; blockNumber: number | null; gasUsed: string | null }>`**: polls for the transaction receipt; a reverted transaction (`receipt.status === 0`) maps to `"FAILED"`, not a thrown error — failure is a normal, expected outcome the job queue must handle gracefully.
+- **`async verifyId(idHash: string): Promise<VerificationResult>`**: calls the read-only `verifyId`; if the contract returns the zero-address issuer, maps to a `NOT_FOUND`-shaped result rather than throwing; if `expiresAt < now`, overrides the returned status to `EXPIRED` even if the contract's raw storage still says `ACTIVE` (mirrors the lazy-expiry read pattern from §2).
+- **`async verifyEvidence(evidenceHash: string): Promise<{ exists: boolean; anchoredAt: number }>`** / **`verifyIncident`** / **`verifyConsent`**: thin wrappers over the corresponding view functions.
 - **Error handling:** every method distinguishes three failure classes explicitly, because the job queue (§7.5) branches on them differently:
-  1. **Submission failure** (RPC unreachable, nonce error, insufficient funds) → raise immediately, job queue marks `FAILED` and schedules a retry with backoff.
+  1. **Submission failure** (RPC unreachable, nonce error, insufficient funds) → throw immediately, job queue marks `FAILED` and schedules a retry with backoff.
   2. **Timeout waiting for receipt** (node slow/down mid-wait) → the job stays `PENDING`, retried on next poll — this is the "chain outage" resilience case from the source blueprint's §12/§07A.
-  3. **On-chain revert** (e.g., `ID_ALREADY_ISSUED`) → this is treated as **idempotent success**, not failure, for the anchor functions specifically, because the contract's `anchorEvidence`/`anchorIncident`/`anchorConsent` never revert on duplicates by design (§2) — a revert here means a genuine bug or a duplicate `issueId` call, which the job queue logs and marks `FAILED` with the revert reason captured.
+  3. **On-chain revert** (e.g., `ID_ALREADY_ISSUED`) → treated as **idempotent success**, not failure, for the anchor functions specifically, because `anchorEvidence`/`anchorIncident`/`anchorConsent` never revert on duplicates by design (§2) — a revert here means a genuine bug or a duplicate `issueId` call, which the job queue logs and marks `FAILED` with the revert reason captured.
 
-### 7.5 `adapter/job_queue.py`
+### 7.5 `adapter/jobQueue.ts`
 
-**Purpose:** Implements Invariant 4 and Invariant 5 concretely — an async, retry-safe, non-blocking queue between "the backend decided something needs anchoring" and "the chain has confirmed it." This is the module the Express backend's request handlers actually call — they call `enqueue_*` and return immediately; they never call `chain_client` directly.
+**Purpose:** Implements Invariant 4 and Invariant 5 concretely — an async, retry-safe, non-blocking queue between "the backend decided something needs anchoring" and "the chain has confirmed it." This is the module the Express route handlers actually call — they call `enqueue*` and return immediately; they never call `ChainClient` directly.
 
-**Design:** A simple durable queue backed by a PostgreSQL table (`blockchain_anchor_jobs`, schema owned by the backend's Prisma migrations — this module only reads/writes it, doesn't own the schema) plus an in-process or cron-triggered worker loop. No Redis/Celery dependency required for the MVP scale (single-digit jobs/minute during a demo); the design leaves room to swap in a real queue later without changing the public function signatures.
+**Design:** A simple durable queue backed by a PostgreSQL table (`blockchain_anchor_jobs`, schema owned by the backend's Prisma migrations — this module only reads/writes it via Prisma Client, doesn't own the schema) plus a worker loop running on a `setInterval` inside the same Node process (or a separate `node worker.js` process sharing this package, if the team prefers isolating it — either is fine since it's all one language/runtime now). No Redis/BullMQ dependency required for the MVP scale (single-digit jobs/minute during a demo); the design leaves room to swap in a real queue later without changing the public function signatures.
 
 **Public functions (the backend calls only these):**
-- **`enqueue_issue_id(id_hash, trip_hash, issued_at, expires_at, version) -> str`** (returns `job_id`): validates inputs, inserts a `PENDING` row, returns immediately. Does **not** call the chain.
-- **`enqueue_revoke_id(id_hash, reason_code) -> str`**: same pattern.
-- **`enqueue_anchor_evidence(evidence_hash, version) -> str`**: same pattern.
-- **`enqueue_anchor_incident(incident_hash, version) -> str`**: same pattern.
-- **`enqueue_anchor_consent(consent_hash, version) -> str`**: same pattern.
-- **`get_job_status(job_id) -> AnchorJob`**: read-only lookup — this is what the backend's `GET /digital-ids/:id` (or similar) endpoint calls to show the tourist/dispatcher whether an anchor is `PENDING`/`CONFIRMED`/`FAILED`, per the source blueprint's explicit requirement that pending status is "shown... never hidden."
+- **`async enqueueIssueId(idHash, tripHash, issuedAt, expiresAt, version): Promise<string>`** (returns `jobId`): validates inputs, inserts a `PENDING` row via Prisma, returns immediately. Does **not** call the chain.
+- **`async enqueueRevokeId(idHash, reasonCode): Promise<string>`**: same pattern.
+- **`async enqueueAnchorEvidence(evidenceHash, version): Promise<string>`**: same pattern.
+- **`async enqueueAnchorIncident(incidentHash, version): Promise<string>`**: same pattern.
+- **`async enqueueAnchorConsent(consentHash, version): Promise<string>`**: same pattern.
+- **`async getJobStatus(jobId: string): Promise<AnchorJob>`**: read-only lookup — this is what the backend's `GET /digital-ids/:id` (or similar) endpoint calls to show the tourist/dispatcher whether an anchor is `PENDING`/`CONFIRMED`/`FAILED`, per the source blueprint's explicit requirement that pending status is "shown... never hidden."
 
-**Worker loop — `run_worker_once() -> WorkerRunSummary`** (called on a timer, e.g. every 5 seconds, by whatever process runner the backend uses):
-1. Select all rows where `state == PENDING` and (`tx_hash IS NULL` OR the tx has been pending longer than a receipt-wait timeout).
-2. For each: if `tx_hash IS NULL`, submit via the matching `chain_client` method; on submission success, store the returned `tx_hash` and increment `attempts`; on submission failure, increment `attempts`, store `last_error`, and if `attempts` exceeds a max (e.g. 5) mark `FAILED` and stop retrying automatically (surfaced for manual re-submission, per the source blueprint's failure table).
-3. For rows that already have a `tx_hash`, call `wait_for_receipt` with a short timeout; on `CONFIRMED`/`FAILED`, update the row's state accordingly.
-4. **Idempotency guard before every submission:** for `anchor_evidence`/`anchor_incident`/`anchor_consent` jobs, call the corresponding `verify_*` read first — if it already shows `exists == true` on-chain (e.g., a prior run got the tx confirmed but the local job row didn't get updated due to a crash), mark the job `CONFIRMED` **without submitting a new transaction**. This directly implements "resubmitting a job for an already-anchored hash is a no-op."
-5. Return a summary (counts of submitted/confirmed/failed) for logging/observability — never raises; a single job's failure must not crash the loop or affect other jobs.
+**Worker loop — `async runWorkerOnce(): Promise<WorkerRunSummary>`** (called on a timer, e.g. every 5 seconds, via `setInterval` at process startup):
+1. Select all rows where `state === "PENDING"` and (`txHash IS NULL` OR the tx has been pending longer than a receipt-wait timeout).
+2. For each: if `txHash` is null, submit via the matching `ChainClient` method; on submission success, store the returned `txHash` and increment `attempts`; on submission failure, increment `attempts`, store `lastError`, and if `attempts` exceeds a max (e.g. 5) mark `FAILED` and stop retrying automatically (surfaced for manual re-submission, per the source blueprint's failure table).
+3. For rows that already have a `txHash`, call `waitForReceipt` with a short timeout; on `CONFIRMED`/`FAILED`, update the row's state accordingly.
+4. **Idempotency guard before every submission:** for `EVIDENCE`/`INCIDENT`/`CONSENT` jobs, call the corresponding `verify*` read first — if it already shows `exists === true` on-chain (e.g., a prior run got the tx confirmed but the local job row didn't get updated due to a crash), mark the job `CONFIRMED` **without submitting a new transaction**. This directly implements "resubmitting a job for an already-anchored hash is a no-op."
+5. Return a summary (counts of submitted/confirmed/failed) for logging/observability — never throws; a single job's failure must not crash the loop or affect other jobs (wrap each job's processing in its own try/catch).
 
-### 7.6 `adapter/privacy_scan.py`
+### 7.6 `adapter/privacyScan.ts`
 
 **Purpose:** Automates the "on-chain inspection checklist" from §9 of the source blueprint — a script/module the team runs before every demo (and ideally in CI) to mechanically confirm no PII/GPS ever reached the chain.
 
-**Function: `scan_recent_events(chain_client: ChainClient, since_block: int = 0) -> PrivacyScanReport`**
+**Function: `async scanRecentEvents(chainClient: ChainClient, sinceBlock = 0): Promise<PrivacyScanReport>`**
 - Logic:
-  1. Fetch all emitted events (`IdIssued`, `IdRevoked`, `EvidenceAnchored`, `IncidentAnchored`, `ConsentAnchored`) from `since_block` to latest.
-  2. For every event's every field, assert the field type is one of: `bytes32` (a hash), `address`, `uint64`/`uint8` (timestamps/codes/versions). Assert **no field is of type `string` or `bytes` (variable-length)** — this is checked against the ABI itself, not just the decoded values, so it also catches a future accidental contract change that adds a string field.
+  1. Fetch all emitted events (`IdIssued`, `IdRevoked`, `EvidenceAnchored`, `IncidentAnchored`, `ConsentAnchored`) from `sinceBlock` to latest via `contract.queryFilter`.
+  2. For every event's every field, assert the field type — read from the contract's ABI/typechain types — is one of: `bytes32` (a hash), `address`, `uint64`/`uint8` (timestamps/codes/versions). Assert **no field is of type `string` or `bytes` (variable-length)** — this is checked against the ABI itself, not just the decoded values, so it also catches a future accidental contract change that adds a string field.
   3. Additionally, heuristically re-check decoded `bytes32` values: confirm they are NOT plausibly a raw coordinate pair or short ASCII string accidentally hashed-looking (best-effort sanity check, not a substitute for step 2's structural guarantee).
-  4. Produce a `PrivacyScanReport` with `passed: bool` and a per-check breakdown matching the exact five bullet points in the source blueprint's on-chain inspection checklist (§9/§15):
+  4. Produce a `PrivacyScanReport` with `passed: boolean` and a per-check breakdown matching the exact five bullet points in the source blueprint's on-chain inspection checklist (§9/§15):
      - No name/phone/contact field in any anchored payload
      - No raw GPS coordinate in any anchored payload
      - No evidence file bytes on-chain (checksum only)
      - Every anchor carries a `version`
      - Revocation reason text is off-chain; only `reasonCode` is anchored
-- Output: printed as a pass/fail checklist to stdout (for the pre-demo manual run) and also returned as a structured object (for an optional CI assertion).
+- Output: printed as a pass/fail checklist to stdout (for the pre-demo manual run, `npx ts-node adapter/privacyScan.ts` or a small CLI wrapper) and also returned as a structured object (for an optional CI assertion / Jest test).
 
-### 7.7 `adapter/__init__.py`
-- Exposes the package's public surface: `canonicalize`, `hash_payload` and its named wrappers, `ChainClient`, the `enqueue_*` functions, `get_job_status`, and `scan_recent_events`. Internal modules (`models`) are not re-exported beyond the types callers need (`AnchorJob`, `AnchorState`, `VerificationResult`).
+### 7.7 `adapter/index.ts`
+- Barrel file exposing the package's public surface: `canonicalize`, `hashPayload` and its named wrappers, `ChainClient`, the `enqueue*` functions, `getJobStatus`, `scanRecentEvents`, and the shared types from `types.ts`. Internal helper functions not meant for external use are not re-exported here.
 
 ---
 
-## 8. `test/` — Hardhat/Solidity test files (JavaScript, per §9)
+## 8. `test/` — Hardhat/Solidity test files (TypeScript via Hardhat's `ts-node` support)
 
-### `test/issueRevoke.test.js`
-- Deploys a fresh contract per test (Hardhat fixture).
+### `test/issueRevoke.test.ts`
+- Deploys a fresh contract per test (Hardhat fixture, `loadFixture`).
 - Asserts: `issueId` from an authorized issuer succeeds and emits `IdIssued` with exact expected args.
 - Asserts: `issueId` from a non-authorized address reverts with `"NOT_AUTHORIZED_ISSUER"`.
 - Asserts: `issueId` with `expiresAt <= issuedAt` reverts with `"INVALID_WINDOW"`.
@@ -386,53 +390,55 @@ This is the layer the Node/Express backend actually calls. It owns canonicalizat
 - Asserts: `revokeId` on an active ID succeeds, emits `IdRevoked` with the given `reasonCode`, and a subsequent `verifyId` returns `REVOKED`.
 - Asserts: `revokeId` twice reverts with `"ID_NOT_ACTIVE"`.
 - Asserts: `revokeId` on a non-existent `idHash` reverts with `"ID_NOT_FOUND"`.
-- Asserts: after time-travel (Hardhat `evm_increaseTime`) past `expiresAt`, `verifyId` returns `EXPIRED` even though the ID was never explicitly revoked.
+- Asserts: after time-travel (Hardhat Network Helpers `time.increase`) past `expiresAt`, `verifyId` returns `EXPIRED` even though the ID was never explicitly revoked.
 
-### `test/evidenceAnchor.test.js`
-- Asserts: `anchorEvidence` from an authorized issuer succeeds, emits `EvidenceAnchored`, and `verifyEvidence` subsequently returns `exists == true` with a non-zero timestamp.
+### `test/evidenceAnchor.test.ts`
+- Asserts: `anchorEvidence` from an authorized issuer succeeds, emits `EvidenceAnchored`, and `verifyEvidence` subsequently returns `exists === true` with a non-zero timestamp.
 - Asserts: calling `anchorEvidence` twice with the same hash does **not** revert and does **not** re-emit a second event with a different timestamp (idempotency — Invariant 5) — checked by asserting the second call's transaction emits zero `EvidenceAnchored` events.
 - Asserts: unauthorized caller reverts.
 - Mirrors the same three assertions for `anchorIncident`/`verifyIncident` and `anchorConsent`/`verifyConsent`.
 
-### `test/incidentAnchor.test.js`
+### `test/incidentAnchor.test.ts`
 - Contract-level state-machine test mirroring the incident timeline story from the source blueprint: anchor a `CREATED` snapshot hash, then an `ASSIGNED` snapshot hash, then a `RESOLVED` snapshot hash (three separate `incidentHash` values, since each snapshot is a different canonical payload) — asserts all three anchor independently and all three are independently verifiable, demonstrating "tampering after close" would require altering a *specific* anchored snapshot without ability to do so.
 
-### `test/accessControl.test.js`
+### `test/accessControl.test.ts`
 - Asserts `authorizeIssuer`/`revokeIssuer` only callable by `admin`.
 - Asserts a newly authorized issuer can call `issueId`; asserts a revoked issuer can no longer call any state-changing function (reverts `"NOT_AUTHORIZED_ISSUER"`).
 - Asserts the deployer is auto-authorized at construction (per §2's constructor spec).
 
-### `test/idempotency.test.js`
-- **Cross-language determinism test.** Takes a fixed sample payload, computes its hash two ways: (a) via the JS reference `canonicalize`/hash helper mirrored in `scripts/seedDemo.js`, and (b) via a fixture file of expected outputs generated once by running the Python `adapter/hasher.py` against the same fixed input and committing the expected hex digest as a test fixture (`test/fixtures/canonical_hashes.json`). Asserts both equal the same expected digest. This is the guard against the two implementations (JS demo scripts vs. Python adapter) silently drifting apart, which would otherwise be a subtle, hard-to-detect bug (a hash computed by the backend wouldn't match one computed by a demo script, even though both are "correct" in isolation).
-- Re-anchoring the same evidence hash through the full submit→wait→submit-again path produces only one `EvidenceAnchored` event total.
+### `test/idempotency.test.ts`
+- **Determinism regression test.** Takes a fixed sample payload, computes its hash via `adapter/hasher.ts`'s `hashPayload`, and asserts it equals a hardcoded expected digest committed as a fixture (`test/fixtures/canonicalHashes.json`) — this guards against a future refactor of `canonicalize.ts` (e.g., swapping the canonical-JSON library) silently changing digests for existing anchored records, which would break every already-issued proof. Since the adapter and the contract-test suite are now the same language, this test can `import` `hashPayload` directly rather than needing a cross-language fixture comparison.
+- Re-anchoring the same evidence hash through the full submit→wait→submit-again path (via `ChainClient` directly, or through `jobQueue`'s idempotency guard) produces only one `EvidenceAnchored` event total.
 
 ---
 
-## 9. Language Boundary & Backend Integration (binding decision, not optional)
+## 9. Backend Integration (in-process, single language)
 
-**Why not pure Python:** Hardhat, the Solidity compiler toolchain, ethers.js-based deploy/test ergonomics, and the project's own stated stack (`Solidity + Hardhat + ethers.js`, per the source blueprint's approved technology table) are JavaScript-first tooling with no equivalent-maturity Python alternative for this scope. Fighting that would cost more time than it saves during a hackathon.
+Because the adapter is TypeScript, the Node/Express backend imports it exactly like any other internal module — no service boundary, no port to configure, no second deployment target:
 
-**Why the adapter is still Python:** Everything that is *not* Hardhat-specific (canonicalization, hashing, salting, job queueing, privacy scanning) is ordinary application logic with no dependency on Hardhat's JS runtime. `web3.py` talks to the exact same JSON-RPC endpoint Hardhat exposes (`http://127.0.0.1:8545`), so a Python process can submit transactions to the Hardhat node exactly as ethers.js would — there is no functional loss.
+```ts
+import { enqueueAnchorEvidence, getJobStatus, hashEvidenceManifest } from "../../blockchain/adapter";
+```
 
-**Integration shape (pick one, document the choice in `README.md` §12):**
-- **Option A (recommended): the Python adapter runs as a small internal FastAPI service** (`adapter_service.py`, exposing `POST /internal/anchors/evidence`, `GET /internal/anchors/:jobId`, etc.), and the Node/Express backend calls it over HTTP exactly the way it already calls the AI service — this matches the project's existing pattern of "Node core + Python microservice for non-JS-native work" (the AI service is already specified this way in the source blueprint's §04A), so there's zero new architectural concept for the team to learn.
-- **Option B: the Node backend shells out to Python as short-lived CLI invocations** for each operation. Simpler to wire up with no new running process, but worse for the async job-queue worker loop (§7.5), which wants to run continuously, not be re-invoked as a subprocess every 5 seconds. Not recommended for that reason.
+- **Route handlers** (e.g. `POST /incidents/:id/evidence`) compute the manifest hash via `hashEvidenceManifest(...)`, call `enqueueAnchorEvidence(hash, version)`, store the returned `jobId` alongside the `EvidenceFile`/`EvidenceHash` row, and respond to the client immediately — matching Invariant 4 exactly, with zero network hop to a separate adapter process.
+- **The worker loop** (`runWorkerOnce`, §7.5) is started once at backend process boot, e.g. in the same `server.ts` that starts Express: `setInterval(() => jobQueue.runWorkerOnce(), 5000);`. If the team later wants the worker isolated from the request-serving process (e.g. to avoid the polling loop competing for event-loop time under load), it can be extracted into a second `node dist/worker.js` entry point that imports the same `adapter` package — no code changes to the adapter itself, only to which script boots it.
+- **Status display**: any endpoint that needs to show anchor status (tourist app's ID screen, dispatcher's evidence view) calls `getJobStatus(jobId)` and returns `PENDING`/`CONFIRMED`/`FAILED` directly to the frontend, per the source blueprint's "never hidden" requirement.
 
-**This blueprint assumes Option A.** `adapter_service.py` (one additional file, living at `blockchain/adapter/adapter_service.py`) is a thin FastAPI wrapper: each endpoint validates the request body, calls the corresponding `job_queue.enqueue_*` function, and returns `{"jobId": "..."}` immediately (HTTP 202-style semantics even if actually returning 200) — never waits on-chain inline. A background task (FastAPI `BackgroundTasks` or a simple `asyncio` loop started at service startup) calls `job_queue.run_worker_once()` on a fixed interval.
+This is strictly simpler than a cross-language design: one `package.json`, one `node_modules`, one test runner (Jest or Vitest can cover both `adapter/*.test.ts` unit tests and, separately, Hardhat's own `test/*.test.ts` contract tests — two test commands, one language).
 
 ---
 
 ## 10. `docs/on-chain-inspection-checklist.md`
 
 ### Purpose
-The literal, human-readable checklist the team runs before every demo (source blueprint §9 requires this as "a documented checklist step"). Content is a direct markdown transcription of the checks `adapter/privacy_scan.py` automates, plus two manual-only steps that can't be automated:
+The literal, human-readable checklist the team runs before every demo (source blueprint §9 requires this as "a documented checklist step"). Content is a direct markdown transcription of the checks `adapter/privacyScan.ts` automates, plus two manual-only steps that can't be automated:
 - [ ] No name, phone, or contact field in any anchored payload *(automated)*
 - [ ] No raw GPS coordinate in any anchored payload *(automated)*
 - [ ] No evidence file bytes on-chain — checksum only *(automated — structural ABI check)*
 - [ ] Every anchor carries a `version` *(automated)*
 - [ ] Reason text for revocation is off-chain; only `reasonCode` is anchored *(automated — checked structurally, since `IdRevoked`'s ABI has no string field)*
 - [ ] Manual: open `deployments/<network>.json`, confirm `contractAddress` matches what the demo UI displays *(manual)*
-- [ ] Manual: have one team member not involved in blockchain work independently run `python -m adapter.privacy_scan` and confirm `passed: true` *(manual, second-pair-of-eyes)*
+- [ ] Manual: have one team member not involved in blockchain work independently run `npx ts-node adapter/privacyScan.ts` and confirm `passed: true` *(manual, second-pair-of-eyes)*
 
 ---
 
@@ -441,14 +447,14 @@ The literal, human-readable checklist the team runs before every demo (source bl
 ### Purpose
 Onboarding doc for the rest of the team (and for Prateek's own future reference). Must cover, in order:
 1. One-paragraph restatement of Invariant 1–7 (the "why" — so nobody on the team accidentally proposes putting a GPS point on-chain later).
-2. Local setup: `npm install` in `blockchain/` for Hardhat tooling; `pip install -e .` (or `poetry install`) for the `adapter/` package.
+2. Local setup: `npm install` in `blockchain/` (covers both Hardhat tooling and the adapter package — one install, since it's all one `package.json`).
 3. Running a local chain: `npx hardhat node`.
-4. Deploying: `npx hardhat run scripts/deploy.js --network localhost`.
-5. Running the demo seed: `node scripts/seedDemo.js`.
-6. Starting the adapter service: `uvicorn adapter.adapter_service:app --port 8090` (or whatever port is chosen — must match what the Node backend's `.env` points at).
-7. Running tests: `npx hardhat test` (contract layer) and `pytest blockchain/adapter` (Python layer).
-8. Running the privacy scan: `python -m adapter.privacy_scan`.
-9. The env var table from §10 of the source blueprint (`CHAIN_RPC_URL`, `CONTRACT_ADDRESS`, `ISSUER_PRIVATE_KEY`, `CHAIN_ID`), plus the adapter-specific `CONTRACT_VERSION` and the adapter service's own port/URL for the backend to call.
+4. Deploying: `npx hardhat run scripts/deploy.ts --network localhost`.
+5. Running the demo seed: `npx ts-node scripts/seedDemo.ts`.
+6. How the backend consumes the adapter: `import { ... } from "../../blockchain/adapter"` — no separate process to start.
+7. Running tests: `npx hardhat test` (contract layer, `test/*.test.ts`) and `npx jest adapter` or `npx vitest adapter` (adapter unit tests, if kept separate from the Hardhat test run).
+8. Running the privacy scan: `npx ts-node adapter/privacyScan.ts`.
+9. The env var table from §6 (`CHAIN_RPC_URL`, `CONTRACT_ADDRESS`, `ISSUER_PRIVATE_KEY`, `CHAIN_ID`, `CONTRACT_VERSION`).
 10. A one-line pointer to the Judge Q&A table (source blueprint §13A / §18) so whoever demos can answer "why blockchain?" confidently.
 
 ---
@@ -457,23 +463,24 @@ Onboarding doc for the rest of the team (and for Prateek's own future reference)
 
 | Source blueprint requirement | Implemented in |
 |---|---|
-| Hash canonical, versioned payloads | `adapter/canonicalize.py` |
-| Salt low-entropy identifiers | `adapter/hasher.py` (`hash_id_payload`) |
-| Queue blockchain work, never block SOS | `adapter/job_queue.py` |
-| PENDING/CONFIRMED/FAILED states | `adapter/models.py` (`AnchorState`), `adapter/job_queue.py` |
-| Idempotent re-anchoring | `TrustAnchor.sol` (§2 anchor functions), `test/evidenceAnchor.test.js`, `job_queue.py` step 4 |
-| Backend-only signer, no tourist wallets | `adapter/chain_client.py` (single `ISSUER_PRIVATE_KEY`), contract has no tourist-facing function |
-| Local Hardhat primary, testnet optional | `config/hardhat.config.js`, `scripts/deploy.js` |
-| `issueId`/`revokeId`/`verifyId` | `TrustAnchor.sol`, `scripts/issue.js` / `revoke.js` / `verify.js` |
-| `anchorEvidence`/`anchorIncident` | `TrustAnchor.sol`, `scripts/anchorEvidence.js` / `anchorIncident.js` |
-| Consent receipts (same pattern) | `TrustAnchor.sol` (`anchorConsent`), `adapter/hasher.py` (`hash_consent_receipt`) |
+| Hash canonical, versioned payloads | `adapter/canonicalize.ts` |
+| Salt low-entropy identifiers | `adapter/hasher.ts` (`hashIdPayload`) |
+| Queue blockchain work, never block SOS | `adapter/jobQueue.ts` |
+| PENDING/CONFIRMED/FAILED states | `adapter/types.ts` (`AnchorState`), `adapter/jobQueue.ts` |
+| Idempotent re-anchoring | `TrustAnchor.sol` (§2 anchor functions), `test/evidenceAnchor.test.ts`, `jobQueue.ts` step 4 |
+| Backend-only signer, no tourist wallets | `adapter/chainClient.ts` (single `ISSUER_PRIVATE_KEY`), contract has no tourist-facing function |
+| Local Hardhat primary, testnet optional | `config/hardhat.config.ts`, `scripts/deploy.ts` |
+| `issueId`/`revokeId`/`verifyId` | `TrustAnchor.sol`, `scripts/issue.ts` / `revoke.ts` / `verify.ts` |
+| `anchorEvidence`/`anchorIncident` | `TrustAnchor.sol`, `scripts/anchorEvidence.ts` / `anchorIncident.ts` |
+| Consent receipts (same pattern) | `TrustAnchor.sol` (`anchorConsent`), `adapter/hasher.ts` (`hashConsentReceipt`) |
 | Agency/key revocation registry | `TrustAnchor.sol` (`authorizeIssuer`/`revokeIssuer`) |
-| Transaction hash/chain/version stored in Postgres | `adapter/job_queue.py` writes to `blockchain_anchor_jobs` table (schema owned by backend Prisma migration, out of scope of this blueprint but the contract is specified here) |
-| Chain-outage resilience / demo drill | `adapter/chain_client.py` error classes, `adapter/job_queue.py` retry logic |
-| On-chain inspection checklist | `adapter/privacy_scan.py`, `docs/on-chain-inspection-checklist.md` |
-| Deterministic demo proof | `scripts/seedDemo.js` |
-| Contract test coverage (issue/verify/revoke, idempotency, access control) | `test/*.test.js` |
-| Cross-language hash consistency | `test/idempotency.test.js` |
+| Transaction hash/chain/version stored in Postgres | `adapter/jobQueue.ts` writes to `blockchain_anchor_jobs` table (schema owned by backend Prisma migration, out of scope of this blueprint but the contract is specified here) |
+| Chain-outage resilience / demo drill | `adapter/chainClient.ts` error classes, `adapter/jobQueue.ts` retry logic |
+| On-chain inspection checklist | `adapter/privacyScan.ts`, `docs/on-chain-inspection-checklist.md` |
+| Deterministic demo proof | `scripts/seedDemo.ts` |
+| Contract test coverage (issue/verify/revoke, idempotency, access control) | `test/*.test.ts` |
+| Hash-determinism regression guard | `test/idempotency.test.ts` |
+| In-process backend integration | §9 (no separate service — one language, one runtime) |
 
 ---
 
