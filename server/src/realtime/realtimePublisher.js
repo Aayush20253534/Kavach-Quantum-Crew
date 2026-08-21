@@ -29,6 +29,9 @@ export const realtimePublisher = Object.freeze({
   publishIncidentNote(incident, note) {
     emitIncident("incident:note", incident, { note });
   },
+  publishIncidentMessage(incident, message) {
+    emitIncident("incident:message", incident, { message });
+  },
   publishNotificationCreated(notification) {
     if (!socketServer || !notification?.targetAccountId || !notification?.targetRole) return;
     socketServer
