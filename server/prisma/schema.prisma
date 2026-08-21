@@ -1,0 +1,206 @@
+generator client {
+  // This JavaScript backend uses the legacy JS generator for runtime compatibility.
+  // Prisma 7 still supports it; migrate to `prisma-client` when the app moves to TS.
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  TOURIST
+  DISASTER_MANAGER
+  SYSTEM_ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  DISABLED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum TripType {
+  SOLO
+  GROUP
+}
+
+enum TripStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum ConsentType {
+  LOCATION_TRACKING
+  EMERGENCY_SHARING
+}
+
+enum ConsentStatus {
+  GRANTED
+  REVOKED
+}
+
+// Tourist account. Tourist onboarding/profile fields live directly on this table.
+model User {
+  id                  String        @id @default(uuid()) @db.Uuid
+  name                String        @db.VarChar(120)
+  username            String        @unique @db.VarChar(40)
+  email               String        @unique @db.VarChar(254)
+  phone                String        @unique @db.VarChar(20)
+  passwordHash         String
+  status               AccountStatus @default(ACTIVE)
+  onboardingCompleted Boolean       @default(false)
+  profilePicUrl       String?       @db.Text
+  gender              Gender?
+  age                 Int?
+  medicalHistory      String?       @db.Text
+  emergencyPhone      String?       @db.VarChar(20)
+  nationality         String?       @db.VarChar(80)
+  lastLoginAt         DateTime?
+  passwordChangedAt   DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  trips               Trip[]
+
+  @@index([status])
+  @@index([nationality])
+  @@map("users")
+}
+
+model DisasterManager {
+  id                String        @id @default(uuid()) @db.Uuid
+  name              String        @db.VarChar(120)
+  username          String        @unique @db.VarChar(40)
+  email             String        @unique @db.VarChar(254)
+  phone             String        @unique @db.VarChar(20)
+  passwordHash      String
+  status            AccountStatus @default(ACTIVE)
+  organization      String?       @db.VarChar(160)
+  jurisdiction      String?       @db.VarChar(160)
+  staffInfo         String?       @db.Text
+  lastLoginAt       DateTime?
+  passwordChangedAt DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([status])
+  @@map("disaster_managers")
+}
+
+model SystemAdmin {
+  id                String        @id @default(uuid()) @db.Uuid
+  name              String        @db.VarChar(120)
+  username          String        @unique @db.VarChar(40)
+  email             String        @unique @db.VarChar(254)
+  phone             String        @unique @db.VarChar(20)
+  passwordHash      String
+  status            AccountStatus @default(ACTIVE)
+  lastLoginAt       DateTime?
+  passwordChangedAt DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([status])
+  @@map("system_admins")
+}
+
+// Sessions are shared by all three account tables. accountRole identifies which
+// account table accountId belongs to, avoiding fake User rows for staff roles.
+model AuthSession {
+  id               String   @id @default(uuid()) @db.Uuid
+  accountId        String   @db.Uuid
+  accountRole      Role
+  refreshTokenHash String   @unique @db.VarChar(64)
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  userAgent        String?  @db.VarChar(512)
+  ipAddress        String?  @db.VarChar(64)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([accountId, accountRole, revokedAt])
+  @@index([expiresAt])
+  @@map("auth_sessions")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @db.Uuid
+  actorRole  Role?
+  action     String   @db.VarChar(100)
+  entityType String?  @db.VarChar(100)
+  entityId   String?  @db.VarChar(100)
+  metadata   Json?
+  ipAddress  String?  @db.VarChar(64)
+  createdAt  DateTime @default(now())
+
+  @@index([actorId, actorRole, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+
+model Trip {
+  id             String      @id @default(uuid()) @db.Uuid
+  touristId      String      @db.Uuid
+  locationName   String      @db.VarChar(160)
+  tripType       TripType
+  status         TripStatus  @default(PLANNED)
+  plannedStartAt DateTime
+  plannedEndAt   DateTime
+  startedAt      DateTime?
+  endedAt        DateTime?
+  cancelledAt    DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  tourist  User           @relation(fields: [touristId], references: [id], onDelete: Cascade)
+  safetyId TripSafetyId?
+  consents TripConsent[]
+
+  @@index([touristId, status, createdAt])
+  @@index([plannedStartAt, plannedEndAt])
+  @@map("trips")
+}
+
+model TripSafetyId {
+  id        String    @id @default(uuid()) @db.Uuid
+  tripId    String    @unique @db.Uuid
+  publicId  String    @unique @db.VarChar(80)
+  issuedAt  DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt, revokedAt])
+  @@map("trip_safety_ids")
+}
+
+model TripConsent {
+  id        String        @id @default(uuid()) @db.Uuid
+  tripId    String        @db.Uuid
+  type      ConsentType
+  status    ConsentStatus @default(GRANTED)
+  grantedAt DateTime      @default(now())
+  revokedAt DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, type])
+  @@index([tripId, status])
+  @@map("trip_consents")
+}

@@ -1,0 +1,73 @@
+import { ApiResponse } from "../../common/responses/ApiResponse.js";
+import { environment } from "../../config/environment.js";
+import { authService } from "./auth.service.js";
+
+const requestContext = (request) => ({
+  userAgent: request.get("user-agent"),
+  ipAddress: request.ip,
+});
+
+const refreshCookieOptions = (config = environment) => ({
+  httpOnly: true,
+  secure: config.IS_PRODUCTION,
+  sameSite: config.IS_PRODUCTION ? "none" : "lax",
+  path: `${config.API_PREFIX}/auth`,
+  maxAge: config.REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000,
+});
+
+const sendAuth = (response, result, { statusCode = 200, message }) => {
+  response.cookie(
+    environment.REFRESH_COOKIE_NAME,
+    result.refreshToken,
+    refreshCookieOptions(),
+  );
+  return ApiResponse.success(response, {
+    statusCode,
+    message,
+    data: { user: result.user, accessToken: result.accessToken },
+  });
+};
+
+export const createAuthController = ({ service = authService } = {}) => ({
+  register: async (request, response) => {
+    const result = await service.register(request.body, requestContext(request));
+    return sendAuth(response, result, {
+      statusCode: 201,
+      message: "Tourist account created",
+    });
+  },
+
+  login: async (request, response) => {
+    const result = await service.login(request.body, requestContext(request));
+    return sendAuth(response, result, { message: "Signed in successfully" });
+  },
+
+  refresh: async (request, response) => {
+    const token =
+      request.cookies?.[environment.REFRESH_COOKIE_NAME] ??
+      request.body.refreshToken;
+    const result = await service.refresh(token);
+    return sendAuth(response, result, { message: "Session refreshed" });
+  },
+
+  logout: async (request, response) => {
+    const token =
+      request.cookies?.[environment.REFRESH_COOKIE_NAME] ??
+      request.body.refreshToken;
+    await service.logout(token);
+    response.clearCookie(
+      environment.REFRESH_COOKIE_NAME,
+      refreshCookieOptions(),
+    );
+    return ApiResponse.success(response, { message: "Signed out successfully" });
+  },
+
+  me: async (request, response) =>
+    ApiResponse.success(response, {
+      message: "Authenticated account",
+      data: await service.getMe(request.user.id, request.user.role),
+    }),
+});
+
+export const authController = createAuthController();
+export default authController;
