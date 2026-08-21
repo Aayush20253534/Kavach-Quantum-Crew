@@ -15,6 +15,7 @@ const publicAccountSelect = Object.freeze({
 
 const touristPublicSelect = Object.freeze({
   ...publicAccountSelect,
+  emailVerifiedAt: true,
   onboardingCompleted: true,
   profilePicUrl: true,
   gender: true,
@@ -91,6 +92,44 @@ export const createAuthRepository = ({ db = prisma } = {}) => ({
       select: selectForRole(role),
     });
     return withRole(account, role);
+  },
+
+  findTouristByEmail(email) {
+    return db.user.findUnique({
+      where: { email: email.trim().toLowerCase() },
+      select: touristPublicSelect,
+    }).then((user) => withRole(user, ROLES.TOURIST));
+  },
+
+  markTouristEmailVerified(id, verifiedAt = new Date()) {
+    return db.user.update({
+      where: { id },
+      data: { emailVerifiedAt: verifiedAt },
+      select: touristPublicSelect,
+    }).then((user) => withRole(user, ROLES.TOURIST));
+  },
+
+  findEmailVerificationOtp(userId) {
+    return db.emailVerificationOtp.findUnique({ where: { userId } });
+  },
+
+  upsertEmailVerificationOtp(userId, data) {
+    return db.emailVerificationOtp.upsert({
+      where: { userId },
+      create: { userId, ...data },
+      update: data,
+    });
+  },
+
+  incrementEmailVerificationAttempts(userId) {
+    return db.emailVerificationOtp.update({
+      where: { userId },
+      data: { attempts: { increment: 1 } },
+    });
+  },
+
+  deleteEmailVerificationOtp(userId) {
+    return db.emailVerificationOtp.deleteMany({ where: { userId } });
   },
 
   createSession(data) {
