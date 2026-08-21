@@ -1,0 +1,6 @@
+node_modules/
+coverage/
+src/generated/
+storage/
+Backend-architecture.txt
+package-lock.json
