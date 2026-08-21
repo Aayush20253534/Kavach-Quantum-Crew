@@ -1,68 +1,52 @@
 # Frontend Memory
 
 ## 1. Project State & Structure
-The frontend is a React + Vite application structured using a feature-based architecture.
+The frontend is a modern, high-aesthetic React + Vite application structured using a feature-based architecture following `Design.md` and `Architecture.md`.
 
-**Important Folders:**
-- `src/app/`: Application core, containing `App.jsx`, `router.jsx`, `providers.jsx`, route `guards/`, and shared `layouts/`.
-- `src/components/ui/`: Reusable UI elements (`Button`, `Input`, `Card`, `Badge`, `Modal`, `Loader`, `EmptyState`).
-- `src/features/`: Domain-specific modules (`auth`, `onboarding`, `tourist`, `authority`, `trips`, `groups`, `incidents`, `sos`, `profile`, `public`).
+**Core Folders:**
+- `src/app/`: Application core, containing `App.jsx`, `router.jsx`, `providers.jsx`, route `guards/`, and shared `layouts/` (`PublicLayout`, `AuthLayout`, `TouristLayout`, `AuthorityLayout`).
+- `src/components/ui/`: Reusable UI elements (`Button`, `SOSButton`, `Input`, `Select`, `Textarea`, `Card`, `Badge`, `Modal`, `Loader`, `EmptyState`).
+- `src/components/chatbot/`: Floating `ChatbotWidget.jsx` (Rakshak AI Safety Companion).
+- `src/features/`: Domain-specific modules (`auth`, `onboarding`, `tourist`, `authority`, `trips`, `groups`, `incidents`, `profile`, `public`).
 - `src/services/`: API clients (`apiClient.js` for Axios, `queryClient.js` for TanStack Query).
 - `src/store/`: Redux store configuration.
-- `src/lib/`: Shared utilities (e.g., `utils.js` with `cn()` for Tailwind class merging).
-- `docs/`: Critical project documentation (`Rules.md`, `Phases.md`, `Design.md`, `Architecture.md`, `PRD.md`).
+- `src/lib/`: Shared utilities (`utils.js` with `cn()`).
+- `src/styles/`: Global dark theme tokens, glowing border utilities, radar sweep animations in `globals.css`.
+- `docs/`: Project documentation (`Rules.md`, `Phases.md`, `Design.md`, `Architecture.md`, `PRD.md`, `Prachi.md`).
 
 ## 2. Technologies & Libraries
 - **Core:** React (v19), Vite (v8)
 - **Styling:** Tailwind CSS (v4), `clsx`, `tailwind-merge`, `lucide-react`
 - **Routing:** React Router DOM (v7)
-- **State Management:** Redux Toolkit (global UI/Auth state), TanStack React Query (server state)
+- **State Management:** Redux Toolkit (global UI/Auth/Session state), TanStack React Query (server state)
 - **API & Forms:** Axios, React Hook Form, Zod
 
 ## 3. Implemented Features & Architecture
-- **Routing & Guards:** Comprehensive route protection is in place.
-  - `AuthInitializer`: Blocks rendering until the authentication session is verified.
-  - `PublicRoute`: Diverts authenticated users to their respective dashboards.
-  - `ProtectedRoute`: Ensures only authenticated users can access the content.
-  - `RoleRoute`: Enforces role-based access (`TOURIST` vs `AUTHORITY`).
-  - `OnboardingRoute`: Enforces the safety onboarding flow specifically for tourists.
-- **Layouts:** `PublicLayout`, `AuthLayout`, `TouristLayout`, and `AuthorityLayout` shells are created.
-- **Placeholders:** Every major route specified in the product plan has a dedicated placeholder page component (e.g., `TouristDashboardPage`, `CreateTripPage`, `JoinGroupPage`).
-- **UI Components:** Foundational generic components (Button, Input, Card, Modal, Loader, Badge, EmptyState) exist.
-- **API & Store Setup:** `apiClient` with Axios interceptors and a global Redux store (`store/index.js`) integrated with `Providers`.
+- **Design System**: Deep navy theme (`#060B16` / `#0D1526` / `#111C30`), electric cyan/blue accents, pulsing emergency SOS triggers, glowing semantic risk badges, glassmorphism cards, and sleek scrollbars.
+- **Routing & Guards**: Comprehensive route protection and initialization in `router.jsx` and `guards/*`.
+- **Layouts**:
+  - `PublicLayout`: Emergency ribbon, glass navbar, CTAs, and safety hotlines footer.
+  - `AuthLayout`: Security backdrop with back navigation.
+  - `TouristLayout`: Mobile bottom navigation + Desktop sidebar with quick SOS and status pill.
+  - `AuthorityLayout`: High-density command center layout with alert ticker.
+- **Phase 1 & 2 Pages**:
+  - `HomePage`: Hero section with animated radar visualizer, live protection stats, Prayagraj Safe Zones preview, features grid, emergency hotlines, and call-to-action.
+  - `LoginPage`: Multi-role login (Tourist, Authority, Admin) with role tabs, password toggle, and validation.
+  - `RegisterPage`: Full registration with password strength meter and terms acceptance.
+- **Phase 3 & 4 Pages**:
+  - `OnboardingPage`: 4-step wizard collecting Personal Details, Emergency Contact, Medical Info, and Safety & Privacy Permissions.
+  - `TouristDashboardPage`: Dual-state command center supporting **State A (No Active Trip)** and **State B (Active Trip)** with an interactive state switch toolbar.
+- **Trips, Groups, Incidents & Profile**:
+  - `CreateTripPage`, `CurrentTripPage`, `TripHistoryPage`.
+  - `CreateGroupPage` (Dynamic QR generation & shareable link) and `JoinGroupPage` (Camera viewfinder simulator & manual code).
+  - `ReportIncidentPage` and `IncidentHistoryPage`.
+  - `ProfilePage` (Digital Tourist Safety ID Card).
+  - `AuthorityDashboardPage` (Live SOS triage feed, crowd density monitor, mass broadcast alert modal).
+  - `ChatbotWidget` (Rakshak AI 24/7 Safety Assistant).
 
-## 4. Authentication & State Management
-- **Redux Auth Slice (`src/features/auth/store/authSlice.js`):**
-  - Manages global session state with `{ user: { id, name, role, onboardingComplete }, isAuthenticated, initialized }`.
-  - Actions `setAuth`, `setInitialized`, `logout` are configured.
+## 4. Current Phase & Progress
+**Current Phase:** Phase 1-4 & Core Feature UI Design Complete
+**Status:** Completed & Verified against Vite build (`npm run build` passed in 4.05s).
 
-## 5. API Integrations
-- **No live endpoints** are currently integrated. The `apiClient.js` is configured with interceptors and a base URL reading from `import.meta.env.VITE_API_URL`, but all components currently render placeholder text.
-
-## 6. Architectural Decisions
-- **Feature Isolation:** Pages, API calls, and logic belong to specific features rather than global folders.
-- **Route Authorization vs Authentication:** Split into `ProtectedRoute` and `RoleRoute` to strictly enforce separation of concerns.
-- **Global SOS vs UI State:** Decided to defer creating a complex global Redux slice for SOS until backend contracts are established; SOS will likely rely on server state.
-- **State Segregation:** Redux strictly handles client/auth state, while TanStack Query will manage all backend data fetching and caching.
-
-## 7. Current Phase & Progress
-**Current Phase:** Phase 1 — Design System and Application Shell 
-**Status:** In Progress
-
-- **Phase 0 — Foundation Verification:** Completed.
-- **Phase 1 — Design System and Application Shell:** Partially completed. The structural layout and reusable components are scaffolded, awaiting final UI/UX designs from the designer (Prachi).
-- **Phases 2-11:** Not Started.
-
-## 8. Incomplete Work, Bugs, Blockers, & TODOs
-- **Blocker:** Waiting on UI/UX mockups from the design team to replace the placeholder pages and refine the shared layouts (`TouristLayout`, `AuthorityLayout`, etc.).
-- **Blocker:** Waiting on Backend API contracts and endpoint documentation to integrate actual requests into `apiClient`, Auth hooks, and TanStack queries.
-- **TODO:** Implement the `AuthInitializer` API call to restore sessions on refresh (currently left as a commented-out stub).
-
-## 9. Important Files to Inspect
-- `frontend/src/app/router.jsx` (Central routing hub)
-- `frontend/src/app/guards/*` (All authorization logic)
-- `frontend/src/features/auth/store/authSlice.js` (Auth state structure)
-- `frontend/docs/Rules.md` & `frontend/docs/Phases.md` (Strict operational guidelines)
-
-## 10. Next Recommended Step
-Integrate the actual UI/UX designs for the **Application Shell** (Navbars/Sidebars in `layouts/`) and the **Public Landing Page** once provided, or begin wiring up the **Authentication Flow** (Phase 2) if backend API endpoints become available first. Do not invent new features or UI without explicit design guidelines.
+## 5. Next Recommended Step
+Proceed to connect live backend REST endpoints / WebSockets for live SOS dispatching and database integration when backend contracts are ready.
