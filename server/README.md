@@ -88,8 +88,43 @@ Commit example files only. Never commit `.env`, database credentials, tokens, se
 accounts, private keys, or uploaded evidence. In production, use explicit HTTPS origins;
 wildcard CORS is rejected when credentials are enabled and is always rejected in production.
 
-## Next implementation step
+## Phase 1 - Tourist authentication and onboarding
 
-Phase 1 should add authentication, refresh-session handling, and role authorization for the
-three agreed roles: `TOURIST`, `DISASTER_MANAGER`, and `SYSTEM_ADMIN`. Authenticated
-Socket.IO middleware should be added in that phase before any tracking events are exposed.
+Phase 1 adds the permanent tourist account and onboarding/profile foundation required before trips, groups, tracking, SOS, and incidents. Tourist profile fields are stored directly on `users`; privileged staff accounts are stored separately in `disaster_managers` and `system_admins`.
+
+### Implemented API
+
+- `POST /api/v1/auth/register` - tourist signup with name, username, email, phone, password, and confirm password.
+- `POST /api/v1/auth/login` - sign in using username or email plus password.
+- `POST /api/v1/auth/refresh` - rotate the refresh token and return a new access token.
+- `POST /api/v1/auth/logout` - revoke the current refresh session.
+- `GET /api/v1/auth/me` - return the authenticated permanent account.
+- `POST /api/v1/tourists/me/onboarding` - save gender, age, medical history, emergency phone, and nationality.
+- `GET /api/v1/tourists/me` - return the tourist profile used by the Profile screen.
+- `PATCH /api/v1/tourists/me` - update supported profile fields.
+
+Access tokens expire after 15 minutes. Refresh tokens expire after 15 days, are rotated on refresh, stored only as SHA-256 hashes in PostgreSQL, and are also issued as HttpOnly cookies. Passwords use Argon2id. Tourist self-registration cannot create privileged staff accounts.
+
+### Database migration
+
+After setting `DATABASE_URL` and `DIRECT_URL` for Neon:
+
+```powershell
+npm run prisma:generate
+npm run prisma:validate
+npm run prisma:migrate
+```
+
+For a deployed environment, apply already-created migrations with:
+
+```powershell
+npm run prisma:migrate:deploy
+```
+
+### Optional staff seed accounts
+
+`SYSTEM_ADMIN` and `DISASTER_MANAGER` are authenticated from their own database tables, separate from tourist `users`. Set the optional `SEED_ADMIN_*` and `SEED_DM_*` variables in `.env`, then run `npm run prisma:seed`. If email/password values are left blank, that staff account is not created.
+
+### Not part of Phase 1
+
+Tourist dashboard live location, nearby safe zones, risk scoring, SOS/incident workflow, trip history, trip creation, group QR join/create, tracking, chatbot, and responder dispatch remain later phases. Their module placeholders stay untouched so Phase 1 does not pretend the emergency system exists before its foundations do.

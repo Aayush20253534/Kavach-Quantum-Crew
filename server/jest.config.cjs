@@ -2,7 +2,10 @@
 module.exports = {
   testEnvironment: "node",
   setupFiles: ["<rootDir>/tests/setup/testEnvironment.js"],
-  testMatch: ["<rootDir>/tests/phase0/**/*.test.js"],
+  testMatch: [
+    "<rootDir>/tests/phase0/**/*.test.js",
+    "<rootDir>/tests/phase1/**/*.test.js",
+  ],
   clearMocks: true,
   restoreMocks: true,
   collectCoverageFrom: [
