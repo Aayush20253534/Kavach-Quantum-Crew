@@ -2,13 +2,14 @@
 module.exports = {
   testEnvironment: "node",
   setupFiles: ["<rootDir>/tests/setup/testEnvironment.js"],
-testMatch: [
+"testMatch": [
   "<rootDir>/tests/phase0/**/*.test.js",
   "<rootDir>/tests/phase1/**/*.test.js",
   "<rootDir>/tests/phase4/**/*.test.js",
   "<rootDir>/tests/phase5/**/*.test.js",
   "<rootDir>/tests/phase6/**/*.test.js",
   "<rootDir>/tests/phase7/**/*.test.js",
+  "<rootDir>/tests/phase8/**/*.test.js"
 ],
   clearMocks: true,
   restoreMocks: true,

@@ -157,3 +157,49 @@ The agreed AI contract remains a later backend integration around `POST /trips/:
 Phase 5 adds backend-owned group membership for `GROUP` trips: group creation, leader/member authorization, expiring invitation tokens, join/leave/remove-member flows, and automatic group closure when a trip ends. The backend deliberately does not generate QR images; clients or the separately owned QR component can encode the returned `inviteToken`.
 
 Routes are under `/api/v1/groups`. Invitation tokens are returned only when created; only SHA-256 token hashes are persisted.
+
+## Phase 8 - Alerts, SOS, and Incident Response
+
+Phase 8 turns Phase 7 deterministic safety alerts into operational incidents and adds a manual SOS path.
+
+### Tourist endpoints
+
+- `GET /api/v1/alerts` - list own Phase 7 safety alerts.
+- `GET /api/v1/alerts/:alertId` - read an own safety alert.
+- `POST /api/v1/alerts/:alertId/acknowledge` - acknowledge an own alert.
+- `POST /api/v1/alerts/:alertId/resolve` - resolve an own alert.
+- `POST /api/v1/sos` - create a CRITICAL SOS incident for an active trip.
+- `GET /api/v1/sos/:sosId` - read an SOS when authorized.
+- `GET /api/v1/incidents/mine` - list own and active-group incidents.
+- `GET /api/v1/incidents/:incidentId` - read an authorized incident and its lifecycle events.
+
+### Disaster Management / System Admin endpoints
+
+- `GET /api/v1/incidents/queue` - active emergency queue.
+- `POST /api/v1/incidents/:incidentId/acknowledge`
+- `POST /api/v1/incidents/:incidentId/start`
+- `POST /api/v1/incidents/:incidentId/resolve`
+- `POST /api/v1/incidents/:incidentId/dismiss`
+- Equivalent operational routes are also exposed under `/api/v1/disaster-management/incidents`.
+
+### Lifecycle
+
+`OPEN -> ACKNOWLEDGED -> IN_PROGRESS -> RESOLVED`
+
+False positives can be moved to `DISMISSED` by Disaster Management or a System Admin. Every operational transition writes an immutable `IncidentEvent`, while major actions also write to the existing audit log.
+
+### Phase 7 integration
+
+When Phase 7 creates or reuses an active `SafetyAlert`, Phase 8 idempotently creates the matching incident using `sourceSafetyAlertId` as the unique key. Manual SOS incidents are always `CRITICAL` and use an explicitly supplied coordinate pair or the tourist's latest trusted location.
+
+### Migration
+
+Apply the new forward migration after pulling Phase 8:
+
+```powershell
+npm run prisma:generate
+npm run prisma:validate
+npm run prisma:migrate:deploy
+```
+
+The Phase 8 migration also repairs the missing Phase 6 tracking DDL found in the uploaded migration history using guarded `IF NOT EXISTS`/duplicate-object handling.
