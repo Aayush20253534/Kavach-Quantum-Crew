@@ -424,6 +424,47 @@ paths:
           schema: { type: string, format: uuid }
       responses:
         "200": { description: Responder returned }
+  /hazards:
+    get:
+      summary: List hazard reports visible to the authenticated account
+      responses:
+        "200": { description: Hazard list }
+    post:
+      summary: Submit a hazard report as a tourist
+      responses:
+        "201": { description: Hazard reported }
+  /hazards/nearby:
+    get:
+      summary: Find verified hazards near coordinates
+      responses:
+        "200": { description: Nearby hazards }
+  /hazards/{hazardId}:
+    get:
+      summary: Get a visible hazard report
+      parameters:
+        - in: path
+          name: hazardId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Hazard report }
+  /hazards/{hazardId}/verify:
+    patch:
+      summary: Verify a pending hazard report
+      responses:
+        "200": { description: Hazard verified }
+  /hazards/{hazardId}/reject:
+    patch:
+      summary: Reject a pending hazard report
+      responses:
+        "200": { description: Hazard rejected }
+  /hazards/{hazardId}/resolve:
+    patch:
+      summary: Resolve a verified hazard report
+      responses:
+        "200": { description: Hazard resolved }
+
+
 components:
   securitySchemes:
     bearerAuth:
