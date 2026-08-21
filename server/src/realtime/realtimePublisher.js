@@ -47,6 +47,12 @@ export const realtimePublisher = Object.freeze({
       .to(accountRoom(actor.role, actor.id))
       .emit("notification:read-all", { readAt });
   },
+  publishResponderStatus(responder) {
+    if (!socketServer || !responder?.id) return;
+    socketServer.to(roleRoom("DISASTER_MANAGER")).emit("responder:status", { responder });
+    socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("responder:status", { responder });
+    socketServer.to(accountRoom("DISASTER_MANAGER", responder.id)).emit("responder:status", { responder });
+  },
 });
 
 export const realtimeRooms = Object.freeze({ accountRoom, incidentRoom, roleRoom });
