@@ -251,3 +251,10 @@ This catalogue documents **145 mounted HTTP routes/aliases** in the current back
 | `GET` | `/api/v1/audit/summary` | SYSTEM_ADMIN | Return audit action summaries for a time range. |
 | `GET` | `/api/v1/observability/metrics` | SYSTEM_ADMIN | Read in-process HTTP operational metrics. |
 | `GET` | `/api/v1/observability/diagnostics` | SYSTEM_ADMIN | Read safe process/memory/database diagnostics. |
+
+## Tourist Email Verification
+
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| `POST` | `/api/v1/auth/verify-email` | Public verification flow | Verify a newly registered tourist using email + 6-digit OTP; successful verification creates the authenticated session. |
+| `POST` | `/api/v1/auth/resend-verification` | Public verification flow | Generate and email a replacement OTP subject to resend cooldown. |

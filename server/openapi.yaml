@@ -79,11 +79,7 @@ paths:
               $ref: "#/components/schemas/RegisterRequest"
       responses:
         "201":
-          description: Tourist account created.
-          headers:
-            Set-Cookie:
-              schema:
-                type: string
+          description: Tourist account created; a six-digit verification code is sent when Gmail delivery is configured. No authenticated session is issued until verification.
         "400":
           description: Invalid signup data.
           content:
@@ -92,6 +88,54 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "409":
           description: Username, email, or phone is already registered.
+  /api/v1/auth/verify-email:
+    post:
+      tags: [Auth]
+      summary: Verify a newly registered tourist email
+      operationId: verifyTouristEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, otp]
+              properties:
+                email:
+                  type: string
+                  format: email
+                otp:
+                  type: string
+                  pattern: "^[0-9]{6}$"
+                  example: "123456"
+      responses:
+        "200":
+          description: Email verified and authenticated access/refresh session issued.
+        "400":
+          description: OTP is invalid or expired.
+        "409":
+          description: Email is already verified.
+  /api/v1/auth/resend-verification:
+    post:
+      tags: [Auth]
+      summary: Resend tourist email verification code
+      operationId: resendTouristEmailVerification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: Request accepted. Response does not disclose whether an account exists or is already verified.
+        "503":
+          description: Gmail delivery is not configured or currently unavailable.
   /api/v1/auth/login:
     post:
       tags: [Auth]

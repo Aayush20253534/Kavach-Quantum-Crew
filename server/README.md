@@ -247,3 +247,9 @@ It intentionally does not own:
 - client-device GPS acquisition
 
 Those systems connect through the documented API, Socket.IO, and provider interfaces.
+
+## Tourist email verification
+
+New tourist accounts must verify their email before normal login/session use. Registration creates a six-digit OTP in backend code, stores only its keyed hash, and sends the code through Gmail SMTP using Nodemailer. Verification is completed through `POST /api/v1/auth/verify-email`; a replacement code can be requested through `POST /api/v1/auth/resend-verification`.
+
+For local/deployed Gmail delivery, enable Google 2-Step Verification, generate an App Password, and configure `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `EMAIL_FROM`, and `EMAIL_OTP_SECRET`. See `documentation/ENVIRONMENT.md`.
