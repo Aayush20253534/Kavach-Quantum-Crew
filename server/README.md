@@ -214,3 +214,22 @@ Phase 10 extends the existing Socket.IO tracking channel into an authenticated r
 Server events include `system:ready`, `location:updated`, `incident:created`, `incident:updated`, `incident:note`, `notification:created`, `notification:read`, and `notification:read-all`. Client subscription commands include `tracking:subscribe`, `tracking:unsubscribe`, `incident:subscribe`, `incident:unsubscribe`, and `group:unsubscribe`.
 
 Use `npm run test:phase10` for the realtime-specific test suite.
+
+
+## Phase 11 - Disaster Management and Responder Operations
+
+Phase 11 completes the responder-facing backend. Disaster managers now expose operational availability, workload and organization metadata without introducing Phase 15 dispatch-unit concepts.
+
+Responder endpoints under `/api/v1/disaster-management`:
+
+- `GET /dashboard` - active/critical/unassigned incident counts, personal workload, resolved-today count and available responder count.
+- `GET /responders` - filtered active responder directory with computed workload/capacity.
+- `GET /responders/me` - authenticated disaster-manager profile plus active workload.
+- `PATCH /responders/me/status` - set `AVAILABLE`, `BUSY`, or `OFF_DUTY`; audited and published over Socket.IO as `responder:status`.
+- `GET /responders/me/incidents` - incidents assigned to the authenticated responder.
+- `GET /responders/:responderId` - responder details and current workload.
+- `GET /incidents?scope=ALL|UNASSIGNED|MINE` - workload-aware emergency queue.
+
+Incident assignment now rejects off-duty/busy responders and responders who reached `maxActiveIncidents`. The database migration adds `ResponderStatus`, `department`, `maxActiveIncidents`, and status-change metadata to `disaster_managers`.
+
+Run `npm run test:phase11` for the dedicated Phase 11 suite.
