@@ -1,0 +1,1119 @@
+diff --git a/server/README.md b/server/README.md
+index 121bd58..35ff611 100644
+--- a/server/README.md
++++ b/server/README.md
+@@ -157,3 +157,18 @@ The agreed AI contract remains a later backend integration around `POST /trips/:
+ Phase 5 adds backend-owned group membership for `GROUP` trips: group creation, leader/member authorization, expiring invitation tokens, join/leave/remove-member flows, and automatic group closure when a trip ends. The backend deliberately does not generate QR images; clients or the separately owned QR component can encode the returned `inviteToken`.
+ 
+ Routes are under `/api/v1/groups`. Invitation tokens are returned only when created; only SHA-256 token hashes are persisted.
++
++
++## Phase 6 - Tracking, Maps boundary and realtime
++
++Phase 6 accepts GPS updates only for active trips and only from authorized, consenting participants. Trusted points are persisted, the latest trusted location is maintained separately, group location reads require active membership, and `location:updated` is emitted through authenticated Socket.IO trip/group rooms.
++
++Routes:
++
++- `POST /api/v1/tracking/pings` — validate and store a trusted GPS point.
++- `GET /api/v1/tracking/me/latest?tripId=...` — return the caller's latest trusted point.
++- `POST /api/v1/tracking/trips/:tripId/consent` — group participant tracking consent.
++- `DELETE /api/v1/tracking/trips/:tripId/consent` — revoke group participant tracking consent.
++- `GET /api/v1/groups/:groupId/locations` — authorized group-member location feed.
++
++Socket clients may connect anonymously for the Phase 0 `system:ready` event, but only a valid tourist access token can authorize `tracking:subscribe` and join `trip:{id}` / `group:{id}` rooms. This phase does not call the separate AI/ML or blockchain services. The location records created here are the backend source signals those integrations may consume later.
+diff --git a/server/jest.config.cjs b/server/jest.config.cjs
+index 87462f2..cc0db06 100644
+--- a/server/jest.config.cjs
++++ b/server/jest.config.cjs
+@@ -7,6 +7,7 @@ module.exports = {
+     "<rootDir>/tests/phase1/**/*.test.js",
+     "<rootDir>/tests/phase4/**/*.test.js",
+     "<rootDir>/tests/phase5/**/*.test.js",
++    "<rootDir>/tests/phase6/**/*.test.js",
+   ],
+   clearMocks: true,
+   restoreMocks: true,
+diff --git a/server/prisma/migrations/20260821173000_phase6_tracking_realtime/migration.sql b/server/prisma/migrations/20260821173000_phase6_tracking_realtime/migration.sql
+new file mode 100644
+index 0000000..8037aec
+--- /dev/null
++++ b/server/prisma/migrations/20260821173000_phase6_tracking_realtime/migration.sql
+@@ -0,0 +1,59 @@
++CREATE TYPE "LocationTrustStatus" AS ENUM ('TRUSTED', 'LOW_CONFIDENCE');
++
++CREATE TABLE "trip_participant_consents" (
++  "id" UUID NOT NULL,
++  "tripId" UUID NOT NULL,
++  "userId" UUID NOT NULL,
++  "grantedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
++  "revokedAt" TIMESTAMP(3),
++  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
++  "updatedAt" TIMESTAMP(3) NOT NULL,
++  CONSTRAINT "trip_participant_consents_pkey" PRIMARY KEY ("id")
++);
++
++CREATE TABLE "location_pings" (
++  "id" UUID NOT NULL,
++  "tripId" UUID NOT NULL,
++  "userId" UUID NOT NULL,
++  "latitude" DOUBLE PRECISION NOT NULL,
++  "longitude" DOUBLE PRECISION NOT NULL,
++  "accuracyM" DOUBLE PRECISION NOT NULL,
++  "altitudeM" DOUBLE PRECISION,
++  "headingDeg" DOUBLE PRECISION,
++  "speedMps" DOUBLE PRECISION,
++  "batteryLevel" INTEGER,
++  "networkStatus" VARCHAR(32),
++  "capturedAt" TIMESTAMP(3) NOT NULL,
++  "receivedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
++  "trustStatus" "LocationTrustStatus" NOT NULL DEFAULT 'TRUSTED',
++  CONSTRAINT "location_pings_pkey" PRIMARY KEY ("id")
++);
++
++CREATE TABLE "latest_trusted_locations" (
++  "id" UUID NOT NULL,
++  "tripId" UUID NOT NULL,
++  "userId" UUID NOT NULL,
++  "locationPingId" UUID NOT NULL,
++  "latitude" DOUBLE PRECISION NOT NULL,
++  "longitude" DOUBLE PRECISION NOT NULL,
++  "accuracyM" DOUBLE PRECISION NOT NULL,
++  "capturedAt" TIMESTAMP(3) NOT NULL,
++  "updatedAt" TIMESTAMP(3) NOT NULL,
++  CONSTRAINT "latest_trusted_locations_pkey" PRIMARY KEY ("id")
++);
++
++CREATE UNIQUE INDEX "trip_participant_consents_tripId_userId_key" ON "trip_participant_consents"("tripId", "userId");
++CREATE INDEX "trip_participant_consents_userId_revokedAt_idx" ON "trip_participant_consents"("userId", "revokedAt");
++CREATE UNIQUE INDEX "location_pings_tripId_userId_capturedAt_key" ON "location_pings"("tripId", "userId", "capturedAt");
++CREATE INDEX "location_pings_tripId_capturedAt_idx" ON "location_pings"("tripId", "capturedAt");
++CREATE INDEX "location_pings_userId_capturedAt_idx" ON "location_pings"("userId", "capturedAt");
++CREATE UNIQUE INDEX "latest_trusted_locations_locationPingId_key" ON "latest_trusted_locations"("locationPingId");
++CREATE UNIQUE INDEX "latest_trusted_locations_tripId_userId_key" ON "latest_trusted_locations"("tripId", "userId");
++CREATE INDEX "latest_trusted_locations_tripId_capturedAt_idx" ON "latest_trusted_locations"("tripId", "capturedAt");
++
++ALTER TABLE "trip_participant_consents" ADD CONSTRAINT "trip_participant_consents_tripId_fkey" FOREIGN KEY ("tripId") REFERENCES "trips"("id") ON DELETE CASCADE ON UPDATE CASCADE;
++ALTER TABLE "trip_participant_consents" ADD CONSTRAINT "trip_participant_consents_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
++ALTER TABLE "location_pings" ADD CONSTRAINT "location_pings_tripId_fkey" FOREIGN KEY ("tripId") REFERENCES "trips"("id") ON DELETE CASCADE ON UPDATE CASCADE;
++ALTER TABLE "location_pings" ADD CONSTRAINT "location_pings_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
++ALTER TABLE "latest_trusted_locations" ADD CONSTRAINT "latest_trusted_locations_tripId_fkey" FOREIGN KEY ("tripId") REFERENCES "trips"("id") ON DELETE CASCADE ON UPDATE CASCADE;
++ALTER TABLE "latest_trusted_locations" ADD CONSTRAINT "latest_trusted_locations_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+diff --git a/server/prisma/schema.prisma b/server/prisma/schema.prisma
+index c764410..4e78955 100644
+--- a/server/prisma/schema.prisma
++++ b/server/prisma/schema.prisma
+@@ -72,6 +72,9 @@ model User {
+   trips               Trip[]
+   ledGroups           TripGroup[]   @relation("GroupLeader")
+   groupMemberships    GroupMember[]
++  locationPings       LocationPing[]
++  latestLocations     LatestTrustedLocation[]
++  trackingConsents    TripParticipantConsent[]
+ 
+   @@index([status])
+   @@index([nationality])
+@@ -169,6 +172,9 @@ model Trip {
+   safetyId TripSafetyId?
+   consents TripConsent[]
+   group    TripGroup?
++  locationPings       LocationPing[]
++  latestLocations     LatestTrustedLocation[]
++  participantConsents TripParticipantConsent[]
+ 
+   @@index([touristId, status, createdAt])
+   @@index([plannedStartAt, plannedEndAt])
+@@ -268,3 +274,70 @@ model GroupInvitation {
+   @@index([groupId, expiresAt, revokedAt])
+   @@map("group_invitations")
+ }
++
++
++enum LocationTrustStatus {
++  TRUSTED
++  LOW_CONFIDENCE
++}
++
++model TripParticipantConsent {
++  id        String        @id @default(uuid()) @db.Uuid
++  tripId    String        @db.Uuid
++  userId    String        @db.Uuid
++  grantedAt DateTime      @default(now())
++  revokedAt DateTime?
++  createdAt DateTime      @default(now())
++  updatedAt DateTime      @updatedAt
++
++  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
++  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
++
++  @@unique([tripId, userId])
++  @@index([userId, revokedAt])
++  @@map("trip_participant_consents")
++}
++
++model LocationPing {
++  id            String              @id @default(uuid()) @db.Uuid
++  tripId        String              @db.Uuid
++  userId        String              @db.Uuid
++  latitude      Float
++  longitude     Float
++  accuracyM     Float
++  altitudeM     Float?
++  headingDeg    Float?
++  speedMps      Float?
++  batteryLevel  Int?
++  networkStatus String?             @db.VarChar(32)
++  capturedAt    DateTime
++  receivedAt    DateTime            @default(now())
++  trustStatus   LocationTrustStatus @default(TRUSTED)
++
++  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
++  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
++
++  @@unique([tripId, userId, capturedAt])
++  @@index([tripId, capturedAt])
++  @@index([userId, capturedAt])
++  @@map("location_pings")
++}
++
++model LatestTrustedLocation {
++  id            String   @id @default(uuid()) @db.Uuid
++  tripId        String   @db.Uuid
++  userId        String   @db.Uuid
++  locationPingId String  @unique @db.Uuid
++  latitude      Float
++  longitude     Float
++  accuracyM     Float
++  capturedAt    DateTime
++  updatedAt     DateTime @updatedAt
++
++  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
++  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
++
++  @@unique([tripId, userId])
++  @@index([tripId, capturedAt])
++  @@map("latest_trusted_locations")
++}
+diff --git a/server/src/common/utils/geo.js b/server/src/common/utils/geo.js
+new file mode 100644
+index 0000000..b3775cb
+--- /dev/null
++++ b/server/src/common/utils/geo.js
+@@ -0,0 +1,15 @@
++const EARTH_RADIUS_M = 6371000;
++const toRadians = (degrees) => (degrees * Math.PI) / 180;
++
++export const haversineDistanceM = (a, b) => {
++  const lat1 = toRadians(a.latitude);
++  const lat2 = toRadians(b.latitude);
++  const dLat = lat2 - lat1;
++  const dLon = toRadians(b.longitude - a.longitude);
++  const h =
++    Math.sin(dLat / 2) ** 2 +
++    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
++  return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(h));
++};
++
++export default haversineDistanceM;
+diff --git a/server/src/modules/group/group.routes.js b/server/src/modules/group/group.routes.js
+index 00b974a..7899b3c 100644
+--- a/server/src/modules/group/group.routes.js
++++ b/server/src/modules/group/group.routes.js
+@@ -5,13 +5,16 @@ import { authenticate } from "../../middleware/authenticate.middleware.js";
+ import { authorize } from "../../middleware/authorize.middleware.js";
+ import { validate } from "../../middleware/validate.middleware.js";
+ import { groupController } from "./group.controller.js";
++import { trackingController } from "../tracking/tracking.controller.js";
++import { groupLocationParamsSchema } from "../tracking/tracking.validation.js";
+ import { createInvitationBodySchema, groupIdParamsSchema, invitationParamsSchema, joinGroupBodySchema, memberParamsSchema, tripIdParamsSchema } from "./group.validation.js";
+-export const createGroupRouter = ({ controller = groupController } = {}) => {
++export const createGroupRouter = ({ controller = groupController, tracking = trackingController } = {}) => {
+   const router=Router(); router.use(authenticate,authorize(ROLES.TOURIST));
+   router.post("/trips/:tripId",validate({params:tripIdParamsSchema}),asyncHandler(controller.create));
+   router.get("/trips/:tripId",validate({params:tripIdParamsSchema}),asyncHandler(controller.getByTrip));
+   router.post("/join",validate({body:joinGroupBodySchema}),asyncHandler(controller.join));
+   router.get("/:groupId",validate({params:groupIdParamsSchema}),asyncHandler(controller.getById));
++  router.get("/:groupId/locations",validate({params:groupLocationParamsSchema}),asyncHandler(tracking.groupLocations));
+   router.post("/:groupId/invitations",validate({params:groupIdParamsSchema,body:createInvitationBodySchema}),asyncHandler(controller.invite));
+   router.delete("/:groupId/invitations/:invitationId",validate({params:invitationParamsSchema}),asyncHandler(controller.revokeInvite));
+   router.post("/:groupId/leave",validate({params:groupIdParamsSchema}),asyncHandler(controller.leave));
+diff --git a/server/src/modules/tracking/tracking.controller.js b/server/src/modules/tracking/tracking.controller.js
+index e69de29..f84f06f 100644
+--- a/server/src/modules/tracking/tracking.controller.js
++++ b/server/src/modules/tracking/tracking.controller.js
+@@ -0,0 +1,34 @@
++import { ApiResponse } from "../../common/responses/ApiResponse.js";
++import { trackingService } from "./tracking.service.js";
++
++export const createTrackingController = ({ service = trackingService } = {}) => ({
++  ping: async (request, response) =>
++    ApiResponse.success(response, {
++      statusCode: 201,
++      message: "Location update accepted",
++      data: await service.submitPing(request.user.id, request.body),
++    }),
++  latest: async (request, response) =>
++    ApiResponse.success(response, {
++      message: "Latest trusted location",
++      data: await service.getLatest(request.user.id, request.query.tripId),
++    }),
++  grantConsent: async (request, response) =>
++    ApiResponse.success(response, {
++      message: "Tracking consent granted",
++      data: await service.grantConsent(request.user.id, request.params.tripId),
++    }),
++  revokeConsent: async (request, response) =>
++    ApiResponse.success(response, {
++      message: "Tracking consent revoked",
++      data: await service.revokeConsent(request.user.id, request.params.tripId),
++    }),
++  groupLocations: async (request, response) =>
++    ApiResponse.success(response, {
++      message: "Group locations",
++      data: await service.getGroupLocations(request.user.id, request.params.groupId),
++    }),
++});
++
++export const trackingController = createTrackingController();
++export default trackingController;
+diff --git a/server/src/modules/tracking/tracking.repository.js b/server/src/modules/tracking/tracking.repository.js
+index e69de29..9519bed 100644
+--- a/server/src/modules/tracking/tracking.repository.js
++++ b/server/src/modules/tracking/tracking.repository.js
+@@ -0,0 +1,103 @@
++import { prisma } from "../../config/database.js";
++
++const activeConsent = { status: "GRANTED", revokedAt: null };
++
++export const createTrackingRepository = ({ db = prisma } = {}) => ({
++  findTripContext(tripId, userId) {
++    return db.trip.findUnique({
++      where: { id: tripId },
++      include: {
++        consents: true,
++        group: {
++          include: {
++            members: { where: { userId, leftAt: null }, select: { id: true, userId: true } },
++          },
++        },
++      },
++    });
++  },
++  findParticipantConsent(tripId, userId) {
++    return db.tripParticipantConsent.findUnique({ where: { tripId_userId: { tripId, userId } } });
++  },
++  upsertParticipantConsent(tripId, userId, now) {
++    return db.tripParticipantConsent.upsert({
++      where: { tripId_userId: { tripId, userId } },
++      update: { grantedAt: now, revokedAt: null },
++      create: { tripId, userId, grantedAt: now },
++    });
++  },
++  revokeParticipantConsent(tripId, userId, now) {
++    return db.tripParticipantConsent.update({
++      where: { tripId_userId: { tripId, userId } },
++      data: { revokedAt: now },
++    });
++  },
++  findLatest(tripId, userId) {
++    return db.latestTrustedLocation.findUnique({ where: { tripId_userId: { tripId, userId } } });
++  },
++  findDuplicate(tripId, userId, capturedAt) {
++    return db.locationPing.findUnique({
++      where: { tripId_userId_capturedAt: { tripId, userId, capturedAt } },
++    });
++  },
++  async createPingAndUpdateLatest(data) {
++    return db.$transaction(async (tx) => {
++      const ping = await tx.locationPing.create({ data });
++      await tx.latestTrustedLocation.upsert({
++        where: { tripId_userId: { tripId: data.tripId, userId: data.userId } },
++        update: {
++          locationPingId: ping.id,
++          latitude: ping.latitude,
++          longitude: ping.longitude,
++          accuracyM: ping.accuracyM,
++          capturedAt: ping.capturedAt,
++        },
++        create: {
++          tripId: data.tripId,
++          userId: data.userId,
++          locationPingId: ping.id,
++          latitude: ping.latitude,
++          longitude: ping.longitude,
++          accuracyM: ping.accuracyM,
++          capturedAt: ping.capturedAt,
++        },
++      });
++      return ping;
++    });
++  },
++  findGroup(groupId) {
++    return db.tripGroup.findUnique({
++      where: { id: groupId },
++      include: {
++        trip: { select: { id: true, status: true } },
++        members: {
++          where: { leftAt: null },
++          include: { user: { select: { id: true, name: true, username: true, profilePicUrl: true } } },
++        },
++      },
++    });
++  },
++  listLatestForUsers(tripId, userIds) {
++    return db.latestTrustedLocation.findMany({
++      where: { tripId, userId: { in: userIds } },
++    });
++  },
++  createAudit({ actorId, action, entityId, metadata }) {
++    return db.auditLog.create({
++      data: { actorId, actorRole: "TOURIST", action, entityType: "Trip", entityId, metadata },
++    });
++  },
++  async canSubscribeToTrip(tripId, userId) {
++    const trip = await db.trip.findUnique({
++      where: { id: tripId },
++      include: { group: { include: { members: { where: { userId, leftAt: null }, select: { id: true } } } } },
++    });
++    if (!trip || trip.status !== "ACTIVE") return null;
++    if (trip.touristId === userId) return { tripId: trip.id, groupId: trip.group?.id ?? null };
++    if (trip.group?.members?.length) return { tripId: trip.id, groupId: trip.group.id };
++    return null;
++  },
++  activeConsent,
++});
++
++export const trackingRepository = createTrackingRepository();
+diff --git a/server/src/modules/tracking/tracking.routes.js b/server/src/modules/tracking/tracking.routes.js
+index e69de29..51f7099 100644
+--- a/server/src/modules/tracking/tracking.routes.js
++++ b/server/src/modules/tracking/tracking.routes.js
+@@ -0,0 +1,33 @@
++import { Router } from "express";
++import { asyncHandler } from "../../common/utils/asyncHandler.js";
++import { ROLES } from "../../constants/roles.js";
++import { authenticate } from "../../middleware/authenticate.middleware.js";
++import { authorize } from "../../middleware/authorize.middleware.js";
++import { validate } from "../../middleware/validate.middleware.js";
++import { trackingController } from "./tracking.controller.js";
++import {
++  latestLocationQuerySchema,
++  locationPingBodySchema,
++  trackingTripParamsSchema,
++} from "./tracking.validation.js";
++
++export const createTrackingRouter = ({ controller = trackingController } = {}) => {
++  const router = Router();
++  router.use(authenticate, authorize(ROLES.TOURIST));
++  router.post("/pings", validate({ body: locationPingBodySchema }), asyncHandler(controller.ping));
++  router.get("/me/latest", validate({ query: latestLocationQuerySchema }), asyncHandler(controller.latest));
++  router.post(
++    "/trips/:tripId/consent",
++    validate({ params: trackingTripParamsSchema }),
++    asyncHandler(controller.grantConsent),
++  );
++  router.delete(
++    "/trips/:tripId/consent",
++    validate({ params: trackingTripParamsSchema }),
++    asyncHandler(controller.revokeConsent),
++  );
++  return router;
++};
++
++export const trackingRouter = createTrackingRouter();
++export default trackingRouter;
+diff --git a/server/src/modules/tracking/tracking.service.js b/server/src/modules/tracking/tracking.service.js
+index e69de29..18503f8 100644
+--- a/server/src/modules/tracking/tracking.service.js
++++ b/server/src/modules/tracking/tracking.service.js
+@@ -0,0 +1,207 @@
++import { ApiError } from "../../common/errors/ApiError.js";
++import { haversineDistanceM } from "../../common/utils/geo.js";
++import { locationPublisher } from "../../realtime/locationPublisher.js";
++import { trackingRepository } from "./tracking.repository.js";
++
++export const TRACKING_LIMITS = Object.freeze({
++  maxAccuracyM: 100,
++  maxAgeMs: 120_000,
++  maxFutureSkewMs: 30_000,
++  minIntervalMs: 2_000,
++  maxCalculatedSpeedMps: 80,
++  staleAfterMs: 120_000,
++});
++
++const isParticipant = (trip, userId) =>
++  trip.touristId === userId || Boolean(trip.group?.members?.some((member) => member.userId === userId));
++
++const hasOwnerLocationConsent = (trip) =>
++  (trip.consents ?? []).some(
++    (consent) => consent.type === "LOCATION_TRACKING" && consent.status === "GRANTED" && !consent.revokedAt,
++  );
++
++const requireParticipant = async (repository, tripId, userId, allowedStatuses = ["ACTIVE"]) => {
++  const trip = await repository.findTripContext(tripId, userId);
++  if (!trip || !isParticipant(trip, userId)) {
++    throw ApiError.notFound("Trip not found", { code: "TRIP_NOT_FOUND" });
++  }
++  if (!allowedStatuses.includes(trip.status)) {
++    throw ApiError.conflict("Trip is not in a tracking-compatible state", {
++      code: "TRIP_TRACKING_NOT_ACTIVE",
++      details: { status: trip.status },
++    });
++  }
++  return trip;
++};
++
++const requireTrackingConsent = async (repository, trip, userId) => {
++  if (trip.touristId === userId && hasOwnerLocationConsent(trip)) return;
++  const consent = await repository.findParticipantConsent(trip.id, userId);
++  if (!consent || consent.revokedAt) {
++    throw ApiError.forbidden("Location tracking consent is required", {
++      code: "LOCATION_TRACKING_CONSENT_REQUIRED",
++    });
++  }
++};
++
++const serializeLocation = (location, now = new Date()) =>
++  location
++    ? {
++        latitude: location.latitude,
++        longitude: location.longitude,
++        accuracyM: location.accuracyM,
++        capturedAt: location.capturedAt,
++        stale: now.getTime() - new Date(location.capturedAt).getTime() > TRACKING_LIMITS.staleAfterMs,
++      }
++    : null;
++
++export const createTrackingService = ({
++  repository = trackingRepository,
++  publisher = locationPublisher,
++  clock = () => new Date(),
++  limits = TRACKING_LIMITS,
++} = {}) =>
++  Object.freeze({
++    async grantConsent(userId, tripId) {
++      const trip = await requireParticipant(repository, tripId, userId, ["PLANNED", "ACTIVE"]);
++      if (trip.touristId === userId && hasOwnerLocationConsent(trip)) {
++        return { tripId, userId, source: "TRIP_CONSENT", granted: true, revokedAt: null };
++      }
++      const consent = await repository.upsertParticipantConsent(tripId, userId, clock());
++      await repository.createAudit({
++        actorId: userId,
++        action: "TRACKING_CONSENT_GRANTED",
++        entityId: tripId,
++        metadata: { participantId: userId },
++      });
++      return consent;
++    },
++
++    async revokeConsent(userId, tripId) {
++      const trip = await requireParticipant(repository, tripId, userId, ["PLANNED", "ACTIVE"]);
++      if (trip.touristId === userId) {
++        throw ApiError.badRequest("Trip owner must revoke LOCATION_TRACKING through trip consent", {
++          code: "USE_TRIP_CONSENT_ENDPOINT",
++        });
++      }
++      const consent = await repository.findParticipantConsent(tripId, userId);
++      if (!consent) throw ApiError.notFound("Tracking consent not found", { code: "TRACKING_CONSENT_NOT_FOUND" });
++      if (consent.revokedAt) return consent;
++      const revoked = await repository.revokeParticipantConsent(tripId, userId, clock());
++      await repository.createAudit({
++        actorId: userId,
++        action: "TRACKING_CONSENT_REVOKED",
++        entityId: tripId,
++        metadata: { participantId: userId },
++      });
++      return revoked;
++    },
++
++    async submitPing(userId, input) {
++      const trip = await requireParticipant(repository, input.tripId, userId, ["ACTIVE"]);
++      await requireTrackingConsent(repository, trip, userId);
++
++      const now = clock();
++      const capturedAt = new Date(input.timestamp);
++      const ageMs = now.getTime() - capturedAt.getTime();
++      if (ageMs > limits.maxAgeMs) {
++        throw ApiError.badRequest("Location point is stale", { code: "LOCATION_STALE" });
++      }
++      if (ageMs < -limits.maxFutureSkewMs) {
++        throw ApiError.badRequest("Location timestamp is too far in the future", { code: "LOCATION_FUTURE_TIMESTAMP" });
++      }
++      if (input.accuracyM > limits.maxAccuracyM) {
++        throw ApiError.badRequest("Location accuracy is too low", {
++          code: "LOCATION_ACCURACY_TOO_LOW",
++          details: { maxAccuracyM: limits.maxAccuracyM },
++        });
++      }
++      if (input.speedMps != null && input.speedMps > limits.maxCalculatedSpeedMps) {
++        throw ApiError.badRequest("Reported speed is impossible", { code: "LOCATION_IMPOSSIBLE_SPEED" });
++      }
++
++      const duplicate = await repository.findDuplicate(input.tripId, userId, capturedAt);
++      if (duplicate) throw ApiError.conflict("Duplicate location point", { code: "LOCATION_DUPLICATE" });
++
++      const previous = await repository.findLatest(input.tripId, userId);
++      if (previous) {
++        const deltaMs = capturedAt.getTime() - new Date(previous.capturedAt).getTime();
++        if (deltaMs <= 0) throw ApiError.badRequest("Location point is out of order", { code: "LOCATION_OUT_OF_ORDER" });
++        if (deltaMs < limits.minIntervalMs) {
++          throw ApiError.tooManyRequests("Location updates are too frequent", {
++            code: "LOCATION_RATE_LIMITED",
++            details: { minIntervalMs: limits.minIntervalMs },
++          });
++        }
++        const distanceM = haversineDistanceM(previous, input);
++        const calculatedSpeedMps = distanceM / (deltaMs / 1000);
++        if (calculatedSpeedMps > limits.maxCalculatedSpeedMps) {
++          throw ApiError.badRequest("Location jump is physically implausible", {
++            code: "LOCATION_IMPOSSIBLE_JUMP",
++            details: { calculatedSpeedMps: Math.round(calculatedSpeedMps * 10) / 10 },
++          });
++        }
++      }
++
++      const ping = await repository.createPingAndUpdateLatest({
++        tripId: input.tripId,
++        userId,
++        latitude: input.latitude,
++        longitude: input.longitude,
++        accuracyM: input.accuracyM,
++        altitudeM: input.altitudeM ?? null,
++        headingDeg: input.headingDeg ?? null,
++        speedMps: input.speedMps ?? null,
++        batteryLevel: input.batteryLevel ?? null,
++        networkStatus: input.networkStatus ?? null,
++        capturedAt,
++        receivedAt: now,
++        trustStatus: "TRUSTED",
++      });
++
++      const location = serializeLocation(ping, now);
++      publisher.publishLocationUpdated({
++        tripId: trip.id,
++        groupId: trip.group?.id ?? null,
++        userId,
++        location,
++      });
++      return { id: ping.id, tripId: ping.tripId, userId, trustStatus: ping.trustStatus, ...location };
++    },
++
++    async getLatest(userId, tripId) {
++      const trip = await requireParticipant(repository, tripId, userId, ["ACTIVE"]);
++      await requireTrackingConsent(repository, trip, userId);
++      return serializeLocation(await repository.findLatest(tripId, userId), clock());
++    },
++
++    async getGroupLocations(userId, groupId) {
++      const group = await repository.findGroup(groupId);
++      if (!group || group.trip.status !== "ACTIVE") {
++        throw ApiError.notFound("Active group not found", { code: "GROUP_NOT_FOUND" });
++      }
++      const requester = group.members.find((member) => member.userId === userId);
++      if (!requester) {
++        throw ApiError.forbidden("Group membership is required to view locations", {
++          code: "GROUP_MEMBERSHIP_REQUIRED",
++        });
++      }
++      const locations = await repository.listLatestForUsers(group.tripId, group.members.map((member) => member.userId));
++      const byUser = new Map(locations.map((location) => [location.userId, location]));
++      const now = clock();
++      return {
++        groupId,
++        tripId: group.tripId,
++        members: group.members.map((member) => ({
++          memberId: member.id,
++          userId: member.userId,
++          role: member.role,
++          user: member.user,
++          location: serializeLocation(byUser.get(member.userId), now),
++        })),
++      };
++    },
++  });
++
++export const trackingService = createTrackingService();
++export default trackingService;
+diff --git a/server/src/modules/tracking/tracking.validation.js b/server/src/modules/tracking/tracking.validation.js
+index e69de29..395ed3d 100644
+--- a/server/src/modules/tracking/tracking.validation.js
++++ b/server/src/modules/tracking/tracking.validation.js
+@@ -0,0 +1,20 @@
++import { z } from "zod";
++
++const uuid = z.string().uuid();
++
++export const trackingTripParamsSchema = z.object({ tripId: uuid });
++export const groupLocationParamsSchema = z.object({ groupId: uuid });
++export const latestLocationQuerySchema = z.object({ tripId: uuid });
++
++export const locationPingBodySchema = z.object({
++  tripId: uuid,
++  latitude: z.number().min(-90).max(90),
++  longitude: z.number().min(-180).max(180),
++  accuracyM: z.number().positive().max(5000),
++  timestamp: z.string().datetime({ offset: true }),
++  altitudeM: z.number().min(-500).max(10000).optional(),
++  headingDeg: z.number().min(0).max(360).optional(),
++  speedMps: z.number().min(0).max(250).optional(),
++  batteryLevel: z.number().int().min(0).max(100).optional(),
++  networkStatus: z.enum(["WIFI", "CELLULAR", "OFFLINE", "UNKNOWN"]).optional(),
++});
+diff --git a/server/src/realtime/locationPublisher.js b/server/src/realtime/locationPublisher.js
+new file mode 100644
+index 0000000..6bda5de
+--- /dev/null
++++ b/server/src/realtime/locationPublisher.js
+@@ -0,0 +1,15 @@
++let socketServer = null;
++
++export const setLocationSocketServer = (io) => {
++  socketServer = io ?? null;
++};
++
++export const locationPublisher = Object.freeze({
++  publishLocationUpdated({ tripId, groupId, userId, location }) {
++    if (!socketServer) return;
++    const payload = { tripId, userId, location };
++    socketServer.to(`trip:${tripId}`).emit("location:updated", payload);
++    if (groupId) socketServer.to(`group:${groupId}`).emit("location:updated", payload);
++    socketServer.to(`tourist:${userId}`).emit("location:updated", payload);
++  },
++});
+diff --git a/server/src/realtime/socketAuth.middleware.js b/server/src/realtime/socketAuth.middleware.js
+index e69de29..e3c0347 100644
+--- a/server/src/realtime/socketAuth.middleware.js
++++ b/server/src/realtime/socketAuth.middleware.js
+@@ -0,0 +1,36 @@
++import { verifyAccessToken } from "../common/utils/jwt.js";
++import { prisma } from "../config/database.js";
++import { environment } from "../config/environment.js";
++import { ROLES } from "../constants/roles.js";
++
++const extractToken = (socket) => {
++  const authToken = socket.handshake?.auth?.token;
++  if (typeof authToken === "string" && authToken.trim()) return authToken.trim();
++  const header = socket.handshake?.headers?.authorization;
++  if (typeof header !== "string") return null;
++  const [scheme, token] = header.trim().split(/\s+/);
++  return scheme?.toLowerCase() === "bearer" && token ? token : null;
++};
++
++export const createSocketAuthenticator = ({ db = prisma, config = environment } = {}) =>
++  async function socketAuthenticator(socket, next) {
++    try {
++      const token = extractToken(socket);
++      if (!token) return next();
++      const payload = verifyAccessToken(token, config);
++      if (payload.type !== "access" || payload.role !== ROLES.TOURIST || !payload.sub) {
++        return next(new Error("SOCKET_ACCESS_DENIED"));
++      }
++      const user = await db.user.findUnique({
++        where: { id: payload.sub },
++        select: { id: true, status: true },
++      });
++      if (!user || user.status !== "ACTIVE") return next(new Error("SOCKET_ACCOUNT_INACTIVE"));
++      socket.data.user = { id: user.id, role: ROLES.TOURIST };
++      return next();
++    } catch {
++      return next(new Error("SOCKET_ACCESS_TOKEN_INVALID"));
++    }
++  };
++
++export const socketAuthenticator = createSocketAuthenticator();
+diff --git a/server/src/realtime/socketServer.js b/server/src/realtime/socketServer.js
+index 8cd9313..9d66192 100644
+--- a/server/src/realtime/socketServer.js
++++ b/server/src/realtime/socketServer.js
+@@ -1,45 +1,89 @@
+-import { Server as SocketServer } from "socket.io";
+-
+-import { buildSocketCorsOptions } from "../config/cors.js";
+-import { environment } from "../config/environment.js";
+-import { logger } from "../config/logger.js";
+-
+-export const createSocketServer = (
+-  httpServer,
+-  { config = environment, log = logger } = {},
+-) => {
+-  const io = new SocketServer(httpServer, {
+-    cors: buildSocketCorsOptions(config),
+-    serveClient: false,
+-    transports: ["websocket", "polling"],
+-    maxHttpBufferSize: 1_000_000,
+-    connectionStateRecovery: {
+-      maxDisconnectionDuration: 120_000,
+-      skipMiddlewares: false,
+-    },
+-  });
+-
+-  io.engine.on("connection_error", (error) => {
+-    log.warn({ err: error }, "Socket.IO connection error");
+-  });
+-
+-  io.on("connection", (socket) => {
+-    const socketLog = log.child({ socketId: socket.id });
+-    socketLog.info("Socket.IO client connected");
+-
+-    // Phase 0 exposes no location or incident events. Authenticated gateways are added later.
+-    socket.emit("system:ready", {
+-      service: config.APP_NAME,
+-      version: config.APP_VERSION,
+-      connectedAt: new Date().toISOString(),
+-    });
+-
+-    socket.on("disconnect", (reason) => {
+-      socketLog.info({ reason }, "Socket.IO client disconnected");
+-    });
+-  });
+-
+-  return io;
+-};
+-
+-export default createSocketServer;
++import { Server as SocketServer } from "socket.io";
++
++import { buildSocketCorsOptions } from "../config/cors.js";
++import { environment } from "../config/environment.js";
++import { logger } from "../config/logger.js";
++import { trackingRepository } from "../modules/tracking/tracking.repository.js";
++import { setLocationSocketServer } from "./locationPublisher.js";
++import { socketAuthenticator } from "./socketAuth.middleware.js";
++
++export const createSocketServer = (
++  httpServer,
++  {
++    config = environment,
++    log = logger,
++    authenticator = socketAuthenticator,
++    trackingRepo = trackingRepository,
++  } = {},
++) => {
++  const io = new SocketServer(httpServer, {
++    cors: buildSocketCorsOptions(config),
++    serveClient: false,
++    transports: ["websocket", "polling"],
++    maxHttpBufferSize: 1_000_000,
++    connectionStateRecovery: {
++      maxDisconnectionDuration: 120_000,
++      skipMiddlewares: false,
++    },
++  });
++
++  io.use(authenticator);
++  setLocationSocketServer(io);
++
++  io.engine.on("connection_error", (error) => {
++    log.warn({ err: error }, "Socket.IO connection error");
++  });
++
++  io.on("connection", (socket) => {
++    const socketLog = log.child({ socketId: socket.id, userId: socket.data.user?.id });
++    socketLog.info("Socket.IO client connected");
++
++    if (socket.data.user?.id) socket.join(`tourist:${socket.data.user.id}`);
++
++    socket.emit("system:ready", {
++      service: config.APP_NAME,
++      version: config.APP_VERSION,
++      connectedAt: new Date().toISOString(),
++      authenticated: Boolean(socket.data.user?.id),
++    });
++
++    socket.on("tracking:subscribe", async (payload = {}, acknowledge = () => {}) => {
++      try {
++        if (!socket.data.user?.id) {
++          acknowledge({ ok: false, code: "SOCKET_AUTH_REQUIRED" });
++          return;
++        }
++        const tripId = payload.tripId;
++        if (typeof tripId !== "string") {
++          acknowledge({ ok: false, code: "TRIP_ID_REQUIRED" });
++          return;
++        }
++        const access = await trackingRepo.canSubscribeToTrip(tripId, socket.data.user.id);
++        if (!access) {
++          acknowledge({ ok: false, code: "TRACKING_SUBSCRIPTION_FORBIDDEN" });
++          return;
++        }
++        await socket.join(`trip:${access.tripId}`);
++        if (access.groupId) await socket.join(`group:${access.groupId}`);
++        acknowledge({ ok: true, tripId: access.tripId, groupId: access.groupId });
++      } catch (error) {
++        socketLog.warn({ err: error }, "Tracking room subscription failed");
++        acknowledge({ ok: false, code: "TRACKING_SUBSCRIPTION_FAILED" });
++      }
++    });
++
++    socket.on("tracking:unsubscribe", async (payload = {}, acknowledge = () => {}) => {
++      if (typeof payload.tripId === "string") await socket.leave(`trip:${payload.tripId}`);
++      if (typeof payload.groupId === "string") await socket.leave(`group:${payload.groupId}`);
++      acknowledge({ ok: true });
++    });
++
++    socket.on("disconnect", (reason) => {
++      socketLog.info({ reason }, "Socket.IO client disconnected");
++    });
++  });
++
++  return io;
++};
++
++export default createSocketServer;
+diff --git a/server/src/routes/index.js b/server/src/routes/index.js
+index 454b712..a9e969d 100644
+--- a/server/src/routes/index.js
++++ b/server/src/routes/index.js
+@@ -6,6 +6,7 @@ import { createAuthRouter } from "../modules/auth/auth.routes.js";
+ import { createTouristRouter } from "../modules/tourist/tourist.routes.js";
+ import { createTripRouter } from "../modules/trip/trip.routes.js";
+ import { createGroupRouter } from "../modules/group/group.routes.js";
++import { createTrackingRouter } from "../modules/tracking/tracking.routes.js";
+ 
+ export const createApiRouter = (config = environment) => {
+   const router = Router();
+@@ -32,6 +33,9 @@ export const createApiRouter = (config = environment) => {
+         phase5: {
+           groups: `${config.API_PREFIX}/groups`,
+         },
++        phase6: {
++          tracking: `${config.API_PREFIX}/tracking`,
++        },
+       },
+     }),
+   );
+@@ -40,6 +44,7 @@ export const createApiRouter = (config = environment) => {
+   router.use("/tourists", createTouristRouter());
+   router.use("/trips", createTripRouter());
+   router.use("/groups", createGroupRouter());
++  router.use("/tracking", createTrackingRouter());
+ 
+   return router;
+ };
+diff --git a/server/tests/phase6/socket.tracking.test.js b/server/tests/phase6/socket.tracking.test.js
+new file mode 100644
+index 0000000..09eb60e
+--- /dev/null
++++ b/server/tests/phase6/socket.tracking.test.js
+@@ -0,0 +1,55 @@
++import { createServer } from "node:http";
++import { jest } from "@jest/globals";
++import { io as createSocketClient } from "socket.io-client";
++
++import { environment } from "../../src/config/environment.js";
++import { locationPublisher } from "../../src/realtime/locationPublisher.js";
++import { createSocketServer } from "../../src/realtime/socketServer.js";
++
++const listen = (server) => new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
++const closeHttp = (server) =>
++  new Promise((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
++
++describe("Phase 6 realtime tracking", () => {
++  test("authorizes a tracking room before delivering location updates", async () => {
++    const httpServer = createServer();
++    const log = { child: jest.fn(), info: jest.fn(), warn: jest.fn() };
++    log.child.mockReturnValue(log);
++    const trackingRepo = {
++      canSubscribeToTrip: jest.fn().mockResolvedValue({ tripId: "trip-1", groupId: "group-1" }),
++    };
++    const authenticator = (socket, next) => {
++      socket.data.user = { id: "user-1", role: "TOURIST" };
++      next();
++    };
++    const io = createSocketServer(httpServer, { config: environment, log, authenticator, trackingRepo });
++    await listen(httpServer);
++    const address = httpServer.address();
++    const client = createSocketClient(`http://127.0.0.1:${address.port}`, {
++      transports: ["websocket"],
++      forceNew: true,
++    });
++
++    await new Promise((resolve, reject) => {
++      client.once("system:ready", resolve);
++      client.once("connect_error", reject);
++    });
++    const subscribed = await new Promise((resolve) => {
++      client.emit("tracking:subscribe", { tripId: "trip-1" }, resolve);
++    });
++    expect(subscribed).toEqual({ ok: true, tripId: "trip-1", groupId: "group-1" });
++
++    const received = new Promise((resolve) => client.once("location:updated", resolve));
++    locationPublisher.publishLocationUpdated({
++      tripId: "trip-1",
++      groupId: "group-1",
++      userId: "user-2",
++      location: { latitude: 25.4, longitude: 81.8, accuracyM: 10 },
++    });
++    await expect(received).resolves.toMatchObject({ tripId: "trip-1", userId: "user-2" });
++
++    client.disconnect();
++    await new Promise((resolve) => io.close(resolve));
++    if (httpServer.listening) await closeHttp(httpServer);
++  });
++});
+diff --git a/server/tests/phase6/tracking.service.test.js b/server/tests/phase6/tracking.service.test.js
+new file mode 100644
+index 0000000..c03b434
+--- /dev/null
++++ b/server/tests/phase6/tracking.service.test.js
+@@ -0,0 +1,121 @@
++import { jest } from "@jest/globals";
++import { createTrackingService } from "../../src/modules/tracking/tracking.service.js";
++
++const now = new Date("2026-08-21T10:00:00.000Z");
++const ownerTrip = {
++  id: "t1",
++  touristId: "u1",
++  status: "ACTIVE",
++  consents: [{ type: "LOCATION_TRACKING", status: "GRANTED", revokedAt: null }],
++  group: null,
++};
++
++const repo = () => ({
++  findTripContext: jest.fn(),
++  findParticipantConsent: jest.fn(),
++  upsertParticipantConsent: jest.fn(),
++  revokeParticipantConsent: jest.fn(),
++  findLatest: jest.fn(),
++  findDuplicate: jest.fn(),
++  createPingAndUpdateLatest: jest.fn(),
++  findGroup: jest.fn(),
++  listLatestForUsers: jest.fn(),
++  createAudit: jest.fn().mockResolvedValue({}),
++});
++
++const publisher = () => ({ publishLocationUpdated: jest.fn() });
++
++const ping = (overrides = {}) => ({
++  tripId: "t1",
++  latitude: 25.4358,
++  longitude: 81.8463,
++  accuracyM: 10,
++  timestamp: "2026-08-21T09:59:55.000Z",
++  ...overrides,
++});
++
++describe("Phase 6 tracking service", () => {
++  test("accepts and publishes a trusted owner location", async () => {
++    const r = repo();
++    const p = publisher();
++    r.findTripContext.mockResolvedValue(ownerTrip);
++    r.findDuplicate.mockResolvedValue(null);
++    r.findLatest.mockResolvedValue(null);
++    r.createPingAndUpdateLatest.mockResolvedValue({
++      id: "p1",
++      tripId: "t1",
++      userId: "u1",
++      latitude: 25.4358,
++      longitude: 81.8463,
++      accuracyM: 10,
++      capturedAt: new Date("2026-08-21T09:59:55.000Z"),
++      trustStatus: "TRUSTED",
++    });
++    const service = createTrackingService({ repository: r, publisher: p, clock: () => now });
++    const result = await service.submitPing("u1", ping());
++    expect(result.trustStatus).toBe("TRUSTED");
++    expect(r.createPingAndUpdateLatest).toHaveBeenCalledTimes(1);
++    expect(p.publishLocationUpdated).toHaveBeenCalledWith(
++      expect.objectContaining({ tripId: "t1", userId: "u1" }),
++    );
++  });
++
++  test("rejects tracking when trip is not active", async () => {
++    const r = repo();
++    r.findTripContext.mockResolvedValue({ ...ownerTrip, status: "PLANNED" });
++    const service = createTrackingService({ repository: r, clock: () => now });
++    await expect(service.submitPing("u1", ping())).rejects.toMatchObject({ code: "TRIP_TRACKING_NOT_ACTIVE" });
++  });
++
++  test("requires explicit consent for a group member", async () => {
++    const r = repo();
++    r.findTripContext.mockResolvedValue({
++      ...ownerTrip,
++      touristId: "leader",
++      group: { id: "g1", members: [{ userId: "u1" }] },
++    });
++    r.findParticipantConsent.mockResolvedValue(null);
++    const service = createTrackingService({ repository: r, clock: () => now });
++    await expect(service.submitPing("u1", ping())).rejects.toMatchObject({
++      code: "LOCATION_TRACKING_CONSENT_REQUIRED",
++    });
++  });
++
++  test("rejects stale GPS points", async () => {
++    const r = repo();
++    r.findTripContext.mockResolvedValue(ownerTrip);
++    const service = createTrackingService({ repository: r, clock: () => now });
++    await expect(
++      service.submitPing("u1", ping({ timestamp: "2026-08-21T09:50:00.000Z" })),
++    ).rejects.toMatchObject({ code: "LOCATION_STALE" });
++  });
++
++  test("rejects physically impossible jumps", async () => {
++    const r = repo();
++    r.findTripContext.mockResolvedValue(ownerTrip);
++    r.findDuplicate.mockResolvedValue(null);
++    r.findLatest.mockResolvedValue({
++      latitude: 25.4358,
++      longitude: 81.8463,
++      capturedAt: new Date("2026-08-21T09:59:50.000Z"),
++    });
++    const service = createTrackingService({ repository: r, clock: () => now });
++    await expect(
++      service.submitPing("u1", ping({ latitude: 26.0, longitude: 82.5 })),
++    ).rejects.toMatchObject({ code: "LOCATION_IMPOSSIBLE_JUMP" });
++  });
++
++  test("only active group members can view group locations", async () => {
++    const r = repo();
++    r.findGroup.mockResolvedValue({
++      id: "g1",
++      tripId: "t1",
++      trip: { id: "t1", status: "ACTIVE" },
++      members: [{ id: "m1", userId: "u2", role: "MEMBER", user: { id: "u2" } }],
++    });
++    const service = createTrackingService({ repository: r, clock: () => now });
++    await expect(service.getGroupLocations("u1", "g1")).rejects.toMatchObject({
++      code: "GROUP_MEMBERSHIP_REQUIRED",
++    });
++  });
++});
+diff --git a/server/tests/phase6/tracking.validation.test.js b/server/tests/phase6/tracking.validation.test.js
+new file mode 100644
+index 0000000..83e75a1
+--- /dev/null
++++ b/server/tests/phase6/tracking.validation.test.js
+@@ -0,0 +1,34 @@
++import {
++  latestLocationQuerySchema,
++  locationPingBodySchema,
++} from "../../src/modules/tracking/tracking.validation.js";
++
++describe("Phase 6 tracking validation", () => {
++  test("accepts a valid location ping", () => {
++    const result = locationPingBodySchema.safeParse({
++      tripId: "11111111-1111-4111-8111-111111111111",
++      latitude: 25.4358,
++      longitude: 81.8463,
++      accuracyM: 12,
++      timestamp: "2026-08-21T10:00:00+05:30",
++      batteryLevel: 76,
++      networkStatus: "CELLULAR",
++    });
++    expect(result.success).toBe(true);
++  });
++
++  test("rejects invalid coordinates", () => {
++    const result = locationPingBodySchema.safeParse({
++      tripId: "11111111-1111-4111-8111-111111111111",
++      latitude: 120,
++      longitude: 81.8,
++      accuracyM: 12,
++      timestamp: "2026-08-21T10:00:00+05:30",
++    });
++    expect(result.success).toBe(false);
++  });
++
++  test("requires a trip id for latest-location lookup", () => {
++    expect(latestLocationQuerySchema.safeParse({}).success).toBe(false);
++  });
++});
