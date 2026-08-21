@@ -28,7 +28,8 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:seed": "node prisma/seed.js",
-    "test:phase9": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/phase9 --runInBand"
+    "test:phase9": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/phase9 --runInBand",
+    "test:phase10": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/phase10 --runInBand"
   },
   "keywords": [
     "tourism",

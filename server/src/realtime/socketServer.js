@@ -3,9 +3,14 @@ import { Server as SocketServer } from "socket.io";
 import { buildSocketCorsOptions } from "../config/cors.js";
 import { environment } from "../config/environment.js";
 import { logger } from "../config/logger.js";
+import { incidentRepository } from "../modules/incident/incident.repository.js";
 import { trackingRepository } from "../modules/tracking/tracking.repository.js";
+import { registerGroupGateway } from "./group.gateway.js";
+import { registerIncidentGateway } from "./incident.gateway.js";
 import { setLocationSocketServer } from "./locationPublisher.js";
+import { realtimeRooms, setRealtimeSocketServer } from "./realtimePublisher.js";
 import { socketAuthenticator } from "./socketAuth.middleware.js";
+import { registerTrackingGateway } from "./tracking.gateway.js";
 
 export const createSocketServer = (
   httpServer,
@@ -14,6 +19,7 @@ export const createSocketServer = (
     log = logger,
     authenticator = socketAuthenticator,
     trackingRepo = trackingRepository,
+    incidentRepo = incidentRepository,
   } = {},
 ) => {
   const io = new SocketServer(httpServer, {
@@ -29,95 +35,38 @@ export const createSocketServer = (
 
   io.use(authenticator);
   setLocationSocketServer(io);
+  setRealtimeSocketServer(io);
 
   io.engine.on("connection_error", (error) => {
     log.warn({ err: error }, "Socket.IO connection error");
   });
 
-  io.on("connection", (socket) => {
-    const socketLog = log.child({
-      socketId: socket.id,
-      userId: socket.data.user?.id,
-    });
-
+  io.on("connection", async (socket) => {
+    const actor = socket.data.user;
+    const socketLog = log.child({ socketId: socket.id, userId: actor?.id, role: actor?.role });
     socketLog.info("Socket.IO client connected");
 
-    if (socket.data.user?.id) {
-      socket.join(`tourist:${socket.data.user.id}`);
+    if (actor?.id && actor?.role) {
+      await socket.join(realtimeRooms.accountRoom(actor.role, actor.id));
+      await socket.join(realtimeRooms.roleRoom(actor.role));
+      if (actor.role === "TOURIST") await socket.join(`tourist:${actor.id}`);
     }
 
     socket.emit("system:ready", {
       service: config.APP_NAME,
       version: config.APP_VERSION,
       connectedAt: new Date().toISOString(),
-      authenticated: Boolean(socket.data.user?.id),
+      authenticated: Boolean(actor?.id),
+      actor: actor ? { id: actor.id, role: actor.role } : null,
+      realtimeVersion: 1,
     });
 
-    socket.on(
-      "tracking:subscribe",
-      async (payload = {}, acknowledge = () => {}) => {
-        try {
-          if (!socket.data.user?.id) {
-            acknowledge({
-              ok: false,
-              code: "SOCKET_AUTH_REQUIRED",
-            });
-            return;
-          }
-
-          const tripId = payload.tripId;
-
-          if (typeof tripId !== "string") {
-            acknowledge({
-              ok: false,
-              code: "TRIP_ID_REQUIRED",
-            });
-            return;
-          }
-
-          const access = await trackingRepo.canSubscribeToTrip(
-            tripId,
-            socket.data.user.id,
-          );
-
-          if (!access) {
-            acknowledge({
-              ok: false,
-              code: "TRACKING_SUBSCRIPTION_FORBIDDEN",
-            });
-            return;
-          }
-
-          await socket.join(`trip:${access.tripId}`);
-
-          if (access.groupId) {
-            await socket.join(`group:${access.groupId}`);
-          }
-
-          acknowledge({
-            ok: true,
-            tripId: access.tripId,
-            groupId: access.groupId,
-          });
-        } catch (error) {
-          socketLog.warn(
-            { err: error },
-            "Tracking room subscription failed",
-          );
-
-          acknowledge({
-            ok: false,
-            code: "TRACKING_SUBSCRIPTION_FAILED",
-          });
-        }
-      },
-    );
+    registerTrackingGateway(socket, { repository: trackingRepo, log: socketLog });
+    registerIncidentGateway(socket, { repository: incidentRepo, log: socketLog });
+    registerGroupGateway(socket);
 
     socket.on("disconnect", (reason) => {
-      socketLog.info(
-        { reason },
-        "Socket.IO client disconnected",
-      );
+      socketLog.info({ reason }, "Socket.IO client disconnected");
     });
   });
 
