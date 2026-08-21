@@ -298,3 +298,10 @@ Endpoints under `/api/v1/evidence`:
 - `DELETE /:attachmentId` - uploader or system-admin deletion.
 
 Incident evidence follows the same participant visibility rules as incident communication. Hazard evidence is restricted to the reporter and emergency staff. Closed incidents and rejected/resolved hazards remain readable but reject new evidence. Realtime events: `evidence:created` and `evidence:deleted`. Run `npm run test:phase17` for the dedicated suite.
+
+
+## Phase 18 - System Admin backend
+
+System administrators have a dedicated `/api/v1/admin` surface for platform-wide dashboard counts, safe account search and inspection, account status management, and read-only inspection of core operational resources. Suspending or disabling an account revokes active refresh sessions. Admin responses never expose password hashes.
+
+Key routes: `GET /admin/dashboard`, `GET /admin/accounts`, `GET /admin/accounts/:role/:accountId`, `PATCH /admin/accounts/:role/:accountId/status`, and `GET /admin/resources/:resource`.
