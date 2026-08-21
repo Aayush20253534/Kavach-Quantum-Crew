@@ -13,7 +13,14 @@ import {
 } from "./config/security.js";
 import { errorHandlerMiddleware } from "./middleware/errorHandler.middleware.js";
 import { notFoundMiddleware } from "./middleware/notFound.middleware.js";
-import { apiRateLimiter } from "./middleware/rateLimiter.middleware.js";
+import {
+  apiRateLimiter,
+  sensitiveActionRateLimiter,
+} from "./middleware/rateLimiter.middleware.js";
+import {
+  apiPrivacyHeadersMiddleware,
+  requestSecurityMiddleware,
+} from "./middleware/requestSecurity.middleware.js";
 import { requestIdMiddleware } from "./middleware/requestId.middleware.js";
 import { createHealthRouter } from "./modules/health/health.routes.js";
 import { createApiRouter } from "./routes/index.js";
@@ -22,6 +29,8 @@ export const createApp = ({
   config = environment,
   healthService,
   rateLimiter = apiRateLimiter,
+  sensitiveRateLimiter = sensitiveActionRateLimiter,
+  requestSecurity = requestSecurityMiddleware,
 } = {}) => {
   const app = express();
 
@@ -42,6 +51,7 @@ export const createApp = ({
     }),
   );
   app.use(cookieParser());
+  app.use(requestSecurity);
 
   const healthRouter = createHealthRouter(
     healthService === undefined ? {} : { service: healthService },
@@ -51,7 +61,13 @@ export const createApp = ({
   app.use("/health", healthRouter);
   app.use(`${config.API_PREFIX}/health`, healthRouter);
 
-  app.use(config.API_PREFIX, rateLimiter, createApiRouter(config));
+  app.use(
+    config.API_PREFIX,
+    apiPrivacyHeadersMiddleware,
+    rateLimiter,
+    sensitiveRateLimiter,
+    createApiRouter(config),
+  );
 
   app.use(notFoundMiddleware);
   app.use(errorHandlerMiddleware);
