@@ -14,7 +14,12 @@ const extractToken = (socket) => {
 
 const findAccount = async (db, id, role) => {
   const query = { where: { id }, select: { id: true, status: true } };
-  if (role === ROLES.TOURIST) return db.user.findUnique(query);
+  if (role === ROLES.TOURIST) {
+    return db.user.findUnique({
+      where: { id },
+      select: { id: true, status: true, emailVerifiedAt: true },
+    });
+  }
   if (role === ROLES.DISASTER_MANAGER) return db.disasterManager.findUnique(query);
   if (role === ROLES.SYSTEM_ADMIN) return db.systemAdmin.findUnique(query);
   return null;
@@ -31,6 +36,9 @@ export const createSocketAuthenticator = ({ db = prisma, config = environment } 
       }
       const account = await findAccount(db, payload.sub, payload.role);
       if (!account || account.status !== "ACTIVE") return next(new Error("SOCKET_ACCOUNT_INACTIVE"));
+      if (payload.role === ROLES.TOURIST && !account.emailVerifiedAt) {
+        return next(new Error("SOCKET_EMAIL_UNVERIFIED"));
+      }
       socket.data.user = { id: account.id, role: payload.role };
       return next();
     } catch {

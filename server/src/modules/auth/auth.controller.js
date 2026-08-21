@@ -30,12 +30,29 @@ const sendAuth = (response, result, { statusCode = 200, message }) => {
 
 export const createAuthController = ({ service = authService } = {}) => ({
   register: async (request, response) => {
-    const result = await service.register(request.body, requestContext(request));
-    return sendAuth(response, result, {
+    const result = await service.register(request.body);
+    return ApiResponse.success(response, {
       statusCode: 201,
-      message: "Tourist account created",
+      message: "Tourist account created. Verification code sent to email",
+      data: result,
     });
   },
+
+  verifyEmail: async (request, response) => {
+    const result = await service.verifyEmail(
+      request.body,
+      requestContext(request),
+    );
+    return sendAuth(response, result, {
+      message: "Email verified successfully",
+    });
+  },
+
+  resendEmailVerification: async (request, response) =>
+    ApiResponse.success(response, {
+      message: "If the account is awaiting verification, a code has been sent",
+      data: await service.resendEmailVerification(request.body),
+    }),
 
   login: async (request, response) => {
     const result = await service.login(request.body, requestContext(request));

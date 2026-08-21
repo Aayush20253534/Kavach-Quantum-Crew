@@ -44,3 +44,17 @@ Production rules:
 - enable HTTPS,
 - configure `TRUST_PROXY` to the real proxy topology,
 - keep DB/provider/service-account secrets outside Git.
+
+## Gmail email verification
+
+| Variable | Purpose |
+|---|---|
+| `GMAIL_USER` | Gmail account used to send tourist verification email |
+| `GMAIL_APP_PASSWORD` | Google App Password generated after enabling 2-Step Verification |
+| `EMAIL_FROM` | Sender address shown to recipients; normally same Gmail account |
+| `EMAIL_OTP_SECRET` | Server-side secret used when hashing OTP values before persistence |
+| `EMAIL_OTP_TTL_MINUTES` | Verification-code lifetime; default 10 minutes |
+| `EMAIL_OTP_RESEND_COOLDOWN_SECONDS` | Minimum time between resend attempts; default 60 seconds |
+| `EMAIL_OTP_MAX_ATTEMPTS` | Wrong-code attempt limit before current OTP is invalidated; default 5 |
+
+Do not use the normal Gmail account password. Use a dedicated Google App Password and keep it only in deployment secrets.
