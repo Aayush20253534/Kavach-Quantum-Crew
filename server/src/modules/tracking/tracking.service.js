@@ -1,6 +1,7 @@
 import { ApiError } from "../../common/errors/ApiError.js";
 import { haversineDistanceM } from "../../common/utils/geo.js";
 import { locationPublisher } from "../../realtime/locationPublisher.js";
+import { monitoringService } from "../monitoring/monitoring.service.js";
 import { safetyService } from "../safety/safety.service.js";
 import { trackingRepository } from "./tracking.repository.js";
 
@@ -112,6 +113,7 @@ export const createTrackingService = ({
   clock = () => new Date(),
   limits = TRACKING_LIMITS,
   safetyEvaluator = null,
+  monitoringEvaluator = null,
 } = {}) =>
   Object.freeze({
     async grantConsent(userId, tripId) {
@@ -413,6 +415,19 @@ export const createTrackingService = ({
         }
       }
 
+      let monitoring = null;
+
+      if (monitoringEvaluator) {
+        try {
+          monitoring = await monitoringEvaluator.evaluateAfterPing({
+            tripId: trip.id,
+            userId,
+          });
+        } catch {
+          monitoring = { status: "DEGRADED" };
+        }
+      }
+
       return {
         id: ping.id,
         tripId: ping.tripId,
@@ -421,6 +436,7 @@ export const createTrackingService = ({
           ping.trustStatus,
         ...location,
         safety,
+        monitoring,
       };
     },
 
@@ -526,6 +542,7 @@ export const createTrackingService = ({
 export const trackingService =
   createTrackingService({
     safetyEvaluator: safetyService,
+    monitoringEvaluator: monitoringService,
   });
 
 export default trackingService;
