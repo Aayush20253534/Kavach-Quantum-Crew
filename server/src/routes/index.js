@@ -11,6 +11,8 @@ import { createIncidentRouter } from "../modules/incident/incident.routes.js";
 import { createIntegrationRouter } from "../modules/integrations/integration.routes.js";
 import { createNotificationRouter } from "../modules/notification/notification.routes.js";
 import { createNotificationDeliveryRouter } from "../modules/notification-delivery/notification-delivery.routes.js";
+import { createAuditRouter } from "../modules/audit/audit.routes.js";
+import { createObservabilityRouter } from "../modules/observability/observability.routes.js";
 import { createEscalationRouter } from "../modules/escalation/escalation.routes.js";
 import { createEvidenceRouter } from "../modules/evidence/evidence.routes.js";
 import { createSosRouter } from "../modules/sos/sos.routes.js";
@@ -75,6 +77,7 @@ export const createApiRouter = (config = environment) => {
         phase19: { analytics: `${config.API_PREFIX}/analytics` },
         phase20_21: { integrations: `${config.API_PREFIX}/integrations` },
         phase22: { notificationDeliveries: `${config.API_PREFIX}/notification-deliveries` },
+        phase24: { audit: `${config.API_PREFIX}/audit`, observability: `${config.API_PREFIX}/observability` },
       },
     }),
   );
@@ -125,6 +128,8 @@ export const createApiRouter = (config = environment) => {
   router.use("/admin", createSystemAdminRouter());
   router.use("/analytics", createAnalyticsRouter());
   router.use("/integrations", createIntegrationRouter());
+  router.use("/audit", createAuditRouter());
+  router.use("/observability", createObservabilityRouter());
 
   return router;
 };
