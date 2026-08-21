@@ -27,6 +27,28 @@ enum Gender {
   PREFER_NOT_TO_SAY
 }
 
+enum TripType {
+  SOLO
+  GROUP
+}
+
+enum TripStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum ConsentType {
+  LOCATION_TRACKING
+  EMERGENCY_SHARING
+}
+
+enum ConsentStatus {
+  GRANTED
+  REVOKED
+}
+
 // Tourist account. Tourist onboarding/profile fields live directly on this table.
 model User {
   id                  String        @id @default(uuid()) @db.Uuid
@@ -47,6 +69,7 @@ model User {
   passwordChangedAt   DateTime?
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
+  trips               Trip[]
 
   @@index([status])
   @@index([nationality])
@@ -123,4 +146,61 @@ model AuditLog {
   @@index([actorId, actorRole, createdAt])
   @@index([action, createdAt])
   @@map("audit_logs")
+}
+
+
+model Trip {
+  id             String      @id @default(uuid()) @db.Uuid
+  touristId      String      @db.Uuid
+  locationName   String      @db.VarChar(160)
+  tripType       TripType
+  status         TripStatus  @default(PLANNED)
+  plannedStartAt DateTime
+  plannedEndAt   DateTime
+  startedAt      DateTime?
+  endedAt        DateTime?
+  cancelledAt    DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  tourist  User           @relation(fields: [touristId], references: [id], onDelete: Cascade)
+  safetyId TripSafetyId?
+  consents TripConsent[]
+
+  @@index([touristId, status, createdAt])
+  @@index([plannedStartAt, plannedEndAt])
+  @@map("trips")
+}
+
+model TripSafetyId {
+  id        String    @id @default(uuid()) @db.Uuid
+  tripId    String    @unique @db.Uuid
+  publicId  String    @unique @db.VarChar(80)
+  issuedAt  DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt, revokedAt])
+  @@map("trip_safety_ids")
+}
+
+model TripConsent {
+  id        String        @id @default(uuid()) @db.Uuid
+  tripId    String        @db.Uuid
+  type      ConsentType
+  status    ConsentStatus @default(GRANTED)
+  grantedAt DateTime      @default(now())
+  revokedAt DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, type])
+  @@index([tripId, status])
+  @@map("trip_consents")
 }
