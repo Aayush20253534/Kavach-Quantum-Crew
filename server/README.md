@@ -312,3 +312,10 @@ Key routes: `GET /admin/dashboard`, `GET /admin/accounts`, `GET /admin/accounts/
 Phase 19 exposes staff-only, read-only operational analytics under `/api/v1/analytics`. Disaster Managers and System Admins can query platform overview metrics, incident/trip/hazard/SOS breakdowns, dispatch performance, responder workload, and response-time aggregates. Optional `from` and `to` ISO timestamps constrain time-based reports.
 
 Endpoints: `GET /analytics/overview`, `/incidents`, `/trips`, `/hazards`, `/sos`, `/dispatch`, `/responders`, and `/response-times`. Run `npm run test:phase19` for the dedicated suite.
+
+
+## Phases 20-21 - AI and Blockchain Integration Contracts
+
+These phases define backend-only extension contracts under `/api/v1/integrations`. No AI model, inference runtime, blockchain client, wallet, smart contract, or chain transaction is implemented. Default providers return `501 INTEGRATION_PROVIDER_NOT_CONFIGURED`; future teams inject provider implementations behind the stable service interface.
+
+Contracts: `POST /integrations/ai/risk-assessment`, `POST /integrations/ai/hazard-analysis`, blockchain proof endpoints for Safety ID, incidents and evidence, `GET /integrations/blockchain/verification/:reference`, and `GET /integrations/capabilities`.
