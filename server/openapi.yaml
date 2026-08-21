@@ -939,6 +939,59 @@ paths:
       responses:
         "200": { description: Delivery requeued }
         "409": { description: Delivery cannot be retried in current state }
+  /audit:
+    get:
+      tags: [Audit]
+      summary: List audit events
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: action
+          schema: { type: string }
+        - in: query
+          name: actorRole
+          schema: { type: string }
+        - in: query
+          name: entityType
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      responses:
+        "200": { description: Audit events retrieved }
+        "403": { description: System administrator access required }
+
+  /audit/summary:
+    get:
+      tags: [Audit]
+      summary: Summarize audit events by action
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { description: Audit summary retrieved }
+        "403": { description: System administrator access required }
+
+  /observability/metrics:
+    get:
+      tags: [Observability]
+      summary: Read in-process HTTP metrics
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { description: Operational metrics retrieved }
+        "403": { description: System administrator access required }
+
+  /observability/diagnostics:
+    get:
+      tags: [Observability]
+      summary: Read process and dependency diagnostics
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { description: Operational diagnostics retrieved }
+        "403": { description: System administrator access required }
+
 components:
   securitySchemes:
     bearerAuth:
