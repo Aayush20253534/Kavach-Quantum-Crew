@@ -9,6 +9,7 @@ import { createDispatchRouter } from "../modules/dispatch/dispatch.routes.js";
 import { createIncidentRouter } from "../modules/incident/incident.routes.js";
 import { createNotificationRouter } from "../modules/notification/notification.routes.js";
 import { createEscalationRouter } from "../modules/escalation/escalation.routes.js";
+import { createEvidenceRouter } from "../modules/evidence/evidence.routes.js";
 import { createSosRouter } from "../modules/sos/sos.routes.js";
 import { createAuthRouter } from "../modules/auth/auth.routes.js";
 import { createGroupRouter } from "../modules/group/group.routes.js";
@@ -65,6 +66,7 @@ export const createApiRouter = (config = environment) => {
         phase14: { monitoring: `${config.API_PREFIX}/monitoring` },
         phase15: { dispatch: `${config.API_PREFIX}/dispatch` },
         phase16: { incidentCommunication: `${config.API_PREFIX}/incidents/:incidentId/messages` },
+        phase17: { evidence: `${config.API_PREFIX}/evidence` },
       },
     }),
   );
@@ -110,6 +112,7 @@ export const createApiRouter = (config = environment) => {
   router.use("/risk-zones", createRiskZoneRouter());
   router.use("/monitoring", createMonitoringRouter());
   router.use("/dispatch", createDispatchRouter());
+  router.use("/evidence", createEvidenceRouter());
 
   return router;
 };

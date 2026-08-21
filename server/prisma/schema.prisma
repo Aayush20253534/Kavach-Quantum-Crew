@@ -442,6 +442,7 @@ model Incident {
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
   dispatches           Dispatch[]
+  attachments          Attachment[]
   @@index([status, severity, createdAt])
   @@index([tripId, userId, status])
   @@map("incidents")
@@ -649,6 +650,7 @@ model HazardReport {
   resolvedAt     DateTime?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+  attachments    Attachment[]
 
   @@index([status, severity, createdAt])
   @@index([type, status, createdAt])
@@ -681,6 +683,41 @@ enum HazardStatus {
   VERIFIED
   REJECTED
   RESOLVED
+}
+
+model Attachment {
+  id           String               @id @default(uuid()) @db.Uuid
+  targetType   AttachmentTargetType
+  incidentId   String?              @db.Uuid
+  hazardId     String?              @db.Uuid
+  uploaderId   String               @db.Uuid
+  uploaderRole Role
+  kind         EvidenceKind
+  originalName String               @db.VarChar(255)
+  mimeType     String               @db.VarChar(120)
+  sizeBytes    Int
+  storageKey   String               @unique @db.VarChar(255)
+  checksumSha256 String             @db.Char(64)
+  createdAt    DateTime             @default(now())
+
+  incident Incident?    @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  hazard   HazardReport? @relation(fields: [hazardId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId, createdAt])
+  @@index([hazardId, createdAt])
+  @@index([uploaderId, uploaderRole, createdAt])
+  @@map("attachments")
+}
+
+enum AttachmentTargetType {
+  INCIDENT
+  HAZARD
+}
+
+enum EvidenceKind {
+  IMAGE
+  VIDEO
+  DOCUMENT
 }
 
 model EmergencyUnit {
