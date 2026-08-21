@@ -206,3 +206,11 @@ The Phase 8 migration also repairs the missing Phase 6 tracking DDL found in the
 
 ## Phase 9 - Notifications and Response Coordination
 Phase 9 adds idempotent in-app incident notifications, unread/read APIs, disaster-manager assignment history, response notes, and configurable overdue incident escalation. Configure `INCIDENT_ACK_TIMEOUT_MINUTES` and `INCIDENT_ESCALATION_INTERVAL_MINUTES`. A system admin can trigger the scheduler-ready sweep with `POST /api/v1/escalations/run`. Run `npm run test:phase9` for the dedicated suite.
+
+## Phase 10 - Realtime coordination
+
+Phase 10 extends the existing Socket.IO tracking channel into an authenticated realtime coordination layer. Authenticated accounts automatically join account and role scoped rooms. Tourists may subscribe only to incidents they can already view through the REST API; disaster managers and system administrators may subscribe to emergency incidents.
+
+Server events include `system:ready`, `location:updated`, `incident:created`, `incident:updated`, `incident:note`, `notification:created`, `notification:read`, and `notification:read-all`. Client subscription commands include `tracking:subscribe`, `tracking:unsubscribe`, `incident:subscribe`, `incident:unsubscribe`, and `group:unsubscribe`.
+
+Use `npm run test:phase10` for the realtime-specific test suite.
