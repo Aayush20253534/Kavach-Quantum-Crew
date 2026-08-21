@@ -8,6 +8,7 @@ import { createAnalyticsRouter } from "../modules/analytics/analytics.routes.js"
 import { createDisasterManagementRouter } from "../modules/disaster-management/disaster-management.routes.js";
 import { createDispatchRouter } from "../modules/dispatch/dispatch.routes.js";
 import { createIncidentRouter } from "../modules/incident/incident.routes.js";
+import { createIntegrationRouter } from "../modules/integrations/integration.routes.js";
 import { createNotificationRouter } from "../modules/notification/notification.routes.js";
 import { createEscalationRouter } from "../modules/escalation/escalation.routes.js";
 import { createEvidenceRouter } from "../modules/evidence/evidence.routes.js";
@@ -71,6 +72,7 @@ export const createApiRouter = (config = environment) => {
         phase17: { evidence: `${config.API_PREFIX}/evidence` },
         phase18: { systemAdmin: `${config.API_PREFIX}/admin` },
         phase19: { analytics: `${config.API_PREFIX}/analytics` },
+        phase20_21: { integrations: `${config.API_PREFIX}/integrations` },
       },
     }),
   );
@@ -119,6 +121,7 @@ export const createApiRouter = (config = environment) => {
   router.use("/evidence", createEvidenceRouter());
   router.use("/admin", createSystemAdminRouter());
   router.use("/analytics", createAnalyticsRouter());
+  router.use("/integrations", createIntegrationRouter());
 
   return router;
 };

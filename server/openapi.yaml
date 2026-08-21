@@ -816,6 +816,50 @@ paths:
       summary: Incident and dispatch response-time aggregates
       security: [{ bearerAuth: [] }]
       responses: { '200': { description: Response-time analytics } }
+  /api/v1/integrations/capabilities:
+    get:
+      tags: [Integrations]
+      summary: Integration contract capabilities
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Contract capability metadata } }
+  /api/v1/integrations/ai/risk-assessment:
+    post:
+      tags: [Integrations]
+      summary: AI risk-assessment contract boundary
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Provider result }, '501': { description: Provider not configured } }
+  /api/v1/integrations/ai/hazard-analysis:
+    post:
+      tags: [Integrations]
+      summary: AI hazard-analysis contract boundary
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Provider result }, '501': { description: Provider not configured } }
+  /api/v1/integrations/blockchain/safety-id-proof:
+    post:
+      tags: [Integrations]
+      summary: Blockchain Safety ID proof contract boundary
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Provider result }, '501': { description: Provider not configured } }
+  /api/v1/integrations/blockchain/incident-proof:
+    post:
+      tags: [Integrations]
+      summary: Blockchain incident proof contract boundary
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Provider result }, '501': { description: Provider not configured } }
+  /api/v1/integrations/blockchain/evidence-proof:
+    post:
+      tags: [Integrations]
+      summary: Blockchain evidence proof contract boundary
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Provider result }, '501': { description: Provider not configured } }
+  /api/v1/integrations/blockchain/verification/{reference}:
+    get:
+      tags: [Integrations]
+      summary: Blockchain verification contract boundary
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: reference, required: true, schema: { type: string } }
+      responses: { '200': { description: Provider result }, '501': { description: Provider not configured } }
 components:
   securitySchemes:
     bearerAuth:
