@@ -291,6 +291,43 @@ paths:
       tags: [Phase 8 Incidents]
       responses:
         '200': { description: Emergency queue }
+  /incidents/{incidentId}/messages:
+    get:
+      summary: List authorized incident conversation messages
+      tags: [Phase 16 Communication]
+      parameters:
+        - in: path
+          name: incidentId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: before
+          schema: { type: string, format: date-time }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        '200': { description: Incident message history }
+    post:
+      summary: Send an authorized incident conversation message
+      tags: [Phase 16 Communication]
+      parameters:
+        - in: path
+          name: incidentId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message: { type: string, minLength: 1, maxLength: 2000 }
+      responses:
+        '201': { description: Incident message created }
+        '409': { description: Incident is resolved or dismissed }
   /incidents/{incidentId}/acknowledge:
     post:
       summary: Acknowledge an incident as emergency staff

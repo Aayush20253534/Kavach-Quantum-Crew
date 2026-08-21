@@ -447,6 +447,19 @@ model Incident {
   @@map("incidents")
 }
 
+model IncidentMessage {
+  id         String   @id @default(uuid()) @db.Uuid
+  incidentId String   @db.Uuid
+  senderId   String   @db.Uuid
+  senderRole Role
+  body       String   @db.VarChar(2000)
+  createdAt  DateTime @default(now())
+
+  @@index([incidentId, createdAt])
+  @@index([senderId, senderRole, createdAt])
+  @@map("incident_messages")
+}
+
 model IncidentEvent {
   id         String            @id @default(uuid()) @db.Uuid
   incidentId String            @db.Uuid
