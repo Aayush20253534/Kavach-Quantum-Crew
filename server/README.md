@@ -211,7 +211,7 @@ Phase 9 adds idempotent in-app incident notifications, unread/read APIs, disaste
 
 Phase 10 extends the existing Socket.IO tracking channel into an authenticated realtime coordination layer. Authenticated accounts automatically join account and role scoped rooms. Tourists may subscribe only to incidents they can already view through the REST API; disaster managers and system administrators may subscribe to emergency incidents.
 
-Server events include `system:ready`, `location:updated`, `incident:created`, `incident:updated`, `incident:note`, `notification:created`, `notification:read`, and `notification:read-all`. Client subscription commands include `tracking:subscribe`, `tracking:unsubscribe`, `incident:subscribe`, `incident:unsubscribe`, and `group:unsubscribe`.
+Server events include `system:ready`, `location:updated`, `incident:created`, `incident:updated`, `incident:note`, `incident:message`, `notification:created`, `notification:read`, and `notification:read-all`. Client subscription commands include `tracking:subscribe`, `tracking:unsubscribe`, `incident:subscribe`, `incident:unsubscribe`, and `group:unsubscribe`.
 
 Use `npm run test:phase10` for the realtime-specific test suite.
 
@@ -272,3 +272,14 @@ Trusted location submissions also invoke the advanced evaluator after the existi
 ## Phase 15 - Emergency Dispatch
 
 Phase 15 adds emergency units and dispatch lifecycle management. Staff can request a unit for an open incident, assign an available matching unit, and advance the dispatch through ASSIGNED, DISPATCHED, EN_ROUTE, ON_SCENE, and COMPLETED. Cancellation and completion release the unit back to AVAILABLE. System administrators manage emergency-unit inventory/status. Realtime events: `dispatch:updated` and `emergency-unit:updated`.
+
+
+## Phase 16 - Incident Communication
+
+Phase 16 adds persistent incident-scoped communication between authorized tourists/group participants and emergency staff. Messages are separate from staff-only operational `IncidentNote` records, are audit logged, and are published over Socket.IO as `incident:message`.
+
+Endpoints:
+- `GET /api/v1/incidents/:incidentId/messages` - paginated authorized message history.
+- `POST /api/v1/incidents/:incidentId/messages` - send a message while the incident is open, acknowledged, or in progress.
+
+Resolved and dismissed incidents remain readable but reject new messages. The history endpoint returns messages in chronological order with `nextBefore` for loading older pages. Run `npm run test:phase16` for the dedicated suite.
