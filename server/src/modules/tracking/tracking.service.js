@@ -1,6 +1,7 @@
 import { ApiError } from "../../common/errors/ApiError.js";
 import { haversineDistanceM } from "../../common/utils/geo.js";
 import { locationPublisher } from "../../realtime/locationPublisher.js";
+import { safetyService } from "../safety/safety.service.js";
 import { trackingRepository } from "./tracking.repository.js";
 
 export const TRACKING_LIMITS = Object.freeze({
@@ -110,6 +111,7 @@ export const createTrackingService = ({
   publisher = locationPublisher,
   clock = () => new Date(),
   limits = TRACKING_LIMITS,
+  safetyEvaluator = null,
 } = {}) =>
   Object.freeze({
     async grantConsent(userId, tripId) {
@@ -223,6 +225,7 @@ export const createTrackingService = ({
 
       const now = clock();
       const capturedAt = new Date(input.timestamp);
+
       const ageMs =
         now.getTime() - capturedAt.getTime();
 
@@ -295,9 +298,7 @@ export const createTrackingService = ({
       if (previous) {
         const deltaMs =
           capturedAt.getTime() -
-          new Date(
-            previous.capturedAt,
-          ).getTime();
+          new Date(previous.capturedAt).getTime();
 
         if (deltaMs <= 0) {
           throw ApiError.badRequest(
@@ -341,8 +342,7 @@ export const createTrackingService = ({
               details: {
                 calculatedSpeedMps:
                   Math.round(
-                    calculatedSpeedMps *
-                      10,
+                    calculatedSpeedMps * 10,
                   ) / 10,
               },
             },
@@ -351,28 +351,26 @@ export const createTrackingService = ({
       }
 
       const ping =
-        await repository.createPingAndUpdateLatest(
-          {
-            tripId: input.tripId,
-            userId,
-            latitude: input.latitude,
-            longitude: input.longitude,
-            accuracyM: input.accuracyM,
-            altitudeM:
-              input.altitudeM ?? null,
-            headingDeg:
-              input.headingDeg ?? null,
-            speedMps:
-              input.speedMps ?? null,
-            batteryLevel:
-              input.batteryLevel ?? null,
-            networkStatus:
-              input.networkStatus ?? null,
-            capturedAt,
-            receivedAt: now,
-            trustStatus: "TRUSTED",
-          },
-        );
+        await repository.createPingAndUpdateLatest({
+          tripId: input.tripId,
+          userId,
+          latitude: input.latitude,
+          longitude: input.longitude,
+          accuracyM: input.accuracyM,
+          altitudeM:
+            input.altitudeM ?? null,
+          headingDeg:
+            input.headingDeg ?? null,
+          speedMps:
+            input.speedMps ?? null,
+          batteryLevel:
+            input.batteryLevel ?? null,
+          networkStatus:
+            input.networkStatus ?? null,
+          capturedAt,
+          receivedAt: now,
+          trustStatus: "TRUSTED",
+        });
 
       const location =
         serializeLocation(
@@ -388,6 +386,33 @@ export const createTrackingService = ({
         location,
       });
 
+      /*
+       * Phase 7 deterministic safety evaluation.
+       *
+       * The location has already been validated and persisted,
+       * so a failure inside the safety engine must not cause the
+       * client to resend the same GPS point.
+       */
+      let safety = null;
+
+      if (safetyEvaluator) {
+        try {
+          safety =
+            await safetyEvaluator.evaluateLocation({
+              tripId: trip.id,
+              userId,
+              pingId: ping.id,
+              latitude: ping.latitude,
+              longitude: ping.longitude,
+              capturedAt: ping.capturedAt,
+            });
+        } catch {
+          safety = {
+            status: "DEGRADED",
+          };
+        }
+      }
+
       return {
         id: ping.id,
         tripId: ping.tripId,
@@ -395,6 +420,7 @@ export const createTrackingService = ({
         trustStatus:
           ping.trustStatus,
         ...location,
+        safety,
       };
     },
 
@@ -498,6 +524,8 @@ export const createTrackingService = ({
   });
 
 export const trackingService =
-  createTrackingService();
+  createTrackingService({
+    safetyEvaluator: safetyService,
+  });
 
 export default trackingService;
