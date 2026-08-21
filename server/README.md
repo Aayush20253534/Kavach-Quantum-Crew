@@ -240,3 +240,18 @@ Run `npm run test:phase11` for the dedicated Phase 11 suite.
 Phase 12 adds tourist hazard reporting, staff verification/rejection/resolution, verified nearby hazard discovery, audit records, and real-time `hazard:created` / `hazard:updated` events. Tourist public listings expose verified hazards only; reporters can still inspect their own pending reports.
 
 Main endpoints: `POST /api/v1/hazards`, `GET /api/v1/hazards`, `GET /api/v1/hazards/nearby`, `GET /api/v1/hazards/:hazardId`, and staff moderation endpoints under `/:hazardId/{verify,reject,resolve}`.
+
+## Phase 13 - Risk Zones and Geofencing
+
+Phase 13 promotes the original circle-only safety zones into managed risk zones with `CIRCLE` and `POLYGON` geometry, activation/deactivation, optional validity windows, audit records, realtime `risk-zone:updated` events, point evaluation, and automatic trusted-location geofence evaluation through the existing safety alert/incident pipeline.
+
+Main endpoints:
+- `GET /api/v1/risk-zones`
+- `POST /api/v1/risk-zones`
+- `GET /api/v1/risk-zones/:zoneId`
+- `PATCH /api/v1/risk-zones/:zoneId`
+- `POST /api/v1/risk-zones/:zoneId/activate`
+- `POST /api/v1/risk-zones/:zoneId/deactivate`
+- `POST /api/v1/risk-zones/evaluate`
+
+Existing Phase 7 circle zones remain valid and migrate as `CIRCLE` automatically.
