@@ -7,7 +7,7 @@ The service is designed as a **modular Node.js backend**. AI models, blockchain 
 ## What the backend does
 
 ### Tourist safety
-- Tourist registration, login, refresh sessions, logout, and profile onboarding
+- Tourist registration with six-digit Gmail OTP email verification, login, refresh sessions, logout, and profile onboarding
 - SOLO and GROUP trip lifecycle management
 - Explicit location/emergency-sharing consent
 - Trip-scoped Safety ID issuance
@@ -60,6 +60,7 @@ See [`documentation/ROLE-PERMISSIONS.md`](documentation/ROLE-PERMISSIONS.md) for
 - Zod validation
 - Argon2id password hashing
 - JSON Web Tokens with refresh-session persistence
+- Nodemailer + Gmail SMTP App Password for tourist email verification
 - Pino structured logging
 - Multer evidence upload boundary
 - Jest + Supertest
@@ -121,6 +122,7 @@ PowerShell:
 
 ```powershell
 Copy-Item .env.example .env
+# Configure Gmail App Password + EMAIL_OTP_SECRET in .env
 npm ci
 npm run prisma:generate
 npm run prisma:validate
@@ -132,6 +134,7 @@ bash:
 
 ```bash
 cp .env.example .env
+# Configure Gmail App Password + EMAIL_OTP_SECRET in .env
 npm ci
 npm run prisma:generate
 npm run prisma:validate
@@ -147,13 +150,25 @@ http://localhost:4000/api/v1
 
 ## Authentication
 
-The backend uses short-lived access JWTs and persisted refresh sessions.
+The backend uses short-lived access JWTs, persisted refresh sessions, and mandatory first-time tourist email verification.
 
+Tourist signup flow:
+
+```text
+register -> generate 6-digit OTP -> Gmail SMTP -> verify-email -> issue session
+```
+
+- Registration creates the tourist but does **not** issue a normal login session until the email is verified.
+- OTPs are generated with Node.js cryptographic randomness and stored only as keyed hashes.
+- Default OTP expiry is 10 minutes, resend cooldown is 60 seconds, and maximum verification attempts is 5.
+- Verified tourists use normal username/email + password login afterward; OTP is **not** required on every login.
+- Changing a tourist email resets verification and requires the new address to be verified.
 - Access tokens are signed with `HS256`, issuer/audience validation, and supported-role validation.
 - Passwords are hashed with Argon2id.
 - Refresh tokens are rotated and only token hashes are persisted.
 - Tourist self-registration cannot create staff accounts.
 - Suspended/disabled accounts lose active refresh sessions through admin controls.
+- Unverified tourists are rejected by normal REST authentication, refresh, and Socket.IO authentication.
 
 ## API and realtime
 
@@ -163,6 +178,9 @@ The backend uses short-lived access JWTs and persisted refresh sessions.
 - Socket.IO events and rooms: [`documentation/REALTIME-EVENTS.md`](documentation/REALTIME-EVENTS.md)
 
 ## Health and operations
+
+Service landing page:
+- `GET /`
 
 Infrastructure probes:
 - `GET /health`
@@ -227,6 +245,7 @@ Dedicated domain suites remain available for targeted debugging, but `npm test` 
 | [`REALTIME-EVENTS.md`](documentation/REALTIME-EVENTS.md) | Socket.IO rooms, commands, and server events |
 | [`ERROR-CATALOGUE.md`](documentation/ERROR-CATALOGUE.md) | Error envelope and important error codes |
 | [`ENVIRONMENT.md`](documentation/ENVIRONMENT.md) | Environment-variable reference |
+| [`EMAIL-VERIFICATION.md`](documentation/EMAIL-VERIFICATION.md) | Gmail SMTP OTP signup verification flow and Postman testing |
 | [`AI-CATALOGUE.md`](documentation/AI-CATALOGUE.md) | AI integration inputs and handoff guidance |
 | [`BLOCKCHAIN-CATALOGUE.md`](documentation/BLOCKCHAIN-CATALOGUE.md) | Blockchain proof boundaries |
 | [`NOTIFICATION-DELIVERY.md`](documentation/NOTIFICATION-DELIVERY.md) | Delivery jobs/providers/retries |
@@ -250,6 +269,6 @@ Those systems connect through the documented API, Socket.IO, and provider interf
 
 ## Tourist email verification
 
-New tourist accounts must verify their email before normal login/session use. Registration creates a six-digit OTP in backend code, stores only its keyed hash, and sends the code through Gmail SMTP using Nodemailer. Verification is completed through `POST /api/v1/auth/verify-email`; a replacement code can be requested through `POST /api/v1/auth/resend-verification`.
+Tourist email verification is mandatory on first signup and whenever the tourist changes to a new email address. It is not required on every login. Gmail SMTP uses a Google App Password, while the OTP itself is generated and verified entirely by backend code.
 
-For local/deployed Gmail delivery, enable Google 2-Step Verification, generate an App Password, and configure `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `EMAIL_FROM`, and `EMAIL_OTP_SECRET`. See `documentation/ENVIRONMENT.md`.
+See [`documentation/EMAIL-VERIFICATION.md`](documentation/EMAIL-VERIFICATION.md) for configuration, security behavior, API examples, and Postman verification steps.
