@@ -64,6 +64,7 @@ export const createApiRouter = (config = environment) => {
         phase13: { riskZones: `${config.API_PREFIX}/risk-zones` },
         phase14: { monitoring: `${config.API_PREFIX}/monitoring` },
         phase15: { dispatch: `${config.API_PREFIX}/dispatch` },
+        phase16: { incidentCommunication: `${config.API_PREFIX}/incidents/:incidentId/messages` },
       },
     }),
   );
