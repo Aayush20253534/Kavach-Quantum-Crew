@@ -14,6 +14,7 @@ tags:
   - name: Notifications
   - name: Incidents
   - name: Evidence
+  - name: System Admin
   - name: Escalations
   - name: Disaster Management
 paths:
@@ -701,6 +702,69 @@ paths:
             image/webp: { schema: { type: string, format: binary } }
             video/mp4: { schema: { type: string, format: binary } }
             application/pdf: { schema: { type: string, format: binary } }
+  /api/v1/admin/dashboard:
+    get:
+      tags: [System Admin]
+      summary: Get platform-wide administrative dashboard counts
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Administrative dashboard summary }
+        "403": { description: System administrator access required }
+  /api/v1/admin/accounts:
+    get:
+      tags: [System Admin]
+      summary: Search and list platform accounts without sensitive credentials
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: role, schema: { type: string, enum: [TOURIST, DISASTER_MANAGER, SYSTEM_ADMIN] } }
+        - { in: query, name: status, schema: { type: string, enum: [ACTIVE, SUSPENDED, DISABLED] } }
+        - { in: query, name: search, schema: { type: string } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+      responses:
+        "200": { description: Safe account summaries }
+  /api/v1/admin/accounts/{role}/{accountId}:
+    get:
+      tags: [System Admin]
+      summary: Get a safe administrative account view
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: role, required: true, schema: { type: string, enum: [TOURIST, DISASTER_MANAGER, SYSTEM_ADMIN] } }
+        - { in: path, name: accountId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Account summary }
+        "404": { description: Account not found }
+  /api/v1/admin/accounts/{role}/{accountId}/status:
+    patch:
+      tags: [System Admin]
+      summary: Activate, suspend, or disable an account and revoke sessions when inactive
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: role, required: true, schema: { type: string, enum: [TOURIST, DISASTER_MANAGER, SYSTEM_ADMIN] } }
+        - { in: path, name: accountId, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [ACTIVE, SUSPENDED, DISABLED] }
+                reason: { type: string, maxLength: 500 }
+      responses:
+        "200": { description: Updated account }
+        "409": { description: Self-deactivation is not allowed }
+  /api/v1/admin/resources/{resource}:
+    get:
+      tags: [System Admin]
+      summary: Inspect a core operational resource collection
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: resource, required: true, schema: { type: string, enum: [trips, groups, incidents, hazards, risk-zones, emergency-units, dispatches] } }
+        - { in: query, name: status, schema: { type: string } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+      responses:
+        "200": { description: Resource collection }
 components:
   securitySchemes:
     bearerAuth:
