@@ -1,24 +1,48 @@
 {
-  "name": "server",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "smart-tourist-safety-backend",
+  "version": "0.1.0",
+  "description": "REST and realtime backend for the Smart Tourist Safety System.",
+  "private": true,
+  "main": "src/server.js",
   "scripts": {
-    "test": "jest --runInBand",
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "test:unit": "jest tests/unit --runInBand",
-    "test:integration": "jest tests/integration --runInBand",
-    "test:e2e": "jest tests/e2e --runInBand",
-    "test:security": "jest tests/security --runInBand",
+    "env:check": "node scripts/verify-environment.js",
+    "env:check:database": "node scripts/verify-environment.js --database",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
+    "test:phase0": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/phase0 --runInBand",
+    "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage --runInBand",
+    "test:unit": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/unit --runInBand",
+    "test:integration": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/integration --runInBand",
+    "test:e2e": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/e2e --runInBand",
+    "test:security": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/security --runInBand",
     "prisma:generate": "prisma generate",
+    "prisma:validate": "prisma validate",
+    "prisma:format": "prisma format",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio",
     "prisma:seed": "node prisma/seed.js"
   },
-  "keywords": [],
+  "keywords": [
+    "tourism",
+    "safety",
+    "express",
+    "prisma",
+    "socket.io"
+  ],
   "type": "module",
+  "engines": {
+    "node": ">=20.19.0",
+    "npm": ">=10"
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1112.0",
+    "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "argon2": "^0.45.1",
     "axios": "^1.19.0",
@@ -47,6 +71,7 @@
     "nodemon": "^3.1.14",
     "prettier": "^3.9.6",
     "prisma": "^7.9.1",
+    "socket.io-client": "^4.8.3",
     "supertest": "^7.2.2"
   }
 }
