@@ -11,19 +11,25 @@ A tourist creates a trip and explicitly agrees to the safety/location features t
 ```text
 1. Tourist creates an account
         |
-2. Tourist completes profile/onboarding
+2. Backend emails a 6-digit OTP
         |
-3. Tourist creates a SOLO or GROUP trip
+3. Tourist verifies the email
         |
-4. Tourist grants required trip consents
+4. Backend issues the first authenticated session
         |
-5. Backend issues a trip-scoped Safety ID
+5. Tourist completes profile/onboarding
         |
-6. Tourist starts the trip
+6. Tourist creates a SOLO or GROUP trip
         |
-7. Client sends location updates
+7. Tourist grants required trip consents
         |
-8. Backend checks safety conditions
+8. Backend issues a trip-scoped Safety ID
+        |
+9. Tourist starts the trip
+        |
+10. Client sends location updates
+        |
+11. Backend checks safety conditions
         |
         +-- safe -> keep monitoring
         |
@@ -31,6 +37,23 @@ A tourist creates a trip and explicitly agrees to the safety/location features t
                          |
                          +-- serious/actionable -> create incident
 ```
+
+
+## First-time email verification
+
+Email OTP is a one-time account-verification step, not a login OTP.
+
+```text
+register
+   -> backend generates 6 digits
+   -> Gmail sends OTP
+   -> tourist submits email + OTP
+   -> emailVerifiedAt is set
+   -> access/refresh session issued
+   -> future logins use normal credentials
+```
+
+The code expires after the configured TTL (10 minutes by default). Resending is rate/cooldown controlled, creates a fresh OTP, and replaces the previous active code. Too many wrong attempts invalidate the active OTP. If the tourist later changes email, the new address must be verified again.
 
 ## What safety monitoring checks
 

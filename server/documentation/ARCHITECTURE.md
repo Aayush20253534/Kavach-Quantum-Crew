@@ -36,10 +36,25 @@ Domain module
 
 Errors pass through centralized normalization so unexpected implementation details are not returned to clients.
 
+## Authentication and verification boundary
+
+```text
+Tourist register
+  -> create account with emailVerifiedAt = null
+  -> cryptographically generate 6-digit OTP
+  -> persist keyed OTP hash + expiry/attempt state
+  -> send OTP with Gmail SMTP
+  -> verify-email
+  -> mark emailVerifiedAt
+  -> issue access/refresh session
+```
+
+Unverified tourists cannot use normal login sessions, refresh sessions, protected REST routes, or authenticated Socket.IO. Changing the tourist email clears `emailVerifiedAt` and revokes refresh sessions so the new address must be verified.
+
 ## Major domain flow
 
 ```text
-Account
+Account + verified email
   -> Trip
       -> Consent + Safety ID
       -> Group membership
@@ -75,7 +90,7 @@ Three areas deliberately use adapter/provider boundaries:
 
 ## Persistence
 
-PostgreSQL is authoritative for accounts, trips, consent, tracking state, safety/incident state, dispatch, evidence metadata, notifications, audit records, and delivery history. Evidence bytes remain behind the object-storage adapter rather than inside PostgreSQL.
+PostgreSQL is authoritative for accounts, email-verification OTP state, trips, consent, tracking state, safety/incident state, dispatch, evidence metadata, notifications, audit records, and delivery history. Evidence bytes remain behind the object-storage adapter rather than inside PostgreSQL.
 
 ## Security boundaries
 
@@ -87,6 +102,8 @@ Authorization is layered:
 - admin-only audit/observability,
 - path-safe evidence storage,
 - JWT/session validation,
+- mandatory tourist email verification before session use,
+- keyed OTP hashing, expiry, cooldown, and attempt limits,
 - global and sensitive-action rate limits.
 
 Never infer access from a resource UUID alone.
