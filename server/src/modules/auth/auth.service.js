@@ -13,7 +13,8 @@ import { authRepository } from "./auth.repository.js";
 
 const sanitizeUser = (user) => {
   if (!user) return null;
-  const { passwordHash: _passwordHash, ...safeUser } = user;
+  const safeUser = { ...user };
+  delete safeUser.passwordHash;
   return safeUser;
 };
 

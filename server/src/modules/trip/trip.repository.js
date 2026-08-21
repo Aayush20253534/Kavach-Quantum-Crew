@@ -102,6 +102,10 @@ export const createTripRepository = ({ db = prisma } = {}) => ({
         where: { tripId, revokedAt: null },
         data: { revokedAt: now },
       });
+      await transaction.tripGroup.updateMany({
+        where: { tripId, status: "ACTIVE" },
+        data: { status: "CLOSED", closedAt: now },
+      });
       return transaction.trip.update({
         where: { id: tripId },
         data: { status: "COMPLETED", endedAt: now },
@@ -119,6 +123,10 @@ export const createTripRepository = ({ db = prisma } = {}) => ({
       await transaction.tripSafetyId.updateMany({
         where: { tripId, revokedAt: null },
         data: { revokedAt: now },
+      });
+      await transaction.tripGroup.updateMany({
+        where: { tripId, status: "ACTIVE" },
+        data: { status: "CLOSED", closedAt: now },
       });
       return transaction.trip.update({
         where: { id: tripId },
