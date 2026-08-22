@@ -1,16 +1,28 @@
 services:
   postgres-test:
     image: postgres:16-alpine
+    restart: unless-stopped
+
     environment:
-      POSTGRES_DB: smart_tourist_safety_test
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${TEST_POSTGRES_DB:-smart_tourist_safety_test}
+      POSTGRES_USER: ${TEST_POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${TEST_POSTGRES_PASSWORD:-postgres}
+
     ports:
-      - "5433:5432"
+      - "${TEST_POSTGRES_PORT:-5433}:5432"
+
+    # Test database is intentionally temporary.
+    # All data is removed when the container is destroyed.
     tmpfs:
       - /var/lib/postgresql/data
+
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d smart_tourist_safety_test"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"
+        ]
       interval: 3s
       timeout: 3s
       retries: 10
+      start_period: 5s
