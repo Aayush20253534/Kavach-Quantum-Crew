@@ -2,9 +2,10 @@ import React from 'react';
 import { useCurrentTrip } from '../../trips/api/tripQueries';
 import { useGeolocation } from '../../tracking/hooks/useGeolocation';
 import { useRiskZones, useLatestLocations } from '../../tracking/api/trackingQueries';
+import { useAlerts } from '../../safety/api/safetyQueries';
 import { MapComponent } from '../../tracking/components/MapComponent';
 import { Link } from 'react-router-dom';
-import { MapPin, Navigation, ArrowRight, ShieldAlert, Activity, Star } from 'lucide-react';
+import { MapPin, Navigation, ArrowRight, ShieldAlert, Activity, Star, AlertTriangle } from 'lucide-react';
 
 const SUGGESTED_PLACES = [
   {
@@ -39,6 +40,7 @@ const SUGGESTED_PLACES = [
 
 export function TouristDashboardPage() {
   const { data: currentTrip } = useCurrentTrip();
+  const { data: alertsData } = useAlerts();
 
   // Track location if there's a trip that is active.
   const isActive = currentTrip?.status === 'ACTIVE';
@@ -54,8 +56,11 @@ export function TouristDashboardPage() {
   const isGroup = currentTrip?.type === 'GROUP';
   const { data: groupLocations } = useLatestLocations(isGroup ? currentTrip?.groupId : null);
 
+  const alerts = alertsData?.items || alertsData || [];
+  const unreadAlerts = alerts.filter(a => !a.acknowledgedAt);
+
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-10">
+    <div className="space-y-8 max-w-6xl mx-auto pb-10 font-sans">
       
       {/* Dashboard Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 border-b border-slate-200 pb-4">
@@ -72,75 +77,44 @@ export function TouristDashboardPage() {
         )}
       </div>
 
-      {/* Suggested Places (Vibrant Image Cards) */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-            <Star className="w-4 h-4 text-red-600" />
-            Top Destinations in Prayagraj
-          </h2>
-          <button className="text-[10px] font-bold uppercase tracking-wider text-red-600 hover:text-red-700 transition flex items-center gap-1 cursor-pointer">
-            View All <ArrowRight className="w-3 h-3" />
-          </button>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {SUGGESTED_PLACES.map((place) => (
-            <div 
-              key={place.id} 
-              className="group relative h-48 rounded-none overflow-hidden cursor-pointer border border-slate-200 shadow-sm"
-            >
-              {/* Vibrant Background Image */}
-              <img 
-                src={place.image}
-                alt={place.name}
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-              />
-              
-              {/* Dark Gradient Overlay for Text Readability */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
-              
-              {/* Vibrant Hover Overlay */}
-              <div className="absolute inset-0 bg-red-600/20 opacity-0 group-hover:opacity-100 transition-opacity mix-blend-overlay" />
-              
-              {/* Content */}
-              <div className="absolute inset-0 p-4 flex flex-col justify-end">
-                <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="text-white font-black text-sm uppercase tracking-wide leading-tight shadow-black drop-shadow-md">{place.name}</h3>
-                    <div className="bg-white/20 backdrop-blur-md px-2 py-0.5 border border-white/30 text-white text-[9px] font-bold uppercase tracking-wider rounded-none">
-                      {place.distance}
-                    </div>
-                  </div>
-                  <p className="text-slate-300 text-[10px] font-medium leading-snug line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
-                    {place.description}
-                  </p>
-                </div>
+      {/* Conditional Trip / GPS Warnings & Alerts */}
+      <div className="space-y-4">
+        {unreadAlerts.length > 0 && (
+          <div className="bg-red-50 border border-red-200 text-red-900 p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-none">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-xs uppercase tracking-wider text-red-700">Action Required: {unreadAlerts.length} Unread Alerts</p>
+                <p className="text-[11px] mt-0.5 font-medium text-red-600">You have unacknowledged safety alerts in your vicinity.</p>
               </div>
             </div>
-          ))}
-        </div>
-      </section>
+            <Link 
+              to="/tourist/incidents/history" 
+              className="bg-red-600 text-white px-4 py-2 text-[10px] font-bold uppercase tracking-wider hover:bg-red-700 transition-colors shrink-0"
+            >
+              View Alerts
+            </Link>
+          </div>
+        )}
 
-      {/* Conditional Trip / GPS Warnings */}
-      <div className="space-y-4">
-        {!isActive && permission === 'prompt' && currentTrip?.status === 'PLANNED' && (
-          <div className="relative overflow-hidden bg-gradient-to-r from-red-600 to-orange-500 p-6 shadow-xl border border-red-700 rounded-none flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="absolute right-0 top-0 opacity-10 pointer-events-none transform translate-x-4 -translate-y-4">
-              <Navigation className="w-48 h-48 text-white" />
-            </div>
-            <div className="relative z-10 text-white">
-              <h3 className="font-black text-lg uppercase tracking-wide flex items-center gap-2">
+        {!isActive && currentTrip?.status === 'PLANNED' && (
+          <div className="bg-white p-6 shadow-sm border border-slate-200 rounded-none flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="relative z-10 flex items-start gap-3">
+              <div className="w-10 h-10 bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600">
                 <Activity className="w-5 h-5 animate-pulse" />
-                Ready to Deploy?
-              </h3>
-              <p className="text-xs font-medium text-red-100 mt-1 uppercase tracking-wider">
-                Initiate your trip to establish secure GPS uplinks with local first responders.
-              </p>
+              </div>
+              <div>
+                <h3 className="font-black text-slate-900 text-sm uppercase tracking-wide">
+                  Ready to Deploy?
+                </h3>
+                <p className="text-[11px] font-medium text-slate-500 mt-0.5 uppercase tracking-wider">
+                  Initiate your planned trip to establish secure GPS uplinks with local first responders.
+                </p>
+              </div>
             </div>
             <Link 
               to="/tourist/trips/current" 
-              className="relative z-10 bg-white text-red-700 px-6 py-3 font-black text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(255,255,255,0.3)] hover:bg-slate-50 transition-colors rounded-none border border-white whitespace-nowrap"
+              className="bg-slate-900 text-white px-6 py-3 font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-colors border border-transparent whitespace-nowrap"
             >
               Start Mission
             </Link>
@@ -148,8 +122,9 @@ export function TouristDashboardPage() {
         )}
 
         {gpsError && (
-          <div className="bg-red-50 border-l-4 border-red-600 text-red-900 p-4 shadow-sm flex items-start gap-3 rounded-none">
-            <ShieldAlert className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+          <div className="bg-white border border-red-200 text-red-900 p-4 shadow-sm flex items-start gap-3 rounded-none relative overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-600"></div>
+            <ShieldAlert className="w-5 h-5 text-red-600 shrink-0 mt-0.5 ml-2" />
             <div>
               <p className="font-bold text-xs uppercase tracking-wider">Telemetry Warning</p>
               <p className="text-[11px] mt-0.5 font-medium">{gpsError}</p>
@@ -158,59 +133,100 @@ export function TouristDashboardPage() {
         )}
       </div>
 
-      {/* Premium HUD Map Container */}
-      <div className="relative bg-white shadow-xl border border-slate-200 overflow-hidden rounded-none group">
+      {/* Suggested Places (Flat UI Update) */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+            <Star className="w-4 h-4 text-red-600" />
+            Top Destinations in Prayagraj
+          </h2>
+          <button className="text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-red-600 transition flex items-center gap-1 cursor-pointer">
+            View All <ArrowRight className="w-3 h-3" />
+          </button>
+        </div>
         
-        {/* HUD Top Bar */}
-        <div className="absolute top-0 left-0 right-0 z-[400] pointer-events-none p-4 flex justify-between items-start">
-          <div className="bg-slate-900/80 backdrop-blur-md border border-slate-700/50 p-3 pointer-events-auto shadow-2xl rounded-none flex items-center gap-3">
-            <div className="w-8 h-8 bg-slate-800 flex items-center justify-center border border-slate-700 rounded-none">
-              <MapPin className="w-4 h-4 text-red-500" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {SUGGESTED_PLACES.map((place) => (
+            <div 
+              key={place.id} 
+              className="group relative h-48 bg-white overflow-hidden cursor-pointer border border-slate-200 shadow-sm hover:border-red-400 transition-colors flex flex-col"
+            >
+              <div className="h-32 relative overflow-hidden bg-slate-100">
+                {/* Fallback pattern if no image */}
+                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#94a3b8 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
+                <img 
+                  src={place.image}
+                  alt={place.name}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+              </div>
+              <div className="p-3 flex-1 flex flex-col justify-between bg-white border-t border-slate-100">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-slate-900 font-bold text-[11px] uppercase tracking-wide leading-tight line-clamp-1 group-hover:text-red-600 transition-colors">{place.name}</h3>
+                  <div className="bg-slate-50 border border-slate-200 text-slate-600 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 shrink-0">
+                    {place.distance}
+                  </div>
+                </div>
+                <p className="text-slate-500 text-[9px] font-medium leading-snug line-clamp-1 uppercase">
+                  {place.description}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Flat UI HUD Map Container */}
+      <div className="relative bg-white shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+        
+        {/* Top Info Bar */}
+        <div className="bg-white border-b border-slate-200 p-3 flex flex-wrap gap-4 items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-red-50 flex items-center justify-center border border-red-100">
+              <MapPin className="w-4 h-4 text-red-600" />
             </div>
             <div>
-              <h2 className="font-black text-white text-xs uppercase tracking-widest">Tactical Map</h2>
-              <p className="text-[9px] text-slate-400 font-mono mt-0.5 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 bg-green-500 block rounded-none animate-pulse"></span>
+              <h2 className="font-black text-slate-900 text-xs uppercase tracking-widest">Tactical Map</h2>
+              <p className="text-[9px] text-slate-500 font-bold uppercase mt-0.5 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 bg-green-500 block animate-pulse"></span>
                 LINK ESTABLISHED
               </p>
             </div>
           </div>
           
-          <div className="bg-slate-900/80 backdrop-blur-md border border-slate-700/50 px-3 py-1.5 pointer-events-auto shadow-2xl rounded-none">
-            <span className="text-[9px] text-slate-300 font-mono tracking-wider">
-              ACCURACY: <strong className="text-white">{location ? `${Math.round(location.accuracy)}M` : 'CALCULATING...'}</strong>
+          <div className="bg-slate-50 border border-slate-200 px-3 py-1.5 flex items-center gap-2">
+            <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">
+              ACCURACY:
+            </span>
+            <span className="text-[10px] text-slate-900 font-mono font-bold">
+              {location ? `${Math.round(location.accuracy)}M` : 'CALCULATING...'}
             </span>
           </div>
         </div>
 
-        {/* HUD Crosshairs/Corners (Visual only) */}
-        <div className="absolute inset-0 pointer-events-none z-[400]">
-          <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-slate-900/30 m-4 transition-transform group-hover:scale-110"></div>
-          <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-slate-900/30 m-4 transition-transform group-hover:scale-110"></div>
-          <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-slate-900/30 m-4 transition-transform group-hover:scale-110"></div>
-          <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-slate-900/30 m-4 transition-transform group-hover:scale-110"></div>
-        </div>
-
         {/* Render our Leaflet Map */}
-        <MapComponent
-          currentLocation={location}
-          riskZones={riskZones}
-          groupLocations={Array.isArray(groupLocations) ? groupLocations : []}
-          className="h-[550px] w-full z-0 grayscale-[0.2] contrast-125"
-        />
-        
-        {/* HUD Bottom Bar Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 z-[400] pointer-events-none p-4 flex justify-center">
-          <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-700 p-2 shadow-2xl rounded-none flex items-center gap-6 pointer-events-auto">
-             <div className="flex flex-col items-center">
-               <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest">Longitude</span>
-               <span className="text-xs text-slate-200 font-mono">{location?.longitude?.toFixed(4) || '---.----'}</span>
-             </div>
-             <div className="w-px h-6 bg-slate-700"></div>
-             <div className="flex flex-col items-center">
-               <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest">Latitude</span>
-               <span className="text-xs text-slate-200 font-mono">{location?.latitude?.toFixed(4) || '---.----'}</span>
-             </div>
+        <div className="relative">
+          <MapComponent
+            currentLocation={location}
+            riskZones={riskZones}
+            groupLocations={Array.isArray(groupLocations) ? groupLocations : []}
+            className="h-[500px] w-full z-0"
+          />
+          
+          {/* Flat Floating Coordinates Overlay */}
+          <div className="absolute bottom-4 left-4 z-[400] pointer-events-none">
+            <div className="bg-white/95 backdrop-blur-sm border border-slate-200 p-2.5 shadow-sm flex items-center gap-4 pointer-events-auto">
+               <div className="flex flex-col">
+                 <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Longitude</span>
+                 <span className="text-[11px] text-slate-900 font-mono font-bold">{location?.longitude?.toFixed(4) || '---.----'}</span>
+               </div>
+               <div className="w-px h-6 bg-slate-200"></div>
+               <div className="flex flex-col">
+                 <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Latitude</span>
+                 <span className="text-[11px] text-slate-900 font-mono font-bold">{location?.latitude?.toFixed(4) || '---.----'}</span>
+               </div>
+            </div>
           </div>
         </div>
       </div>
