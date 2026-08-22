@@ -39,9 +39,9 @@ Please design and polish the following newly functional pages and components fro
 - `[ ]` **NotFoundPage.jsx**: Creative 404 page.
 
 ## 🔐 Auth Pages (`src/features/auth/pages/`)
-- `[ ]` **LoginPage.jsx**: Login form with role selection (Tourist/Authority/Admin).
-- `[ ]` **RegisterPage.jsx**: Multi-field registration form with password strength indicator.
-- `[ ]` **VerifyEmailPage.jsx**: The 6-box OTP input screen with auto-focus, email editor, and resend countdown.
+- `[x]` **LoginPage.jsx**: Login form with role selection (Tourist/Authority/Admin).
+- `[x]` **RegisterPage.jsx**: Multi-field registration form with password strength indicator.
+- `[x]` **VerifyEmailPage.jsx**: The 6-box OTP input screen with auto-focus, email editor, and resend countdown.
 
 ## 👤 Onboarding & Profile
 - `[ ]` **OnboardingPage.jsx** (`src/features/onboarding/pages/`): A wizard for Medical Details and dynamically adding Emergency Contacts.
