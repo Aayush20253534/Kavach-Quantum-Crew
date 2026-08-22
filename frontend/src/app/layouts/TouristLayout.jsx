@@ -20,6 +20,7 @@ import {
   History
 } from 'lucide-react';
 import { logout } from '../../features/auth/store/authSlice';
+import { NotificationsDropdown } from '../components/NotificationsDropdown';
 
 export function TouristLayout() {
   const { user } = useSelector((state) => state.auth);
@@ -50,12 +51,12 @@ export function TouristLayout() {
   const initial = userName.charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-screen flex bg-[#f8f9fa] text-slate-900 antialiased font-sans">
+    <div className="min-h-screen bg-[#f8f9fa] text-slate-900 antialiased font-sans">
 
       {/* =========================================================
           DESKTOP SIDEBAR
       ========================================================= */}
-      <aside className="hidden lg:flex w-[280px] flex-col bg-white border-r border-slate-200 sticky top-0 h-screen z-30">
+      <aside className="hidden lg:flex w-[280px] flex-col bg-white border-r border-slate-200 fixed top-0 left-0 h-screen z-30">
 
         {/* Brand Header */}
         <div className="p-6 pb-2">
@@ -165,10 +166,10 @@ export function TouristLayout() {
       {/* =========================================================
           MAIN APPLICATION AREA
       ========================================================= */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 lg:pl-[280px]">
 
         {/* Top Navbar */}
-        <header className="sticky top-0 z-20 h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between">
+        <header className="fixed top-0 right-0 w-full lg:w-[calc(100%-280px)] z-20 h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between">
 
           {/* Left: Location */}
           <div className="flex items-center gap-3">
@@ -203,12 +204,7 @@ export function TouristLayout() {
               SOS
             </button>
 
-            <button className="relative w-11 h-11 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:border-slate-300 transition-colors cursor-pointer">
-              <Bell className="w-5 h-5" />
-              <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[#e11d48] text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
-                3
-              </div>
-            </button>
+            <NotificationsDropdown />
 
             <Link to="/tourist/profile" className="hidden sm:flex items-center gap-3 pl-4 border-l border-slate-200 cursor-pointer group hover:opacity-80 transition-opacity">
               <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-700 border border-slate-200 group-hover:border-slate-300 transition-colors">
@@ -222,7 +218,7 @@ export function TouristLayout() {
         </header>
 
         {/* Page Main Content Area */}
-        <main className="flex-1 p-6 lg:p-8 max-w-[1400px] w-full mx-auto">
+        <main className="flex-1 p-6 lg:p-8 mt-16 max-w-[1400px] w-full mx-auto">
           <Outlet />
         </main>
       </div>

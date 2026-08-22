@@ -35,7 +35,7 @@ Please design and polish the following newly functional pages and components fro
 - `[x]` **AuthorityLayout.jsx**: A professional, dense sidebar layout for disaster managers.
 
 ## 🌐 Public Pages (`src/features/public/pages/`)
-- `[ ]` **HomePage.jsx**: The high-converting landing page. Hero section, features, safety statistics, and call-to-actions.
+- `[x]` **HomePage.jsx**: The high-converting landing page. Hero section, features, safety statistics, and call-to-actions.
 - `[x]` **NotFoundPage.jsx**: Creative 404 page.
 
 ## 🔐 Auth Pages (`src/features/auth/pages/`)
@@ -48,8 +48,8 @@ Please design and polish the following newly functional pages and components fro
 - `[x]` **ProfilePage.jsx** (`src/features/profile/pages/`): A digital Tourist ID card displaying the user's safety profile and settings.
 
 ## 🗺️ Tourist Dashboard & Tracking
-- `[ ]` **TouristDashboardPage.jsx** (`src/features/tourist/pages/`): The primary home screen. Design a "Ready for trip?" banner and a premium Heads-Up Display (HUD) that sits on top of the map when tracking is active.
-- `[ ]` **MapComponent.jsx** (`src/features/tracking/components/`): Customize the map frame and tooltips.
+- `[x]` **TouristDashboardPage.jsx** (`src/features/tourist/pages/`): The primary home screen. Design a "Ready for trip?" banner and a premium Heads-Up Display (HUD) that sits on top of the map when tracking is active.
+- `[x]` **MapComponent.jsx** (`src/features/tracking/components/`): Customize the map frame and tooltips.
 
 ## 🎒 Trips (`src/features/trips/pages/`)
 - `[x]` **CreateTripPage.jsx**: A sleek form to plan a trip with segmented controls for Solo vs. Group.

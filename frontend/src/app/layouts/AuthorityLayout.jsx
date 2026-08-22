@@ -28,9 +28,9 @@ export function AuthorityLayout() {
   ];
 
   return (
-    <div className="min-h-screen flex bg-slate-50 text-slate-900 antialiased font-sans">
+    <div className="min-h-screen bg-slate-50 text-slate-900 antialiased font-sans">
       {/* Authority Sidebar */}
-      <aside className="hidden md:flex w-72 flex-col bg-white border-r border-slate-200 sticky top-0 h-screen z-30">
+      <aside className="hidden md:flex w-72 flex-col bg-white border-r border-slate-200 fixed top-0 left-0 h-screen z-30">
         {/* Brand Header */}
         <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-white">
           <Link to="/authority/dashboard" className="flex items-center gap-3">
@@ -115,8 +115,8 @@ export function AuthorityLayout() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-20 h-16 bg-white/95 backdrop-blur-xl border-b border-slate-200 px-6 flex items-center justify-between shadow-sm">
+      <div className="flex-1 flex flex-col min-w-0 md:pl-72">
+        <header className="fixed top-0 right-0 w-full md:w-[calc(100%-18rem)] z-20 h-16 bg-white/95 backdrop-blur-xl border-b border-slate-200 px-6 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
             <div className="bg-[#e11d48] text-white text-[10px] font-bold px-3 py-1.5 uppercase tracking-widest rounded shadow-sm flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
@@ -133,7 +133,7 @@ export function AuthorityLayout() {
           </div>
         </header>
 
-        <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-6 mt-16 max-w-7xl w-full mx-auto">
           <Outlet />
         </main>
       </div>
