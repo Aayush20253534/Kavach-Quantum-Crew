@@ -81,11 +81,10 @@ export function AuthorityLayout() {
               <NavLink
                 key={item.name}
                 to={item.path}
-                className={`group flex items-center gap-3 px-4 py-3 rounded-md text-[12px] font-bold uppercase tracking-wider transition-all duration-200 ${
-                  isActive
+                className={`group flex items-center gap-3 px-4 py-3 rounded-md text-[12px] font-bold uppercase tracking-wider transition-all duration-200 ${isActive
                     ? 'bg-[#fff1f2] text-[#be123c] border border-[#ffe4e6] shadow-sm'
                     : 'text-slate-600 border border-transparent hover:text-[#e11d48] hover:bg-slate-50 hover:border-slate-200'
-                }`}
+                  }`}
               >
                 <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-[#e11d48]' : 'text-slate-400 group-hover:text-[#e11d48]'}`} />
                 <span>{item.name}</span>
@@ -120,8 +119,8 @@ export function AuthorityLayout() {
         <header className="sticky top-0 z-20 h-16 bg-white/95 backdrop-blur-xl border-b border-slate-200 px-6 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
             <div className="bg-[#e11d48] text-white text-[10px] font-bold px-3 py-1.5 uppercase tracking-widest rounded shadow-sm flex items-center gap-2">
-               <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
-               PRAYAGRAJ SECTOR 1-8 LIVE RADAR
+              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+              PRAYAGRAJ SECTOR 1-8 LIVE RADAR
             </div>
           </div>
           <div className="flex items-center gap-3">

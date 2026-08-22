@@ -25,6 +25,7 @@ import { OnboardingPage } from '../features/onboarding/pages/OnboardingPage';
 
 // Pages - Tourist
 import { TouristDashboardPage } from '../features/tourist/pages/TouristDashboardPage';
+import { LiveTrackingPage } from '../features/tracking/pages/LiveTrackingPage';
 import { CreateTripPage } from '../features/trips/pages/CreateTripPage';
 import { CurrentTripPage } from '../features/trips/pages/CurrentTripPage';
 import { TripHistoryPage } from '../features/trips/pages/TripHistoryPage';
@@ -72,6 +73,7 @@ export const router = createBrowserRouter([
         element: <TouristLayout />,
         children: [
           { path: 'dashboard', element: <TouristDashboardPage /> },
+          { path: 'tracking', element: <LiveTrackingPage /> },
           { path: 'trips/create', element: <CreateTripPage /> },
           { path: 'trips/current', element: <CurrentTripPage /> },
           { path: 'trips/history', element: <TripHistoryPage /> },

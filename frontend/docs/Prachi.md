@@ -45,30 +45,30 @@ Please design and polish the following newly functional pages and components fro
 
 ## 👤 Onboarding & Profile
 - `[x]` **OnboardingPage.jsx** (`src/features/onboarding/pages/`): A wizard for Medical Details and dynamically adding Emergency Contacts.
-- `[ ]` **ProfilePage.jsx** (`src/features/profile/pages/`): A digital Tourist ID card displaying the user's safety profile and settings.
+- `[x]` **ProfilePage.jsx** (`src/features/profile/pages/`): A digital Tourist ID card displaying the user's safety profile and settings.
 
 ## 🗺️ Tourist Dashboard & Tracking
 - `[ ]` **TouristDashboardPage.jsx** (`src/features/tourist/pages/`): The primary home screen. Design a "Ready for trip?" banner and a premium Heads-Up Display (HUD) that sits on top of the map when tracking is active.
 - `[ ]` **MapComponent.jsx** (`src/features/tracking/components/`): Customize the map frame and tooltips.
 
 ## 🎒 Trips (`src/features/trips/pages/`)
-- `[ ]` **CreateTripPage.jsx**: A sleek form to plan a trip with segmented controls for Solo vs. Group.
-- `[ ]` **CurrentTripPage.jsx**: The live trip screen. Style the itinerary, checkpoints, and action buttons (Start, Complete, Cancel).
-- `[ ]` **TripHistoryPage.jsx**: A modern data grid/table showing past trips.
+- `[x]` **CreateTripPage.jsx**: A sleek form to plan a trip with segmented controls for Solo vs. Group.
+- `[x]` **CurrentTripPage.jsx**: The live trip screen. Style the itinerary, checkpoints, and action buttons (Start, Complete, Cancel).
+- `[x]` **TripHistoryPage.jsx**: A modern data grid/table showing past trips.
 
 ## 👥 Groups (`src/features/groups/pages/`)
-- `[ ]` **CreateGroupPage.jsx**: Displays a generated Invite Token (QR Code placeholder). Make it look like a premium digital ticket.
-- `[ ]` **JoinGroupPage.jsx**: Token input field. Style it like a high-tech scanner.
+- `[x]` **CreateGroupPage.jsx**: Displays a generated Invite Token (QR Code placeholder). Make it look like a premium digital ticket.
+- `[x]` **JoinGroupPage.jsx**: Token input field. Style it like a high-tech scanner.
 
 ## 🚨 Incidents & Safety (`src/features/incidents/pages/`)
-- `[ ]` **ReportIncidentPage.jsx**: The hazard reporting form. Make the file upload look like a modern drag-and-drop zone.
-- `[ ]` **IncidentHistoryPage.jsx**: List of past reports and their resolution status.
+- `[x]` **ReportIncidentPage.jsx**: The hazard reporting form. Make the file upload look like a modern drag-and-drop zone.
+- `[x]` **IncidentHistoryPage.jsx**: List of past reports and their resolution status.
 
 ## 🤖 Chatbot (`src/components/chatbot/`)
 - `[x]` **ChatbotWidget.jsx**: The floating Rakshak AI widget. Needs a chat bubble, message history window, and quick-action chips.
 
 ## 🏢 Authority Command Center (`src/features/authority/pages/`)
-- `[ ]` **AuthorityDashboardPage.jsx**: The disaster manager's view. Needs to look dense but readable. Style the "Active SOS Alerts" feed to look like a high-tech dispatch terminal with pulsing red indicators. Style the "Recent Hazards" feed.
+- `[x]` **AuthorityDashboardPage.jsx**: The disaster manager's view. Needs to look dense but readable. Style the "Active SOS Alerts" feed to look like a high-tech dispatch terminal with pulsing red indicators. Style the "Recent Hazards" feed.
 
 ---
 
