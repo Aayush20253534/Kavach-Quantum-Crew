@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { 
   User, ShieldCheck, QrCode, PhoneCall, Save, Check, MapPin, Edit3,
@@ -19,6 +19,11 @@ export function ProfilePage() {
   const [bloodGroup, setBloodGroup] = useState(user?.medicalInfo?.bloodGroup || 'O+');
   const [allergies, setAllergies] = useState(user?.medicalInfo?.notes || 'No known drug allergies');
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSave = (e) => {
     e.preventDefault();
@@ -43,7 +48,7 @@ export function ProfilePage() {
   };
 
   return (
-    <div className="max-w-[1100px] mx-auto space-y-6 pb-10 font-sans">
+    <div className={`max-w-[1100px] mx-auto space-y-6 pb-10 font-sans transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
       
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>

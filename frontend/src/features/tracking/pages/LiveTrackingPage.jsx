@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCurrentTrip } from '../../trips/api/tripQueries';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useRiskZones } from '../api/trackingQueries';
@@ -25,8 +25,13 @@ export function LiveTrackingPage() {
   const { data: riskZonesData } = useRiskZones();
   const riskZones = riskZonesData?.items || riskZonesData || [];
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
-    <div className="relative w-full h-[calc(100vh-140px)] rounded-lg overflow-hidden border border-slate-200 shadow-md flex flex-col font-sans">
+    <div className={`relative w-full h-[calc(100vh-140px)] rounded-lg overflow-hidden border border-slate-200 shadow-md flex flex-col font-sans transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
       
       {/* Top Map Overlay / HUD */}
       <div className="absolute top-4 left-4 right-4 z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pointer-events-none">

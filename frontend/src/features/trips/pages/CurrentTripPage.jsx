@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Navigation, 
@@ -26,6 +26,11 @@ export function CurrentTripPage() {
 
   // Use actual geolocation tracking if the trip is active
   const { location, error: gpsError } = useGeolocation(currentTrip?.id, isActive);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   if (isLoading) {
     return (
@@ -71,7 +76,7 @@ export function CurrentTripPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-[1200px] mx-auto pb-10 font-sans">
+    <div className={`space-y-6 max-w-[1200px] mx-auto pb-10 font-sans transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
       {/* Top Banner */}
       <div className={`p-6 md:p-8 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.03)] border transition-all ${isActive ? 'bg-[#f0fdf4] border-[#bbf7d0]' : 'bg-white border-slate-100'} flex flex-col sm:flex-row sm:items-center justify-between gap-6`}>
         <div className="space-y-3">

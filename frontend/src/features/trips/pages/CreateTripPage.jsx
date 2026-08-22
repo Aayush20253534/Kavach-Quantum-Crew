@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCreateTrip } from '../api/tripQueries';
 import { 
@@ -33,6 +33,11 @@ export function CreateTripPage() {
 
   const { mutateAsync: createTrip, isPending } = useCreateTrip();
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const handleCreateTrip = async (e) => {
     e.preventDefault();
     setErrorMsg('');
@@ -53,7 +58,7 @@ export function CreateTripPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto font-sans pb-10">
+    <div className={`max-w-4xl mx-auto font-sans pb-10 transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
       
       <div className="mb-8">
         <h1 className="text-[22px] font-black text-slate-900 tracking-tight flex items-center gap-2">
