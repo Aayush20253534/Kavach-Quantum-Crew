@@ -98,28 +98,27 @@ export default function PrayagrajGallery({ onSelectPlace }) {
   };
 
   return (
-    <div className="relative h-full min-h-[600px] w-full overflow-hidden bg-slate-950 text-white select-none">
+    <div className="relative h-full min-h-[600px] w-full overflow-hidden bg-white text-slate-900 select-none">
       {/* ------------------------------------------------
           1. FULLSCREEN DYNAMIC BACKGROUND IMAGES
       ------------------------------------------------ */}
       {prayagrajPlaces.map((place, idx) => (
         <div
           key={place.id}
-          className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
-            idx === activeIndex
-              ? 'opacity-100 scale-100'
-              : 'opacity-0 scale-105 pointer-events-none'
-          }`}
+          className={`absolute inset-0 transition-all duration-1000 ease-in-out ${idx === activeIndex
+            ? 'opacity-100 scale-100'
+            : 'opacity-0 scale-105 pointer-events-none'
+            }`}
         >
           <img
             src={place.image}
             alt={place.name}
             className="h-full w-full object-cover object-center"
           />
-          {/* Subtle cinematic gradient overlays */}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-slate-950/20" />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/40 to-transparent" />
-          <div className="absolute inset-0 bg-black/25" />
+          {/* Extremely light cinematic gradient overlays to maximize image visibility */}
+          <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-white/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white/70 via-white/20 to-transparent" />
+          <div className="absolute inset-0 bg-white/10" />
         </div>
       ))}
 
@@ -128,21 +127,21 @@ export default function PrayagrajGallery({ onSelectPlace }) {
       ------------------------------------------------ */}
       <div className="absolute top-8 left-8 right-8 z-30 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/20 border border-sky-400/30 backdrop-blur-md text-sky-400 shadow-lg shadow-sky-500/10">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 border border-red-200 backdrop-blur-md text-red-600 shadow-sm">
             <Compass className="h-5 w-5 animate-pulse" />
           </div>
           <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.25em] text-sky-400">
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.25em] text-red-600">
               Quantum-Crew · Kavach
             </p>
-            <h2 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
-              PRAYAGRAJ <span className="text-xs font-medium text-slate-400">TOURISM</span>
+            <h2 className="text-lg font-black tracking-tight text-slate-900 flex items-center gap-2">
+              PRAYAGRAJ <span className="text-xs font-medium text-slate-500">TOURISM</span>
             </h2>
           </div>
         </div>
 
-        <div className="hidden sm:flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-medium backdrop-blur-md">
-          <MapPin className="h-3.5 w-3.5 text-sky-400" />
+        <div className="hidden sm:flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-xs font-medium text-slate-700 backdrop-blur-md shadow-sm">
+          <MapPin className="h-3.5 w-3.5 text-red-500" />
           <span>Uttar Pradesh, India</span>
         </div>
       </div>
@@ -150,28 +149,28 @@ export default function PrayagrajGallery({ onSelectPlace }) {
       {/* ------------------------------------------------
           3. MAIN HERO CONTENT (LEFT SIDE)
       ------------------------------------------------ */}
-      <div className="absolute top-28 bottom-36 left-8 right-8 z-20 flex flex-col justify-end max-w-xl">
+      <div className="absolute top-28 bottom-36 left-8 right-8 z-20 flex flex-col justify-end max-w-xl mb-5">
         {/* Destination Category Pill */}
         <div className="mb-3 flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-sky-500/20 text-sky-300 border border-sky-500/30 backdrop-blur-md">
-            <ShieldCheck className="h-3.5 w-3.5 text-sky-400" />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-red-100 text-red-700 border border-red-200 backdrop-blur-md">
+            <ShieldCheck className="h-3.5 w-3.5 text-red-600" />
             {currentPlace.tag}
           </span>
-          <span className="text-xs font-semibold text-slate-300/80 uppercase tracking-widest">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
             {currentPlace.subtitle}
           </span>
         </div>
 
-        {/* Big Bold Destination Title (as in Pinterest reference) */}
+        {/* Big Bold Destination Title */}
         <h1
           key={currentPlace.name}
-          className="text-4xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tight text-white leading-tight drop-shadow-lg"
+          className="text-4xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tight text-slate-900 leading-tight"
         >
           {currentPlace.name}
         </h1>
 
         {/* Description */}
-        <p className="mt-4 text-sm sm:text-base leading-relaxed text-slate-200/90 max-w-lg drop-shadow">
+        <p className="mt-4 text-sm sm:text-base leading-relaxed text-slate-700 max-w-lg font-medium">
           {currentPlace.description}
         </p>
 
@@ -180,21 +179,15 @@ export default function PrayagrajGallery({ onSelectPlace }) {
           <button
             type="button"
             onClick={() => onSelectPlace && onSelectPlace(currentPlace)}
-            className="group flex items-center gap-2.5 rounded-full bg-gradient-to-r from-sky-500 to-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-sky-500/30 transition-all hover:scale-105 hover:shadow-sky-500/50 active:scale-95"
+            className="group flex items-center gap-2.5 rounded-full bg-gradient-to-r from-[#e33636] to-red-600 px-6 py-3 text-sm font-bold text-white shadow-md shadow-red-500/20 transition-all hover:scale-105 hover:shadow-red-500/40 active:scale-95"
           >
             <span>Explore {currentPlace.name.split(' ')[0]}</span>
             <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </button>
-
-          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs font-medium text-slate-300 backdrop-blur-md">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-            <span>{currentPlace.safetyStatus}</span>
-          </div>
         </div>
       </div>
-
       {/* ------------------------------------------------
-          4. FLOATING CAROUSEL CARDS DECK (PINTEREST STYLE)
+          4. FLOATING CAROUSEL CARDS DECK
       ------------------------------------------------ */}
       <div className="absolute bottom-6 left-8 right-8 z-30 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
         {/* Destination Preview Cards Deck */}
@@ -206,11 +199,10 @@ export default function PrayagrajGallery({ onSelectPlace }) {
                 key={place.id}
                 onClick={() => setActiveIndex(idx)}
                 onMouseEnter={() => setActiveIndex(idx)}
-                className={`group relative h-24 sm:h-28 cursor-pointer overflow-hidden rounded-2xl border transition-all duration-500 ease-out flex-shrink-0 ${
-                  isActive
-                    ? 'w-44 sm:w-52 border-sky-400 shadow-xl shadow-sky-500/20 scale-100 ring-2 ring-sky-400/50'
-                    : 'w-24 sm:w-28 border-white/20 opacity-70 hover:opacity-100 hover:w-36'
-                }`}
+                className={`group relative h-24 sm:h-28 cursor-pointer overflow-hidden rounded-2xl border transition-all duration-500 ease-out flex-shrink-0 ${isActive
+                  ? 'w-44 sm:w-52 border-red-400 shadow-xl shadow-red-500/20 scale-100 ring-2 ring-red-400/50'
+                  : 'w-24 sm:w-28 border-slate-200 opacity-90 hover:opacity-100 hover:w-36 shadow-sm'
+                  }`}
               >
                 {/* Thumbnail Image */}
                 <img
@@ -219,13 +211,12 @@ export default function PrayagrajGallery({ onSelectPlace }) {
                   className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
 
-                {/* Dark Vignette */}
+                {/* Text needs dark gradient to remain readable over image */}
                 <div
-                  className={`absolute inset-0 transition-colors duration-300 ${
-                    isActive
-                      ? 'bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent'
-                      : 'bg-slate-950/60 group-hover:bg-slate-950/30'
-                  }`}
+                  className={`absolute inset-0 transition-colors duration-300 ${isActive
+                    ? 'bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent'
+                    : 'bg-slate-900/50 group-hover:bg-slate-900/30'
+                    }`}
                 />
 
                 {/* Bookmark Button */}
@@ -233,29 +224,28 @@ export default function PrayagrajGallery({ onSelectPlace }) {
                   type="button"
                   onClick={(e) => toggleBookmark(place.id, e)}
                   aria-label="Bookmark destination"
-                  className={`absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full backdrop-blur-md transition-colors ${
-                    isBookmarked[place.id]
-                      ? 'bg-sky-500 text-white'
-                      : 'bg-black/40 text-white/80 hover:bg-black/60 hover:text-white'
-                  }`}
+                  className={`absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full backdrop-blur-md transition-colors ${isBookmarked[place.id]
+                    ? 'bg-red-500 text-white'
+                    : 'bg-white/40 text-slate-900 hover:bg-white hover:text-red-600'
+                    }`}
                 >
                   <Bookmark className="h-3 w-3 fill-current" />
                 </button>
 
                 {/* Index badge */}
                 <div className="absolute top-2 left-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-950/70 text-[9px] font-black text-sky-400 backdrop-blur-md">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-[9px] font-black text-red-600 backdrop-blur-md shadow-sm">
                     0{idx + 1}
                   </span>
                 </div>
 
                 {/* Title and details on card */}
                 <div className="absolute bottom-2 left-2.5 right-2.5">
-                  <p className="truncate text-xs font-extrabold text-white group-hover:text-sky-300 transition-colors">
+                  <p className="truncate text-xs font-extrabold text-white group-hover:text-red-200 transition-colors">
                     {place.name}
                   </p>
                   {isActive && (
-                    <p className="truncate text-[10px] font-medium text-slate-300">
+                    <p className="truncate text-[10px] font-medium text-slate-200">
                       {place.subtitle}
                     </p>
                   )}
@@ -271,7 +261,7 @@ export default function PrayagrajGallery({ onSelectPlace }) {
             type="button"
             onClick={handlePrev}
             aria-label="Previous destination"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-slate-900/60 text-white backdrop-blur-md transition-all hover:bg-sky-500 hover:border-sky-400 hover:scale-110 active:scale-95 shadow-lg"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white/90 text-slate-700 backdrop-blur-md transition-all hover:bg-red-50 hover:border-red-300 hover:text-red-600 hover:scale-110 active:scale-95 shadow-sm"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -279,7 +269,7 @@ export default function PrayagrajGallery({ onSelectPlace }) {
             type="button"
             onClick={handleNext}
             aria-label="Next destination"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-slate-900/60 text-white backdrop-blur-md transition-all hover:bg-sky-500 hover:border-sky-400 hover:scale-110 active:scale-95 shadow-lg"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white/90 text-slate-700 backdrop-blur-md transition-all hover:bg-red-50 hover:border-red-300 hover:text-red-600 hover:scale-110 active:scale-95 shadow-sm"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
