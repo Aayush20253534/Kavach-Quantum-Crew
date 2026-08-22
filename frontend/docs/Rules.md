@@ -972,3 +972,35 @@ Before completing any task, verify:
 The agent's goal is not to generate the maximum amount of code.
 
 The goal is to produce the **smallest correct, maintainable, and scalable implementation that satisfies the current frontend requirement**.
+
+---
+
+# 46. Map & Geofencing Rules
+* Do not invent map data contracts.
+* Do not hardcode fake coordinates as production behavior.
+* Keep GPS logic independent from map rendering.
+* Do not make the map the source of truth for safety state.
+* Backend is authoritative for critical geofence decisions.
+* Do not duplicate critical backend safety logic without explicit requirement.
+* Do not invent polygon/zone formats.
+
+# 47. Socket.IO Rules
+* Inspect actual backend Socket.IO implementation.
+* Never invent event names.
+* Never invent payload formats.
+* Prevent duplicate listeners.
+* Prevent duplicate connections.
+* Clean up listeners on unmount.
+* Follow backend authentication requirements.
+* Update TanStack Query server state appropriately.
+
+# 48. UI Ownership Rules
+* Do not design pages that are assigned to Prachi.
+* Implement UI according to Prachi's approved handoff.
+* Technical integration may proceed independently where UI is not required.
+* Document UI requirements but do not independently make visual decisions.
+
+# 49. Dependency Rules
+Before installing Map libraries, Socket.IO clients, or any geospatial library:
+* Inspect existing dependencies and determine whether the package is genuinely required.
+* `socket.io-client` may be necessary if the project does not already contain an appropriate Socket.IO client, but do not install dependencies blindly.
