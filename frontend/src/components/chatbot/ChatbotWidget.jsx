@@ -106,10 +106,10 @@ export function ChatbotWidget() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end font-sans">
+    <div className="fixed bottom-24 sm:bottom-6 right-4 sm:right-6 z-[60] flex flex-col items-end font-sans">
       {/* Chat Window */}
       {isOpen && (
-        <div className="w-[340px] sm:w-[380px] h-[500px] max-h-[80vh] bg-white rounded-md shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 mb-4 flex flex-col overflow-hidden">
+        <div className="w-[calc(100vw-2rem)] sm:w-[380px] h-[60vh] sm:h-[500px] max-h-[600px] bg-white rounded-md shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 mb-4 flex flex-col overflow-hidden">
           {/* Header */}
           <div className="bg-white border-b border-slate-200 p-4 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2.5">
@@ -143,18 +143,16 @@ export function ChatbotWidget() {
             {messages.map((currentMessage) => (
               <div
                 key={currentMessage.id}
-                className={`flex gap-2 max-w-[85%] ${
-                  currentMessage.sender === 'user'
+                className={`flex gap-2 max-w-[85%] ${currentMessage.sender === 'user'
                     ? 'ml-auto flex-row-reverse'
                     : 'mr-auto'
-                }`}
+                  }`}
               >
                 <div
-                  className={`w-6 h-6 flex items-center justify-center shrink-0 mt-0.5 rounded-md ${
-                    currentMessage.sender === 'user'
+                  className={`w-6 h-6 flex items-center justify-center shrink-0 mt-0.5 rounded-md ${currentMessage.sender === 'user'
                       ? 'bg-red-50 text-red-600 border border-red-100'
                       : 'bg-white text-slate-600 border border-slate-200'
-                  }`}
+                    }`}
                 >
                   {currentMessage.sender === 'user' ? (
                     <User size={12} />
@@ -164,18 +162,16 @@ export function ChatbotWidget() {
                 </div>
 
                 <div
-                  className={`flex flex-col ${
-                    currentMessage.sender === 'user'
+                  className={`flex flex-col ${currentMessage.sender === 'user'
                       ? 'items-end'
                       : 'items-start'
-                  }`}
+                    }`}
                 >
                   <div
-                    className={`px-3 py-2 text-xs leading-relaxed shadow-sm ${
-                      currentMessage.sender === 'user'
+                    className={`px-3 py-2 text-xs leading-relaxed shadow-sm ${currentMessage.sender === 'user'
                         ? 'bg-[#e33636] text-white rounded-md rounded-tr-none'
                         : 'bg-white border border-slate-200 text-slate-800 rounded-md rounded-tl-none'
-                    }`}
+                      }`}
                   >
                     {currentMessage.text}
                   </div>
