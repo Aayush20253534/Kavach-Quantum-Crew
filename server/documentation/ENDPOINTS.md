@@ -236,6 +236,11 @@ This catalogue documents **148 mounted HTTP routes/aliases** in the current back
 
 ## AI & Blockchain Integration Contracts
 
+### Chatbot availability
+
+There is currently **no tourist chatbot REST endpoint**. `ChatbotWidget.jsx` is simulated in the browser. The `/integrations/ai/*` routes below are staff-only analysis contracts for `DISASTER_MANAGER` and `SYSTEM_ADMIN`; they are not conversational chatbot APIs and return `501 INTEGRATION_PROVIDER_NOT_CONFIGURED` until a provider is injected.
+
+
 | Method | Endpoint | Access | Purpose |
 |---|---|---|---|
 | `GET` | `/api/v1/integrations/capabilities` | DISASTER_MANAGER / SYSTEM_ADMIN | Return available AI/blockchain integration contract capabilities. |
@@ -261,3 +266,12 @@ This catalogue documents **148 mounted HTTP routes/aliases** in the current back
 |---|---|---|---|
 | `POST` | `/api/v1/auth/verify-email` | Public verification flow | Verify a newly registered tourist using email + 6-digit OTP; successful verification creates the authenticated session. |
 | `POST` | `/api/v1/auth/resend-verification` | Public verification flow | Generate and email a replacement OTP subject to resend cooldown. |
+
+
+## Tourist chatbot
+
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| `POST` | `/api/v1/chatbot/messages` | `TOURIST` | Validate a tourist chatbot message and forward it through the pluggable chatbot AI provider boundary. |
+
+Request body: `message` (required), optional `conversationId`, optional `location { latitude, longitude }`, and optional `context`. The default provider returns `501 CHATBOT_PROVIDER_NOT_CONFIGURED` until the AI branch supplies the provider implementation.
