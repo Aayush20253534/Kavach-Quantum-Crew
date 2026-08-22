@@ -97,7 +97,7 @@ export default function LoginPage() {
 
       if (user.role === 'TOURIST') {
         navigate(
-          user.onboardingCompleted ? '/tourist/dashboard' : '/onboarding',
+          user.onboardingCompleted ? '/tourist/profile' : '/onboarding',
           { replace: true }
         );
         return;
