@@ -10,7 +10,8 @@ import {
   Users,
   MapPin,
   XCircle,
-  Activity
+  Activity,
+  History
 } from 'lucide-react';
 import { useTripHistory } from '../api/tripQueries';
 
@@ -23,104 +24,109 @@ export function TripHistoryPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-red-600 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-[#e11d48] rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border-l-4 border-red-600 p-4 shadow-sm max-w-4xl mx-auto">
-        <p className="text-xs font-bold text-red-900 uppercase tracking-wider">Data Retrieval Error</p>
-        <p className="text-[11px] text-red-700 font-medium mt-0.5">Failed to load trip history.</p>
+      <div className="bg-[#fef2f2] border border-[#fecaca] p-4 rounded-xl shadow-sm max-w-4xl mx-auto flex items-start gap-3">
+        <XCircle className="w-5 h-5 text-[#ef4444] shrink-0 mt-0.5" />
+        <div>
+          <p className="text-xs font-bold text-[#b91c1c] uppercase tracking-wider">Data Retrieval Error</p>
+          <p className="text-[12px] text-[#991b1b] font-medium mt-0.5">Failed to load trip history.</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-10 font-sans">
+    <div className="space-y-6 max-w-[1000px] mx-auto pb-10 font-sans">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
-            <Compass className="w-6 h-6 text-red-600" />
+          <h1 className="text-[22px] font-black text-slate-900 tracking-tight flex items-center gap-2">
             Travel History & Certificates
           </h1>
-          <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">
+          <p className="text-[13px] text-slate-500 font-medium mt-1">
             Archived missions and safety records
           </p>
         </div>
 
         <Link to="/tourist/trips/create">
-          <button className="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 cursor-pointer transition-colors border border-transparent">
-            Plan New Trip <ArrowRight className="w-3.5 h-3.5" />
+          <button className="bg-[#e11d48] hover:bg-[#be123c] text-white px-6 py-3 text-[12px] font-bold uppercase tracking-widest rounded-xl shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
+            Plan New Trip <ArrowRight className="w-4 h-4" />
           </button>
         </Link>
       </div>
 
       {trips.length === 0 ? (
-        <div className="bg-white border border-slate-200 p-12 text-center shadow-sm">
-           <MapPin className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-           <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">No completed trips found in your archive.</p>
+        <div className="bg-white border border-slate-100 rounded-2xl p-12 text-center shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+           <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-6">
+             <History className="w-10 h-10 text-slate-300" />
+           </div>
+           <h3 className="text-[18px] font-black text-slate-900 tracking-wide mb-2">No Archives Found</h3>
+           <p className="text-[13px] text-slate-500 font-medium">You have no completed or cancelled trips in your archive.</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {trips.map((trip) => {
             const isCompleted = trip.status === 'COMPLETED';
             const isCancelled = trip.status === 'CANCELLED';
             const isPlanned = trip.status === 'PLANNED';
             
             return (
-              <div key={trip.id} className="bg-white border border-slate-200 p-5 shadow-sm hover:border-red-300 transition-colors">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div key={trip.id} className="bg-white border border-slate-100 rounded-2xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:border-red-200 hover:shadow-md transition-all duration-300">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                   
                   {/* Info Column */}
                   <div className="space-y-3 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-3">
                       {isCompleted && (
-                        <span className="bg-green-100 text-green-800 border border-green-200 text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> SUCCESSFUL
+                        <span className="bg-[#f0fdf4] text-[#16a34a] border border-[#dcfce7] text-[10px] font-bold px-2.5 py-1 uppercase tracking-widest rounded-lg flex items-center gap-1.5 shadow-sm">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> SUCCESSFUL
                         </span>
                       )}
                       {isCancelled && (
-                        <span className="bg-slate-100 text-slate-600 border border-slate-300 text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider flex items-center gap-1">
-                          <XCircle className="w-3 h-3" /> CANCELLED
+                        <span className="bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-bold px-2.5 py-1 uppercase tracking-widest rounded-lg flex items-center gap-1.5 shadow-sm">
+                          <XCircle className="w-3.5 h-3.5" /> CANCELLED
                         </span>
                       )}
                       {isPlanned && (
-                        <span className="bg-orange-100 text-orange-800 border border-orange-200 text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider flex items-center gap-1">
-                          <Activity className="w-3 h-3" /> PLANNED
+                        <span className="bg-orange-100 text-orange-800 border border-orange-200 text-[10px] font-bold px-2.5 py-1 uppercase tracking-widest rounded-lg flex items-center gap-1.5 shadow-sm">
+                          <Activity className="w-3.5 h-3.5" /> PLANNED
                         </span>
                       )}
-                      <span className="font-mono text-[10px] text-slate-400 font-bold uppercase">ID: {trip.id?.substring(0,8)}</span>
+                      <span className="font-mono text-[11px] text-slate-400 font-bold uppercase bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">ID: {trip.id?.substring(0,8)}</span>
                     </div>
                     
-                    <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">
+                    <h3 className="text-[18px] font-black text-slate-900 tracking-tight">
                       {trip.destination || 'Custom Circuit'}
                     </h3>
                     
-                    <div className="flex flex-wrap items-center gap-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    <div className="flex flex-wrap items-center gap-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">
                       <span className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                        <Calendar className="w-4 h-4 text-slate-400" />
                         {trip.startDate ? new Date(trip.startDate).toLocaleDateString() : 'N/A'}
                       </span>
                       <span className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        <Clock className="w-4 h-4 text-slate-400" />
                         {trip.duration || 'N/A'}
                       </span>
                       <span className="flex items-center gap-1.5">
-                        <Users className="w-3.5 h-3.5 text-slate-400" />
+                        <Users className="w-4 h-4 text-slate-400" />
                         {trip.type}
                       </span>
                     </div>
                   </div>
 
                   {/* Actions Column */}
-                  <div className="flex items-center gap-4 border-t md:border-t-0 md:border-l border-slate-200 pt-4 md:pt-0 md:pl-6 shrink-0">
+                  <div className="flex items-center gap-6 border-t md:border-t-0 md:border-l border-slate-100 pt-5 md:pt-0 md:pl-8 shrink-0">
                     <div className="text-right hidden sm:block">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Safety Index</p>
-                      <p className={`text-lg font-black ${isCompleted ? 'text-green-600' : 'text-slate-400'}`}>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Safety Index</p>
+                      <p className={`text-2xl font-black ${isCompleted ? 'text-[#16a34a]' : 'text-slate-300'}`}>
                         {isCompleted ? '100 / 100' : 'N/A'}
                       </p>
                     </div>
@@ -129,9 +135,9 @@ export function TripHistoryPage() {
                       <button
                         type="button"
                         onClick={() => alert(`Downloading certificate for ${trip.id}`)}
-                        className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-4 py-2 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 cursor-pointer transition-colors"
+                        className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-5 py-2.5 text-[11px] font-bold uppercase tracking-widest rounded-xl flex items-center gap-2 cursor-pointer transition-colors shadow-sm"
                       >
-                        <Download className="w-3.5 h-3.5" /> Certificate
+                        <Download className="w-4 h-4" /> Certificate
                       </button>
                     )}
                   </div>
