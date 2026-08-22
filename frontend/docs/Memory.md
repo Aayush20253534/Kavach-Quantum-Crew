@@ -6,11 +6,11 @@ The frontend is a React + Vite application structured using a feature-based arch
 **Important Folders:**
 - `src/app/`: Application core, containing `App.jsx`, `router.jsx`, `providers.jsx`, route `guards/`, and shared `layouts/`.
 - `src/components/ui/`: Reusable UI elements (`Button`, `Input`, `Card`, `Badge`, `Modal`, `Loader`, `EmptyState`).
-- `src/features/`: Domain-specific modules (`auth`, `onboarding`, `tourist`, `authority`, `trips`, `groups`, `incidents`, `sos`, `profile`, `public`).
+- `src/features/`: Domain-specific modules (`auth`, `onboarding`, `tourist`, `authority`, `trips`, `groups`, `incidents`, `sos`, `profile`, `public`, and upcoming `tracking`/`realtime`).
 - `src/services/`: API clients (`apiClient.js` for Axios, `queryClient.js` for TanStack Query).
 - `src/store/`: Redux store configuration.
 - `src/lib/`: Shared utilities (e.g., `utils.js` with `cn()` for Tailwind class merging).
-- `docs/`: Critical project documentation (`Rules.md`, `Phases.md`, `Design.md`, `Architecture.md`, `PRD.md`).
+- `docs/`: Critical project documentation (`Rules.md`, `Phases.md`, `Design.md`, `Architecture.md`, `PRD.md`, `Prachi.md`, `Aayansh.md`).
 
 ## 2. Technologies & Libraries
 - **Core:** React (v19), Vite (v8)
@@ -19,50 +19,24 @@ The frontend is a React + Vite application structured using a feature-based arch
 - **State Management:** Redux Toolkit (global UI/Auth state), TanStack React Query (server state)
 - **API & Forms:** Axios, React Hook Form, Zod
 
-## 3. Implemented Features & Architecture
-- **Routing & Guards:** Comprehensive route protection is in place.
-  - `AuthInitializer`: Blocks rendering until the authentication session is verified.
-  - `PublicRoute`: Diverts authenticated users to their respective dashboards.
-  - `ProtectedRoute`: Ensures only authenticated users can access the content.
-  - `RoleRoute`: Enforces role-based access (`TOURIST` vs `AUTHORITY`).
-  - `OnboardingRoute`: Enforces the safety onboarding flow specifically for tourists.
-- **Layouts:** `PublicLayout`, `AuthLayout`, `TouristLayout`, and `AuthorityLayout` shells are created.
-- **Placeholders:** Every major route specified in the product plan has a dedicated placeholder page component (e.g., `TouristDashboardPage`, `CreateTripPage`, `JoinGroupPage`).
-- **UI Components:** Foundational generic components (Button, Input, Card, Modal, Loader, Badge, EmptyState) exist.
-- **API & Store Setup:** `apiClient` with Axios interceptors and a global Redux store (`store/index.js`) integrated with `Providers`.
-
-## 4. Authentication & State Management
-- **Redux Auth Slice (`src/features/auth/store/authSlice.js`):**
-  - Manages global session state with `{ user: { id, name, role, onboardingComplete }, isAuthenticated, initialized }`.
-  - Actions `setAuth`, `setInitialized`, `logout` are configured.
-
-## 5. API Integrations
-- **No live endpoints** are currently integrated. The `apiClient.js` is configured with interceptors and a base URL reading from `import.meta.env.VITE_API_URL`, but all components currently render placeholder text.
-
-## 6. Architectural Decisions
-- **Feature Isolation:** Pages, API calls, and logic belong to specific features rather than global folders.
-- **Route Authorization vs Authentication:** Split into `ProtectedRoute` and `RoleRoute` to strictly enforce separation of concerns.
-- **Global SOS vs UI State:** Decided to defer creating a complex global Redux slice for SOS until backend contracts are established; SOS will likely rely on server state.
-- **State Segregation:** Redux strictly handles client/auth state, while TanStack Query will manage all backend data fetching and caching.
-
-## 7. Current Phase & Progress
+## 3. Current Phase & Progress
 **Current Phase:** Phase 1 — Design System and Application Shell 
-**Status:** In Progress
+**Status:** In Progress (Documentation updated for incoming Phase 2 and 3.5 integrations).
 
-- **Phase 0 — Foundation Verification:** Completed.
-- **Phase 1 — Design System and Application Shell:** Partially completed. The structural layout and reusable components are scaffolded, awaiting final UI/UX designs from the designer (Prachi).
-- **Phases 2-11:** Not Started.
+- **Backend Availability:** The backend basic flow, SMTP-based OTP email verification, and functional HTTP geofencing (`/api/v1/risk-zones`) are now fully available and documented in `ENDPOINTS.md`.
+- **Frontend Work Remaining:** The frontend must still integrate OTP verification, OpenStreetMap map rendering, browser GPS tracking, and geofence visualization.
 
-## 8. Incomplete Work, Bugs, Blockers, & TODOs
-- **Blocker:** Waiting on UI/UX mockups from the design team to replace the placeholder pages and refine the shared layouts (`TouristLayout`, `AuthorityLayout`, etc.).
-- **Blocker:** Waiting on Backend API contracts and endpoint documentation to integrate actual requests into `apiClient`, Auth hooks, and TanStack queries.
-- **TODO:** Implement the `AuthInitializer` API call to restore sessions on refresh (currently left as a commented-out stub).
+## 4. New Technical Decisions
+- **Map Strategy:** Implement map purely as a presentational layer using OpenStreetMap, keeping it decoupled from GPS lifecycle logic so it can be swapped to Google Maps if needed.
+- **GPS Architecture:** Centralize browser geolocation (`watchPosition`) into a dedicated tracking feature independent of the UI map components.
+- **Geofence Authority:** The frontend will visualize geofences fetched from the backend, but the **backend is the absolute authority** on safety decisions. The frontend will not run local overlap algorithms to trigger critical alerts.
+- **Socket.IO Architecture:** Integrate `socket.io-client` with authenticated handshakes.
+- **Server-State Synchronization:** Real-time Socket.IO events will directly update/invalidate TanStack Query caches rather than duplicating data into Redux.
 
-## 9. Important Files to Inspect
-- `frontend/src/app/router.jsx` (Central routing hub)
-- `frontend/src/app/guards/*` (All authorization logic)
-- `frontend/src/features/auth/store/authSlice.js` (Auth state structure)
-- `frontend/docs/Rules.md` & `frontend/docs/Phases.md` (Strict operational guidelines)
+## 5. Known Blockers
+- **Socket.IO Contracts Missing:** The backend's `socketServer.js` currently indicates "Phase 0 exposes no location or incident events." Thus, exact Socket.IO event names, room contracts, payload schemas, and authentication handshake requirements remain unknown and blocked.
+- **UI/UX Blocked:** Prachi's design handoffs for the application shell, OTP screens, and Map UI states are still pending.
 
-## 10. Next Recommended Step
-Integrate the actual UI/UX designs for the **Application Shell** (Navbars/Sidebars in `layouts/`) and the **Public Landing Page** once provided, or begin wiring up the **Authentication Flow** (Phase 2) if backend API endpoints become available first. Do not invent new features or UI without explicit design guidelines.
+## 6. Next Recommended Step
+The exact next implementation task is:
+**Step 0 & 1 of `Aayansh.md`** — Inspect existing Auth slices and implement the OTP Authentication Flow (`/api/v1/auth/register` and `/api/v1/auth/verify-email`) using the newly available backend endpoints. Visual integration waits for Prachi, but technical state integration can begin immediately.

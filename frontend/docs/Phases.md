@@ -179,6 +179,7 @@ Implement:
 
 * Sign up
 * Sign in
+* Email OTP Verification
 * Authentication state handling
 * Authentication loading state
 * Public route handling
@@ -187,6 +188,7 @@ Implement:
 ## Required Screens
 
 * Sign Up
+* Email OTP Verification
 * Sign In
 
 ## Sign Up Requirements
@@ -206,7 +208,18 @@ Required behavior:
 * Error display
 * Submission loading state
 * Backend error handling
-* Success handling
+* Success handling (Transition to OTP Verification)
+
+## OTP Verification Requirements
+
+Fields:
+* 6-digit OTP
+
+Required behavior:
+* Validate input length/format
+* Support Resend OTP (with cooldown)
+* Display backend error (invalid/expired)
+* On success, create the authenticated session
 
 ## Sign In Requirements
 
@@ -274,7 +287,36 @@ Implement:
 
 ---
 
-# 7. Phase 4 — Core Dashboard
+# 7. Phase 3.5 — Integration: Maps, Geofencing, & Real-Time
+
+## Objective
+Establish the technical foundation for location tracking, map visualization, and real-time connectivity before building the dashboard and trips.
+
+## Scope
+Implement:
+* Browser GPS Location Tracking lifecycle
+* OpenStreetMap Integration
+* Geofence visualization (fetching from backend)
+* Socket.IO connection and lifecycle management
+* Server-state synchronization for real-time events
+
+## Required Tasks
+* Connect tracking hooks to `/api/v1/tracking/pings`
+* Create map rendering component (independent of tracking logic)
+* Render geofences using `/api/v1/risk-zones`
+* Establish Socket.IO client connection with authentication
+* Setup listeners for alerts/incidents and sync with TanStack Query
+
+## Completion Criteria
+* Location permissions are handled gracefully
+* The map displays the user's location and zones
+* Tracking can be reliably started/stopped
+* Socket connection successfully authenticates and reconnects
+* Backend remains the sole authority for safety logic
+
+---
+
+# 8. Phase 4 — Core Dashboard
 
 ## Objective
 
