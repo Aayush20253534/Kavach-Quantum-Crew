@@ -4,15 +4,14 @@ import { useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { 
-  ShieldCheck, 
-  User, 
-  HeartPulse, 
-  PhoneCall, 
-  CheckCircle2, 
-  ArrowRight, 
+import {
+  ShieldCheck,
+  User,
+  HeartPulse,
+  PhoneCall,
+  CheckCircle2,
+  ArrowRight,
   MapPin,
-  FileText
 } from 'lucide-react';
 import { completeOnboarding } from '../../auth/store/authSlice';
 
