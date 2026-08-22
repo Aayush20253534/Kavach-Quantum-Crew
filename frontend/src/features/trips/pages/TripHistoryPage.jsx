@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Compass, 
@@ -21,6 +21,11 @@ export function TripHistoryPage() {
   // Depending on how the API wraps the data, handle both array directly or .items
   const trips = Array.isArray(tripHistoryData) ? tripHistoryData : tripHistoryData?.items || [];
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -42,7 +47,7 @@ export function TripHistoryPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-[1000px] mx-auto pb-10 font-sans">
+    <div className={`space-y-6 max-w-[1000px] mx-auto pb-10 font-sans transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -72,13 +77,17 @@ export function TripHistoryPage() {
         </div>
       ) : (
         <div className="space-y-5">
-          {trips.map((trip) => {
+          {trips.map((trip, index) => {
             const isCompleted = trip.status === 'COMPLETED';
             const isCancelled = trip.status === 'CANCELLED';
             const isPlanned = trip.status === 'PLANNED';
             
             return (
-              <div key={trip.id} className="bg-white border border-slate-100 rounded-lg p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:border-red-200 hover:shadow-md transition-all duration-300">
+              <div 
+                key={trip.id} 
+                className={`bg-white border border-slate-100 rounded-lg p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:border-red-200 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
+                style={{ transitionDelay: `${150 + (index * 75)}ms` }}
+              >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                   
                   {/* Info Column */}

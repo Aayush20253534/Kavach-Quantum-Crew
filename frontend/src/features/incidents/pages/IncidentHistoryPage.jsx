@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   AlertTriangle, 
@@ -37,9 +37,13 @@ export function IncidentHistoryPage() {
       policeNote: 'Child safely reunited with family via Khoya-Paya booth sync.',
     },
   ];
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
-    <div className="space-y-6 max-w-[800px] mx-auto pb-10 font-sans">
+    <div className={`space-y-6 max-w-[800px] mx-auto pb-10 font-sans transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2">
@@ -58,12 +62,16 @@ export function IncidentHistoryPage() {
       </div>
 
       <div className="space-y-5">
-        {incidents.map((inc) => {
+        {incidents.map((inc, index) => {
            const isResolved = inc.status === 'Resolved';
            const isDispatched = inc.status === 'Dispatched';
            
            return (
-              <div key={inc.id} className="bg-white rounded-lg p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 hover:border-slate-200 transition-all duration-300">
+              <div 
+                key={inc.id} 
+                className={`bg-white rounded-lg p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 hover:border-slate-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
+                style={{ transitionDelay: `${150 + (index * 75)}ms` }}
+              >
                  <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-50 pb-4 mb-4">
                     <div className="flex items-center gap-3">
                        <span className="font-mono text-[11px] font-bold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-100">ID: {inc.id}</span>

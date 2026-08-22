@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   QrCode, 
@@ -11,6 +11,11 @@ export function JoinGroupPage() {
   const navigate = useNavigate();
   const [inviteCode, setInviteCode] = useState('');
   const [joinedSuccess, setJoinedSuccess] = useState(false);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSimulateScan = () => {
     setInviteCode('KAVACH-PRY-8924');
@@ -30,7 +35,7 @@ export function JoinGroupPage() {
   };
 
   return (
-    <div className="max-w-[600px] mx-auto space-y-6 pb-10 font-sans">
+    <div className={`max-w-[600px] mx-auto space-y-6 pb-10 font-sans transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2">
