@@ -7,10 +7,10 @@ import {
   User, 
   ArrowRight, 
   CheckCircle2, 
-  Map,
   ShieldCheck,
   Calendar,
-  Clock
+  Clock,
+  MapPin
 } from 'lucide-react';
 
 const PRAYAGRAJ_DESTINATIONS = [
@@ -38,9 +38,7 @@ export function CreateTripPage() {
     setErrorMsg('');
     
     try {
-      // Find destination name for the payload
       const dest = PRAYAGRAJ_DESTINATIONS.find(d => d.id === selectedDestination);
-      
       await createTrip({
         type: tripType,
         destination: dest.name,
@@ -48,8 +46,6 @@ export function CreateTripPage() {
         duration,
         checkInInterval
       });
-      
-      // On success, redirect to the current trip view
       navigate('/tourist/trips/current');
     } catch (error) {
       setErrorMsg(error.response?.data?.message || 'Failed to create trip. Please try again.');
@@ -57,48 +53,50 @@ export function CreateTripPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 font-sans">
+    <div className="max-w-4xl mx-auto font-sans pb-10">
       
-      <div className="border-b border-slate-200 pb-4">
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase flex items-center gap-2">
-          <Compass className="w-6 h-6 text-red-600" />
+      <div className="mb-8">
+        <h1 className="text-[22px] font-black text-slate-900 tracking-tight flex items-center gap-2">
           Plan New Trip
         </h1>
-        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">
-          Establish safety parameters and routing
+        <p className="text-[13px] text-slate-500 font-medium mt-1">
+          Establish safety parameters and routing before your journey.
         </p>
       </div>
 
       {errorMsg && (
-        <div className="bg-red-50 border-l-4 border-red-600 p-4 shadow-sm">
-          <p className="text-xs font-bold text-red-900 uppercase tracking-wider">Initialization Error</p>
-          <p className="text-[11px] text-red-700 font-medium mt-0.5">{errorMsg}</p>
+        <div className="bg-[#fef2f2] border border-[#fecaca] p-4 rounded-xl mb-6 shadow-sm flex items-start gap-3">
+          <ShieldCheck className="w-5 h-5 text-[#ef4444] shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-bold text-[#b91c1c] uppercase tracking-wider">Initialization Error</p>
+            <p className="text-[12px] text-[#991b1b] font-medium mt-0.5">{errorMsg}</p>
+          </div>
         </div>
       )}
 
       <form onSubmit={handleCreateTrip} className="space-y-8">
         
         {/* Solo vs Group Toggle */}
-        <section className="space-y-3">
-          <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">1. Trip Classification</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <section className="space-y-4">
+          <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">1. Trip Classification</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <button
               type="button"
               onClick={() => setTripType('GROUP')}
-              className={`group relative p-4 text-left transition-all duration-200 rounded-none border cursor-pointer ${
+              className={`group relative p-5 text-left transition-all duration-300 rounded-2xl border cursor-pointer ${
                 tripType === 'GROUP'
-                  ? 'bg-red-50 border-red-600 ring-1 ring-red-600'
-                  : 'bg-white border-slate-200 hover:border-red-300'
+                  ? 'bg-red-50 border-red-200 shadow-[0_4px_20px_rgba(225,29,72,0.08)] ring-1 ring-red-500/20'
+                  : 'bg-white border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:border-red-200 hover:shadow-md'
               }`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className={`p-2 rounded-none flex items-center justify-center border transition-all ${tripType === 'GROUP' ? 'bg-red-600 border-red-600 text-white' : 'bg-slate-50 border-slate-200 text-slate-500 group-hover:text-red-600 group-hover:border-red-300'}`}>
-                  <Users className="w-5 h-5" />
+              <div className="flex items-center justify-between mb-4">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${tripType === 'GROUP' ? 'bg-[#e11d48] text-white shadow-md' : 'bg-slate-50 text-slate-500 group-hover:text-red-500 group-hover:bg-red-50'}`}>
+                  <Users className="w-6 h-6" />
                 </div>
-                {tripType === 'GROUP' && <CheckCircle2 className="w-5 h-5 text-red-600" />}
+                {tripType === 'GROUP' && <CheckCircle2 className="w-6 h-6 text-[#e11d48]" />}
               </div>
-              <h3 className={`text-sm font-black uppercase tracking-wider transition-colors ${tripType === 'GROUP' ? 'text-red-700' : 'text-slate-900'}`}>Group Trip</h3>
-              <p className={`text-[10px] mt-1 uppercase tracking-wider font-medium ${tripType === 'GROUP' ? 'text-red-600' : 'text-slate-500'}`}>
+              <h3 className={`text-[15px] font-black tracking-wide transition-colors ${tripType === 'GROUP' ? 'text-[#e11d48]' : 'text-slate-900'}`}>Group Trip</h3>
+              <p className={`text-[12px] mt-1.5 leading-relaxed font-medium ${tripType === 'GROUP' ? 'text-red-900/70' : 'text-slate-500'}`}>
                 Synchronize location with family members and monitor companion distances.
               </p>
             </button>
@@ -106,38 +104,38 @@ export function CreateTripPage() {
             <button
               type="button"
               onClick={() => setTripType('SOLO')}
-              className={`group relative p-4 text-left transition-all duration-200 rounded-none border cursor-pointer ${
+              className={`group relative p-5 text-left transition-all duration-300 rounded-2xl border cursor-pointer ${
                 tripType === 'SOLO'
-                  ? 'bg-red-50 border-red-600 ring-1 ring-red-600'
-                  : 'bg-white border-slate-200 hover:border-red-300'
+                  ? 'bg-red-50 border-red-200 shadow-[0_4px_20px_rgba(225,29,72,0.08)] ring-1 ring-red-500/20'
+                  : 'bg-white border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:border-red-200 hover:shadow-md'
               }`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className={`p-2 rounded-none flex items-center justify-center border transition-all ${tripType === 'SOLO' ? 'bg-red-600 border-red-600 text-white' : 'bg-slate-50 border-slate-200 text-slate-500 group-hover:text-red-600 group-hover:border-red-300'}`}>
-                  <User className="w-5 h-5" />
+              <div className="flex items-center justify-between mb-4">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${tripType === 'SOLO' ? 'bg-[#e11d48] text-white shadow-md' : 'bg-slate-50 text-slate-500 group-hover:text-red-500 group-hover:bg-red-50'}`}>
+                  <User className="w-6 h-6" />
                 </div>
-                {tripType === 'SOLO' && <CheckCircle2 className="w-5 h-5 text-red-600" />}
+                {tripType === 'SOLO' && <CheckCircle2 className="w-6 h-6 text-[#e11d48]" />}
               </div>
-              <h3 className={`text-sm font-black uppercase tracking-wider transition-colors ${tripType === 'SOLO' ? 'text-red-700' : 'text-slate-900'}`}>Solo Traveler</h3>
-              <p className={`text-[10px] mt-1 uppercase tracking-wider font-medium ${tripType === 'SOLO' ? 'text-red-600' : 'text-slate-500'}`}>
+              <h3 className={`text-[15px] font-black tracking-wide transition-colors ${tripType === 'SOLO' ? 'text-[#e11d48]' : 'text-slate-900'}`}>Solo Traveler</h3>
+              <p className={`text-[12px] mt-1.5 leading-relaxed font-medium ${tripType === 'SOLO' ? 'text-red-900/70' : 'text-slate-500'}`}>
                 Automated periodic check-in reminders and direct uplink to Police.
               </p>
             </button>
           </div>
         </section>
 
-        {/* Destination Selection - Flat Grid */}
-        <section className="space-y-3">
-          <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">2. Primary Destination</h2>
-          <div className="bg-white border border-slate-200 p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Destination Selection */}
+        <section className="space-y-4">
+          <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">2. Primary Destination</h2>
+          <div className="bg-white border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-5 rounded-2xl">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {PRAYAGRAJ_DESTINATIONS.map((dest) => (
                 <label 
                   key={dest.id}
-                  className={`flex items-start gap-3 p-3 border cursor-pointer transition-colors ${
+                  className={`flex items-center gap-4 p-4 border rounded-xl cursor-pointer transition-all duration-200 ${
                     selectedDestination === dest.id 
-                      ? 'bg-red-50 border-red-600' 
-                      : 'bg-white border-slate-200 hover:border-red-300 hover:bg-slate-50'
+                      ? 'bg-red-50 border-red-200 shadow-sm' 
+                      : 'bg-white border-slate-100 hover:border-red-200 hover:shadow-sm'
                   }`}
                 >
                   <input 
@@ -146,16 +144,16 @@ export function CreateTripPage() {
                     value={dest.id}
                     checked={selectedDestination === dest.id}
                     onChange={() => setSelectedDestination(dest.id)}
-                    className="mt-1 sr-only"
+                    className="sr-only"
                   />
-                  <div className={`w-4 h-4 mt-0.5 rounded-full border flex items-center justify-center shrink-0 ${selectedDestination === dest.id ? 'border-red-600 bg-red-600' : 'border-slate-300 bg-white'}`}>
-                    {selectedDestination === dest.id && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${selectedDestination === dest.id ? 'border-[#e11d48] bg-[#e11d48]' : 'border-slate-300 bg-white'}`}>
+                    {selectedDestination === dest.id && <div className="w-2 h-2 bg-white rounded-full" />}
                   </div>
                   <div>
-                    <h4 className={`text-xs font-bold uppercase tracking-wider ${selectedDestination === dest.id ? 'text-red-700' : 'text-slate-900'}`}>
+                    <h4 className={`text-[13px] font-bold uppercase tracking-wide ${selectedDestination === dest.id ? 'text-red-700' : 'text-slate-900'}`}>
                       {dest.name}
                     </h4>
-                    <p className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 ${selectedDestination === dest.id ? 'text-red-600' : 'text-slate-500'}`}>
+                    <p className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${selectedDestination === dest.id ? 'text-red-500' : 'text-slate-400'}`}>
                       {dest.category} • {dest.riskLevel}
                     </p>
                   </div>
@@ -166,30 +164,31 @@ export function CreateTripPage() {
         </section>
 
         {/* Safety Parameters & Schedule */}
-        <section className="space-y-3">
-          <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">3. Scheduling & Telemetry</h2>
-          <div className="bg-white border border-slate-200 p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <section className="space-y-4">
+          <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">3. Scheduling & Telemetry</h2>
+          <div className="bg-white border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-6 rounded-2xl">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              
               <div className="flex flex-col">
-                <label className="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5" /> Start Date
+                <label className="text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 text-slate-400" /> Start Date
                 </label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs font-bold rounded-none px-3 py-2.5 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-colors uppercase"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-[13px] font-semibold rounded-xl px-4 py-3 focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all uppercase"
                 />
               </div>
 
               <div className="flex flex-col">
-                <label className="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" /> Est. Duration
+                <label className="text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-slate-400" /> Est. Duration
                 </label>
                 <select
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs font-bold rounded-none px-3 py-2.5 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-colors uppercase"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-[13px] font-semibold rounded-xl px-4 py-3 focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all uppercase appearance-none cursor-pointer"
                 >
                   <option value="Half Day (4 Hours)">Half Day (4 Hours)</option>
                   <option value="Full Day Pilgrimage">Full Day Pilgrimage</option>
@@ -199,13 +198,13 @@ export function CreateTripPage() {
               </div>
 
               <div className="flex flex-col">
-                <label className="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5" /> Check-in Interval
+                <label className="text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-slate-400" /> Check-in Interval
                 </label>
                 <select
                   value={checkInInterval}
                   onChange={(e) => setCheckInInterval(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs font-bold rounded-none px-3 py-2.5 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-colors uppercase"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-[13px] font-semibold rounded-xl px-4 py-3 focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all uppercase appearance-none cursor-pointer"
                 >
                   <option value="Every 1 Hour">Every 1 Hr (High Caution)</option>
                   <option value="Every 2 Hours">Every 2 Hrs (Recommended)</option>
@@ -213,24 +212,25 @@ export function CreateTripPage() {
                   <option value="Manual Only">Manual Only</option>
                 </select>
               </div>
+
             </div>
           </div>
         </section>
 
         {/* Submit Actions */}
-        <div className="flex justify-end gap-3 pt-2">
-          <Link to="/tourist/dashboard">
-            <button type="button" className="px-6 py-2.5 border border-slate-300 text-slate-600 bg-white hover:bg-slate-50 hover:text-slate-900 text-[10px] font-bold uppercase tracking-widest rounded-none transition-colors cursor-pointer">
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4">
+          <Link to="/tourist/dashboard" className="w-full sm:w-auto">
+            <button type="button" className="w-full sm:w-auto px-8 py-3.5 border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 hover:text-slate-900 text-[12px] font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-sm">
               Cancel
             </button>
           </Link>
           <button
             type="submit"
             disabled={isPending}
-            className="group flex items-center justify-center gap-2 px-8 py-2.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold uppercase tracking-widest rounded-none disabled:opacity-50 cursor-pointer shadow-sm"
+            className="w-full sm:w-auto group flex items-center justify-center gap-2 px-10 py-3.5 bg-[#e11d48] hover:bg-[#be123c] text-white text-[12px] font-bold uppercase tracking-widest rounded-xl disabled:opacity-50 cursor-pointer shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95"
           >
             {isPending ? 'Initializing...' : 'Confirm & Initialize'}
-            {!isPending && <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />}
+            {!isPending && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
           </button>
         </div>
       </form>

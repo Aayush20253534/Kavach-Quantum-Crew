@@ -6,7 +6,8 @@ import {
   AlertTriangle, 
   CheckCircle2,
   XCircle,
-  Activity
+  Activity,
+  Phone
 } from 'lucide-react';
 import { useCurrentTrip, useCompleteTrip, useCancelTrip, useStartTrip } from '../api/tripQueries';
 import { useGeolocation } from '../../tracking/hooks/useGeolocation';
@@ -36,14 +37,16 @@ export function CurrentTripPage() {
 
   if (!currentTrip) {
     return (
-      <div className="bg-white border border-slate-200 p-8 text-center max-w-2xl mx-auto mt-10">
-        <Navigation className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-        <h2 className="text-lg font-black text-slate-900 uppercase tracking-widest mb-2">No Active Mission</h2>
-        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-6">
+      <div className="bg-white border border-slate-100 p-12 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] text-center max-w-2xl mx-auto mt-10">
+        <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-6">
+          <Navigation className="w-10 h-10 text-slate-300" />
+        </div>
+        <h2 className="text-[18px] font-black text-slate-900 tracking-wide mb-2">No Active Mission</h2>
+        <p className="text-[13px] text-slate-500 font-medium mb-8">
           You currently have no planned or active trips.
         </p>
         <Link to="/tourist/trips/create">
-          <button className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 text-[10px] font-bold uppercase tracking-widest rounded-none shadow-sm transition-colors cursor-pointer">
+          <button className="bg-[#e11d48] hover:bg-[#be123c] text-white px-8 py-3 rounded-xl font-bold text-[13px] tracking-wide shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 cursor-pointer">
             Plan New Trip
           </button>
         </Link>
@@ -68,43 +71,46 @@ export function CurrentTripPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-10 font-sans">
+    <div className="space-y-6 max-w-[1200px] mx-auto pb-10 font-sans">
       {/* Top Banner */}
-      <div className={`p-6 border ${isActive ? 'bg-white border-green-200 shadow-sm' : 'bg-white border-slate-200 shadow-sm'} flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-none`}>
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
+      <div className={`p-6 md:p-8 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.03)] border transition-all ${isActive ? 'bg-[#f0fdf4] border-[#bbf7d0]' : 'bg-white border-slate-100'} flex flex-col sm:flex-row sm:items-center justify-between gap-6`}>
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-3">
             {isActive ? (
-              <span className="bg-green-100 text-green-800 border border-green-200 text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider">
-                LIVE TRIP IN PROGRESS
+              <span className="bg-[#16a34a] text-white text-[10px] font-bold px-2.5 py-1 uppercase tracking-widest rounded-lg flex items-center gap-1.5 shadow-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                LIVE IN PROGRESS
               </span>
             ) : (
-              <span className="bg-orange-100 text-orange-800 border border-orange-200 text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider">
+              <span className="bg-orange-100 text-orange-800 border border-orange-200 text-[10px] font-bold px-2.5 py-1 uppercase tracking-widest rounded-lg shadow-sm">
                 TRIP PLANNED
               </span>
             )}
-            <span className="text-[10px] text-slate-500 font-mono font-bold">ID: {currentTrip.id?.substring(0,8).toUpperCase()}</span>
+            <span className="text-[11px] text-slate-400 font-mono font-bold bg-white/50 px-2 py-0.5 rounded-md border border-slate-200/50">ID: {currentTrip.id?.substring(0,8).toUpperCase()}</span>
           </div>
-          <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
+          <h1 className="text-[26px] font-black text-slate-900 tracking-tight leading-none">
             {currentTrip.destination || 'Prayagraj Circuit'}
           </h1>
-          <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">
-            {currentTrip.type} TRIP · {currentTrip.duration}
+          <p className="text-[12px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-2">
+            <span className="text-slate-900">{currentTrip.type} TRIP</span> 
+            <span className="w-1 h-1 rounded-full bg-slate-300"></span> 
+            {currentTrip.duration}
           </p>
         </div>
 
-        <div className="flex flex-col gap-2 shrink-0">
+        <div className="flex flex-col gap-3 shrink-0 sm:w-64">
           {isPlanned && (
              <button 
                 onClick={handleStart} 
                 disabled={isStarting}
-                className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer border border-transparent disabled:opacity-50"
+                className="w-full bg-[#16a34a] hover:bg-[#15803d] text-white px-6 py-3.5 rounded-xl text-[12px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] transition-all active:scale-95 disabled:opacity-50"
              >
                 <Activity className="w-4 h-4" /> Start Mission
              </button>
           )}
           
           <Link to="/tourist/incidents/report" className="w-full">
-            <button className="w-full bg-white border border-slate-300 hover:border-red-300 hover:bg-red-50 hover:text-red-700 text-slate-700 px-6 py-2.5 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer transition-colors">
+            <button className="w-full bg-white border border-slate-200 hover:border-red-300 hover:bg-red-50 text-slate-600 hover:text-red-600 px-6 py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm">
               <AlertTriangle className="w-4 h-4" /> Report Hazard
             </button>
           </Link>
@@ -112,11 +118,11 @@ export function CurrentTripPage() {
       </div>
 
       {gpsError && (
-        <div className="bg-red-50 border border-red-200 text-red-900 p-4 shadow-sm flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+        <div className="bg-[#fef2f2] border border-[#fecaca] p-4 rounded-xl shadow-sm flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-[#ef4444] shrink-0 mt-0.5" />
           <div>
-            <p className="font-bold text-xs uppercase tracking-wider">Telemetry Warning</p>
-            <p className="text-[11px] mt-0.5 font-medium">{gpsError}</p>
+            <p className="font-bold text-xs uppercase tracking-wider text-[#b91c1c]">Telemetry Warning</p>
+            <p className="text-[12px] mt-0.5 font-medium text-[#991b1b]">{gpsError}</p>
           </div>
         </div>
       )}
@@ -126,30 +132,32 @@ export function CurrentTripPage() {
         
         {/* Left Col: Map */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white border border-slate-200 shadow-sm flex flex-col">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+          <div className="bg-white border border-slate-100 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col overflow-hidden">
+            <div className="p-5 border-b border-slate-50 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Navigation className="w-4 h-4 text-red-600" />
-                <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest">Live Geofence Radar</h2>
+                <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center">
+                  <Navigation className="w-4 h-4 text-red-600" />
+                </div>
+                <h2 className="text-[14px] font-black text-slate-900 tracking-wide">Live Geofence Radar</h2>
               </div>
-              <div className="text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider bg-white border border-slate-200 text-slate-600">
+              <div className="text-[10px] font-bold px-3 py-1 uppercase tracking-wider bg-slate-50 border border-slate-100 rounded-lg text-slate-600 shadow-sm">
                 GPS Accuracy: {location ? `${Math.round(location.accuracy)}m` : 'Pending'}
               </div>
             </div>
-            <div className="h-[400px] w-full relative bg-slate-100">
-               {/* Map View */}
+            <div className="h-[450px] w-full relative bg-slate-100">
                <MapComponent
                   currentLocation={location}
-                  className="w-full h-full"
+                  className="w-full h-full absolute inset-0 z-0"
                />
                
-               {/* Status Overlay */}
                {!isActive && (
-                 <div className="absolute inset-0 bg-white/70 backdrop-blur-sm z-[500] flex items-center justify-center">
-                    <div className="bg-white border border-slate-200 p-4 shadow-xl text-center max-w-xs">
-                       <MapPin className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                       <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Radar Offline</h3>
-                       <p className="text-[10px] text-slate-500 font-medium mt-1">Start mission to enable live GPS telemetry.</p>
+                 <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-[500] flex items-center justify-center">
+                    <div className="bg-white border border-slate-100 p-6 rounded-2xl shadow-xl text-center max-w-xs">
+                       <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-4">
+                         <MapPin className="w-8 h-8 text-slate-300" />
+                       </div>
+                       <h3 className="text-[15px] font-black text-slate-900 tracking-wide">Radar Offline</h3>
+                       <p className="text-[12px] text-slate-500 font-medium mt-2">Start mission to enable live GPS telemetry tracking.</p>
                     </div>
                  </div>
                )}
@@ -160,37 +168,40 @@ export function CurrentTripPage() {
         {/* Right Col: Actions & Status */}
         <div className="space-y-6">
           
-          <div className="bg-white border border-slate-200 p-5 shadow-sm">
-             <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-3 mb-4">
+          <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+             <h2 className="text-[14px] font-black text-slate-900 tracking-wide border-b border-slate-50 pb-4 mb-5">
                 Mission Status
              </h2>
              
-             <div className="space-y-4">
-               <div>
-                  <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Check-in Policy</span>
-                  <span className="text-[11px] font-bold text-slate-900 uppercase">{currentTrip.checkInInterval}</span>
+             <div className="space-y-5">
+               <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Check-in Policy</span>
+                  <span className="text-[13px] font-black text-slate-900 uppercase tracking-wide">{currentTrip.checkInInterval}</span>
                </div>
                
                {currentTrip.type === 'GROUP' && (
-                  <div>
-                     <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Group Sync</span>
-                     <Link to="/tourist/groups/create" className="text-[11px] font-bold text-red-600 hover:text-red-700 uppercase flex items-center gap-1">
-                        Manage Group Members <AlertTriangle className="w-3 h-3" />
+                  <div className="bg-red-50 p-4 rounded-xl border border-red-100">
+                     <span className="block text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1.5">Group Sync</span>
+                     <Link to="/tourist/groups/create" className="text-[12px] font-bold text-red-600 hover:text-red-700 uppercase flex items-center gap-1.5">
+                        Manage Group Members <AlertTriangle className="w-3.5 h-3.5" />
                      </Link>
                   </div>
                )}
              </div>
           </div>
 
-          <div className="bg-white border border-slate-200 p-5 shadow-sm text-center">
-            <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-4">
+          <div className="bg-[#1a1f2c] border border-slate-800 rounded-2xl p-6 shadow-xl text-center">
+            <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
+              <ShieldCheck className="w-6 h-6 text-slate-400" />
+            </div>
+            <h2 className="text-[14px] font-black text-white tracking-wide mb-6">
               Mission Control
             </h2>
             <div className="space-y-3">
               <button 
                 onClick={handleComplete}
                 disabled={isCompleting || isPlanned}
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white px-4 py-3 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-colors border border-transparent"
+                className="w-full bg-[#16a34a] hover:bg-[#15803d] text-white px-4 py-3.5 rounded-xl text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-lg"
               >
                 <CheckCircle2 className="w-4 h-4" /> Log Successful Completion
               </button>
@@ -198,12 +209,12 @@ export function CurrentTripPage() {
               <button 
                 onClick={handleCancel}
                 disabled={isCanceling}
-                className="w-full bg-white hover:bg-red-50 border border-slate-300 hover:border-red-300 text-slate-700 hover:text-red-700 px-4 py-3 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-colors"
+                className="w-full bg-slate-800 hover:bg-[#ef4444] text-slate-300 hover:text-white px-4 py-3.5 rounded-xl text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-colors"
               >
                 <XCircle className="w-4 h-4" /> Abort Mission
               </button>
             </div>
-            <p className="text-[9px] text-slate-500 font-medium uppercase mt-4 leading-relaxed">
+            <p className="text-[10px] text-slate-500 font-medium mt-6 leading-relaxed">
               Aborting or completing stops all active telemetry and notifies your group members.
             </p>
           </div>
