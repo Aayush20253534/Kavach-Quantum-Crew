@@ -113,7 +113,7 @@ export function VerifyEmailPage() {
       dispatch(setAuth({ user }));
 
       setSuccess('Email verified successfully! Initializing your tourist pass...');
-      navigate(user.onboardingCompleted ? '/tourist/dashboard' : '/onboarding', {
+      navigate(user.onboardingCompleted ? '/tourist/profile' : '/onboarding', {
         replace: true,
       });
     } catch (err) {
