@@ -17,7 +17,9 @@ import {
   Navigation,
   FileText,
   PlusCircle,
-  History
+  History,
+  Menu,
+  ChevronLeft
 } from 'lucide-react';
 import { logout } from '../../features/auth/store/authSlice';
 import { NotificationsDropdown } from '../components/NotificationsDropdown';
@@ -27,6 +29,7 @@ export function TouristLayout() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -56,54 +59,73 @@ export function TouristLayout() {
       {/* =========================================================
           DESKTOP SIDEBAR
       ========================================================= */}
-      <aside className="hidden lg:flex w-[280px] flex-col bg-white border-r border-slate-200 fixed top-0 left-0 h-screen z-30">
+      <aside className={`hidden lg:flex flex-col bg-white border-r border-slate-200 fixed top-0 left-0 h-screen z-30 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[280px]'}`}>
+
+        {/* Collapse Toggle Button */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="absolute -right-3 top-8 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 shadow-sm z-40 cursor-pointer transition-transform hover:scale-110"
+        >
+          <ChevronLeft className={`w-3.5 h-3.5 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
+        </button>
 
         {/* Brand Header */}
-        <div className="p-6 pb-2">
-          <Link to="/tourist/dashboard" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#1a1f2c] flex items-center justify-center text-white shadow-sm">
+        <div className={`p-6 pb-2 flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}>
+          {!isCollapsed ? (
+            <Link to="/tourist/dashboard" className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#1a1f2c] flex items-center justify-center text-white shadow-sm shrink-0">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-[15px] font-black tracking-tight text-[#1a1f2c] flex items-center gap-2">
+                  KAVACH
+                  <span className="text-[9px] px-1.5 py-0.5 rounded text-red-600 font-bold bg-red-50 uppercase tracking-wider">Tourist</span>
+                </h1>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Safety Network</p>
+              </div>
+            </Link>
+          ) : (
+            <Link to="/tourist/dashboard" className="w-10 h-10 rounded-xl bg-[#1a1f2c] flex items-center justify-center text-white shadow-sm shrink-0">
               <ShieldCheck className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-[15px] font-black tracking-tight text-[#1a1f2c] flex items-center gap-2">
-                KAVACH
-                <span className="text-[9px] px-1.5 py-0.5 rounded text-red-600 font-bold bg-red-50 uppercase tracking-wider">Tourist</span>
-              </h1>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Safety Network</p>
-            </div>
-          </Link>
+            </Link>
+          )}
         </div>
 
         {/* User Card */}
-        <div className="px-6 py-4">
-          <div className="bg-white border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-2xl p-4 flex flex-col gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-700">
+        <div className={`px-6 py-4 ${isCollapsed ? 'px-3' : ''}`}>
+          <div className={`bg-white border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-2xl flex flex-col gap-4 ${isCollapsed ? 'p-2 items-center' : 'p-4'}`}>
+            <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
+              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-700 shrink-0 cursor-pointer" title={isCollapsed ? userName : undefined}>
                 {initial}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-bold text-slate-900 truncate uppercase tracking-wide">{userName}</p>
-                <p className="text-[10px] text-slate-400 font-mono truncate">ID: #DTD-PRY-8924</p>
-              </div>
+              {!isCollapsed && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-bold text-slate-900 truncate uppercase tracking-wide">{userName}</p>
+                  <p className="text-[10px] text-slate-400 font-mono truncate">ID: #DTD-PRY-8924</p>
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center justify-between pt-3 border-t border-slate-50">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Risk Status</span>
-              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#f0fdf4] text-[#16a34a] border border-[#dcfce7] rounded-full">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#16a34a]"></div>
-                <span className="text-[9px] font-bold uppercase tracking-wider">Safe Zone</span>
+            {!isCollapsed && (
+              <div className="flex items-center justify-between pt-3 border-t border-slate-50">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Risk Status</span>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#f0fdf4] text-[#16a34a] border border-[#dcfce7] rounded-full">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#16a34a]"></div>
+                  <span className="text-[9px] font-bold uppercase tracking-wider">Safe Zone</span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
         {/* Navigation Links */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
-          <div className="px-6 space-y-1 mb-6">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 pl-2">Main Menu</p>
+          <div className={`space-y-1 mb-6 ${isCollapsed ? 'px-3' : 'px-6'}`}>
+            <p className={`text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ${isCollapsed ? 'text-center pl-0 text-[8px]' : 'pl-2'}`}>
+              {isCollapsed ? 'MAIN' : 'Main Menu'}
+            </p>
             {navItems.map((item) => {
               const Icon = item.icon;
-              // For Dashboard, we want exact match since /tourist/tracking etc are also under /tourist
               const isActive = item.path === '/tourist/dashboard'
                 ? location.pathname === item.path
                 : location.pathname.startsWith(item.path);
@@ -112,20 +134,25 @@ export function TouristLayout() {
                 <Link
                   key={item.name}
                   to={item.path}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[12px] font-semibold transition-all ${isActive
+                  className={`flex items-center gap-3 py-3 rounded-xl text-[12px] font-semibold transition-all ${
+                    isCollapsed ? 'justify-center px-0' : 'px-4'
+                  } ${isActive
                     ? 'bg-red-50 text-red-600 relative after:absolute after:left-0 after:top-2 after:bottom-2 after:w-1 after:bg-red-600 after:rounded-r-full'
                     : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                     }`}
+                  title={isCollapsed ? item.name : undefined}
                 >
                   <Icon className="w-4 h-4 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
-                  <span>{item.name}</span>
+                  {!isCollapsed && <span>{item.name}</span>}
                 </Link>
               );
             })}
           </div>
 
-          <div className="px-6 space-y-1 mb-6">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 pl-2">Trip Tools</p>
+          <div className={`space-y-1 mb-6 ${isCollapsed ? 'px-3' : 'px-6'}`}>
+            <p className={`text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ${isCollapsed ? 'text-center pl-0 text-[8px]' : 'pl-2'}`}>
+              {isCollapsed ? 'TRIP' : 'Trip Tools'}
+            </p>
             {tripTools.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname.startsWith(item.path);
@@ -134,13 +161,16 @@ export function TouristLayout() {
                 <Link
                   key={item.name}
                   to={item.path}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[12px] font-semibold transition-all ${isActive
+                  className={`flex items-center gap-3 py-3 rounded-xl text-[12px] font-semibold transition-all ${
+                    isCollapsed ? 'justify-center px-0' : 'px-4'
+                  } ${isActive
                     ? 'bg-red-50 text-red-600 relative after:absolute after:left-0 after:top-2 after:bottom-2 after:w-1 after:bg-red-600 after:rounded-r-full'
                     : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                     }`}
+                  title={isCollapsed ? item.name : undefined}
                 >
                   <Icon className="w-4 h-4 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
-                  <span>{item.name}</span>
+                  {!isCollapsed && <span>{item.name}</span>}
                 </Link>
               );
             })}
@@ -148,17 +178,18 @@ export function TouristLayout() {
         </div>
 
         {/* Bottom Actions */}
-        <div className="p-6 pt-4 border-t border-slate-100 bg-white space-y-4">
-          <button className="w-full bg-[#e11d48] hover:bg-[#be123c] text-white py-3.5 px-4 rounded-xl font-bold text-[13px] tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 cursor-pointer">
+        <div className={`pt-4 border-t border-slate-100 bg-white space-y-4 ${isCollapsed ? 'p-3' : 'p-6'}`}>
+          <button className={`w-full bg-[#e11d48] hover:bg-[#be123c] text-white py-3.5 rounded-xl font-bold text-[13px] tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 cursor-pointer ${isCollapsed ? 'px-0' : 'px-4'}`} title={isCollapsed ? "SOS EMERGENCY" : undefined}>
             <Phone className="w-4 h-4" />
-            SOS EMERGENCY
+            {!isCollapsed && "SOS EMERGENCY"}
           </button>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-4 py-2 text-[12px] font-semibold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+            className={`w-full flex items-center gap-2 py-2 text-[12px] font-semibold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer ${isCollapsed ? 'justify-center px-0' : 'px-4'}`}
+            title={isCollapsed ? "Sign Out" : undefined}
           >
             <LogOut className="w-4 h-4" />
-            <span>Sign Out</span>
+            {!isCollapsed && <span>Sign Out</span>}
           </button>
         </div>
       </aside>
@@ -166,10 +197,10 @@ export function TouristLayout() {
       {/* =========================================================
           MAIN APPLICATION AREA
       ========================================================= */}
-      <div className="flex-1 flex flex-col min-w-0 lg:pl-[280px]">
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${isCollapsed ? 'lg:pl-20' : 'lg:pl-[280px]'}`}>
 
         {/* Top Navbar */}
-        <header className="fixed top-0 right-0 w-full lg:w-[calc(100%-280px)] z-20 h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between">
+        <header className={`fixed top-0 right-0 z-20 h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between transition-all duration-300 ${isCollapsed ? 'w-full lg:w-[calc(100%-5rem)]' : 'w-full lg:w-[calc(100%-280px)]'}`}>
 
           {/* Left: Location */}
           <div className="flex items-center gap-3">
