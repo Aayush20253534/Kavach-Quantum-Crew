@@ -36,6 +36,13 @@ export const createTouristRepository = ({ db = prisma } = {}) => ({
   updateProfile(userId, data) {
     return db.user.update({ where: { id: userId }, data });
   },
+
+  revokeSessions(userId) {
+    return db.authSession.updateMany({
+      where: { accountId: userId, accountRole: "TOURIST", revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  },
 });
 
 export const touristRepository = createTouristRepository();

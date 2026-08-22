@@ -1,153 +1,274 @@
 # Smart Tourist Safety System — Backend
 
-Phase 0 provides the production-shaped foundation for the SIH prototype. It is a Node.js
-ESM service built with Express, PostgreSQL, Prisma, Socket.IO, Pino, Jest, and Supertest.
+Backend service for a tourist-safety platform that manages tourist accounts, trips, consent, Safety IDs, group travel, trusted location tracking, deterministic safety monitoring, SOS incidents, disaster-management response, emergency dispatch, evidence, notifications, analytics, administration, external AI/blockchain contracts, audit trails, and operational observability.
 
-This phase intentionally contains no authentication or tourist/disaster-management/admin
-business flows yet. AI and blockchain also remain separate services and are not part of
-this backend.
+The service is designed as a **modular Node.js backend**. AI models, blockchain clients/contracts, frontend applications, and concrete external notification vendors are separate integrations behind explicit backend boundaries.
 
-## What Phase 0 includes
+## What the backend does
 
-- Validated environment configuration with clear fail-fast startup errors
-- PostgreSQL connection lifecycle through Prisma 7 and `@prisma/adapter-pg`
-- Express app separated from the HTTP server for easy testing
-- Helmet, explicit CORS allow-listing, request size limits, rate limiting, and request IDs
-- Structured JSON application and request logging with secret redaction
-- Standard success/error envelopes plus centralized 404 and error handling
-- Liveness, readiness, and database health probes
-- Socket.IO server bootstrap with no sensitive business events enabled yet
-- Graceful shutdown for HTTP, Socket.IO, and PostgreSQL
-- Jest/Supertest Phase 0 tests, ESLint, Docker, and local PostgreSQL Compose files
+### Tourist safety
+- Tourist registration with six-digit Gmail OTP email verification, login, refresh sessions, logout, and profile onboarding
+- SOLO and GROUP trip lifecycle management
+- Explicit location/emergency-sharing consent
+- Trip-scoped Safety ID issuance
+- Group invitations and membership
+- Trusted location ingestion and group tracking
+- Scheduled safety check-ins
+- Circular and polygon geofencing
+- Risk-zone evaluation
+- Tracking-interruption, inactivity, overtime, route-deviation, and group-separation monitoring
+- Safety alerts and manual SOS
+
+### Emergency response
+- Incident creation from safety alerts and SOS
+- Incident acknowledgement, response start, resolution, dismissal, notes, and assignments
+- Disaster-manager availability/capacity
+- Emergency-unit inventory and dispatch lifecycle
+- Incident-scoped tourist/staff communication
+- Hazard reporting, verification, rejection, resolution, and nearby discovery
+- Evidence upload/download with authorization and SHA-256 checksums
+
+### Platform operations
+- In-app notifications
+- Provider-neutral EMAIL/SMS/PUSH/WHATSAPP delivery jobs with retry history
+- Escalation sweep for overdue incidents
+- Realtime Socket.IO events
+- Staff analytics and response-time reporting
+- System-admin account/resource management
+- AI and blockchain integration contracts
+- Central audit querying
+- HTTP metrics and safe runtime/database diagnostics
+- Security hardening, rate limiting, privacy headers, request-shape protection, and JWT validation
+
+## Roles
+
+| Role | Primary responsibility |
+|---|---|
+| `TOURIST` | Own profile/trips, share consented location, receive safety alerts, trigger SOS, communicate during incidents, report hazards, upload authorized evidence |
+| `DISASTER_MANAGER` | Monitor incidents, coordinate response, manage hazards/risk zones, self-assign within capacity, dispatch units, review analytics |
+| `SYSTEM_ADMIN` | Platform administration, privileged response operations, account controls, delivery queue processing, audit access, observability |
+
+See [`documentation/ROLE-PERMISSIONS.md`](documentation/ROLE-PERMISSIONS.md) for the full matrix.
+
+## Technology stack
+
+- Node.js 20.19+
+- Express 5
+- PostgreSQL
+- Prisma 7 with `@prisma/adapter-pg`
+- Socket.IO 4
+- Zod validation
+- Argon2id password hashing
+- JSON Web Tokens with refresh-session persistence
+- Nodemailer + Gmail SMTP App Password for tourist email verification
+- Pino structured logging
+- Multer evidence upload boundary
+- Jest + Supertest
+- ESLint + Prettier
+
+## Architecture
+
+```text
+Client
+  -> Express route
+  -> authentication / authorization
+  -> request validation
+  -> controller
+  -> domain service
+  -> repository
+  -> Prisma
+  -> PostgreSQL
+```
+
+Domain services publish realtime events through a centralized Socket.IO publisher when appropriate. External delivery, AI, and blockchain capabilities use provider/adaptor boundaries rather than embedding vendor logic into the domain layer.
+
+See [`documentation/ARCHITECTURE.md`](documentation/ARCHITECTURE.md).
+
+## Project structure
+
+```text
+server/
+├── prisma/
+├── scripts/
+├── src/
+│   ├── common/
+│   ├── config/
+│   ├── constants/
+│   ├── middleware/
+│   ├── modules/
+│   ├── observability/
+│   ├── realtime/
+│   ├── routes/
+│   ├── app.js
+│   └── server.js
+├── storage/
+├── tests/
+├── documentation/
+├── openapi.yaml
+├── package.json
+└── README.md
+```
 
 ## Prerequisites
 
-- Node.js 20.19 or newer
-- npm 10 or newer
-- PostgreSQL 15+ (or Docker Desktop)
+- Node.js `>=20.19.0`
+- npm `>=10`
+- PostgreSQL/Neon database
+- Valid environment configuration
 
-## First run (PowerShell)
+## Local setup
+
+PowerShell:
 
 ```powershell
 Copy-Item .env.example .env
-npm install
+# Configure Gmail App Password + EMAIL_OTP_SECRET in .env
+npm ci
 npm run prisma:generate
 npm run prisma:validate
-npm test
+npm run prisma:migrate:deploy
 npm run dev
 ```
 
-## First run (bash)
+bash:
 
 ```bash
 cp .env.example .env
-npm install
+# Configure Gmail App Password + EMAIL_OTP_SECRET in .env
+npm ci
 npm run prisma:generate
 npm run prisma:validate
-npm test
+npm run prisma:migrate:deploy
 npm run dev
 ```
 
-The API listens at `http://localhost:4000` by default. A database must be reachable before
-the server starts. To start the provided local database:
+Default API URL:
 
-```bash
-docker compose up -d postgres
+```text
+http://localhost:4000/api/v1
 ```
 
-## Health endpoints
+## Authentication
 
-| Endpoint               | Purpose                                     | Healthy status |
-| ---------------------- | ------------------------------------------- | -------------- |
-| `GET /health`          | Process liveness; does not touch PostgreSQL | `200`          |
-| `GET /health/ready`    | Whether required dependencies are ready     | `200` or `503` |
-| `GET /health/database` | Direct PostgreSQL probe and latency         | `200` or `503` |
-| `GET /api/v1/health/*` | API-prefixed aliases of the same probes     | Same as above  |
+The backend uses short-lived access JWTs, persisted refresh sessions, and mandatory first-time tourist email verification.
 
-All JSON responses include `success`, `requestId`, and `timestamp`. Send an
-`X-Request-ID` header to correlate frontend and backend logs; unsafe values are replaced.
+Tourist signup flow:
 
-## Useful commands
+```text
+register -> generate 6-digit OTP -> Gmail SMTP -> verify-email -> issue session
+```
 
-| Command                      | What it does                                        |
-| ---------------------------- | --------------------------------------------------- |
-| `npm run env:check`          | Validates configuration without starting the server |
-| `npm run env:check:database` | Also opens and probes PostgreSQL                    |
-| `npm run dev`                | Starts with automatic reload                        |
-| `npm start`                  | Starts normally                                     |
-| `npm test`                   | Runs the Phase 0 test suite                         |
-| `npm run test:coverage`      | Runs tests and enforces coverage thresholds         |
-| `npm run lint`               | Checks JavaScript quality rules                     |
-| `npm run format:check`       | Checks Prettier formatting                          |
-| `npm run prisma:generate`    | Generates Prisma Client                             |
-| `npm run prisma:validate`    | Validates Prisma configuration/schema               |
+- Registration creates the tourist but does **not** issue a normal login session until the email is verified.
+- OTPs are generated with Node.js cryptographic randomness and stored only as keyed hashes.
+- Default OTP expiry is 10 minutes, resend cooldown is 60 seconds, and maximum verification attempts is 5.
+- Verified tourists use normal username/email + password login afterward; OTP is **not** required on every login.
+- Changing a tourist email resets verification and requires the new address to be verified.
+- Access tokens are signed with `HS256`, issuer/audience validation, and supported-role validation.
+- Passwords are hashed with Argon2id.
+- Refresh tokens are rotated and only token hashes are persisted.
+- Tourist self-registration cannot create staff accounts.
+- Suspended/disabled accounts lose active refresh sessions through admin controls.
+- Unverified tourists are rejected by normal REST authentication, refresh, and Socket.IO authentication.
 
-## Environment safety
+## API and realtime
 
-Commit example files only. Never commit `.env`, database credentials, tokens, service
-accounts, private keys, or uploaded evidence. In production, use explicit HTTPS origins;
-wildcard CORS is rejected when credentials are enabled and is always rejected in production.
+- REST base: `/api/v1`
+- OpenAPI source: [`openapi.yaml`](openapi.yaml)
+- Full endpoint catalogue: [`documentation/ENDPOINTS.md`](documentation/ENDPOINTS.md)
+- Socket.IO events and rooms: [`documentation/REALTIME-EVENTS.md`](documentation/REALTIME-EVENTS.md)
 
-## Phase 1 - Tourist authentication and onboarding
+## Health and operations
 
-Phase 1 adds the permanent tourist account and onboarding/profile foundation required before trips, groups, tracking, SOS, and incidents. Tourist profile fields are stored directly on `users`; privileged staff accounts are stored separately in `disaster_managers` and `system_admins`.
+Service landing page:
+- `GET /`
 
-### Implemented API
+Infrastructure probes:
+- `GET /health`
+- `GET /health/ready`
+- `GET /health/database`
 
-- `POST /api/v1/auth/register` - tourist signup with name, username, email, phone, password, and confirm password.
-- `POST /api/v1/auth/login` - sign in using username or email plus password.
-- `POST /api/v1/auth/refresh` - rotate the refresh token and return a new access token.
-- `POST /api/v1/auth/logout` - revoke the current refresh session.
-- `GET /api/v1/auth/me` - return the authenticated permanent account.
-- `POST /api/v1/tourists/me/onboarding` - save gender, age, medical history, emergency phone, and nationality.
-- `GET /api/v1/tourists/me` - return the tourist profile used by the Profile screen.
-- `PATCH /api/v1/tourists/me` - update supported profile fields.
+System-admin observability:
+- `GET /api/v1/observability/metrics`
+- `GET /api/v1/observability/diagnostics`
+- `GET /api/v1/audit`
+- `GET /api/v1/audit/summary`
 
-Access tokens expire after 15 minutes. Refresh tokens expire after 15 days, are rotated on refresh, stored only as SHA-256 hashes in PostgreSQL, and are also issued as HttpOnly cookies. Passwords use Argon2id. Tourist self-registration cannot create privileged staff accounts.
+## External integration boundaries
 
-### Database migration
+### AI
+The backend defines validated contracts for trip/location risk assessment and hazard analysis. No inference model is implemented here. See [`documentation/AI-CATALOGUE.md`](documentation/AI-CATALOGUE.md).
 
-After setting `DATABASE_URL` and `DIRECT_URL` for Neon:
+### Blockchain
+The backend defines contracts for Safety ID proof, incident proof, evidence proof, and proof verification. No wallet, smart contract, private-key handling, chain SDK, or transaction implementation is included. See [`documentation/BLOCKCHAIN-CATALOGUE.md`](documentation/BLOCKCHAIN-CATALOGUE.md).
+
+### Notification providers
+`IN_APP` delivery is internal. `EMAIL`, `SMS`, `PUSH`, and `WHATSAPP` are provider-neutral delivery channels. See [`documentation/NOTIFICATION-DELIVERY.md`](documentation/NOTIFICATION-DELIVERY.md).
+
+## Security characteristics
+
+The backend includes:
+- explicit CORS allow-listing
+- Helmet headers
+- API privacy/no-cache headers
+- global and sensitive-route rate limiting
+- request-body limits
+- request object-depth/key-count limits
+- forbidden prototype-pollution keys
+- role and ownership authorization
+- evidence path traversal protections
+- safe centralized error normalization
+- request IDs for correlation
+- secret redaction in structured logs
+
+## Testing and quality
 
 ```powershell
+npm test
+npm run lint
+npm run format:check
 npm run prisma:generate
 npm run prisma:validate
-npm run prisma:migrate
+npx prisma migrate status
 ```
 
-For a deployed environment, apply already-created migrations with:
+Dedicated domain suites remain available for targeted debugging, but `npm test` is the final regression command.
 
-```powershell
-npm run prisma:migrate:deploy
-```
+## Documentation index
 
-### Optional staff seed accounts
+| Document | Purpose |
+|---|---|
+| [`ARCHITECTURE.md`](documentation/ARCHITECTURE.md) | Finished backend architecture and major boundaries |
+| [`ENDPOINTS.md`](documentation/ENDPOINTS.md) | All mounted HTTP API routes |
+| [`SYSTEM-FLOW.md`](documentation/SYSTEM-FLOW.md) | End-to-end system explanation for non-specialists |
+| [`ROLE-PERMISSIONS.md`](documentation/ROLE-PERMISSIONS.md) | Role and authorization matrix |
+| [`DATABASE-OVERVIEW.md`](documentation/DATABASE-OVERVIEW.md) | Main data entities and relationships |
+| [`REALTIME-EVENTS.md`](documentation/REALTIME-EVENTS.md) | Socket.IO rooms, commands, and server events |
+| [`ERROR-CATALOGUE.md`](documentation/ERROR-CATALOGUE.md) | Error envelope and important error codes |
+| [`ENVIRONMENT.md`](documentation/ENVIRONMENT.md) | Environment-variable reference |
+| [`EMAIL-VERIFICATION.md`](documentation/EMAIL-VERIFICATION.md) | Gmail SMTP OTP signup verification flow and Postman testing |
+| [`AI-CATALOGUE.md`](documentation/AI-CATALOGUE.md) | AI integration inputs and handoff guidance |
+| [`BLOCKCHAIN-CATALOGUE.md`](documentation/BLOCKCHAIN-CATALOGUE.md) | Blockchain proof boundaries |
+| [`NOTIFICATION-DELIVERY.md`](documentation/NOTIFICATION-DELIVERY.md) | Delivery jobs/providers/retries |
+| [`TESTING.md`](documentation/TESTING.md) | Test strategy and commands |
+| [`DEPLOYMENT.md`](documentation/DEPLOYMENT.md) | Deployment/readiness checklist |
+| [`INTEGRATION-HANDOFF.md`](documentation/INTEGRATION-HANDOFF.md) | Frontend/AI/blockchain/provider handoff |
+| [`FINAL-QA-CHECKLIST.md`](documentation/FINAL-QA-CHECKLIST.md) | Final backend acceptance checklist |
 
-`SYSTEM_ADMIN` and `DISASTER_MANAGER` are authenticated from their own database tables, separate from tourist `users`. Set the optional `SEED_ADMIN_*` and `SEED_DM_*` variables in `.env`, then run `npm run prisma:seed`. If email/password values are left blank, that staff account is not created.
+## Scope boundary
 
-### Not part of Phase 1
+This repository owns the **backend API, persistence, security rules, deterministic safety logic, realtime server, and integration contracts**.
 
-Tourist dashboard live location, nearby safe zones, risk scoring, SOS/incident workflow, trip history, trip creation, group QR join/create, tracking, chatbot, and responder dispatch remain later phases. Their module placeholders stay untouched so Phase 1 does not pretend the emergency system exists before its foundations do.
+It intentionally does not own:
+- frontend implementation
+- AI model training/inference implementation
+- blockchain smart-contract/wallet implementation
+- deployment of external notification vendors
+- client-device GPS acquisition
 
-## Phase 4: Trips, Safety ID and Consent
+Those systems connect through the documented API, Socket.IO, and provider interfaces.
 
-Phase 4 adds the backend-owned trip lifecycle only. AI/ML, blockchain anchoring, and QR generation remain separate team-owned integrations and are intentionally not implemented here.
+## Tourist email verification
 
-Tourist endpoints:
+Tourist email verification is mandatory on first signup and whenever the tourist changes to a new email address. It is not required on every login. Gmail SMTP uses a Google App Password, while the OTP itself is generated and verified entirely by backend code.
 
-- `POST /api/v1/trips` — create one `PLANNED` solo/group trip.
-- `GET /api/v1/trips/current` — fetch the current `PLANNED` or `ACTIVE` trip.
-- `GET /api/v1/trips/history` — paginated completed/cancelled history.
-- `GET /api/v1/trips/:tripId` — fetch an owned trip.
-- `POST /api/v1/trips/:tripId/consents` — grant `LOCATION_TRACKING` or `EMERGENCY_SHARING` consent.
-- `DELETE /api/v1/trips/:tripId/consents/:consentId` — withdraw consent.
-- `POST /api/v1/trips/:tripId/safety-id` — issue/reissue an opaque trip-scoped Safety ID after both consents are granted.
-- `POST /api/v1/trips/:tripId/start` — start after consent + active Safety ID checks.
-- `POST /api/v1/trips/:tripId/complete` — complete and revoke temporary sharing/ID access.
-- `POST /api/v1/trips/:tripId/cancel` — cancel a planned/active trip and revoke temporary access.
-
-### Partner integration boundary
-
-The core backend stores the authoritative `Trip`, `TripSafetyId`, and `TripConsent` records. It does **not** generate a QR, call a blockchain contract, hash/anchor the Safety ID, run AI scoring, or implement `/assess`. Those partner-owned services should consume these backend records through later integration adapters without changing the Phase 4 lifecycle.
-
-The agreed AI contract remains a later backend integration around `POST /trips/:id/safety-assessments` -> AI service `POST /assess`. The blockchain team owns Safety ID proof issuance/revocation/verification and consent anchoring. No raw PII, medical data, or GPS is added to any blockchain payload by this phase.
+See [`documentation/EMAIL-VERIFICATION.md`](documentation/EMAIL-VERIFICATION.md) for configuration, security behavior, API examples, and Postman verification steps.

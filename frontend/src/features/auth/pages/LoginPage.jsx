@@ -57,8 +57,8 @@ export default function LoginPage() {
   const onSubmit = async (data) => {
     setAuthError('');
     try {
-      // Simulate quick API login delay
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      // Quick simulation delay
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       const isAuthority = data.role === 'AUTHORITY';
       const userPayload = {
@@ -79,11 +79,10 @@ export default function LoginPage() {
         navigate('/tourist/dashboard');
       }
     } catch (err) {
-      setAuthError('Invalid credentials. Please verify your details.');
+      setAuthError('Invalid credentials. Please check your login details.');
     }
   };
 
-  // Quick Demo Login helper for SIH juries / reviewers
   const handleQuickDemoLogin = (role) => {
     if (role === 'AUTHORITY') {
       setValue('identifier', 'officer_sharma');
@@ -168,7 +167,7 @@ export default function LoginPage() {
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
-              className="absolute right-3.5 top-9 text-slate-400 hover:text-white transition-colors"
+              className="absolute right-3.5 top-9 text-slate-400 hover:text-white transition-colors cursor-pointer"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
@@ -183,7 +182,14 @@ export default function LoginPage() {
               />
               Remember me
             </label>
-            <a href="#forgot" onClick={(e) => { e.preventDefault(); alert('Please contact tourism support or your registered phone number.'); }} className="text-sky-400 hover:underline">
+            <a
+              href="#forgot"
+              onClick={(e) => {
+                e.preventDefault();
+                alert('Please contact tourism support at 1363 or your registered mobile number.');
+              }}
+              className="text-sky-400 hover:underline"
+            >
               Forgot password?
             </a>
           </div>
@@ -224,7 +230,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => handleQuickDemoLogin('TOURIST')}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/80 hover:bg-sky-500/10 border border-slate-800 hover:border-sky-500/30 text-[11px] font-bold text-slate-300 transition-all"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/80 hover:bg-sky-500/10 border border-slate-800 hover:border-sky-500/30 text-[11px] font-bold text-slate-300 transition-all cursor-pointer"
             >
               <CheckCircle2 className="w-3.5 h-3.5 text-sky-400" />
               Fill Tourist Demo
@@ -232,7 +238,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => handleQuickDemoLogin('AUTHORITY')}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/80 hover:bg-amber-500/10 border border-slate-800 hover:border-amber-500/30 text-[11px] font-bold text-slate-300 transition-all"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/80 hover:bg-amber-500/10 border border-slate-800 hover:border-amber-500/30 text-[11px] font-bold text-slate-300 transition-all cursor-pointer"
             >
               <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
               Fill Police Demo

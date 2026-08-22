@@ -55,7 +55,7 @@ export function SOSButton({ size = 'md', className = '', label = 'SOS EMERGENCY'
       >
         {/* Pulsing beacon glow */}
         <span className="absolute -inset-1 rounded-2xl bg-red-600/30 blur-sm group-hover:blur-md transition-all animate-pulse" />
-        
+
         {/* Floating ripple effect for large or floating button */}
         {size === 'floating' ? (
           <div className="relative flex flex-col items-center justify-center">

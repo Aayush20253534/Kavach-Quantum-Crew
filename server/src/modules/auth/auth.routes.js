@@ -9,6 +9,8 @@ import {
   logoutBodySchema,
   refreshBodySchema,
   registerBodySchema,
+  resendEmailVerificationBodySchema,
+  verifyEmailBodySchema,
 } from "./auth.validation.js";
 
 export const createAuthRouter = ({ controller = authController } = {}) => {
@@ -18,6 +20,16 @@ export const createAuthRouter = ({ controller = authController } = {}) => {
     "/register",
     validate({ body: registerBodySchema }),
     asyncHandler(controller.register),
+  );
+  router.post(
+    "/verify-email",
+    validate({ body: verifyEmailBodySchema }),
+    asyncHandler(controller.verifyEmail),
+  );
+  router.post(
+    "/resend-verification",
+    validate({ body: resendEmailVerificationBodySchema }),
+    asyncHandler(controller.resendEmailVerification),
   );
   router.post(
     "/login",

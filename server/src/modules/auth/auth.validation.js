@@ -51,3 +51,10 @@ export const refreshBodySchema = z.object({
 });
 
 export const logoutBodySchema = refreshBodySchema;
+
+export const verifyEmailBodySchema = z.object({
+  email,
+  otp: z.string().regex(/^\d{6}$/, "OTP must be exactly 6 digits"),
+});
+
+export const resendEmailVerificationBodySchema = z.object({ email });

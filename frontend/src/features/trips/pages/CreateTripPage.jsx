@@ -2,20 +2,15 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   Compass, 
-  MapPin, 
   Users, 
   User, 
-  Calendar, 
-  Clock, 
-  ShieldCheck, 
   ArrowRight, 
   CheckCircle2, 
-  AlertCircle 
 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../../../components/ui/Card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 
 export function CreateTripPage() {

@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setInitialized } from '../../features/auth/store/authSlice';
+import { setInitialized, setAuth, logout } from '../../features/auth/store/authSlice';
 import { FullPageLoader } from '../../components/ui/Loader';
+import { authService } from '../../features/auth/api/authService';
 
 export function AuthInitializer({ children }) {
   const dispatch = useDispatch();
@@ -9,12 +10,19 @@ export function AuthInitializer({ children }) {
 
   useEffect(() => {
     const checkSession = async () => {
+      const token = localStorage.getItem('quantum_access_token');
+      if (!token) {
+        dispatch(setInitialized());
+        return;
+      }
+      
       try {
-        // TODO: Replace with actual API call to verify session
-        // const response = await apiClient.get('/auth/me');
-        // dispatch(setAuth({ user: response.data }));
+        const data = await authService.getMe();
+        dispatch(setAuth({ user: data.data || data }));
       } catch (error) {
         // Handle no active session
+        localStorage.removeItem('quantum_access_token');
+        dispatch(logout());
       } finally {
         dispatch(setInitialized());
       }
