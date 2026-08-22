@@ -15,8 +15,9 @@ import { HomePage } from '../features/public/pages/HomePage';
 import { NotFoundPage } from '../features/public/pages/NotFoundPage';
 
 // Pages - Auth
-import { LoginPage } from '../features/auth/pages/LoginPage';
+import LoginPage from '../features/auth/pages/LoginPage';
 import { RegisterPage } from '../features/auth/pages/RegisterPage';
+import { VerifyEmailPage } from '../features/auth/pages/VerifyEmailPage';
 
 // Pages - Onboarding
 import { OnboardingPage } from '../features/onboarding/pages/OnboardingPage';
@@ -51,9 +52,10 @@ export const router = createBrowserRouter([
         children: [
           { path: 'login', element: <LoginPage /> },
           { path: 'register', element: <RegisterPage /> },
+          { path: 'verify-email', element: <VerifyEmailPage /> },
         ],
-      }
-    ]
+      },
+    ],
   },
   {
     element: <OnboardingRoute />,
@@ -66,7 +68,7 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [
       {
-        element: <RoleRoute allowedRoles={['TOURIST']} />,
+        element: <RoleRoute allowedRoles={['TOURIST', 'ADMIN', 'AUTHORITY']} />,
         children: [
           {
             element: <TouristLayout />,
@@ -80,28 +82,28 @@ export const router = createBrowserRouter([
               { path: 'incidents/report', element: <ReportIncidentPage /> },
               { path: 'incidents/history', element: <IncidentHistoryPage /> },
               { path: 'profile', element: <ProfilePage /> },
-            ]
-          }
-        ]
-      }
-    ]
+            ],
+          },
+        ],
+      },
+    ],
   },
   {
     path: '/authority',
     element: <ProtectedRoute />,
     children: [
       {
-        element: <RoleRoute allowedRoles={['AUTHORITY']} />,
+        element: <RoleRoute allowedRoles={['AUTHORITY', 'ADMIN', 'TOURIST']} />,
         children: [
           {
             element: <AuthorityLayout />,
             children: [
               { path: 'dashboard', element: <AuthorityDashboardPage /> },
-            ]
-          }
-        ]
-      }
-    ]
+            ],
+          },
+        ],
+      },
+    ],
   },
   {
     path: '*',
