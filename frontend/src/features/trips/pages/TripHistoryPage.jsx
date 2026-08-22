@@ -31,7 +31,7 @@ export function TripHistoryPage() {
 
   if (error) {
     return (
-      <div className="bg-[#fef2f2] border border-[#fecaca] p-4 rounded-xl shadow-sm max-w-4xl mx-auto flex items-start gap-3">
+      <div className="bg-[#fef2f2] border border-[#fecaca] p-4 rounded-md shadow-sm max-w-4xl mx-auto flex items-start gap-3">
         <XCircle className="w-5 h-5 text-[#ef4444] shrink-0 mt-0.5" />
         <div>
           <p className="text-xs font-bold text-[#b91c1c] uppercase tracking-wider">Data Retrieval Error</p>
@@ -56,14 +56,14 @@ export function TripHistoryPage() {
         </div>
 
         <Link to="/tourist/trips/create">
-          <button className="bg-[#e11d48] hover:bg-[#be123c] text-white px-6 py-3 text-[12px] font-bold uppercase tracking-widest rounded-xl shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
+          <button className="bg-[#e11d48] hover:bg-[#be123c] text-white px-6 py-3 text-[12px] font-bold uppercase tracking-widest rounded-md shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
             Plan New Trip <ArrowRight className="w-4 h-4" />
           </button>
         </Link>
       </div>
 
       {trips.length === 0 ? (
-        <div className="bg-white border border-slate-100 rounded-2xl p-12 text-center shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+        <div className="bg-white border border-slate-100 rounded-lg p-12 text-center shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
            <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-6">
              <History className="w-10 h-10 text-slate-300" />
            </div>
@@ -78,7 +78,7 @@ export function TripHistoryPage() {
             const isPlanned = trip.status === 'PLANNED';
             
             return (
-              <div key={trip.id} className="bg-white border border-slate-100 rounded-2xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:border-red-200 hover:shadow-md transition-all duration-300">
+              <div key={trip.id} className="bg-white border border-slate-100 rounded-lg p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:border-red-200 hover:shadow-md transition-all duration-300">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                   
                   {/* Info Column */}
@@ -135,7 +135,7 @@ export function TripHistoryPage() {
                       <button
                         type="button"
                         onClick={() => alert(`Downloading certificate for ${trip.id}`)}
-                        className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-5 py-2.5 text-[11px] font-bold uppercase tracking-widest rounded-xl flex items-center gap-2 cursor-pointer transition-colors shadow-sm"
+                        className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-5 py-2.5 text-[11px] font-bold uppercase tracking-widest rounded-md flex items-center gap-2 cursor-pointer transition-colors shadow-sm"
                       >
                         <Download className="w-4 h-4" /> Certificate
                       </button>

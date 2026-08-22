@@ -51,7 +51,7 @@ export function IncidentHistoryPage() {
         </div>
 
         <Link to="/tourist/incidents/report">
-          <button className="bg-[#e11d48] hover:bg-[#be123c] text-white px-6 py-3 text-[12px] font-bold uppercase tracking-widest rounded-xl shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
+          <button className="bg-[#e11d48] hover:bg-[#be123c] text-white px-6 py-3 text-[12px] font-bold uppercase tracking-widest rounded-md shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
             <AlertTriangle className="w-4 h-4" /> Report New
           </button>
         </Link>
@@ -63,7 +63,7 @@ export function IncidentHistoryPage() {
            const isDispatched = inc.status === 'Dispatched';
            
            return (
-              <div key={inc.id} className="bg-white rounded-2xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 hover:border-slate-200 transition-all duration-300">
+              <div key={inc.id} className="bg-white rounded-lg p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 hover:border-slate-200 transition-all duration-300">
                  <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-50 pb-4 mb-4">
                     <div className="flex items-center gap-3">
                        <span className="font-mono text-[11px] font-bold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-100">ID: {inc.id}</span>
@@ -87,7 +87,7 @@ export function IncidentHistoryPage() {
                     </p>
                  </div>
                  
-                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                 <div className="p-4 rounded-md bg-slate-50 border border-slate-100">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Authority Response Note</span>
                     <p className="text-[13px] font-medium text-slate-700 leading-relaxed">{inc.policeNote}</p>
                  </div>

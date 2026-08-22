@@ -37,7 +37,7 @@ export function CurrentTripPage() {
 
   if (!currentTrip) {
     return (
-      <div className="bg-white border border-slate-100 p-12 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] text-center max-w-2xl mx-auto mt-10">
+      <div className="bg-white border border-slate-100 p-12 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.02)] text-center max-w-2xl mx-auto mt-10">
         <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-6">
           <Navigation className="w-10 h-10 text-slate-300" />
         </div>
@@ -46,7 +46,7 @@ export function CurrentTripPage() {
           You currently have no planned or active trips.
         </p>
         <Link to="/tourist/trips/create">
-          <button className="bg-[#e11d48] hover:bg-[#be123c] text-white px-8 py-3 rounded-xl font-bold text-[13px] tracking-wide shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 cursor-pointer">
+          <button className="bg-[#e11d48] hover:bg-[#be123c] text-white px-8 py-3 rounded-md font-bold text-[13px] tracking-wide shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 cursor-pointer">
             Plan New Trip
           </button>
         </Link>
@@ -73,7 +73,7 @@ export function CurrentTripPage() {
   return (
     <div className="space-y-6 max-w-[1200px] mx-auto pb-10 font-sans">
       {/* Top Banner */}
-      <div className={`p-6 md:p-8 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.03)] border transition-all ${isActive ? 'bg-[#f0fdf4] border-[#bbf7d0]' : 'bg-white border-slate-100'} flex flex-col sm:flex-row sm:items-center justify-between gap-6`}>
+      <div className={`p-6 md:p-8 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.03)] border transition-all ${isActive ? 'bg-[#f0fdf4] border-[#bbf7d0]' : 'bg-white border-slate-100'} flex flex-col sm:flex-row sm:items-center justify-between gap-6`}>
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-3">
             {isActive ? (
@@ -103,14 +103,14 @@ export function CurrentTripPage() {
              <button 
                 onClick={handleStart} 
                 disabled={isStarting}
-                className="w-full bg-[#16a34a] hover:bg-[#15803d] text-white px-6 py-3.5 rounded-xl text-[12px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] transition-all active:scale-95 disabled:opacity-50"
+                className="w-full bg-[#16a34a] hover:bg-[#15803d] text-white px-6 py-3.5 rounded-md text-[12px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] transition-all active:scale-95 disabled:opacity-50"
              >
                 <Activity className="w-4 h-4" /> Start Mission
              </button>
           )}
           
           <Link to="/tourist/incidents/report" className="w-full">
-            <button className="w-full bg-white border border-slate-200 hover:border-red-300 hover:bg-red-50 text-slate-600 hover:text-red-600 px-6 py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm">
+            <button className="w-full bg-white border border-slate-200 hover:border-red-300 hover:bg-red-50 text-slate-600 hover:text-red-600 px-6 py-3 rounded-md text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm">
               <AlertTriangle className="w-4 h-4" /> Report Hazard
             </button>
           </Link>
@@ -118,7 +118,7 @@ export function CurrentTripPage() {
       </div>
 
       {gpsError && (
-        <div className="bg-[#fef2f2] border border-[#fecaca] p-4 rounded-xl shadow-sm flex items-start gap-3">
+        <div className="bg-[#fef2f2] border border-[#fecaca] p-4 rounded-md shadow-sm flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-[#ef4444] shrink-0 mt-0.5" />
           <div>
             <p className="font-bold text-xs uppercase tracking-wider text-[#b91c1c]">Telemetry Warning</p>
@@ -132,7 +132,7 @@ export function CurrentTripPage() {
         
         {/* Left Col: Map */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white border border-slate-100 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col overflow-hidden">
+          <div className="bg-white border border-slate-100 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col overflow-hidden">
             <div className="p-5 border-b border-slate-50 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center">
@@ -152,7 +152,7 @@ export function CurrentTripPage() {
                
                {!isActive && (
                  <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-[500] flex items-center justify-center">
-                    <div className="bg-white border border-slate-100 p-6 rounded-2xl shadow-xl text-center max-w-xs">
+                    <div className="bg-white border border-slate-100 p-6 rounded-lg shadow-xl text-center max-w-xs">
                        <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-4">
                          <MapPin className="w-8 h-8 text-slate-300" />
                        </div>
@@ -168,19 +168,19 @@ export function CurrentTripPage() {
         {/* Right Col: Actions & Status */}
         <div className="space-y-6">
           
-          <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+          <div className="bg-white border border-slate-100 rounded-lg p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
              <h2 className="text-[14px] font-black text-slate-900 tracking-wide border-b border-slate-50 pb-4 mb-5">
                 Mission Status
              </h2>
              
              <div className="space-y-5">
-               <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+               <div className="bg-slate-50 p-4 rounded-md border border-slate-100">
                   <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Check-in Policy</span>
                   <span className="text-[13px] font-black text-slate-900 uppercase tracking-wide">{currentTrip.checkInInterval}</span>
                </div>
                
                {currentTrip.type === 'GROUP' && (
-                  <div className="bg-red-50 p-4 rounded-xl border border-red-100">
+                  <div className="bg-red-50 p-4 rounded-md border border-red-100">
                      <span className="block text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1.5">Group Sync</span>
                      <Link to="/tourist/groups/create" className="text-[12px] font-bold text-red-600 hover:text-red-700 uppercase flex items-center gap-1.5">
                         Manage Group Members <AlertTriangle className="w-3.5 h-3.5" />
@@ -190,7 +190,7 @@ export function CurrentTripPage() {
              </div>
           </div>
 
-          <div className="bg-[#1a1f2c] border border-slate-800 rounded-2xl p-6 shadow-xl text-center">
+          <div className="bg-[#1a1f2c] border border-slate-800 rounded-lg p-6 shadow-xl text-center">
             <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
               <ShieldCheck className="w-6 h-6 text-slate-400" />
             </div>
@@ -201,7 +201,7 @@ export function CurrentTripPage() {
               <button 
                 onClick={handleComplete}
                 disabled={isCompleting || isPlanned}
-                className="w-full bg-[#16a34a] hover:bg-[#15803d] text-white px-4 py-3.5 rounded-xl text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-lg"
+                className="w-full bg-[#16a34a] hover:bg-[#15803d] text-white px-4 py-3.5 rounded-md text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-lg"
               >
                 <CheckCircle2 className="w-4 h-4" /> Log Successful Completion
               </button>
@@ -209,7 +209,7 @@ export function CurrentTripPage() {
               <button 
                 onClick={handleCancel}
                 disabled={isCanceling}
-                className="w-full bg-slate-800 hover:bg-[#ef4444] text-slate-300 hover:text-white px-4 py-3.5 rounded-xl text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-colors"
+                className="w-full bg-slate-800 hover:bg-[#ef4444] text-slate-300 hover:text-white px-4 py-3.5 rounded-md text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-colors"
               >
                 <XCircle className="w-4 h-4" /> Abort Mission
               </button>
