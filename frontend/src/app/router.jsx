@@ -45,16 +45,16 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    element: <PublicRoute />,
+    element: <AuthLayout />,
     children: [
       {
-        element: <AuthLayout />,
+        element: <PublicRoute />,
         children: [
           { path: 'login', element: <LoginPage /> },
           { path: 'register', element: <RegisterPage /> },
-          { path: 'verify-email', element: <VerifyEmailPage /> },
         ],
       },
+      { path: 'verify-email', element: <VerifyEmailPage /> },
     ],
   },
   {
