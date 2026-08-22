@@ -2,9 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Compass, 
-  MapPin, 
   Calendar, 
-  ShieldCheck, 
   CheckCircle2, 
   Download, 
   ArrowRight,
@@ -12,7 +10,7 @@ import {
   Users
 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/Card';
+import { Card, CardContent } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 
 export function TripHistoryPage() {

@@ -1,37 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { 
-  ShieldCheck, 
-  User, 
-  HeartPulse, 
-  PhoneCall, 
-  Lock, 
-  CheckCircle2, 
-  ArrowRight, 
-<<<<<<< HEAD
-  ArrowLeft,
-<<<<<<< HEAD
-  Sparkles,
+import {
+  ShieldCheck,
+  User,
+  HeartPulse,
+  PhoneCall,
+  CheckCircle2,
+  ArrowRight,
   MapPin,
-  FileText
-=======
-  MapPin
->>>>>>> f0a68452 (feat: implement authentication module with login page, onboarding structure, and reusable UI form components)
 } from 'lucide-react';
-import { Button } from '../../../components/ui/Button';
-import { Input } from '../../../components/ui/Input';
-import { Select } from '../../../components/ui/Select';
-import { Textarea } from '../../../components/ui/Textarea';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../../../components/ui/Card';
-=======
-  MapPin,
-  FileText
-} from 'lucide-react';
->>>>>>> 83d74232 (feat: implement multi-step tourist onboarding flow with form validation and redux state management)
 import { completeOnboarding } from '../../auth/store/authSlice';
 
 /* =========================================================================
@@ -66,7 +47,6 @@ const stepsInfo = [
 export function OnboardingPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
   const [step, setStep] = useState(1);
 
   const {

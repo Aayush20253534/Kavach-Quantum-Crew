@@ -1,28 +1,16 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Compass, 
-  MapPin, 
   Navigation, 
-  Users, 
-  Clock, 
-  ShieldCheck, 
+  MapPin, 
   AlertTriangle, 
-  PhoneCall, 
-  QrCode, 
-  BatteryMedium, 
-  Radio, 
-  CheckCircle2, 
-  ChevronRight 
 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/Card';
+import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { SOSButton } from '../../../components/ui/SOSButton';
 
 export function CurrentTripPage() {
-  const [activeTab, setActiveTab] = useState('map'); // 'map' | 'itinerary' | 'group'
-
   const milestones = [
     { title: 'Triveni Sangam Holy Dip', time: '09:45 AM', status: 'Completed', location: 'Sangam Ghat 4' },
     { title: 'Akshayavat & Patalpuri Temple', time: '11:30 AM', status: 'In Progress', location: 'Allahabad Fort' },

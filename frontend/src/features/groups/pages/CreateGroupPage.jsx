@@ -5,24 +5,16 @@ import {
   QrCode, 
   Copy, 
   Check, 
-  Share2, 
   ShieldCheck, 
-  ArrowRight, 
-  UserPlus,
   BatteryMedium,
   Radio
 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
-import { Input } from '../../../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
-import { Modal } from '../../../components/ui/Modal';
 
 export function CreateGroupPage() {
-  const [groupName, setGroupName] = useState('Maurya Pilgrimage Group');
-  const [maxMembers, setMaxMembers] = useState('6');
   const [copied, setCopied] = useState(false);
-  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
 
   const inviteCode = 'KAVACH-PRY-8924';
   const inviteLink = `https://kavach-safety.in/join?code=${inviteCode}`;

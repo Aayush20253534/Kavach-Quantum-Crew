@@ -1,24 +1,18 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { 
   QrCode, 
   Camera, 
-  Upload, 
   ArrowRight, 
-  ShieldCheck, 
   CheckCircle2, 
-  Users, 
-  Sparkles 
 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/Card';
-import { Badge } from '../../../components/ui/Badge';
+import { Card, CardContent } from '../../../components/ui/Card';
 
 export function JoinGroupPage() {
   const navigate = useNavigate();
   const [inviteCode, setInviteCode] = useState('');
-  const [isScanning, setIsScanning] = useState(true);
   const [joinedSuccess, setJoinedSuccess] = useState(false);
 
   const handleSimulateScan = () => {
