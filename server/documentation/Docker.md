@@ -1,6 +1,6 @@
-# Docker Guide for AFSC Backend
+# Docker Guide for Backend
 
-This file is the project-specific Docker reference for the AFSC backend. It explains what Docker is, how this repository uses it, how to install Docker on Windows and macOS, how to build and run the project, how the normal and test databases differ, how to inspect and troubleshoot containers, and what the important Docker commands mean.
+This file is the project-specific Docker reference for the backend. It explains what Docker is, how this repository uses it, how to install Docker on Windows and macOS, how to build and run the project, how the normal and test databases differ, how to inspect and troubleshoot containers, and what the important Docker commands mean.
 
 ---
 
@@ -14,7 +14,7 @@ For this project:
 
 ```text
 Dockerfile
-   -> builds the AFSC backend image
+   -> builds the  backend image
 
 Docker image
    -> packaged runtime + Node.js + dependencies + source + startup instruction
@@ -23,7 +23,7 @@ Docker container
    -> isolated running instance created from that image
 
 docker-compose.yml
-   -> runs the AFSC backend and PostgreSQL together
+   -> runs the  backend and PostgreSQL together
 
 docker-compose.test.yml
    -> runs a separate temporary PostgreSQL database for tests
@@ -39,7 +39,7 @@ Docker does not mean every possible machine behaves identically. CPU architectur
 
 A `Dockerfile` is the recipe Docker uses to build one image.
 
-The AFSC `Dockerfile`:
+The  `Dockerfile`:
 
 1. Starts from a Node.js Debian image.
 2. Creates `/app` as the working directory.
@@ -80,7 +80,7 @@ Multiple containers can be created from the same image.
 
 Docker Compose manages multiple services as one application stack.
 
-In AFSC, the normal Compose file defines:
+In , the normal Compose file defines:
 
 ```text
 postgres container
@@ -96,7 +96,7 @@ PostgreSQL persistent volume
 
 A Docker volume stores data outside a container's writable layer.
 
-The normal AFSC PostgreSQL service uses:
+The normal  PostgreSQL service uses:
 
 ```text
 smart-tourist-postgres
@@ -146,7 +146,7 @@ http://localhost:4000
 
 A health check lets Docker determine whether a service is actually ready instead of merely running as a process.
 
-The AFSC PostgreSQL service uses `pg_isready`. The backend Dockerfile checks:
+The  PostgreSQL service uses `pg_isready`. The backend Dockerfile checks:
 
 ```text
 GET /health
@@ -154,7 +154,7 @@ GET /health
 
 ---
 
-## 3. Docker files already in AFSC
+## 3. Docker files already
 
 From the `server/` directory:
 
@@ -194,7 +194,7 @@ The project keeps `.env.example` available but intentionally does not copy real 
 Runs the normal Docker development/demo stack:
 
 - PostgreSQL 16 Alpine
-- AFSC backend
+- backend
 - persistent PostgreSQL volume
 - backend on host port `4000` by default
 - PostgreSQL on host port `5432` by default
@@ -391,26 +391,26 @@ If `hello-world` succeeds, Docker is ready.
 
 ---
 
-# PART B - RUN AFSC WITH DOCKER
+# PART B - RUN WITH DOCKER
 
 ## 6. Open the correct project directory
 
-All AFSC Docker commands in this guide assume the terminal is inside:
+All Docker commands in this guide assume the terminal is inside:
 
 ```text
-AFSC/server
+/server
 ```
 
 Windows PowerShell example:
 
 ```powershell
-cd C:\path\to\AFSC\server
+cd C:\path\to\server
 ```
 
 macOS Terminal example:
 
 ```bash
-cd /path/to/AFSC/server
+cd /path/to/server
 ```
 
 Confirm the files exist.
@@ -457,7 +457,7 @@ Normal build:
 docker compose build
 ```
 
-Meaning: builds images for services that have a `build:` section. In AFSC this builds the `backend` service from the local `Dockerfile`.
+Meaning: builds images for services that have a `build:` section. In this builds the `backend` service from the local `Dockerfile`.
 
 After changing the Dockerfile or when debugging stale layers:
 
@@ -477,7 +477,7 @@ docker compose build backend
 
 ---
 
-## 9. Important AFSC production-environment note
+## 9. Important production-environment note
 
 The normal `docker-compose.yml` currently sets:
 
@@ -485,7 +485,7 @@ The normal `docker-compose.yml` currently sets:
 NODE_ENV=production
 ```
 
-AFSC's environment validation requires production-safe values for at least:
+environment validation requires production-safe values for at least:
 
 ```text
 ACCESS_TOKEN_SECRET
@@ -549,7 +549,7 @@ docker compose up -d --build
 
 Meaning: rebuilds services whose images need building and then starts the stack in detached mode.
 
-This is one of the most useful everyday AFSC Docker commands.
+This is one of the most useful everyday Docker commands.
 
 ---
 
@@ -892,7 +892,7 @@ Only use `down -v` when you intentionally want a fresh database.
 
 Automated tests may create, update, delete, or reset records. They should not run against the normal development database.
 
-AFSC therefore has:
+therefore has:
 
 ```text
 Normal DB
@@ -1004,10 +1004,10 @@ Because PostgreSQL data is stored using `tmpfs` in this test Compose file, the t
 
 ## 25. First-time Docker workflow
 
-After Docker Desktop is installed and the AFSC Compose environment is configured with the required production secrets:
+After Docker Desktop is installed and the Compose environment is configured with the required production secrets:
 
 ```bash
-cd path/to/AFSC/server
+cd path/to/server
 docker compose config
 docker compose build
 docker compose up -d
@@ -1187,7 +1187,7 @@ Meaning: shows disk space used by Docker images, containers, local volumes, and 
 
 # PART G - CLEANUP
 
-## 36. Remove stopped AFSC Compose containers
+## 36. Remove stopped Compose containers
 
 ```bash
 docker compose down
@@ -1325,7 +1325,7 @@ Then:
 docker compose logs backend
 ```
 
-Common AFSC causes include:
+Common causes include:
 
 - required production environment variables are missing
 - production JWT/OTP secrets are too short or still contain default `change-me` values
@@ -1419,40 +1419,40 @@ Do not paste output containing secrets into public issues, screenshots, or chat 
 
 ## 48. Essential commands
 
-| Command | Meaning |
-|---|---|
-| `docker --version` | Show Docker CLI version |
-| `docker compose version` | Show Compose version |
-| `docker info` | Show Docker engine/system information |
-| `docker run --rm hello-world` | Verify Docker can run a container |
-| `docker compose config` | Validate/show resolved Compose configuration |
-| `docker compose build` | Build Compose images |
-| `docker compose build --no-cache` | Build without cached layers |
-| `docker compose up` | Start services in foreground |
-| `docker compose up -d` | Start services in background |
-| `docker compose up -d --build` | Build and start services |
-| `docker compose ps` | Show Compose service status |
-| `docker ps` | Show running containers |
-| `docker ps -a` | Show running and stopped containers |
-| `docker compose logs` | Show service logs |
-| `docker compose logs -f backend` | Follow backend logs |
-| `docker compose exec backend sh` | Open shell inside backend container |
-| `docker compose stop` | Stop Compose services without removing containers |
-| `docker compose start` | Start previously stopped Compose containers |
-| `docker compose restart` | Restart services without rebuilding |
-| `docker compose down` | Stop/remove Compose containers and network |
-| `docker compose down -v` | Also delete Compose volumes/data; destructive |
-| `docker image ls` | List images |
-| `docker volume ls` | List volumes |
-| `docker stats` | View live container resource usage |
-| `docker system df` | View Docker disk usage |
-| `docker builder prune` | Remove unused build cache |
+| Command                             | Meaning                                           |
+| ----------------------------------- | ------------------------------------------------- |
+| `docker --version`                | Show Docker CLI version                           |
+| `docker compose version`          | Show Compose version                              |
+| `docker info`                     | Show Docker engine/system information             |
+| `docker run --rm hello-world`     | Verify Docker can run a container                 |
+| `docker compose config`           | Validate/show resolved Compose configuration      |
+| `docker compose build`            | Build Compose images                              |
+| `docker compose build --no-cache` | Build without cached layers                       |
+| `docker compose up`               | Start services in foreground                      |
+| `docker compose up -d`            | Start services in background                      |
+| `docker compose up -d --build`    | Build and start services                          |
+| `docker compose ps`               | Show Compose service status                       |
+| `docker ps`                       | Show running containers                           |
+| `docker ps -a`                    | Show running and stopped containers               |
+| `docker compose logs`             | Show service logs                                 |
+| `docker compose logs -f backend`  | Follow backend logs                               |
+| `docker compose exec backend sh`  | Open shell inside backend container               |
+| `docker compose stop`             | Stop Compose services without removing containers |
+| `docker compose start`            | Start previously stopped Compose containers       |
+| `docker compose restart`          | Restart services without rebuilding               |
+| `docker compose down`             | Stop/remove Compose containers and network        |
+| `docker compose down -v`          | Also delete Compose volumes/data; destructive     |
+| `docker image ls`                 | List images                                       |
+| `docker volume ls`                | List volumes                                      |
+| `docker stats`                    | View live container resource usage                |
+| `docker system df`                | View Docker disk usage                            |
+| `docker builder prune`            | Remove unused build cache                         |
 
 ---
 
-# PART J - AFSC COMMAND CHEAT SHEET
+# PART J - COMMAND CHEAT SHEET
 
-## 49. Normal AFSC stack
+## 49. Normal stack
 
 Start:
 
@@ -1498,7 +1498,7 @@ docker compose down -v
 
 ---
 
-## 50. AFSC test database
+## 50.test database
 
 Start:
 
@@ -1548,11 +1548,11 @@ A container is an isolated running instance created from an image.
 
 ## 54. Dockerfile
 
-The Dockerfile defines how the AFSC backend image is built.
+The Dockerfile defines how the backend image is built.
 
 ## 55. Docker Compose
 
-Docker Compose defines how multiple services/containers are configured and run together. AFSC uses it to coordinate the backend and PostgreSQL.
+Docker Compose defines how multiple services/containers are configured and run together. it coordinate the backend and PostgreSQL.
 
 ## 56. Normal database versus test database
 
