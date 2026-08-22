@@ -17,8 +17,9 @@ export function AuthLayout() {
       </div>
 
       {/* ------------------------------------------------
-          RIGHT HALF: AUTHENTICATION (LOGIN / REGISTER) PANEL
+          RIGHT HALF: AUTHENTICATION PANEL (WHITE DESIGN)
       ------------------------------------------------ */}
+<<<<<<< HEAD
       <div className="flex-1 min-h-screen flex flex-col justify-between p-4 sm:p-8 lg:p-10 relative z-20 bg-slate-50 lg:border-l lg:border-slate-200">
         {/* Background Ambient Glows */}
         <div className="absolute top-1/4 right-10 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -61,6 +62,32 @@ export function AuthLayout() {
             <HeartHandshake className="w-4 h-4 text-sky-600" />
             Prayagraj Smart Tourism & SIH 2026
           </p>
+=======
+      <div className="flex-1 h-screen flex flex-col relative z-20 bg-white text-slate-900 overflow-hidden">
+        {/* Top Bar (Language Selector) */}
+        <div className="flex shrink-0 justify-end px-6 py-4 sm:px-10 absolute top-0 right-0 w-full z-10 bg-white">
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+            English
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        {/* Center Form Container */}
+        <div className="flex-1 flex flex-col justify-center w-full mx-auto relative z-0 h-full overflow-hidden pt-12">
+          <div className="mx-auto flex w-full max-w-[440px] flex-col px-6 sm:px-10 h-full justify-center">
+            <Outlet />
+          </div>
+>>>>>>> 60ad7f78 (feat: add project memory documentation and redesign AuthLayout to light theme)
         </div>
       </div>
     </div>

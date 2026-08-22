@@ -1,19 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
-  ShieldCheck,
   Mail,
-  KeyRound,
   ArrowRight,
   RefreshCw,
   ArrowLeft,
   CheckCircle2,
-  Sparkles,
   AlertCircle,
 } from 'lucide-react';
-import { Button } from '../../../components/ui/Button';
-import { Input } from '../../../components/ui/Input';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/Card';
 import { authService } from '../api/authService';
 
 export function VerifyEmailPage() {
@@ -142,159 +136,121 @@ export function VerifyEmailPage() {
     }
   };
 
-  const handleFillDemoCode = () => {
-    if (!email) {
-      setEmail('prachi@touristsafety.in');
-      setIsEditingEmail(false);
-    }
-    setDigits(['1', '2', '3', '4', '5', '6']);
-    setError('');
-  };
-
   return (
-    <Card variant="elevated" className="border-slate-800/80 bg-slate-900/85 backdrop-blur-2xl shadow-2xl rounded-3xl overflow-hidden">
-      {/* Top Accent Stripe */}
-      <div className="h-1.5 w-full bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-500" />
+    <>
+      <div className="mb-4 text-center mt-4">
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900 mb-1">
+          Verify Email
+        </h2>
+        <p className="text-xs text-slate-500">
+          Enter the 6-digit code sent to your registered email
+        </p>
+      </div>
 
-      <CardHeader className="text-center pb-2 pt-6 px-6">
-        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-500/25">
-          <KeyRound className="h-7 w-7" />
+      {/* Email Context Editor */}
+      <div className="mb-4 flex items-center justify-center gap-2 rounded-lg bg-slate-50 border border-slate-200 px-4 py-2.5 text-xs">
+        <Mail size={14} className="text-slate-400 flex-shrink-0" />
+        {isEditingEmail ? (
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email address"
+            className="bg-transparent text-slate-900 focus:outline-none w-full placeholder-slate-400"
+            autoFocus
+          />
+        ) : (
+          <span className="font-medium text-slate-900 truncate max-w-[220px]">
+            {email || 'No email specified'}
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={() => setIsEditingEmail(!isEditingEmail)}
+          className="text-[11px] font-bold text-red-600 hover:text-red-700 transition ml-2 shrink-0"
+        >
+          {isEditingEmail ? 'Save' : 'Edit'}
+        </button>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-800 text-center mb-2">
+            6-Digit Security PIN
+          </label>
+          <div className="flex justify-center gap-2 sm:gap-3" onPaste={handlePaste}>
+            {digits.map((digit, index) => (
+              <input
+                key={index}
+                ref={(el) => (inputRefs.current[index] = el)}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleDigitChange(index, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(index, e)}
+                className={`
+                  w-10 h-11 sm:w-11 sm:h-12 text-center text-lg sm:text-xl font-bold font-mono rounded-md border bg-white text-slate-900 transition-all outline-none
+                  ${digit ? 'border-red-500 ring-1 ring-red-500 bg-red-50/20' : 'border-slate-200 focus:border-red-500 focus:ring-1 focus:ring-red-500'}
+                `}
+              />
+            ))}
+          </div>
         </div>
-        <CardTitle className="justify-center text-2xl font-black tracking-tight text-white">
-          Verify Your Identity
-        </CardTitle>
-        <CardDescription className="text-xs text-slate-400">
-          Enter the 6-digit verification code sent to your registered email
-        </CardDescription>
 
-        {/* Email Context Pill */}
-        <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-slate-950/80 p-2.5 border border-slate-800 text-xs">
-          <Mail className="h-3.5 w-3.5 text-sky-400 flex-shrink-0" />
-          {isEditingEmail ? (
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email address"
-              className="bg-transparent text-white focus:outline-none w-full text-center placeholder-slate-500 font-medium"
-              autoFocus
-            />
+        {error && (
+          <div className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700 flex items-start gap-2">
+            <AlertCircle size={14} className="flex-shrink-0 mt-0.5 text-red-600" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {success && (
+          <div className="rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-700 flex items-start gap-2">
+            <CheckCircle2 size={14} className="flex-shrink-0 mt-0.5 text-emerald-600" />
+            <span>{success}</span>
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={otp.length !== 6 || !email || loading}
+          className="group flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#e33636] text-[13px] font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:opacity-60"
+        >
+          {loading ? (
+            <>
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              Validating...
+            </>
           ) : (
-            <span className="font-semibold text-slate-200 truncate max-w-[200px]">
-              {email || 'No email specified'}
-            </span>
+            <>
+              Verify & Enter Portal
+              <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+            </>
           )}
-          <button
-            type="button"
-            onClick={() => setIsEditingEmail(!isEditingEmail)}
-            className="text-[11px] font-bold text-sky-400 hover:text-sky-300 transition-colors ml-1 px-1.5 py-0.5 rounded hover:bg-sky-500/10 cursor-pointer"
-          >
-            {isEditingEmail ? 'Done' : 'Edit'}
-          </button>
-        </div>
-      </CardHeader>
+        </button>
+      </form>
 
-      <CardContent className="space-y-5 pt-2 px-6 pb-6">
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* 6-box OTP input */}
-          <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 text-center mb-3">
-              6-Digit Security PIN
-            </label>
-            <div className="flex justify-center gap-2 sm:gap-3" onPaste={handlePaste}>
-              {digits.map((digit, index) => (
-                <input
-                  key={index}
-                  ref={(el) => (inputRefs.current[index] = el)}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleDigitChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  className={`w-11 h-13 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-black font-mono rounded-xl border bg-slate-950/90 text-white transition-all duration-200 shadow-inner ${
-                    digit
-                      ? 'border-sky-400 ring-2 ring-sky-400/30 bg-sky-500/5'
-                      : 'border-slate-800 hover:border-slate-700 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20'
-                  } focus:outline-none`}
-                />
-              ))}
-            </div>
-          </div>
+      <div className="flex flex-col items-center gap-3 mt-5">
+        <button
+          type="button"
+          onClick={handleResend}
+          disabled={countdown > 0 || resending || !email}
+          className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 disabled:text-slate-400 transition-colors"
+        >
+          <RefreshCw size={14} className={resending ? 'animate-spin text-red-600' : ''} />
+          {countdown > 0 ? `Resend code in ${countdown}s` : 'Resend Verification Code'}
+        </button>
 
-          {/* Feedback banners */}
-          {error && (
-            <div className="rounded-xl bg-red-950/40 border border-red-500/30 p-3 text-xs text-red-300 flex items-start gap-2 animate-in fade-in">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-red-400" />
-              <span>{error}</span>
-            </div>
-          )}
+        <div className="w-full h-px bg-slate-200 mt-1" />
 
-          {success && (
-            <div className="rounded-xl bg-emerald-950/40 border border-emerald-500/30 p-3 text-xs text-emerald-300 flex items-start gap-2 animate-in fade-in">
-              <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-400" />
-              <span>{success}</span>
-            </div>
-          )}
-
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            isLoading={loading}
-            disabled={otp.length !== 6 || !email}
-            className="w-full !bg-gradient-to-r !from-sky-500 !to-blue-600 hover:!from-sky-400 hover:!to-blue-500 !text-white font-bold"
-            rightIcon={ArrowRight}
-          >
-            {loading ? 'Validating PIN...' : 'Verify & Enter Portal'}
-          </Button>
-        </form>
-
-        {/* Resend Action */}
-        <div className="flex items-center justify-between text-xs pt-1 px-1 text-slate-400">
-          <span>Didn't receive code?</span>
-          <button
-            type="button"
-            onClick={handleResend}
-            disabled={countdown > 0 || resending || !email}
-            className="flex items-center gap-1 font-bold text-sky-400 hover:text-sky-300 disabled:text-slate-600 transition-colors cursor-pointer disabled:cursor-not-allowed"
-          >
-            <RefreshCw className={`w-3 h-3 ${resending ? 'animate-spin' : ''}`} />
-            {countdown > 0 ? `Resend code in ${countdown}s` : 'Resend Code'}
-          </button>
-        </div>
-
-        {/* 1-Click Demo Shortcut */}
-        <div className="pt-2">
-          <div className="relative flex py-1 items-center">
-            <div className="flex-grow border-t border-slate-800"></div>
-            <span className="flex-shrink mx-2 text-[10px] uppercase tracking-wider text-slate-500 font-semibold flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-sky-400" /> Quick Testing
-            </span>
-            <div className="flex-grow border-t border-slate-800"></div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleFillDemoCode}
-            className="w-full mt-2 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/80 hover:bg-sky-500/10 border border-slate-800 hover:border-sky-500/30 text-[11px] font-bold text-slate-300 transition-all cursor-pointer"
-          >
-            <CheckCircle2 className="w-3.5 h-3.5 text-sky-400" />
-            Fill Demo Email & OTP (123456)
-          </button>
-        </div>
-
-        {/* Navigation fallback */}
-        <div className="pt-2 text-center text-xs text-slate-400 border-t border-slate-800/80 flex items-center justify-center gap-4">
-          <Link to="/login" className="flex items-center gap-1 text-slate-400 hover:text-white transition-colors">
-            <ArrowLeft className="w-3 h-3" /> Back to Login
-          </Link>
-          <span className="text-slate-700">|</span>
-          <Link to="/register" className="text-sky-400 hover:underline">
-            Register New Account
-          </Link>
-        </div>
-      </CardContent>
-    </Card>
+        <Link
+          to="/login"
+          className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition pb-4"
+        >
+          <ArrowLeft size={14} /> Back to Login
+        </Link>
+      </div>
+    </>
   );
 }
