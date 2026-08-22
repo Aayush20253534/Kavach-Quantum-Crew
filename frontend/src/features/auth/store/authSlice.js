@@ -11,31 +11,8 @@ const savedAuth = (() => {
 })();
 
 const initialState = {
-  user: savedAuth?.user || {
-    id: 'usr_demo_101',
-    name: 'Prachi Maurya',
-    username: 'prachi_m',
-    email: 'prachi@touristsafety.in',
-    phone: '+91 98765 43210',
-    role: 'TOURIST', // 'TOURIST' | 'AUTHORITY' | 'ADMIN'
-    onboardingComplete: true,
-    emergencyContact: {
-      name: 'Ramesh Maurya',
-      relation: 'Father',
-      phone: '+91 98765 00000',
-    },
-    medicalInfo: {
-      bloodGroup: 'O+',
-      allergies: 'None',
-      notes: 'No chronic condition',
-    },
-    safetySettings: {
-      liveTracking: true,
-      geoFenceAlerts: true,
-      smsFallback: true,
-    },
-  },
-  isAuthenticated: savedAuth?.isAuthenticated ?? true, // Default to demo logged-in for immediate exploration
+  user: savedAuth?.user || null,
+  isAuthenticated: savedAuth?.isAuthenticated ?? false,
   initialized: false,
 };
 
