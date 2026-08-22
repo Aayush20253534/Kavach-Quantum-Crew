@@ -10,10 +10,15 @@ export function OnboardingRoute() {
   }
 
   if (user?.role !== 'TOURIST') {
-    return <Navigate to="/authority/dashboard" replace />;
+    return (
+      <Navigate
+        to={user?.role === 'DISASTER_MANAGER' ? '/authority/dashboard' : '/'}
+        replace
+      />
+    );
   }
 
-  if (user?.onboardingComplete) {
+  if (user?.onboardingCompleted) {
     return <Navigate to="/tourist/dashboard" replace />;
   }
 
