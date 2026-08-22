@@ -14,6 +14,7 @@ import {
   MapPin,
 } from 'lucide-react';
 import { completeOnboarding } from '../../auth/store/authSlice';
+import apiClient from '../../../services/apiClient';
 
 /* =========================================================================
    VALIDATION SCHEMA
@@ -90,29 +91,25 @@ export function OnboardingPage() {
 
   const onSubmit = async (data) => {
     try {
-      dispatch(
-        completeOnboarding({
-          gender: data.gender,
-          age: data.age,
-          nationality: data.nationality,
-          emergencyContact: {
-            name: data.emergencyName,
-            relation: data.emergencyRelation,
-            phone: data.emergencyPhone,
-          },
-          medicalInfo: {
-            bloodGroup: data.bloodGroup,
-            notes: data.medicalNotes || 'None',
-          },
-          safetySettings: {
-            liveTracking: data.liveTracking,
-            geoAlerts: data.geoAlerts,
-          },
-        })
-      );
-      navigate('/tourist/dashboard');
-    } catch (e) {
-      console.error(e);
+      const genderMap = {
+        Male: 'MALE',
+        Female: 'FEMALE',
+        Other: 'OTHER',
+      };
+
+      const response = await apiClient.post('/tourists/me/onboarding', {
+        gender: genderMap[data.gender] ?? 'PREFER_NOT_TO_SAY',
+        age: Number(data.age),
+        nationality: data.nationality,
+        emergencyPhone: data.emergencyPhone,
+        medicalHistory: data.medicalNotes || null,
+      });
+
+      const profile = response.data?.data ?? response.data;
+      dispatch(completeOnboarding(profile));
+      navigate('/tourist/dashboard', { replace: true });
+    } catch (error) {
+      console.error('Onboarding failed:', error);
     }
   };
 

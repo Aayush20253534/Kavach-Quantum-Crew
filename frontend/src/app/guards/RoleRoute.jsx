@@ -10,14 +10,14 @@ export function RoleRoute({ allowedRoles }) {
     if (user?.role === 'TOURIST') {
       return <Navigate to="/tourist/dashboard" replace />;
     }
-    if (user?.role === 'AUTHORITY') {
+    if (user?.role === 'DISASTER_MANAGER') {
       return <Navigate to="/authority/dashboard" replace />;
     }
     return <Navigate to="/" replace />;
   }
 
   // If the user is a TOURIST and hasn't completed onboarding, enforce it
-  if (user?.role === 'TOURIST' && !user?.onboardingComplete) {
+  if (user?.role === 'TOURIST' && !user?.onboardingCompleted) {
     return <Navigate to="/onboarding" replace />;
   }
 

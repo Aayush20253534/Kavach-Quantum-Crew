@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useDispatch } from 'react-redux';
 import { useLocation, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   Mail,
@@ -9,11 +10,13 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { authService } from '../api/authService';
+import { setAuth } from '../store/authSlice';
 
 export function VerifyEmailPage() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   // Get initial email from router state, search params, or default
   const initialEmail = location.state?.email || searchParams.get('email') || '';
@@ -93,19 +96,32 @@ export function VerifyEmailPage() {
     setSuccess('');
 
     try {
-      const response = await authService.verifyEmail({ email: email.trim(), otp });
+      const response = await authService.verifyEmail({
+        email: email.trim().toLowerCase(),
+        otp,
+      });
 
-      if (response?.accessToken) {
-        localStorage.setItem('quantum_access_token', response.accessToken);
+      const authData = response?.data ?? response;
+      const user = authData?.user;
+      const accessToken = authData?.accessToken;
+
+      if (!user || !accessToken) {
+        throw new Error('Invalid verification response from server.');
       }
-      
+
+      localStorage.setItem('quantum_access_token', accessToken);
+      dispatch(setAuth({ user }));
+
       setSuccess('Email verified successfully! Initializing your tourist pass...');
-      setTimeout(() => {
-        window.location.href = '/tourist/dashboard';
-      }, 1000);
+      navigate(user.onboardingCompleted ? '/tourist/dashboard' : '/onboarding', {
+        replace: true,
+      });
     } catch (err) {
       setError(
-        err.response?.data?.message || 'Invalid or expired OTP code. Please check or request a new code.'
+        err.response?.data?.error?.message ||
+          err.response?.data?.message ||
+          err.message ||
+          'Invalid or expired OTP code. Please check or request a new code.'
       );
     } finally {
       setLoading(false);
@@ -124,13 +140,17 @@ export function VerifyEmailPage() {
     setSuccess('');
 
     try {
-      await authService.resendVerification({ email: email.trim() });
+      await authService.resendVerification({ email: email.trim().toLowerCase() });
       setSuccess(`A new 6-digit code has been dispatched to ${email}.`);
       setCountdown(60);
       setDigits(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to resend code. Please try again in a moment.');
+      setError(
+        err.response?.data?.error?.message ||
+          err.response?.data?.message ||
+          'Failed to resend code. Please try again in a moment.'
+      );
     } finally {
       setResending(false);
     }

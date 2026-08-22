@@ -91,13 +91,13 @@ export default function LoginPage() {
       }
 
       if (user.role === 'SYSTEM_ADMIN') {
-        navigate('/admin/dashboard', { replace: true });
+        navigate('/', { replace: true });
         return;
       }
 
       if (user.role === 'TOURIST') {
         navigate(
-          user.onboardingComplete ? '/tourist/dashboard' : '/onboarding',
+          user.onboardingCompleted ? '/tourist/dashboard' : '/onboarding',
           { replace: true }
         );
         return;
