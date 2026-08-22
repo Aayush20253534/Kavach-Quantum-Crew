@@ -1,4 +1,5 @@
 import { createBrowserRouter } from 'react-router-dom';
+import { GlobalLayout } from './layouts/GlobalLayout';
 import { PublicLayout } from './layouts/PublicLayout';
 import { AuthLayout } from './layouts/AuthLayout';
 import { TouristLayout } from './layouts/TouristLayout';
@@ -38,75 +39,80 @@ import { AuthorityDashboardPage } from '../features/authority/pages/AuthorityDas
 
 export const router = createBrowserRouter([
   {
-    path: '/',
-    element: <PublicLayout />,
-    children: [
-      { index: true, element: <HomePage /> },
-    ],
-  },
-  {
-    element: <AuthLayout />,
+    element: <GlobalLayout />,
     children: [
       {
-        element: <PublicRoute />,
+        path: '/',
+        element: <PublicLayout />,
         children: [
-          { path: 'login', element: <LoginPage /> },
-          { path: 'register', element: <RegisterPage /> },
+          { index: true, element: <HomePage /> },
         ],
       },
-      { path: 'verify-email', element: <VerifyEmailPage /> },
-    ],
-  },
-  {
-    element: <OnboardingRoute />,
-    children: [
-      { path: 'onboarding', element: <OnboardingPage /> },
-    ],
-  },
-  {
-    path: '/tourist',
-    element: <ProtectedRoute />,
-    children: [
       {
-        element: <RoleRoute allowedRoles={['TOURIST', 'ADMIN', 'AUTHORITY']} />,
+        element: <AuthLayout />,
         children: [
           {
-            element: <TouristLayout />,
+            element: <PublicRoute />,
             children: [
-              { path: 'dashboard', element: <TouristDashboardPage /> },
-              { path: 'trips/create', element: <CreateTripPage /> },
-              { path: 'trips/current', element: <CurrentTripPage /> },
-              { path: 'trips/history', element: <TripHistoryPage /> },
-              { path: 'groups/create', element: <CreateGroupPage /> },
-              { path: 'groups/join', element: <JoinGroupPage /> },
-              { path: 'incidents/report', element: <ReportIncidentPage /> },
-              { path: 'incidents/history', element: <IncidentHistoryPage /> },
-              { path: 'profile', element: <ProfilePage /> },
+              { path: 'login', element: <LoginPage /> },
+              { path: 'register', element: <RegisterPage /> },
+            ],
+          },
+          { path: 'verify-email', element: <VerifyEmailPage /> },
+        ],
+      },
+      {
+        element: <OnboardingRoute />,
+        children: [
+          { path: 'onboarding', element: <OnboardingPage /> },
+        ],
+      },
+      {
+        path: '/tourist',
+        element: <ProtectedRoute />,
+        children: [
+          {
+            element: <RoleRoute allowedRoles={['TOURIST', 'ADMIN', 'AUTHORITY']} />,
+            children: [
+              {
+                element: <TouristLayout />,
+                children: [
+                  { path: 'dashboard', element: <TouristDashboardPage /> },
+                  { path: 'trips/create', element: <CreateTripPage /> },
+                  { path: 'trips/current', element: <CurrentTripPage /> },
+                  { path: 'trips/history', element: <TripHistoryPage /> },
+                  { path: 'groups/create', element: <CreateGroupPage /> },
+                  { path: 'groups/join', element: <JoinGroupPage /> },
+                  { path: 'incidents/report', element: <ReportIncidentPage /> },
+                  { path: 'incidents/history', element: <IncidentHistoryPage /> },
+                  { path: 'profile', element: <ProfilePage /> },
+                ],
+              },
             ],
           },
         ],
       },
-    ],
-  },
-  {
-    path: '/authority',
-    element: <ProtectedRoute />,
-    children: [
       {
-        element: <RoleRoute allowedRoles={['AUTHORITY', 'ADMIN', 'TOURIST']} />,
+        path: '/authority',
+        element: <ProtectedRoute />,
         children: [
           {
-            element: <AuthorityLayout />,
+            element: <RoleRoute allowedRoles={['AUTHORITY', 'ADMIN', 'TOURIST']} />,
             children: [
-              { path: 'dashboard', element: <AuthorityDashboardPage /> },
+              {
+                element: <AuthorityLayout />,
+                children: [
+                  { path: 'dashboard', element: <AuthorityDashboardPage /> },
+                ],
+              },
             ],
           },
         ],
       },
-    ],
-  },
-  {
-    path: '*',
-    element: <NotFoundPage />,
-  },
+      {
+        path: '*',
+        element: <NotFoundPage />,
+      },
+    ]
+  }
 ]);
