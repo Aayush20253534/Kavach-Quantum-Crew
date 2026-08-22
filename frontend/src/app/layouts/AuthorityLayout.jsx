@@ -32,10 +32,11 @@ export function AuthorityLayout() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 antialiased font-sans">
+      
       {/* Authority Sidebar */}
       <aside className={`hidden md:flex flex-col bg-white border-r border-slate-200 fixed top-0 left-0 h-screen z-30 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-72'}`}>
         
-        {/* Collapse Toggle Button */}
+        {/* Collapse Toggle Button (Desktop Only) */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="absolute -right-3 top-8 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 shadow-sm z-40 cursor-pointer transition-transform hover:scale-110"
@@ -137,6 +138,7 @@ export function AuthorityLayout() {
               </div>
             </div>
           )}
+          
           <button
             onClick={handleLogout}
             className={`group w-full flex items-center gap-2 py-2.5 rounded-md text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#e11d48] hover:bg-[#fff1f2] transition-colors cursor-pointer border border-transparent hover:border-[#ffe4e6] ${isCollapsed ? 'justify-center px-0' : 'justify-center'}`}
@@ -149,27 +151,48 @@ export function AuthorityLayout() {
       </aside>
 
       {/* Main Content */}
-      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${isCollapsed ? 'md:pl-20' : 'md:pl-72'}`}>
-        <header className={`fixed top-0 right-0 z-20 h-16 bg-white/95 backdrop-blur-xl border-b border-slate-200 px-6 flex items-center justify-between shadow-sm transition-all duration-300 ${isCollapsed ? 'w-full md:w-[calc(100%-5rem)]' : 'w-full md:w-[calc(100%-18rem)]'}`}>
-          <div className="flex items-center gap-3">
-            <div className="bg-[#e11d48] text-white text-[10px] font-bold px-3 py-1.5 uppercase tracking-widest rounded shadow-sm flex items-center gap-2">
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 pl-0 md:pl-72 ${isCollapsed ? 'md:pl-20' : ''}`}>
+        <header className={`fixed top-0 right-0 z-20 h-16 bg-white/95 backdrop-blur-xl border-b border-slate-200 px-4 md:px-6 flex items-center justify-between shadow-sm transition-all duration-300 w-full ${isCollapsed ? 'md:w-[calc(100%-5rem)]' : 'md:w-[calc(100%-18rem)]'}`}>
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="bg-[#e11d48] text-white text-[10px] font-bold px-2 py-1.5 md:px-3 md:py-1.5 uppercase tracking-widest rounded shadow-sm flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
-              PRAYAGRAJ SECTOR 1-8 LIVE RADAR
+              <span className="hidden sm:inline">PRAYAGRAJ SECTOR 1-8 LIVE RADAR</span>
+              <span className="sm:hidden">HQ RADAR</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <Link to="/tourist/dashboard">
-              <button className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white text-[11px] font-bold uppercase tracking-wider hover:bg-slate-800 transition-colors rounded-md shadow-sm cursor-pointer">
+              <button className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-slate-900 text-white text-[10px] md:text-[11px] font-bold uppercase tracking-wider hover:bg-slate-800 transition-colors rounded-md shadow-sm cursor-pointer">
                 <span className="hidden sm:inline">Switch to Tourist App</span>
-                <ExternalLink className="w-3.5 h-3.5" />
+                <span className="sm:hidden">Tourist App</span>
+                <ExternalLink className="w-3.5 h-3.5 hidden sm:block" />
               </button>
             </Link>
           </div>
         </header>
 
-        <main className="flex-1 p-6 mt-16 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 md:p-6 pb-24 mt-16 max-w-7xl w-full mx-auto">
           <Outlet />
         </main>
+
+        {/* Mobile Bottom Navigation */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 w-full h-16 bg-white border-t border-slate-200 z-50 flex items-center justify-around px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Link 
+                key={item.name} 
+                to={item.path} 
+                className={`flex flex-col items-center justify-center gap-1 w-20 h-full ${isActive ? 'text-[#be123c]' : 'text-slate-400 hover:text-slate-900'}`}
+              >
+                <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
+                <span className={`text-[9px] font-bold text-center leading-tight px-1 ${isActive ? 'text-[#be123c]' : 'text-slate-500'}`}>{item.name}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
       </div>
     </div>
   );

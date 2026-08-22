@@ -50,6 +50,14 @@ export function TouristLayout() {
     { name: 'Trip History', path: '/tourist/trips/history', icon: History },
   ];
 
+  const mobileNavItems = [
+    { name: 'Home', path: '/tourist/dashboard', icon: LayoutDashboard },
+    { name: 'Radar', path: '/tourist/tracking', icon: Navigation },
+    { name: 'SOS', path: '/tourist/incidents/report', icon: Phone, isSos: true },
+    { name: 'Trips', path: '/tourist/trips/current', icon: Compass },
+    { name: 'Profile', path: '/tourist/profile', icon: User },
+  ];
+
   const userName = user?.name || 'Aayansh Niranjan';
   const initial = userName.charAt(0).toUpperCase();
 
@@ -61,7 +69,7 @@ export function TouristLayout() {
       ========================================================= */}
       <aside className={`hidden lg:flex flex-col bg-white border-r border-slate-200 fixed top-0 left-0 h-screen z-30 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[280px]'}`}>
 
-        {/* Collapse Toggle Button */}
+        {/* Collapse Toggle Button (Desktop Only) */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="absolute -right-3 top-8 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 shadow-sm z-40 cursor-pointer transition-transform hover:scale-110"
@@ -180,7 +188,7 @@ export function TouristLayout() {
         {/* Bottom Actions */}
         <div className={`pt-4 border-t border-slate-100 bg-white space-y-4 ${isCollapsed ? 'p-3' : 'p-6'}`}>
           <button className={`w-full bg-[#e11d48] hover:bg-[#be123c] text-white py-3.5 rounded-xl font-bold text-[13px] tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 cursor-pointer ${isCollapsed ? 'px-0' : 'px-4'}`} title={isCollapsed ? "SOS EMERGENCY" : undefined}>
-            <Phone className="w-4 h-4" />
+            <Phone className="w-4 h-4 shrink-0" />
             {!isCollapsed && "SOS EMERGENCY"}
           </button>
           <button
@@ -188,7 +196,7 @@ export function TouristLayout() {
             className={`w-full flex items-center gap-2 py-2 text-[12px] font-semibold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer ${isCollapsed ? 'justify-center px-0' : 'px-4'}`}
             title={isCollapsed ? "Sign Out" : undefined}
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-4 h-4 shrink-0" />
             {!isCollapsed && <span>Sign Out</span>}
           </button>
         </div>
@@ -197,23 +205,23 @@ export function TouristLayout() {
       {/* =========================================================
           MAIN APPLICATION AREA
       ========================================================= */}
-      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${isCollapsed ? 'lg:pl-20' : 'lg:pl-[280px]'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 pl-0 ${isCollapsed ? 'lg:pl-20' : 'lg:pl-[280px]'}`}>
 
         {/* Top Navbar */}
-        <header className={`fixed top-0 right-0 z-20 h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between transition-all duration-300 ${isCollapsed ? 'w-full lg:w-[calc(100%-5rem)]' : 'w-full lg:w-[calc(100%-280px)]'}`}>
+        <header className={`fixed top-0 right-0 z-20 h-16 bg-white border-b border-slate-200 px-4 lg:px-8 flex items-center justify-between transition-all duration-300 w-full ${isCollapsed ? 'lg:w-[calc(100%-5rem)]' : 'lg:w-[calc(100%-280px)]'}`}>
 
           {/* Left: Location */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
-              <MapPin className="w-5 h-5 text-red-600" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+              <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
             </div>
             <div>
               <div className="flex items-center gap-1 cursor-pointer group">
-                <span className="text-[13px] font-black text-slate-900 uppercase tracking-wide group-hover:text-red-600 transition-colors">
+                <span className="text-[11px] sm:text-[13px] font-black text-slate-900 uppercase tracking-wide group-hover:text-red-600 transition-colors truncate max-w-[140px] sm:max-w-none">
                   SANGAM SECTOR 4, PRAYAGRAJ
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 font-mono mt-0.5">25.4358° N, 81.8463° E</p>
+              <p className="text-[9px] sm:text-[11px] text-slate-400 font-mono mt-0.5 hidden sm:block">25.4358° N, 81.8463° E</p>
             </div>
           </div>
 
@@ -229,7 +237,7 @@ export function TouristLayout() {
           </div>
 
           {/* Right: Actions & Profile */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button className="hidden sm:flex bg-[#e11d48] hover:bg-[#be123c] text-white px-6 py-2.5 rounded-xl font-bold text-[13px] tracking-wide items-center justify-center gap-2 shadow-[0_4px_10px_0_rgba(225,29,72,0.2)] transition-all active:scale-95 cursor-pointer">
               <Phone className="w-4 h-4" />
               SOS
@@ -249,9 +257,44 @@ export function TouristLayout() {
         </header>
 
         {/* Page Main Content Area */}
-        <main className="flex-1 p-6 lg:p-8 mt-16 max-w-[1400px] w-full mx-auto">
+        <main className="flex-1 p-4 lg:p-8 mt-16 pb-24 lg:pb-8 max-w-[1400px] w-full mx-auto">
           <Outlet />
         </main>
+
+        {/* =========================================================
+            MOBILE BOTTOM NAVIGATION BAR
+        ========================================================= */}
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 w-full h-16 bg-white border-t border-slate-200 z-50 flex items-center justify-around px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe">
+          {mobileNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = item.path === '/tourist/dashboard'
+              ? location.pathname === item.path
+              : location.pathname.startsWith(item.path);
+              
+            if (item.isSos) {
+              return (
+                <Link key={item.name} to={item.path} className="flex flex-col items-center justify-center gap-1 relative -top-4">
+                  <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-white shadow-lg border-4 border-[#f8f9fa] shadow-red-500/30">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-900 mt-1">{item.name}</span>
+                </Link>
+              );
+            }
+
+            return (
+              <Link 
+                key={item.name} 
+                to={item.path} 
+                className={`flex flex-col items-center justify-center gap-1 w-14 h-full ${isActive ? 'text-red-600' : 'text-slate-400 hover:text-slate-900'}`}
+              >
+                <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
+                <span className={`text-[9px] font-bold ${isActive ? 'text-red-600' : 'text-slate-500'}`}>{item.name}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
       </div>
 
     </div>
