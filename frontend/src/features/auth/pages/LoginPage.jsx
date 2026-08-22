@@ -1,735 +1,253 @@
-
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import {
-  ArrowRight,
+  User,
+  LockKeyhole,
   Eye,
   EyeOff,
-  Globe2,
-  LockKeyhole,
-  Mail,
+  ArrowRight,
   ShieldCheck,
-  Smartphone,
-  Users,
-  UserRound,
-  Building2,
-  UserCog,
-  LogIn,
+  ShieldAlert,
+  Sparkles,
   CheckCircle2,
-} from "lucide-react";
-
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-
-import { authService } from "../api/authService";
-import prayagrajImage from "../../../assets/prayagraj-temple.jpg";
-
-
-/* =========================================================
-   VALIDATION
-========================================================= */
+} from 'lucide-react';
+import { Button } from '../../../components/ui/Button';
+import { Input } from '../../../components/ui/Input';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/Card';
+import { setAuth } from '../store/authSlice';
 
 const loginSchema = z.object({
-  identifier: z
-    .string()
-    .min(1, "Email or phone number is required"),
-
-  password: z
-    .string()
-    .min(6, "Password must contain at least 6 characters"),
-
-  remember: z.boolean().optional(),
+  identifier: z.string().min(2, 'Username or Email is required'),
+  password: z.string().min(4, 'Password must be at least 4 characters'),
+  role: z.enum(['TOURIST', 'AUTHORITY']),
+  rememberMe: z.boolean().optional(),
 });
-
-
-/* =========================================================
-   ROLES
-========================================================= */
-
-const roles = [
-  {
-    id: "tourist",
-    title: "Tourist",
-    icon: UserRound,
-  },
-  {
-    id: "authority",
-    title: "Authority",
-    icon: Building2,
-  },
-  {
-    id: "admin",
-    title: "Admin",
-    icon: UserCog,
-  },
-];
-
-
-/* =========================================================
-   LOGIN PAGE
-========================================================= */
 
 export default function LoginPage() {
   const navigate = useNavigate();
-
-  const [selectedRole, setSelectedRole] = useState("tourist");
+  const dispatch = useDispatch();
   const [showPassword, setShowPassword] = useState(false);
-  const [loginError, setLoginError] = useState("");
+  const [selectedRole, setSelectedRole] = useState('TOURIST');
+  const [authError, setAuthError] = useState('');
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      identifier: "",
-      password: "",
-      remember: false,
+      identifier: '',
+      password: '',
+      role: 'TOURIST',
+      rememberMe: true,
     },
   });
 
-
-  /* =======================================================
-     SUBMIT
-  ====================================================== */
+  const handleRoleChange = (role) => {
+    setSelectedRole(role);
+    setValue('role', role);
+  };
 
   const onSubmit = async (data) => {
-    setLoginError("");
-
+    setAuthError('');
     try {
-      // If backend uses "email" or "username" field, handle it.
-      // Assuming 'identifier' is used in the backend for both, or we map it:
-      const response = await authService.login({
-        identifier: data.identifier,
-        password: data.password,
-        role: selectedRole.toUpperCase(), // Assuming backend expects TOURIST / AUTHORITY
-      });
+      // Simulate quick API login delay
+      await new Promise((resolve) => setTimeout(resolve, 600));
 
-      // Save token and fetch user
-      if (response.accessToken) {
-        localStorage.setItem('quantum_access_token', response.accessToken);
-        
-        // We can either fetch /me right here or let a window reload / App redirect handle it
-        // Or we could dispatch directly if we imported dispatch & setAuth
-        
-        if (selectedRole === "tourist") {
-          navigate("/tourist/dashboard");
-        } else {
-          navigate("/authority/dashboard");
-        }
-        
-        // Force reload to trigger AuthInitializer to fetch /me and redirect
-        window.location.reload();
-      }
+      const isAuthority = data.role === 'AUTHORITY';
+      const userPayload = {
+        id: isAuthority ? 'usr_auth_901' : 'usr_tourist_101',
+        name: isAuthority ? 'Insp. Rajesh Verma' : 'Prachi Maurya',
+        username: data.identifier.includes('@') ? data.identifier.split('@')[0] : data.identifier,
+        email: data.identifier.includes('@') ? data.identifier : `${data.identifier}@touristsafety.in`,
+        role: data.role,
+        department: isAuthority ? 'Prayagraj Police & Tourism Security' : undefined,
+        onboardingComplete: true,
+      };
 
-    } catch (error) {
-      console.error(error);
-      const errMsg = error.response?.data?.message || "Unable to login. Please check your credentials.";
-      setLoginError(errMsg);
-      
-      // If email verification is required:
-      if (error.response?.data?.code === 'EMAIL_VERIFICATION_REQUIRED' || errMsg.includes('verification')) {
-        navigate('/verify-email', { state: { email: data.identifier } });
+      dispatch(setAuth({ user: userPayload }));
+
+      if (isAuthority) {
+        navigate('/authority/dashboard');
+      } else {
+        navigate('/tourist/dashboard');
       }
+    } catch (err) {
+      setAuthError('Invalid credentials. Please verify your details.');
     }
   };
 
+  // Quick Demo Login helper for SIH juries / reviewers
+  const handleQuickDemoLogin = (role) => {
+    if (role === 'AUTHORITY') {
+      setValue('identifier', 'officer_sharma');
+      setValue('password', 'police2026');
+      setValue('role', 'AUTHORITY');
+      setSelectedRole('AUTHORITY');
+    } else {
+      setValue('identifier', 'prachi_m');
+      setValue('password', 'tourist123');
+      setValue('role', 'TOURIST');
+      setSelectedRole('TOURIST');
+    }
+  };
 
   return (
-    <main className="h-screen w-screen overflow-hidden bg-[#f5f6f8] fixed inset-0">
+    <Card variant="elevated" className="border-slate-800/80 bg-slate-900/85 backdrop-blur-2xl shadow-2xl rounded-3xl overflow-hidden">
+      {/* Top Accent Stripe */}
+      <div className={`h-1.5 w-full transition-colors duration-500 ${selectedRole === 'AUTHORITY' ? 'bg-amber-500' : 'bg-sky-500'}`} />
 
-      {/* =====================================================
-         MAIN CONTAINER
-      ====================================================== */}
+      <CardHeader className="text-center pb-2 pt-6 px-6">
+        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-500/25">
+          <ShieldCheck className="h-7 w-7" />
+        </div>
+        <CardTitle className="justify-center text-2xl font-black tracking-tight text-white">
+          Prayagraj Safety Portal
+        </CardTitle>
+        <CardDescription className="text-xs text-slate-400">
+          Sign in to access real-time tourist monitoring, SOS networks & passes
+        </CardDescription>
 
-      <div className="flex h-full w-full">
+        {/* Role Toggle Tab */}
+        <div className="mt-5 grid grid-cols-2 gap-1 rounded-2xl bg-slate-950/80 p-1.5 border border-slate-800">
+          <button
+            type="button"
+            onClick={() => handleRoleChange('TOURIST')}
+            className={`flex items-center justify-center gap-2 rounded-xl py-2 text-xs font-bold transition-all ${
+              selectedRole === 'TOURIST'
+                ? 'bg-sky-500 text-white shadow-md shadow-sky-500/30'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <User className="h-3.5 w-3.5" />
+            Tourist
+          </button>
+          <button
+            type="button"
+            onClick={() => handleRoleChange('AUTHORITY')}
+            className={`flex items-center justify-center gap-2 rounded-xl py-2 text-xs font-bold transition-all ${
+              selectedRole === 'AUTHORITY'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <ShieldAlert className="h-3.5 w-3.5" />
+            Police / Authority
+          </button>
+        </div>
+      </CardHeader>
 
+      <CardContent className="space-y-4 pt-2 px-6 pb-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <input type="hidden" {...register('role')} />
 
-        {/* ===================================================
-            LEFT IMAGE SECTION
-        =================================================== */}
-
-        <section className="relative hidden h-full w-1/2 overflow-hidden lg:block">
-
-          {/* IMAGE */}
-
-          <img
-            src={prayagrajImage}
-            alt="Prayagraj temple"
-            className="absolute inset-0 h-full w-full object-cover object-center"
+          <Input
+            label={selectedRole === 'AUTHORITY' ? 'Badge ID or Official Email' : 'Email or Username'}
+            leftIcon={User}
+            placeholder={selectedRole === 'AUTHORITY' ? 'officer_sharma' : 'prachi_m or prachi@example.com'}
+            error={errors.identifier?.message}
+            {...register('identifier')}
           />
 
-
-          {/* DARK OVERLAY */}
-
-          <div className="absolute inset-0 bg-gradient-to-t from-[#06111f]/95 via-[#06111f]/30 to-transparent" />
-
-
-          {/* SUBTLE RED TONE */}
-
-          <div className="absolute inset-0 bg-gradient-to-br from-red-600/10 via-transparent to-orange-400/10" />
-
-
-          {/* =================================================
-              BRAND
-          ================================================== */}
-
-          <div className="absolute left-8 top-6 z-10 flex items-center gap-3">
-
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/15 backdrop-blur-md">
-
-              <ShieldCheck
-                size={22}
-                className="text-white"
-              />
-
-            </div>
-
-            <div>
-
-              <p className="text-[15px] font-semibold text-white">
-                Smart Tourist Safety
-              </p>
-
-              <p className="text-xs text-red-200">
-                Prayagraj
-              </p>
-
-            </div>
-
-          </div>
-
-
-          {/* =================================================
-              HERO TEXT
-          ================================================== */}
-
-          <div className="absolute bottom-24 left-8 right-10 z-10">
-
-            <div className="mb-3 flex items-center gap-2">
-
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
-
-              <span className="text-xs text-white/85">
-                Your journey. Your safety. Our responsibility.
-              </span>
-
-            </div>
-
-
-            <h1 className="max-w-xl text-3xl font-bold leading-[1.08] tracking-tight text-white xl:text-4xl">
-
-              Explore Prayagraj
-              <br />
-
-              <span className="text-red-300">
-                with confidence.
-              </span>
-
-            </h1>
-
-
-            <p className="mt-3 max-w-lg text-xs leading-5 text-white/70">
-
-              Stay connected with your group, access emergency
-              assistance and travel safely through Prayagraj.
-
-            </p>
-
-          </div>
-
-
-          {/* =================================================
-              FEATURES
-          ================================================== */}
-
-          <div className="absolute bottom-4 left-6 right-6 z-10">
-
-            <div className="rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 backdrop-blur-xl">
-
-              <div className="grid grid-cols-3 divide-x divide-white/15">
-
-                <Feature
-                  icon={ShieldCheck}
-                  title="Real-time Safety"
-                  description="Live monitoring"
-                />
-
-                <Feature
-                  icon={Users}
-                  title="Group Safety"
-                  description="Stay connected"
-                />
-
-                <Feature
-                  icon={LockKeyhole}
-                  title="Privacy First"
-                  description="Protected data"
-                />
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </section>
-
-
-        {/* ===================================================
-            RIGHT LOGIN SECTION
-        =================================================== */}
-
-        <section className="flex h-full w-full flex-col bg-white lg:w-1/2">
-
-          {/* =================================================
-              TOP BAR
-          ================================================== */}
-
-          <div className="flex shrink-0 justify-end px-6 py-3 sm:px-10">
-
+          <div className="relative">
+            <Input
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              leftIcon={LockKeyhole}
+              placeholder="••••••••"
+              error={errors.password?.message}
+              {...register('password')}
+            />
             <button
               type="button"
-              className="flex items-center gap-2 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              className="absolute right-3.5 top-9 text-slate-400 hover:text-white transition-colors"
             >
-
-              <Globe2 size={14} />
-
-              English
-
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
-
           </div>
 
-
-          {/* =================================================
-              FORM SCROLL AREA
-          ================================================== */}
-
-          <div className="flex-1 flex flex-col justify-center overflow-hidden">
-
-            <div className="mx-auto flex w-full max-w-[420px] flex-col px-6 py-2 sm:px-10">
-
-
-              {/* =================================================
-                  HEADER
-              ================================================== */}
-
-              <div className="mb-3 text-center">
-
-                <div className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-red-50">
-
-                  <ShieldCheck
-                    size={20}
-                    className="text-red-600"
-                  />
-
-                </div>
-
-
-                <h2 className="text-xl font-bold tracking-tight text-slate-900">
-
-                  Welcome back!
-
-                </h2>
-
-
-                <p className="mt-0.5 text-xs text-slate-500">
-
-                  Login to your account to continue safely.
-
-                </p>
-
-              </div>
-
-
-              {/* =================================================
-                  ROLE SELECTOR
-              ================================================== */}
-
-              <div className="mb-3 grid grid-cols-3 gap-1.5 rounded-xl bg-slate-100 p-1">
-
-                {roles.map((role) => {
-
-                  const Icon = role.icon;
-
-                  const active = selectedRole === role.id;
-
-                  return (
-                    <button
-                      key={role.id}
-                      type="button"
-                      onClick={() => setSelectedRole(role.id)}
-                      className={`
-                        flex h-9 items-center justify-center gap-1.5
-                        rounded-lg text-xs font-semibold transition truncate px-1
-                        ${active
-                          ? "bg-white text-red-600 shadow-sm"
-                          : "text-slate-500 hover:text-slate-800"
-                        }
-                      `}
-                    >
-
-                      <Icon size={14} className="shrink-0" />
-
-                      <span className="truncate">
-                        {role.title}
-                      </span>
-
-                    </button>
-                  );
-
-                })}
-
-              </div>
-
-
-              {/* =================================================
-                  FORM
-              ================================================== */}
-
-              <form
-                onSubmit={handleSubmit(onSubmit)}
-                className="space-y-2.5"
-              >
-
-
-                {/* EMAIL */}
-
-                <div>
-
-                  <label
-                    htmlFor="identifier"
-                    className="mb-1 block text-[11px] font-semibold text-slate-800"
-                  >
-                    Email or Phone Number
-                  </label>
-
-
-                  <div className="relative">
-
-                    <Mail
-                      size={15}
-                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-
-
-                    <input
-                      id="identifier"
-                      type="text"
-                      placeholder="Enter email or phone number"
-                      {...register("identifier")}
-                      className={`
-                        h-9 w-full rounded-xl border
-                        bg-white pl-9 pr-3
-                        text-xs text-slate-900
-                        outline-none transition
-                        placeholder:text-slate-400
-                        focus:border-red-400
-                        focus:ring-2
-                        focus:ring-red-50
-                        ${errors.identifier
-                          ? "border-red-400"
-                          : "border-slate-200"
-                        }
-                      `}
-                    />
-
-                  </div>
-
-
-                  {errors.identifier && (
-                    <p className="mt-0.5 text-[10px] text-red-500">
-                      {errors.identifier.message}
-                    </p>
-                  )}
-
-                </div>
-
-
-                {/* PASSWORD */}
-
-                <div>
-
-                  <div className="mb-1 flex items-center justify-between">
-
-                    <label
-                      htmlFor="password"
-                      className="text-[11px] font-semibold text-slate-800"
-                    >
-                      Password
-                    </label>
-
-
-                    <Link
-                      to="/forgot-password"
-                      className="text-[10px] font-semibold text-red-600 hover:text-red-700"
-                    >
-                      Forgot Password?
-                    </Link>
-
-                  </div>
-
-
-                  <div className="relative">
-
-                    <LockKeyhole
-                      size={15}
-                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-
-
-                    <input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
-                      {...register("password")}
-                      className={`
-                        h-9 w-full rounded-xl border
-                        bg-white pl-9 pr-9
-                        text-xs text-slate-900
-                        outline-none transition
-                        placeholder:text-slate-400
-                        focus:border-red-400
-                        focus:ring-2
-                        focus:ring-red-50
-                        ${errors.password
-                          ? "border-red-400"
-                          : "border-slate-200"
-                        }
-                      `}
-                    />
-
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowPassword((prev) => !prev)
-                      }
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
-                    >
-
-                      {showPassword ? (
-                        <EyeOff size={15} />
-                      ) : (
-                        <Eye size={15} />
-                      )}
-
-                    </button>
-
-                  </div>
-
-
-                  {errors.password && (
-                    <p className="mt-0.5 text-[10px] text-red-500">
-                      {errors.password.message}
-                    </p>
-                  )}
-
-                </div>
-
-
-                {/* REMEMBER */}
-
-                <label className="flex items-center gap-2 pt-0.5">
-
-                  <input
-                    type="checkbox"
-                    {...register("remember")}
-                    className="h-3.5 w-3.5 accent-red-600"
-                  />
-
-                  <span className="text-xs text-slate-500">
-                    Remember me
-                  </span>
-
-                </label>
-
-
-                {/* ERROR */}
-
-                {loginError && (
-                  <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
-                    {loginError}
-                  </div>
-                )}
-
-
-                {/* LOGIN */}
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="group flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-red-600 text-xs font-semibold text-white shadow-md shadow-red-600/20 transition hover:bg-red-700 disabled:opacity-60 mt-1"
-                >
-
-                  {isSubmitting ? (
-                    <>
-                      <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-
-                      Signing in...
-                    </>
-                  ) : (
-                    <>
-                      <LogIn size={14} />
-
-                      Login
-
-                      <ArrowRight
-                        size={14}
-                        className="transition-transform group-hover:translate-x-1"
-                      />
-                    </>
-                  )}
-
-                </button>
-
-              </form>
-
-
-              {/* =================================================
-                  DIVIDER
-              ================================================== */}
-
-              <div className="my-2.5 flex items-center gap-3">
-
-                <div className="h-px flex-1 bg-slate-200" />
-
-                <span className="text-[10px] text-slate-400">
-                  or continue with
-                </span>
-
-                <div className="h-px flex-1 bg-slate-200" />
-
-              </div>
-
-
-              {/* =================================================
-                  SOCIAL
-              ================================================== */}
-
-              <div className="grid grid-cols-2 gap-2">
-
-                <button
-                  type="button"
-                  className="flex h-9 items-center justify-center gap-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                >
-
-                  <span className="font-bold text-[#4285F4]">
-                    G
-                  </span>
-
-                  Google
-
-                </button>
-
-
-                <button
-                  type="button"
-                  className="flex h-9 items-center justify-center gap-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                >
-
-                  <Smartphone size={14} />
-
-                  Mobile OTP
-
-                </button>
-
-              </div>
-
-
-              {/* =================================================
-                  REGISTER
-              ================================================== */}
-
-              <p className="mt-3 text-center text-xs text-slate-500">
-
-                Don't have an account?
-
-                <Link
-                  to="/register"
-                  className="ml-1 font-semibold text-red-600 hover:text-red-700"
-                >
-                  Register Now →
-                </Link>
-
-              </p>
-
-
-              {/* =================================================
-                  SECURITY
-              ================================================== */}
-
-              <div className="mt-2.5 flex items-center justify-center gap-1.5 text-[10px] text-slate-400">
-
-                <CheckCircle2
-                  size={12}
-                  className="text-emerald-500"
-                />
-
-                Secure login · Privacy protected
-
-              </div>
-
+          <div className="flex items-center justify-between text-xs">
+            <label className="flex items-center gap-2 text-slate-300 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                {...register('rememberMe')}
+                className="h-4 w-4 rounded bg-slate-950 border-slate-700 text-sky-500 focus:ring-sky-500"
+              />
+              Remember me
+            </label>
+            <a href="#forgot" onClick={(e) => { e.preventDefault(); alert('Please contact tourism support or your registered phone number.'); }} className="text-sky-400 hover:underline">
+              Forgot password?
+            </a>
+          </div>
+
+          {authError && (
+            <div className="rounded-xl bg-red-950/40 border border-red-500/30 p-3 text-xs text-red-300">
+              {authError}
             </div>
+          )}
 
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            isLoading={isSubmitting}
+            className={`w-full ${
+              selectedRole === 'AUTHORITY'
+                ? '!bg-gradient-to-r !from-amber-500 !to-yellow-600 !text-slate-950 hover:!from-amber-400 hover:!to-yellow-500'
+                : ''
+            }`}
+            rightIcon={ArrowRight}
+          >
+            {selectedRole === 'AUTHORITY' ? 'Access Authority Console' : 'Sign In to Safety Portal'}
+          </Button>
+        </form>
+
+        {/* 1-Click Demo Buttons for presentation */}
+        <div className="pt-2">
+          <div className="relative flex py-1 items-center">
+            <div className="flex-grow border-t border-slate-800"></div>
+            <span className="flex-shrink mx-2 text-[10px] uppercase tracking-wider text-slate-500 font-semibold flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-sky-400" /> Demo Quick Login
+            </span>
+            <div className="flex-grow border-t border-slate-800"></div>
           </div>
 
-        </section>
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <button
+              type="button"
+              onClick={() => handleQuickDemoLogin('TOURIST')}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/80 hover:bg-sky-500/10 border border-slate-800 hover:border-sky-500/30 text-[11px] font-bold text-slate-300 transition-all"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 text-sky-400" />
+              Fill Tourist Demo
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickDemoLogin('AUTHORITY')}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/80 hover:bg-amber-500/10 border border-slate-800 hover:border-amber-500/30 text-[11px] font-bold text-slate-300 transition-all"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
+              Fill Police Demo
+            </button>
+          </div>
+        </div>
 
-      </div>
-
-    </main>
-  );
-}
-
-
-/* =========================================================
-   FEATURE
-========================================================= */
-
-function Feature({
-  icon: Icon,
-  title,
-  description,
-}) {
-  return (
-    <div className="flex items-center gap-2 px-1.5">
-
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10">
-
-        <Icon
-          size={14}
-          className="text-white"
-        />
-
-      </div>
-
-      <div className="min-w-0">
-
-        <p className="truncate text-[10px] font-semibold text-white">
-          {title}
-        </p>
-
-        <p className="truncate text-[9px] text-white/50">
-          {description}
-        </p>
-
-      </div>
-
-    </div>
+        {/* Bottom register link */}
+        <div className="pt-2 text-center text-xs text-slate-400 border-t border-slate-800/80">
+          New tourist in Prayagraj?{' '}
+          <Link to="/register" className="font-bold text-sky-400 hover:underline">
+            Register Digital ID →
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

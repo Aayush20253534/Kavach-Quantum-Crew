@@ -1,48 +1,122 @@
 import React from 'react';
-import { useTripHistory } from '../api/tripQueries';
+import { Link } from 'react-router-dom';
+import { 
+  Compass, 
+  MapPin, 
+  Calendar, 
+  ShieldCheck, 
+  CheckCircle2, 
+  Download, 
+  ArrowRight,
+  Clock,
+  Users
+} from 'lucide-react';
+import { Button } from '../../../components/ui/Button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/Card';
+import { Badge } from '../../../components/ui/Badge';
 
 export function TripHistoryPage() {
-  const { data, isLoading, error } = useTripHistory();
-
-  if (isLoading) return <div className="p-8 text-center">Loading history...</div>;
-  if (error) return <div className="p-8 text-center text-red-500">Failed to load history</div>;
-
-  const trips = data?.items || data || [];
+  const pastTrips = [
+    {
+      id: 'TRP-PRY-0982',
+      destination: 'Sangam Snan & Maha Kumbh Camp Visit',
+      date: '18 Aug 2026',
+      duration: '6 Hours 40 Mins',
+      type: 'Group Trip (4 Members)',
+      safetyScore: '100 / 100',
+      status: 'Completed (Incident Free)',
+      verifiedOnChain: true,
+    },
+    {
+      id: 'TRP-PRY-0841',
+      destination: 'Anand Bhavan & Swaraj Bhavan Heritage Tour',
+      date: '12 Aug 2026',
+      duration: '4 Hours 15 Mins',
+      type: 'Solo Trip',
+      safetyScore: '98 / 100',
+      status: 'Completed (Incident Free)',
+      verifiedOnChain: true,
+    },
+    {
+      id: 'TRP-PRY-0720',
+      destination: 'Alopi Devi Mandir & Hanuman Temple Circuit',
+      date: '05 Aug 2026',
+      duration: '3 Hours 50 Mins',
+      type: 'Family Group (3 Members)',
+      safetyScore: '100 / 100',
+      status: 'Completed (Incident Free)',
+      verifiedOnChain: true,
+    },
+  ];
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Trip History</h1>
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        {trips.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No completed or cancelled trips found.</p>
-        ) : (
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="p-4 font-medium text-gray-500">Name</th>
-                <th className="p-4 font-medium text-gray-500">Destination</th>
-                <th className="p-4 font-medium text-gray-500">Date</th>
-                <th className="p-4 font-medium text-gray-500">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {trips.map(trip => (
-                <tr key={trip.id} className="hover:bg-gray-50">
-                  <td className="p-4 font-medium">{trip.name}</td>
-                  <td className="p-4 text-gray-600">{trip.destination}</td>
-                  <td className="p-4 text-gray-600">{new Date(trip.startDate).toLocaleDateString()}</td>
-                  <td className="p-4">
-                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                      trip.status === 'COMPLETED' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
+    <div className="space-y-6 text-left max-w-5xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <Compass className="w-5 h-5 text-sky-400" />
+            <h1 className="text-2xl font-black text-white tracking-tight">Your Travel History</h1>
+          </div>
+          <p className="text-xs text-slate-400 mt-1">
+            Archived journeys and blockchain safety certificates across Prayagraj.
+          </p>
+        </div>
+
+        <Link to="/tourist/trips/create">
+          <Button variant="primary" size="md" rightIcon={ArrowRight}>
+            Plan New Trip
+          </Button>
+        </Link>
+      </div>
+
+      <div className="space-y-4">
+        {pastTrips.map((trip) => (
+          <Card key={trip.id} variant="elevated" className="hover:border-sky-500/30 transition">
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="safe">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                       {trip.status}
+                    </Badge>
+                    <span className="font-mono text-xs text-slate-400 font-bold">{trip.id}</span>
+                  </div>
+                  <h3 className="text-base font-bold text-white">{trip.destination}</h3>
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400">
+                    <span className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-sky-400" />
+                      {trip.date}
                     </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      {trip.duration}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 text-indigo-400" />
+                      {trip.type}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="text-right hidden sm:block">
+                    <p className="text-xs text-slate-400">Safety Index</p>
+                    <p className="text-base font-black text-emerald-400">{trip.safetyScore}</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => alert(`Downloaded safety passport for ${trip.id}`)}
+                    leftIcon={Download}
+                  >
+                    Safety Certificate
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );

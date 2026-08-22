@@ -1,110 +1,174 @@
-import React from 'react';
-import { useCurrentTrip, useStartTrip, useCompleteTrip, useCancelTrip } from '../api/tripQueries';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { 
+  Compass, 
+  MapPin, 
+  Navigation, 
+  Users, 
+  Clock, 
+  ShieldCheck, 
+  AlertTriangle, 
+  PhoneCall, 
+  QrCode, 
+  BatteryMedium, 
+  Radio, 
+  CheckCircle2, 
+  ChevronRight 
+} from 'lucide-react';
+import { Button } from '../../../components/ui/Button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/Card';
+import { Badge } from '../../../components/ui/Badge';
+import { SOSButton } from '../../../components/ui/SOSButton';
 
 export function CurrentTripPage() {
-  const { data: trip, isLoading, error } = useCurrentTrip();
-  const startTripMutation = useStartTrip();
-  const completeTripMutation = useCompleteTrip();
-  const cancelTripMutation = useCancelTrip();
+  const [activeTab, setActiveTab] = useState('map'); // 'map' | 'itinerary' | 'group'
 
-  if (isLoading) {
-    return <div className="p-8 text-center text-gray-500">Loading current trip...</div>;
-  }
+  const milestones = [
+    { title: 'Triveni Sangam Holy Dip', time: '09:45 AM', status: 'Completed', location: 'Sangam Ghat 4' },
+    { title: 'Akshayavat & Patalpuri Temple', time: '11:30 AM', status: 'In Progress', location: 'Allahabad Fort' },
+    { title: 'Bade Hanuman Ji Darshan', time: '01:00 PM', status: 'Upcoming', location: 'Bandhwa Hanuman Mandir' },
+    { title: 'Anand Bhavan Museum Tour', time: '03:30 PM', status: 'Upcoming', location: 'Civil Lines' },
+  ];
 
-  // If there's no trip (e.g., 404 from backend when no trip is active/planned)
-  if (error && error.response?.status === 404) {
-    return (
-      <div>
-        <h1 className="text-2xl font-bold mb-4">Active Trip</h1>
-        <div className="bg-white p-12 rounded-lg shadow-sm border border-gray-200 text-center">
-          <h2 className="text-xl font-semibold mb-2">No Active or Planned Trips</h2>
-          <p className="text-gray-600 mb-6">You don't have any upcoming trips planned yet.</p>
-          <Link to="/tourist/trips/create" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
-            Plan a New Trip
+  return (
+    <div className="space-y-6 text-left">
+      {/* Top Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl bg-gradient-to-r from-sky-950/70 via-[#0d1526] to-[#111c30] border border-sky-500/30">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Badge variant="safe">LIVE TRIP IN PROGRESS</Badge>
+            <span className="text-xs text-slate-400 font-mono">Trip ID: #TRP-PRY-1094</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-white">
+            Prayagraj Sangam & Heritage Circuit
+          </h1>
+          <p className="text-xs text-slate-300">
+            Started Today at 09:30 AM · Current Zone: <strong>Allahabad Fort Sector (Safe)</strong>
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <SOSButton size="md" />
+          <Link to="/tourist/incidents/report">
+            <Button variant="secondary" size="md" leftIcon={AlertTriangle}>
+              Report Issue
+            </Button>
           </Link>
         </div>
       </div>
-    );
-  }
 
-  if (error) {
-    return <div className="p-8 text-center text-red-500">Failed to load trip: {error.message}</div>;
-  }
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left 8 Cols: Map & Itinerary */}
+        <div className="lg:col-span-8 space-y-6">
+          {/* Visual Map Radar */}
+          <Card variant="elevated">
+            <CardHeader className="flex flex-row items-center justify-between py-4">
+              <div className="flex items-center gap-2">
+                <Navigation className="w-5 h-5 text-sky-400" />
+                <CardTitle className="text-base">Active Geofence Radar View</CardTitle>
+              </div>
+              <Badge variant="safe">ACCURACY: HIGH</Badge>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="h-80 w-full bg-[#070d18] relative flex items-center justify-center border-y border-slate-800 overflow-hidden">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
+                  <div className="w-[300px] h-[300px] rounded-full border border-sky-500/20" />
+                  <div className="w-[180px] h-[180px] rounded-full border border-sky-500/30" />
+                </div>
 
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Your Trip: {trip?.name}</h1>
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 space-y-6">
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <span className="block text-sm text-gray-500">Destination</span>
-            <span className="font-semibold text-lg">{trip?.destination}</span>
-          </div>
-          <div>
-            <span className="block text-sm text-gray-500">Status</span>
-            <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold mt-1">
-              {trip?.status}
-            </span>
-          </div>
-          <div>
-            <span className="block text-sm text-gray-500">Start Date</span>
-            <span className="font-medium">{new Date(trip?.startDate).toLocaleDateString()}</span>
-          </div>
-          <div>
-            <span className="block text-sm text-gray-500">Type</span>
-            <span className="font-medium">{trip?.type}</span>
-          </div>
+                <div className="w-64 h-52 rounded-3xl border-2 border-dashed border-emerald-400/40 bg-emerald-500/5 flex items-center justify-center">
+                  <span className="text-[10px] font-bold text-emerald-400/80 uppercase">
+                    Fort Sector Safe Perimeter
+                  </span>
+                </div>
+
+                {/* You Pin */}
+                <div className="absolute flex flex-col items-center">
+                  <div className="w-6 h-6 rounded-full bg-sky-500 border-2 border-white shadow-xl flex items-center justify-center text-white text-[9px] font-black animate-pulse">
+                    YOU
+                  </div>
+                  <span className="mt-1 px-2 py-0.5 rounded bg-black/80 text-[10px] text-white border border-sky-500/40 font-bold">
+                    Akshayavat Tree Point
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-[#09101d] flex flex-wrap items-center justify-between gap-3 text-xs">
+                <span className="text-slate-400">Nearest Police Assistance: <strong>80m (Fort Gate Booth)</strong></span>
+                <span className="text-emerald-400 font-semibold">100% Group Members Inside Boundary</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Itinerary Milestones */}
+          <Card variant="elevated">
+            <CardHeader className="py-4">
+              <CardTitle className="text-base">Trip Milestones & Checkpoints</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              {milestones.map((m, i) => (
+                <div key={i} className="flex items-start gap-3 p-3.5 rounded-xl bg-[#080d18] border border-slate-800/80">
+                  <div className="p-2 rounded-lg bg-sky-500/10 text-sky-400 shrink-0">
+                    <MapPin className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-white">{m.title}</h4>
+                      <Badge
+                        variant={m.status === 'Completed' ? 'safe' : m.status === 'In Progress' ? 'primary' : 'neutral'}
+                        className="text-[9px] py-0"
+                      >
+                        {m.status}
+                      </Badge>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">{m.location} · Expected {m.time}</p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="pt-6 border-t flex gap-4">
-          {trip?.status === 'PLANNED' && (
-            <button 
-              onClick={() => startTripMutation.mutate(trip.id)}
-              disabled={startTripMutation.isPending}
-              className="bg-green-600 text-white px-6 py-2 rounded font-medium hover:bg-green-700 disabled:opacity-50"
-            >
-              Start Trip Now
-            </button>
-          )}
+        {/* Right 4 Cols: Group & Actions */}
+        <div className="lg:col-span-4 space-y-6">
+          <Card variant="elevated">
+            <CardHeader className="py-4 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm">Group Sync (4 Members)</CardTitle>
+              <Link to="/tourist/groups/create">
+                <Button variant="ghost" size="sm" className="text-xs text-sky-400 p-0 hover:bg-transparent">
+                  + Invite
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent className="p-4 space-y-3">
+              {[
+                { name: 'Prachi Maurya (Leader)', battery: '88%', dist: '0m' },
+                { name: 'Aayansh Sharma', battery: '74%', dist: '12m' },
+                { name: 'Kavita Verma', battery: '92%', dist: '45m' },
+                { name: 'Rohan Gupta', battery: '40%', dist: '120m' },
+              ].map((mem, idx) => (
+                <div key={idx} className="p-3 rounded-xl bg-[#080d18] border border-slate-800 flex justify-between items-center text-xs">
+                  <div>
+                    <p className="font-bold text-slate-100">{mem.name}</p>
+                    <p className="text-[10px] text-slate-400">Distance: {mem.dist}</p>
+                  </div>
+                  <Badge variant="safe" className="text-[9px] py-0">Online</Badge>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
 
-          {trip?.status === 'ACTIVE' && (
-            <button 
-              onClick={() => completeTripMutation.mutate(trip.id)}
-              disabled={completeTripMutation.isPending}
-              className="bg-blue-600 text-white px-6 py-2 rounded font-medium hover:bg-blue-700 disabled:opacity-50"
-            >
-              Mark as Completed
-            </button>
-          )}
-
-          {(trip?.status === 'PLANNED' || trip?.status === 'ACTIVE') && (
-            <button 
-              onClick={() => {
-                if(window.confirm('Are you sure you want to cancel this trip?')) {
-                  cancelTripMutation.mutate(trip.id);
-                }
-              }}
-              disabled={cancelTripMutation.isPending}
-              className="bg-red-50 text-red-600 border border-red-200 px-6 py-2 rounded font-medium hover:bg-red-100 disabled:opacity-50"
-            >
-              Cancel Trip
-            </button>
-          )}
+          <Card variant="default" className="p-5 text-center space-y-3">
+            <p className="text-xs text-slate-300">Need to conclude your pilgrimage trip?</p>
+            <Link to="/tourist/trips/history" className="block">
+              <Button variant="secondary" size="md" className="w-full text-xs">
+                Finish Trip & Log Safety Summary
+              </Button>
+            </Link>
+          </Card>
         </div>
-
       </div>
-
-      {trip?.status === 'ACTIVE' && (
-        <div className="mt-8">
-          <h2 className="text-xl font-bold mb-4">Live Tracking</h2>
-          <p className="text-gray-600 mb-4 text-sm">Return to the dashboard for a full-screen view. This map shows your active tracking status.</p>
-          <div className="h-64 border rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
-            <span className="text-gray-500">Live Map Active on Dashboard</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

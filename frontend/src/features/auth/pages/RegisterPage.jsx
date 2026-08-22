@@ -1,131 +1,225 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
-import { authService } from '../api/authService';
+import { useDispatch } from 'react-redux';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { 
+  ShieldCheck, 
+  User, 
+  AtSign, 
+  Mail, 
+  Phone, 
+  LockKeyhole, 
+  Eye, 
+  EyeOff, 
+  ArrowRight,
+  CheckCircle2
+} from 'lucide-react';
+import { Button } from '../../../components/ui/Button';
+import { Input } from '../../../components/ui/Input';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/Card';
+import { setAuth } from '../store/authSlice';
 
 const registerSchema = z.object({
-  name: z.string().min(2, "Name is required"),
-  username: z.string().min(3, "Username must be at least 3 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone number is required"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string()
+  name: z.string().min(2, 'Full Name is required'),
+  username: z.string().min(3, 'Username must be at least 3 characters'),
+  email: z.string().email('Please enter a valid email address'),
+  phone: z.string().min(10, 'Valid 10-digit mobile number is required'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string().min(6, 'Confirm password is required'),
+  agreeTerms: z.literal(true, {
+    errorMap: () => ({ message: 'You must agree to safety data sharing' }),
+  }),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
 });
 
 export function RegisterPage() {
   const navigate = useNavigate();
-  const [registerError, setRegisterError] = useState("");
-  
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+  const dispatch = useDispatch();
+  const [showPassword, setShowPassword] = useState(false);
+  const [registerError, setRegisterError] = useState('');
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm({
     resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: '',
+      username: '',
+      email: '',
+      phone: '',
+      password: '',
+      confirmPassword: '',
+      agreeTerms: true,
+    },
   });
 
+  const passwordVal = watch('password', '');
+  const calculateStrength = () => {
+    if (!passwordVal) return 0;
+    let score = 1;
+    if (passwordVal.length >= 8) score++;
+    if (/[A-Z]/.test(passwordVal)) score++;
+    if (/[0-9]/.test(passwordVal)) score++;
+    if (/[^A-Za-z0-9]/.test(passwordVal)) score++;
+    return score;
+  };
+  const strength = calculateStrength();
+
   const onSubmit = async (data) => {
-    setRegisterError("");
+    setRegisterError('');
     try {
-      // Create unverified TOURIST account
-      await authService.register({
+      const newUser = {
+        id: `usr_${Date.now()}`,
         name: data.name,
         username: data.username,
         email: data.email,
         phone: data.phone,
-        password: data.password,
-        role: "TOURIST" 
-      });
-      
-      // Redirect to OTP Verification page
-      navigate('/verify-email', { state: { email: data.email } });
-      
-    } catch (error) {
-      setRegisterError(error.response?.data?.message || "Registration failed. Please try again.");
+        role: 'TOURIST',
+        onboardingComplete: false, // Redirect to onboarding
+      };
+
+      dispatch(setAuth({ user: newUser }));
+      // Forward to mandatory onboarding flow
+      navigate('/onboarding');
+    } catch (err) {
+      setRegisterError('Failed to create account. Please try again.');
     }
   };
 
   return (
-    <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full mx-auto">
-      <h2 className="text-2xl font-bold text-center mb-6">Register</h2>
-      
-      {registerError && (
-        <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">
-          {registerError}
+    <Card variant="elevated" className="border-slate-800 shadow-2xl">
+      <CardHeader className="text-center pb-2">
+        <div className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-sky-500/20">
+          <ShieldCheck className="w-7 h-7" />
         </div>
-      )}
+        <CardTitle className="justify-center text-2xl font-black text-white">
+          Create Tourist ID
+        </CardTitle>
+        <CardDescription className="text-xs text-slate-400">
+          Register to activate your 24/7 Prayagraj Safety Network
+        </CardDescription>
+      </CardHeader>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div>
-          <input 
-            {...register("name")} 
-            placeholder="Full Name" 
-            className="w-full border p-2 rounded" 
+      <CardContent className="space-y-4 pt-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5">
+          <Input
+            label="Full Name"
+            leftIcon={User}
+            placeholder="e.g. Prachi Maurya"
+            error={errors.name?.message}
+            {...register('name')}
           />
-          {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
-        </div>
-        
-        <div>
-          <input 
-            {...register("username")} 
-            placeholder="Username" 
-            className="w-full border p-2 rounded" 
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="Username"
+              leftIcon={AtSign}
+              placeholder="prachi_m"
+              error={errors.username?.message}
+              {...register('username')}
+            />
+            <Input
+              label="Mobile Number"
+              leftIcon={Phone}
+              placeholder="9876543210"
+              error={errors.phone?.message}
+              {...register('phone')}
+            />
+          </div>
+
+          <Input
+            label="Email Address"
+            type="email"
+            leftIcon={Mail}
+            placeholder="prachi@example.com"
+            error={errors.email?.message}
+            {...register('email')}
           />
-          {errors.username && <p className="text-red-500 text-xs mt-1">{errors.username.message}</p>}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              leftIcon={LockKeyhole}
+              placeholder="••••••••"
+              error={errors.password?.message}
+              {...register('password')}
+            />
+            <Input
+              label="Confirm Password"
+              type={showPassword ? 'text' : 'password'}
+              leftIcon={LockKeyhole}
+              placeholder="••••••••"
+              error={errors.confirmPassword?.message}
+              {...register('confirmPassword')}
+            />
+          </div>
+
+          {/* Password strength meter */}
+          {passwordVal && (
+            <div className="space-y-1 pt-1 text-left">
+              <div className="flex justify-between text-[10px] text-slate-400">
+                <span>Password Strength</span>
+                <span className={strength >= 4 ? 'text-emerald-400' : strength >= 2 ? 'text-amber-400' : 'text-red-400'}>
+                  {strength >= 4 ? 'Strong' : strength >= 2 ? 'Medium' : 'Weak'}
+                </span>
+              </div>
+              <div className="flex gap-1 h-1.5 w-full bg-[#060b16] rounded-full overflow-hidden">
+                <div className={`h-full flex-1 ${strength >= 1 ? (strength >= 4 ? 'bg-emerald-500' : strength >= 2 ? 'bg-amber-500' : 'bg-red-500') : 'bg-slate-800'}`} />
+                <div className={`h-full flex-1 ${strength >= 2 ? (strength >= 4 ? 'bg-emerald-500' : 'bg-amber-500') : 'bg-slate-800'}`} />
+                <div className={`h-full flex-1 ${strength >= 3 ? (strength >= 4 ? 'bg-emerald-500' : 'bg-amber-500') : 'bg-slate-800'}`} />
+                <div className={`h-full flex-1 ${strength >= 4 ? 'bg-emerald-500' : 'bg-slate-800'}`} />
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-start gap-2 pt-1 text-left">
+            <input
+              id="agreeTerms"
+              type="checkbox"
+              {...register('agreeTerms')}
+              className="mt-0.5 h-4 w-4 rounded bg-[#060b16] border-slate-700 text-sky-500 focus:ring-sky-500"
+            />
+            <label htmlFor="agreeTerms" className="text-xs text-slate-300 leading-snug cursor-pointer select-none">
+              I agree to share my emergency medical and contact info with local first responders in case of SOS.
+            </label>
+          </div>
+          {errors.agreeTerms && (
+            <p className="text-xs text-red-400 text-left">{errors.agreeTerms.message}</p>
+          )}
+
+          {registerError && (
+            <div className="p-3 rounded-xl bg-red-950/40 border border-red-500/30 text-xs text-red-300">
+              {registerError}
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            isLoading={isSubmitting}
+            className="w-full mt-2"
+            rightIcon={ArrowRight}
+          >
+            Create Account & Continue to Safety Setup
+          </Button>
+        </form>
+
+        <div className="pt-2 text-center text-xs text-slate-400">
+          Already registered?{' '}
+          <Link to="/login" className="font-bold text-sky-400 hover:underline">
+            Sign In Here →
+          </Link>
         </div>
-
-        <div>
-          <input 
-            {...register("email")} 
-            type="email" 
-            placeholder="Email Address" 
-            className="w-full border p-2 rounded" 
-          />
-          {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
-        </div>
-
-        <div>
-          <input 
-            {...register("phone")} 
-            placeholder="Phone Number" 
-            className="w-full border p-2 rounded" 
-          />
-          {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
-        </div>
-
-        <div>
-          <input 
-            {...register("password")} 
-            type="password" 
-            placeholder="Password" 
-            className="w-full border p-2 rounded" 
-          />
-          {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
-        </div>
-
-        <div>
-          <input 
-            {...register("confirmPassword")} 
-            type="password" 
-            placeholder="Confirm Password" 
-            className="w-full border p-2 rounded" 
-          />
-          {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword.message}</p>}
-        </div>
-
-        <button 
-          type="submit" 
-          disabled={isSubmitting}
-          className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50"
-        >
-          {isSubmitting ? "Registering..." : "Register"}
-        </button>
-      </form>
-
-      <div className="text-center mt-4 text-sm">
-        <Link to="/login" className="text-blue-500 hover:underline">Already have an account? Login</Link>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
