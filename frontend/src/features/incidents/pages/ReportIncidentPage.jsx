@@ -51,13 +51,13 @@ export function ReportIncidentPage() {
           </p>
         </div>
         <Link to="/tourist/incidents/history">
-          <button className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-6 py-3 rounded-xl font-bold text-[12px] uppercase tracking-widest transition-colors flex items-center gap-2 cursor-pointer shadow-sm">
+          <button className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-6 py-3 rounded-md font-bold text-[12px] uppercase tracking-widest transition-colors flex items-center gap-2 cursor-pointer shadow-sm">
             <History className="w-4 h-4" /> Past Reports
           </button>
         </Link>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 overflow-hidden">
+      <div className="bg-white rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 overflow-hidden">
         {!submitted ? (
           <form onSubmit={handleSubmit}>
             <div className="p-6 sm:p-8 space-y-6">
@@ -68,7 +68,7 @@ export function ReportIncidentPage() {
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-[14px] font-semibold rounded-xl px-4 py-3.5 focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all appearance-none cursor-pointer"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-[14px] font-semibold rounded-md px-4 py-3.5 focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all appearance-none cursor-pointer"
                 >
                   {categories.map((cat) => (
                     <option key={cat} value={cat}>{cat}</option>
@@ -89,7 +89,7 @@ export function ReportIncidentPage() {
                       type="button"
                       key={s.level}
                       onClick={() => setSeverity(s.level)}
-                      className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                      className={`p-4 rounded-lg border text-left transition-all cursor-pointer ${
                         severity === s.level
                           ? s.activeClass
                           : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:shadow-sm'
@@ -113,7 +113,7 @@ export function ReportIncidentPage() {
                     type="text"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-[13px] font-semibold rounded-xl pl-11 pr-4 py-3.5 focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all"
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-[13px] font-semibold rounded-md pl-11 pr-4 py-3.5 focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all"
                   />
                 </div>
               </div>
@@ -127,14 +127,14 @@ export function ReportIncidentPage() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   required
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-[14px] font-medium rounded-xl px-4 py-3.5 focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all resize-none"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-[14px] font-medium rounded-md px-4 py-3.5 focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all resize-none"
                 />
               </div>
 
               {/* Photo Upload Mockup */}
               <div className="space-y-2">
                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest pl-1">Attach Photo / Evidence (Optional)</label>
-                <div className="p-8 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center text-center space-y-2 cursor-pointer hover:border-red-300 hover:bg-red-50/30 transition-colors">
+                <div className="p-8 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center text-center space-y-2 cursor-pointer hover:border-red-300 hover:bg-red-50/30 transition-colors">
                   <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-slate-200 shadow-sm mb-1">
                     <Camera className="w-5 h-5 text-slate-400" />
                   </div>
@@ -160,14 +160,14 @@ export function ReportIncidentPage() {
 
             <div className="p-6 sm:p-8 pt-0 flex flex-col-reverse sm:flex-row justify-end gap-3 border-t border-slate-50 mt-4 bg-slate-50/50">
               <Link to="/tourist/dashboard" className="w-full sm:w-auto mt-4 sm:mt-0">
-                <button type="button" className="w-full sm:w-auto px-8 py-3.5 border border-slate-200 text-slate-600 bg-white hover:bg-slate-100 text-[12px] font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-sm">
+                <button type="button" className="w-full sm:w-auto px-8 py-3.5 border border-slate-200 text-slate-600 bg-white hover:bg-slate-100 text-[12px] font-bold uppercase tracking-widest rounded-md transition-all cursor-pointer shadow-sm">
                   Cancel
                 </button>
               </Link>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full sm:w-auto group flex items-center justify-center gap-2 px-8 py-3.5 bg-[#e11d48] hover:bg-[#be123c] text-white text-[12px] font-bold uppercase tracking-widest rounded-xl disabled:opacity-50 cursor-pointer shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 mt-4 sm:mt-0"
+                className="w-full sm:w-auto group flex items-center justify-center gap-2 px-8 py-3.5 bg-[#e11d48] hover:bg-[#be123c] text-white text-[12px] font-bold uppercase tracking-widest rounded-md disabled:opacity-50 cursor-pointer shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 mt-4 sm:mt-0"
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Emergency Report'}
                 {!isSubmitting && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
@@ -186,7 +186,7 @@ export function ReportIncidentPage() {
               </p>
             </div>
             
-            <div className="max-w-md mx-auto p-5 rounded-2xl bg-slate-50 border border-slate-100 text-left space-y-3 shadow-sm">
+            <div className="max-w-md mx-auto p-5 rounded-lg bg-slate-50 border border-slate-100 text-left space-y-3 shadow-sm">
               <div className="flex justify-between items-center text-[12px]">
                 <span className="text-slate-500 font-bold uppercase tracking-wider">Assigned Unit:</span>
                 <span className="font-black text-slate-900">Patrol PCR Van #14</span>
@@ -199,12 +199,12 @@ export function ReportIncidentPage() {
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
               <Link to="/tourist/incidents/history">
-                <button className="w-full sm:w-auto px-8 py-3.5 bg-slate-900 hover:bg-slate-800 text-white text-[12px] font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-md">
+                <button className="w-full sm:w-auto px-8 py-3.5 bg-slate-900 hover:bg-slate-800 text-white text-[12px] font-bold uppercase tracking-widest rounded-md transition-all cursor-pointer shadow-md">
                   Track Status
                 </button>
               </Link>
               <Link to="/tourist/dashboard">
-                <button className="w-full sm:w-auto px-8 py-3.5 border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 text-[12px] font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-sm">
+                <button className="w-full sm:w-auto px-8 py-3.5 border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 text-[12px] font-bold uppercase tracking-widest rounded-md transition-all cursor-pointer shadow-sm">
                   Dashboard
                 </button>
               </Link>
