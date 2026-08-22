@@ -18,6 +18,7 @@ import { createEvidenceRouter } from "../modules/evidence/evidence.routes.js";
 import { createSosRouter } from "../modules/sos/sos.routes.js";
 import { createSystemAdminRouter } from "../modules/system-admin/system-admin.routes.js";
 import { createAuthRouter } from "../modules/auth/auth.routes.js";
+import { createChatbotRouter } from "../modules/chatbot/chatbot.routes.js";
 import { createGroupRouter } from "../modules/group/group.routes.js";
 import { createHealthRouter } from "../modules/health/health.routes.js";
 import { createHazardRouter } from "../modules/hazard/hazard.routes.js";
@@ -76,6 +77,7 @@ export const createApiRouter = (config = environment) => {
         phase18: { systemAdmin: `${config.API_PREFIX}/admin` },
         phase19: { analytics: `${config.API_PREFIX}/analytics` },
         phase20_21: { integrations: `${config.API_PREFIX}/integrations` },
+        phase26: { chatbot: `${config.API_PREFIX}/chatbot` },
         phase22: { notificationDeliveries: `${config.API_PREFIX}/notification-deliveries` },
         phase24: { audit: `${config.API_PREFIX}/audit`, observability: `${config.API_PREFIX}/observability` },
       },
@@ -127,6 +129,7 @@ export const createApiRouter = (config = environment) => {
   router.use("/evidence", createEvidenceRouter());
   router.use("/admin", createSystemAdminRouter());
   router.use("/analytics", createAnalyticsRouter());
+  router.use("/chatbot", createChatbotRouter());
   router.use("/integrations", createIntegrationRouter());
   router.use("/audit", createAuditRouter());
   router.use("/observability", createObservabilityRouter());
