@@ -7,7 +7,8 @@ import {
   CheckCircle2,
   XCircle,
   Activity,
-  Phone
+  Phone,
+  ShieldCheck
 } from 'lucide-react';
 import { useCurrentTrip, useCompleteTrip, useCancelTrip, useStartTrip } from '../api/tripQueries';
 import { useGeolocation } from '../../tracking/hooks/useGeolocation';
