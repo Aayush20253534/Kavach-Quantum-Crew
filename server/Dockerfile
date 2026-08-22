@@ -1,4 +1,5 @@
-FROM node:22-bookworm-slim AS dependencies
+ARG NODE_VERSION=24.19.0
+FROM node:${NODE_VERSION}-bookworm-slim AS dependencies
 
 WORKDIR /app
 ENV NODE_ENV=development
@@ -13,7 +14,7 @@ COPY prisma.config.ts ./
 RUN DATABASE_URL=postgresql://postgres:postgres@localhost:5432/build npm run prisma:generate \
   && npm prune --omit=dev
 
-FROM node:22-bookworm-slim AS runtime
+FROM node:${NODE_VERSION}-bookworm-slim AS runtime
 
 WORKDIR /app
 ENV NODE_ENV=production

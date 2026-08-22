@@ -38,7 +38,6 @@ A tourist creates a trip and explicitly agrees to the safety/location features t
                          +-- serious/actionable -> create incident
 ```
 
-
 ## First-time email verification
 
 Email OTP is a one-time account-verification step, not a login OTP.
@@ -58,6 +57,7 @@ The code expires after the configured TTL (10 minutes by default). Resending is 
 ## What safety monitoring checks
 
 Trusted location/check-in data can be evaluated against:
+
 - safe/risk geofences
 - polygon or circular risk zones
 - missed/overdue check-ins
@@ -95,6 +95,7 @@ or staff may DISMISS a false-positive/non-actionable incident.
 ```
 
 During response:
+
 - responders can be assigned subject to availability/capacity,
 - staff can add operational notes,
 - tourist/group participants and staff can exchange incident messages,
@@ -156,6 +157,7 @@ Knowing an attachment ID is not sufficient permission to download it.
 ## Notifications
 
 The backend has two related concepts:
+
 1. `Notification`: application-level message for an account.
 2. `NotificationDelivery`: operational delivery attempt through a channel.
 
