@@ -95,6 +95,16 @@ export function CurrentTripPage() {
         </div>
 
       </div>
+
+      {trip?.status === 'ACTIVE' && (
+        <div className="mt-8">
+          <h2 className="text-xl font-bold mb-4">Live Tracking</h2>
+          <p className="text-gray-600 mb-4 text-sm">Return to the dashboard for a full-screen view. This map shows your active tracking status.</p>
+          <div className="h-64 border rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+            <span className="text-gray-500">Live Map Active on Dashboard</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
