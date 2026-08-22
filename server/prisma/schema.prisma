@@ -23,9 +23,16 @@ model User {
   profilePicUrl       String?
   gender              Gender?
   age                 Int?
-  medicalHistory      String?
-  emergencyPhone      String?       @db.VarChar(20)
-  nationality         String?       @db.VarChar(80)
+  medicalHistory            String?
+  emergencyPhone            String?       @db.VarChar(20)
+  nationality               String?       @db.VarChar(80)
+  preferredLanguage         String?       @db.VarChar(40)
+  emergencyContactName      String?       @db.VarChar(120)
+  emergencyContactRelation  String?       @db.VarChar(60)
+  bloodGroup                String?       @db.VarChar(8)
+  governmentIdNumber        String?       @db.VarChar(120)
+  liveTrackingEnabled       Boolean       @default(true)
+  geoAlertsEnabled          Boolean       @default(true)
   groupMemberships    GroupMember[]
   ledGroups           TripGroup[]   @relation("GroupLeader")
   trips               Trip[]

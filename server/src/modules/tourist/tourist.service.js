@@ -14,6 +14,13 @@ const toProfile = (user) => ({
   nationality: user.nationality ?? null,
   age: user.age ?? null,
   medicalHistory: user.medicalHistory ?? null,
+  preferredLanguage: user.preferredLanguage ?? null,
+  emergencyContactName: user.emergencyContactName ?? null,
+  emergencyContactRelation: user.emergencyContactRelation ?? null,
+  bloodGroup: user.bloodGroup ?? null,
+  governmentIdNumber: user.governmentIdNumber ?? null,
+  liveTrackingEnabled: user.liveTrackingEnabled,
+  geoAlertsEnabled: user.geoAlertsEnabled,
   onboardingCompleted: user.onboardingCompleted,
 });
 
@@ -49,6 +56,13 @@ export const createTouristService = ({ repository = touristRepository } = {}) =>
         medicalHistory: input.medicalHistory || null,
         emergencyPhone: input.emergencyPhone,
         nationality: input.nationality,
+        preferredLanguage: input.preferredLanguage,
+        emergencyContactName: input.emergencyContactName,
+        emergencyContactRelation: input.emergencyContactRelation,
+        bloodGroup: input.bloodGroup,
+        governmentIdNumber: input.governmentIdNumber,
+        liveTrackingEnabled: input.liveTrackingEnabled,
+        geoAlertsEnabled: input.geoAlertsEnabled,
       });
       return toProfile(updated);
     },
@@ -108,6 +122,19 @@ export const createTouristService = ({ repository = touristRepository } = {}) =>
         data.medicalHistory = input.medicalHistory || null;
       if (input.emergencyPhone !== undefined) data.emergencyPhone = input.emergencyPhone;
       if (input.nationality !== undefined) data.nationality = input.nationality;
+      if (input.preferredLanguage !== undefined)
+        data.preferredLanguage = input.preferredLanguage;
+      if (input.emergencyContactName !== undefined)
+        data.emergencyContactName = input.emergencyContactName;
+      if (input.emergencyContactRelation !== undefined)
+        data.emergencyContactRelation = input.emergencyContactRelation;
+      if (input.bloodGroup !== undefined) data.bloodGroup = input.bloodGroup;
+      if (input.governmentIdNumber !== undefined)
+        data.governmentIdNumber = input.governmentIdNumber;
+      if (input.liveTrackingEnabled !== undefined)
+        data.liveTrackingEnabled = input.liveTrackingEnabled;
+      if (input.geoAlertsEnabled !== undefined)
+        data.geoAlertsEnabled = input.geoAlertsEnabled;
 
       const updated = await repository.updateProfile(userId, data);
       if (emailChanged) await repository.revokeSessions?.(userId);

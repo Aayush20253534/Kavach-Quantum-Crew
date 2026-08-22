@@ -49,6 +49,7 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [step, setStep] = useState(1);
+  const [onboardingError, setOnboardingError] = useState('');
 
   const {
     register,
@@ -90,6 +91,8 @@ export function OnboardingPage() {
   };
 
   const onSubmit = async (data) => {
+    setOnboardingError('');
+
     try {
       const genderMap = {
         Male: 'MALE',
@@ -101,8 +104,15 @@ export function OnboardingPage() {
         gender: genderMap[data.gender] ?? 'PREFER_NOT_TO_SAY',
         age: Number(data.age),
         nationality: data.nationality,
+        preferredLanguage: data.language,
+        emergencyContactName: data.emergencyName,
+        emergencyContactRelation: data.emergencyRelation,
         emergencyPhone: data.emergencyPhone,
+        bloodGroup: data.bloodGroup,
+        governmentIdNumber: data.idNumber,
         medicalHistory: data.medicalNotes || null,
+        liveTrackingEnabled: data.liveTracking,
+        geoAlertsEnabled: data.geoAlerts,
       });
 
       const profile = response.data?.data ?? response.data;
@@ -110,6 +120,11 @@ export function OnboardingPage() {
       navigate('/tourist/dashboard', { replace: true });
     } catch (error) {
       console.error('Onboarding failed:', error);
+      setOnboardingError(
+        error.response?.data?.error?.message ||
+          error.response?.data?.message ||
+          'Unable to complete onboarding. Please check your details and try again.'
+      );
     }
   };
 
@@ -404,6 +419,12 @@ export function OnboardingPage() {
                     <span className="text-sm text-slate-500">Transmit automated SMS alerts to emergency contacts if cellular data drops.</span>
                   </label>
                 </div>
+              </div>
+            )}
+
+            {onboardingError && (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {onboardingError}
               </div>
             )}
 
