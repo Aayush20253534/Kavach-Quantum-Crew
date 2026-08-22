@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Get base URL from env, default to local if not set
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
 const apiClient = axios.create({
   baseURL: API_URL,
@@ -49,7 +49,7 @@ apiClient.interceptors.response.use(
     // If 401 Unauthorized, try to refresh token
     if (error.response?.status === 401 && !originalRequest._retry) {
       // Don't intercept refresh token request failures to avoid infinite loops
-      if (originalRequest.url.includes('/auth/refresh') || originalRequest.url.includes('/auth/login')) {
+      if (originalRequest?.url?.includes('/auth/refresh') || originalRequest?.url?.includes('/auth/login')) {
         return Promise.reject(error);
       }
 
@@ -77,7 +77,7 @@ apiClient.interceptors.response.use(
           { withCredentials: true }
         );
 
-        const newAccessToken = data.accessToken;
+        const newAccessToken = data?.data?.accessToken ?? data?.accessToken;
         
         if (newAccessToken) {
           localStorage.setItem('quantum_access_token', newAccessToken);

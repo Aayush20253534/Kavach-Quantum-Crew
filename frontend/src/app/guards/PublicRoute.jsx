@@ -9,8 +9,11 @@ export function PublicRoute() {
     if (user?.role === 'TOURIST') {
       return <Navigate to="/tourist/dashboard" replace />;
     }
-    if (user?.role === 'AUTHORITY') {
+    if (user?.role === 'DISASTER_MANAGER') {
       return <Navigate to="/authority/dashboard" replace />;
+    }
+    if (user?.role === 'SYSTEM_ADMIN') {
+      return <Navigate to="/" replace />;
     }
     // Fallback if role is unknown
     return <Navigate to="/" replace />;
