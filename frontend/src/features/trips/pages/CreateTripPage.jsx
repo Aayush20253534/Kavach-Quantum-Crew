@@ -54,32 +54,43 @@ export function CreateTripPage() {
   return (
     <div className="-m-4 sm:-m-6 lg:-m-8 bg-slate-50 min-h-[calc(100vh-64px)] pb-10 font-sans">
       
-      {/* VIBRANT BACKGROUND HEADER */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-red-600 to-orange-500 shadow-lg px-4 sm:px-6 lg:px-8 py-12">
-        <div className="absolute right-0 top-0 opacity-10 pointer-events-none transform translate-x-10 -translate-y-10">
-          <Map className="w-64 h-64 text-white" />
+      {/* HERO SECTION - Replacing vibrant header */}
+      <div className="relative h-[450px] md:h-[550px] w-full overflow-hidden flex items-center -mx-4 sm:-mx-6 lg:-mx-8">
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0">
+          <img src="/destinations/sangam.jpg" alt="Explore the World" className="w-full h-full object-cover object-center" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent"></div>
         </div>
         
-        <div className="relative z-10 max-w-4xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <Compass className="w-8 h-8 text-white" />
-              <h1 className="text-3xl font-black text-white tracking-tight uppercase shadow-black drop-shadow-md">Plan a Safe Journey</h1>
-            </div>
-            <p className="text-xs font-bold text-red-50 uppercase tracking-wider">
-              Configure safety check-ins, destination tracking, and companion sync across Prayagraj.
+        {/* Hero Content */}
+        <div className="relative z-10 max-w-7xl mx-auto w-full px-6 md:px-12">
+          <div className="max-w-xl">
+            <p className="text-white/90 text-[10px] font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
+              It's time to <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-400 rotate-45"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.2-1.1.6L2.5 8l6.4 5.4-2.7 2.7-2.6-.9c-.4-.1-.8.1-1 .4L1.5 17l4.1 1.4 1.4 4.1.8-1.1c.3-.2.5-.6.4-1l-.9-2.6 2.7-2.7 5.4 6.4 1.2-1.2c.4-.2.7-.6.6-1.1z"/></svg>
             </p>
-          </div>
-          <Link to="/tourist/trips/history">
-            <button className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white border border-white/40 px-6 py-3 text-xs font-bold uppercase tracking-wider rounded-none transition-colors cursor-pointer">
-              View History →
+            <div className="mb-8 drop-shadow-2xl flex flex-col items-start relative">
+              <span className="text-5xl md:text-[5.5rem] text-white font-medium -mb-2 md:-mb-4 z-10 drop-shadow-md" style={{ fontFamily: '"Brush Script MT", "Lucida Handwriting", "Snell Roundhand", cursive', letterSpacing: '0.05em' }}>
+                Explore
+              </span>
+              <span className="text-6xl md:text-[7rem] font-medium text-white leading-[0.9] drop-shadow-lg ml-8 md:ml-16" style={{ fontFamily: '"Brush Script MT", "Lucida Handwriting", "Snell Roundhand", cursive', letterSpacing: '0.02em' }}>
+                the World
+              </span>
+            </div>
+            <p className="text-white/90 text-xs md:text-sm mb-8 max-w-sm drop-shadow-md leading-relaxed">
+              Discover breathtaking destinations, unforgettable experiences, and memories that last a lifetime.
+            </p>
+            <button className="flex items-center gap-3 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-full font-semibold transition-all hover:scale-105 active:scale-95 shadow-xl text-sm">
+              Explore Now
+              <div className="w-5 h-5 rounded-full bg-white text-slate-900 flex items-center justify-center">
+                <ArrowRight className="w-3 h-3" />
+              </div>
             </button>
-          </Link>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 -mt-6 relative z-20">
-        <form onSubmit={handleCreateTrip} className="space-y-8">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 relative z-20 mt-8">
+        <form onSubmit={handleCreateTrip} className="space-y-12">
           
           {/* Solo vs Group Toggle */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -88,19 +99,19 @@ export function CreateTripPage() {
               onClick={() => setTripType('GROUP')}
               className={`group relative p-6 border text-left transition-all duration-300 rounded-none overflow-hidden cursor-pointer ${
                 tripType === 'GROUP'
-                  ? 'bg-white border-red-600 shadow-[0_10px_20px_rgba(220,38,38,0.15)] ring-1 ring-red-600'
+                  ? 'bg-white border-red-600 shadow-[0_10px_20px_rgba(220,38,38,0.15)] ring-1 ring-red-600 scale-[1.02] z-10'
                   : 'bg-white border-slate-200 hover:border-red-300 hover:bg-slate-50'
               }`}
             >
               {tripType === 'GROUP' && <div className="absolute top-0 left-0 w-1 h-full bg-red-600"></div>}
               <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 rounded-none flex items-center justify-center border transition-colors ${tripType === 'GROUP' ? 'bg-red-600 border-red-600 text-white' : 'bg-slate-100 border-slate-200 text-slate-500 group-hover:text-red-600 group-hover:border-red-200 group-hover:bg-red-50'}`}>
-                  <Users className="w-6 h-6" />
+                <div className={`p-4 rounded-none flex items-center justify-center border transition-all duration-300 ${tripType === 'GROUP' ? 'bg-red-600 border-red-600 text-white shadow-md' : 'bg-slate-50 border-slate-200 text-slate-500 group-hover:text-red-600 group-hover:border-red-300 group-hover:bg-red-50'}`}>
+                  <Users className="w-8 h-8" />
                 </div>
-                {tripType === 'GROUP' && <CheckCircle2 className="w-5 h-5 text-red-600" />}
+                {tripType === 'GROUP' && <CheckCircle2 className="w-6 h-6 text-red-600" />}
               </div>
-              <h3 className={`text-sm font-black uppercase tracking-wider transition-colors ${tripType === 'GROUP' ? 'text-red-700' : 'text-slate-900 group-hover:text-red-600'}`}>Group / Family Trip</h3>
-              <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-wider leading-relaxed">
+              <h3 className={`text-base font-black uppercase tracking-wider transition-colors ${tripType === 'GROUP' ? 'text-red-700' : 'text-slate-900 group-hover:text-red-600'}`}>Group / Family Trip</h3>
+              <p className="text-[11px] font-bold text-slate-500 mt-2 uppercase tracking-wider leading-relaxed">
                 Synchronize location with family members, share QR invite codes, and monitor companion distances.
               </p>
             </button>
@@ -110,19 +121,19 @@ export function CreateTripPage() {
               onClick={() => setTripType('SOLO')}
               className={`group relative p-6 border text-left transition-all duration-300 rounded-none overflow-hidden cursor-pointer ${
                 tripType === 'SOLO'
-                  ? 'bg-white border-red-600 shadow-[0_10px_20px_rgba(220,38,38,0.15)] ring-1 ring-red-600'
+                  ? 'bg-white border-red-600 shadow-[0_10px_20px_rgba(220,38,38,0.15)] ring-1 ring-red-600 scale-[1.02] z-10'
                   : 'bg-white border-slate-200 hover:border-red-300 hover:bg-slate-50'
               }`}
             >
               {tripType === 'SOLO' && <div className="absolute top-0 left-0 w-1 h-full bg-red-600"></div>}
               <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 rounded-none flex items-center justify-center border transition-colors ${tripType === 'SOLO' ? 'bg-red-600 border-red-600 text-white' : 'bg-slate-100 border-slate-200 text-slate-500 group-hover:text-red-600 group-hover:border-red-200 group-hover:bg-red-50'}`}>
-                  <User className="w-6 h-6" />
+                <div className={`p-4 rounded-none flex items-center justify-center border transition-all duration-300 ${tripType === 'SOLO' ? 'bg-red-600 border-red-600 text-white shadow-md' : 'bg-slate-50 border-slate-200 text-slate-500 group-hover:text-red-600 group-hover:border-red-300 group-hover:bg-red-50'}`}>
+                  <User className="w-8 h-8" />
                 </div>
-                {tripType === 'SOLO' && <CheckCircle2 className="w-5 h-5 text-red-600" />}
+                {tripType === 'SOLO' && <CheckCircle2 className="w-6 h-6 text-red-600" />}
               </div>
-              <h3 className={`text-sm font-black uppercase tracking-wider transition-colors ${tripType === 'SOLO' ? 'text-red-700' : 'text-slate-900 group-hover:text-red-600'}`}>Solo Traveler Trip</h3>
-              <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-wider leading-relaxed">
+              <h3 className={`text-base font-black uppercase tracking-wider transition-colors ${tripType === 'SOLO' ? 'text-red-700' : 'text-slate-900 group-hover:text-red-600'}`}>Solo Traveler Trip</h3>
+              <p className="text-[11px] font-bold text-slate-500 mt-2 uppercase tracking-wider leading-relaxed">
                 Automated periodic check-in reminders and direct link to Tourist Police first responders.
               </p>
             </button>
