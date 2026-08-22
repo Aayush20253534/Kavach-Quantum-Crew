@@ -1,0 +1,10 @@
+import { Router } from "express";
+import { asyncHandler } from "../../common/utils/asyncHandler.js";
+import { ROLES } from "../../constants/roles.js";
+import { authenticate } from "../../middleware/authenticate.middleware.js";
+import { authorize } from "../../middleware/authorize.middleware.js";
+import { validate } from "../../middleware/validate.middleware.js";
+import { alertController } from "./alert.controller.js";
+import { alertParamsSchema,alertQuerySchema } from "./alert.validation.js";
+export const createAlertRouter=({controller=alertController}={})=>{const r=Router();r.use(authenticate,authorize(ROLES.TOURIST));r.get("/",validate({query:alertQuerySchema}),asyncHandler(controller.list));r.get("/:alertId",validate({params:alertParamsSchema}),asyncHandler(controller.get));r.post("/:alertId/acknowledge",validate({params:alertParamsSchema}),asyncHandler(controller.acknowledge));r.post("/:alertId/resolve",validate({params:alertParamsSchema}),asyncHandler(controller.resolve));return r;};
+export const alertRouter=createAlertRouter(); export default alertRouter;

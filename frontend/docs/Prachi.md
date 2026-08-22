@@ -1,71 +1,78 @@
 # Prachi's UI/UX Handoff & Tracking
 
 ## 1. Purpose
-This document is the bridge between Frontend Architecture (Aayansh & AI) and UI/UX Design (Prachi). 
-It contains exactly what needs to be designed, the current status of those designs, and notes for implementation.
+This document is the bridge between Frontend Architecture (Aayansh) and UI/UX Design (Prachi). 
+Aayansh has successfully wired up the complete functional logic of the React application to the Backend. The components are functional but are currently using very basic, placeholder Tailwind styling.
+
+Your task is to take these functional components and apply the **Premium Design Aesthetics** (Dark modes, glassmorphism, vibrant gradients, micro-animations, modern typography) as requested by the project requirements.
 
 ## 2. How to Use This File
 Hi Prachi! 👋 
-- When you start working on a task, change `[ ]` to `[-]`.
+- When you start working on a design task, change `[ ]` to `[-]`.
 - When a design is complete, change it to `[x]` and optionally add a Figma link next to it.
-- If you have questions or notes about a specific component, write them directly below the task item.
+- **IMPORTANT**: Do not remove or change the `onClick`, `onSubmit`, `onChange`, `ref`, or React Query/Redux hooks in the components! Aayansh has wired them perfectly to the backend. You only need to change the `className` attributes and HTML structure for styling.
 
 ---
 
-# 🚀 CURRENT ASSIGNMENTS (Completed & Implemented)
+# 🚀 CURRENT DESIGN ASSIGNMENTS
 
-All foundational UI/UX components, application shells, and Phase 1-4 screens have been fully designed and integrated following `Design.md`.
+Please design and polish the following newly functional pages and components from scratch. Since Aayansh has provided the basic structural placeholders, it's your job to make them look world-class.
 
-## 🎨 Shared Components & Design System
-These are the foundational building blocks following the dark theme guidelines in `Design.md`.
-- `[x]` **SOS Button**: High-visibility pulsing emergency component with confirmation countdown and hold-to-activate safeguards to prevent accidental clicks (`src/components/ui/SOSButton.jsx`).
-- `[x]` **Buttons**: Primary (electric blue/cyan gradient), Secondary (elevated dark surface), Ghost, Danger, and Warning states with loading spinner and icon support (`src/components/ui/Button.jsx`).
-- `[x]` **Inputs**: Text fields, Select dropdowns, Textareas with dark theme styling, left/right icons, and validation error messages (`src/components/ui/Input.jsx`, `Select.jsx`, `Textarea.jsx`).
-- `[x]` **Cards**: Layered content containers with subtle border depth, glassmorphism, and hover glow (`src/components/ui/Card.jsx`).
-- `[x]` **Modals**: Overlay popups with backdrop blur (`backdrop-blur-md`), keyboard ESC handling, and scale-in animations (`src/components/ui/Modal.jsx`).
-- `[x]` **Status Badges**: Semantic risk indicators for Low (Green), Medium (Amber), High (Orange), Critical (Red), with glowing pulse dots (`src/components/ui/Badge.jsx`).
-- `[x]` **Empty States**: Illustrated, friendly placeholders for empty trips, incidents, and groups with call-to-action buttons (`src/components/ui/EmptyState.jsx`).
-- `[x]` **Loading States**: Spinners, Full-page session loader, and Skeleton loaders for cards and lists (`src/components/ui/Loader.jsx`).
+## 🎨 Shared UI Components (`src/components/ui/`)
+- `[ ]` **SOSButton.jsx**: The critical "Hold to Trigger" emergency button. Make it highly visible, pulsing, and scary to press.
+- `[ ]` **Button.jsx**: Create primary, secondary, ghost, and danger variations. Add hover effects and loading states.
+- `[ ]` **Input.jsx / Select.jsx / Textarea.jsx**: Modern, clean form fields with focus rings, icons, and error states.
+- `[ ]` **Card.jsx**: Glassmorphic, elevated containers used throughout the dashboards.
+- `[ ]` **Modal.jsx**: Overlay popups with backdrop blur.
+- `[ ]` **Badge.jsx**: Status indicators (e.g. Danger, Safe, Pending).
+- `[ ]` **Loader.jsx**: Spinners and skeleton screens.
+- `[ ]` **EmptyState.jsx**: Friendly "No data found" views for empty lists.
 
-## 📐 Application Layouts
-- `[x]` **Tourist Layout**: Mobile-first design with Bottom Navigation Bar (for phones) and full-featured desktop Sidebar + top context bar (`src/app/layouts/TouristLayout.jsx`).
-- `[x]` **Authority Layout**: Professional, data-heavy Sidebar command center with emergency broadcast triggers and live sector ticker (`src/app/layouts/AuthorityLayout.jsx`).
-- `[x]` **Public Layout**: High-converting Landing page layout with emergency ribbon, glass Navbar, and comprehensive footer with safety hotlines (`src/app/layouts/PublicLayout.jsx`).
-- `[x]` **Auth Layout**: Minimal, distraction-free wrapper with security watermarks for Login and Register (`src/app/layouts/AuthLayout.jsx`).
+## 📐 Application Layouts (`src/app/layouts/`)
+- `[ ]` **PublicLayout.jsx**: Navbars and Footers for the landing page.
+- `[ ]` **AuthLayout.jsx**: A clean, distraction-free split-screen layout for login/register.
+- `[ ]` **TouristLayout.jsx**: Must include a mobile-first Bottom Navigation Bar and a desktop sidebar.
+- `[ ]` **AuthorityLayout.jsx**: A professional, dense sidebar layout for disaster managers.
 
-## 📄 Phase 1 & 2 Pages
-- `[x]` **Landing Page (`HomePage`)**: Hero section with live radar visualizer, live protection stats, Prayagraj Safe Zones preview, features grid, emergency hotlines, and call-to-action (`src/features/public/pages/HomePage.jsx`).
-- `[x]` **Login Page**: Multi-role login (Tourist, Authority, Admin) with role tabs, email/username, show/hide password, and validation (`src/features/auth/pages/LoginPage.jsx`).
-- `[x]` **Register Page**: Registration form for Name, Username, Email, Phone, Password, Confirm Password, password strength meter, terms acceptance, and forward to onboarding (`src/features/auth/pages/RegisterPage.jsx`).
+## 🌐 Public Pages (`src/features/public/pages/`)
+- `[ ]` **HomePage.jsx**: The high-converting landing page. Hero section, features, safety statistics, and call-to-actions.
+- `[ ]` **NotFoundPage.jsx**: Creative 404 page.
 
-## 📄 Phase 3 & 4 Pages
-- `[x]` **Onboarding Flow (`OnboardingPage`)**: 4-step wizard collecting Personal Details, Emergency Contact, Medical Info (Blood Group & Allergies), and Safety & Privacy Permissions (`src/features/onboarding/pages/OnboardingPage.jsx`).
-- `[x]` **Tourist Dashboard (`TouristDashboardPage`)**: 
-  - *State A (No Active Trip)*: Welcome hero, quick action cards, nearby safe havens explorer, city safety index.
-  - *State B (Active Trip)*: Live interactive radar & geofence map view, live group companion battery & distance telemetry, current trip risk gauge, and quick SOS access.
-  - Includes interactive state switch toolbar to test and demo both states instantly!
+## 🔐 Auth Pages (`src/features/auth/pages/`)
+- `[ ]` **LoginPage.jsx**: Login form with role selection (Tourist/Authority/Admin).
+- `[ ]` **RegisterPage.jsx**: Multi-field registration form with password strength indicator.
+- `[ ]` **VerifyEmailPage.jsx**: The 6-digit OTP input screen. Make it look secure and modern.
 
----
+## 👤 Onboarding & Profile
+- `[ ]` **OnboardingPage.jsx** (`src/features/onboarding/pages/`): A wizard for Medical Details and dynamically adding Emergency Contacts.
+- `[ ]` **ProfilePage.jsx** (`src/features/profile/pages/`): A digital Tourist ID card displaying the user's safety profile and settings.
 
-# 🗓️ UPCOMING ASSIGNMENTS (Completed & Implemented)
+## 🗺️ Tourist Dashboard & Tracking
+- `[ ]` **TouristDashboardPage.jsx** (`src/features/tourist/pages/`): The primary home screen. Design a "Ready for trip?" banner and a premium Heads-Up Display (HUD) that sits on top of the map when tracking is active.
+- `[ ]` **MapComponent.jsx** (`src/features/tracking/components/`): Customize the map frame and tooltips.
 
-## 🗺️ Trips & Groups
-- `[x]` **Create Trip**: Destination selection across Prayagraj pilgrimage points, Solo vs Group choice, check-in intervals (`src/features/trips/pages/CreateTripPage.jsx`).
-- `[x]` **Current Trip**: Live active view with geofence map, itinerary checkpoints, group members status, and quick SOS drawer (`src/features/trips/pages/CurrentTripPage.jsx`).
-- `[x]` **Trip History**: Feed of past trips with safety certificates and duration statistics (`src/features/trips/pages/TripHistoryPage.jsx`).
-- `[x]` **Create Group**: Generate dynamic safety QR code and copyable join link (`src/features/groups/pages/CreateGroupPage.jsx`).
-- `[x]` **Join Group**: QR Scanner interface with camera viewfinder simulation and manual code fallback (`src/features/groups/pages/JoinGroupPage.jsx`).
+## 🎒 Trips (`src/features/trips/pages/`)
+- `[ ]` **CreateTripPage.jsx**: A sleek form to plan a trip with segmented controls for Solo vs. Group.
+- `[ ]` **CurrentTripPage.jsx**: The live trip screen. Style the itinerary, checkpoints, and action buttons (Start, Complete, Cancel).
+- `[ ]` **TripHistoryPage.jsx**: A modern data grid/table showing past trips.
 
-## 🚨 Safety & Incidents
-- `[x]` **Report Incident**: Form for incident category, severity level, GPS coordinates auto-detect, and photo attachment mockup (`src/features/incidents/pages/ReportIncidentPage.jsx`).
-- `[x]` **Incident History**: List of reported incidents with real-time status tracking (Pending, Dispatched, Resolved) and authority notes (`src/features/incidents/pages/IncidentHistoryPage.jsx`).
+## 👥 Groups (`src/features/groups/pages/`)
+- `[ ]` **CreateGroupPage.jsx**: Displays a generated Invite Token (QR Code placeholder). Make it look like a premium digital ticket.
+- `[ ]` **JoinGroupPage.jsx**: Token input field. Style it like a high-tech scanner.
 
-## 👤 Profile & Chatbot
-- `[x]` **Profile Page**: Digital Tourist Safety ID Card (blockchain verified tag, QR code, blood group, emergency contact) and editable profile records (`src/features/profile/pages/ProfilePage.jsx`).
-- `[x]` **Chatbot UI**: Floating 24/7 **Rakshak AI** safety assistant widget with conversational responses, quick suggestion chips, hospital finder, and emergency helpline locator (`src/components/chatbot/ChatbotWidget.jsx`).
-- `[x]` **Authority Dashboard**: Live SOS triage feed, crowd density monitor, and mass emergency broadcast alert modal (`src/features/authority/pages/AuthorityDashboardPage.jsx`).
+## 🚨 Incidents & Safety (`src/features/incidents/pages/`)
+- `[ ]` **ReportIncidentPage.jsx**: The hazard reporting form. Make the file upload look like a modern drag-and-drop zone.
+- `[ ]` **IncidentHistoryPage.jsx**: List of past reports and their resolution status.
+
+## 🤖 Chatbot (`src/components/chatbot/`)
+- `[ ]` **ChatbotWidget.jsx**: The floating Rakshak AI widget. Needs a chat bubble, message history window, and quick-action chips.
+
+## 🏢 Authority Command Center (`src/features/authority/pages/`)
+- `[ ]` **AuthorityDashboardPage.jsx**: The disaster manager's view. Needs to look dense but readable. Style the "Active SOS Alerts" feed to look like a high-tech dispatch terminal with pulsing red indicators. Style the "Recent Hazards" feed.
 
 ---
 
 ## 📝 Design Notes & Discussion
-All design tasks are completed and verified against Vite build!
+*(Prachi, feel free to drop any questions, Figma links, or global design notes here!)*
+
+*Remember to test your designs on both mobile (Tourist side) and desktop (Authority side) to ensure responsiveness.*

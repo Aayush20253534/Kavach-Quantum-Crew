@@ -880,3 +880,27 @@ The product must prioritize:
 > **Safety, clarity, speed, and ease of use over unnecessary complexity.**
 
 A tourist should be able to understand their current safety situation and access critical actions with minimal effort.
+
+---
+
+# 38. Tracking, Map, Geofencing, & Real-Time Requirements
+
+## 38.1 Authentication (OTP Integration)
+- The registration flow must create an unverified account.
+- The user must complete an email OTP verification step to receive their access session.
+- The UI must support "Resend OTP", handling cooldowns and generic responses securely.
+
+## 38.2 GPS Tracking & Map Integration
+- The application must request browser location permissions and gracefully handle denial or unavailability.
+- Continuous location tracking (`watchPosition`) must be active during active trips and strictly stopped otherwise.
+- The map must visually represent the user's location, active geofences (safety zones), and group members.
+- OpenStreetMap is the primary mapping provider.
+
+## 38.3 Geofencing
+- The frontend will visualize geofences provided by the backend API.
+- **Critical:** The frontend MUST NOT execute independent local algorithms for authoritative safety alerts based on geofence overlap. The backend remains the sole authority for safety states and evaluations.
+
+## 38.4 Real-Time (Socket.IO) & Notifications
+- Socket.IO will be used to stream real-time alerts, incidents, location updates, and notifications when authenticated gateways are exposed.
+- Events will immediately synchronize with the TanStack Query cache.
+- Notifications require clear visual states: unread, historical, critical.

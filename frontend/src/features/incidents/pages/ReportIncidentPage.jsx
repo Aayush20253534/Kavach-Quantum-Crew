@@ -4,19 +4,14 @@ import {
   AlertTriangle, 
   MapPin, 
   Camera, 
-  FileText, 
-  ShieldAlert, 
   ArrowRight, 
   CheckCircle2, 
-  PhoneCall,
-  Lock
 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 import { Textarea } from '../../../components/ui/Textarea';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../../../components/ui/Card';
-import { Badge } from '../../../components/ui/Badge';
 
 export function ReportIncidentPage() {
   const navigate = useNavigate();

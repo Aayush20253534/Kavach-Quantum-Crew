@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,19 +9,15 @@ import {
   User, 
   HeartPulse, 
   PhoneCall, 
-  Lock, 
   CheckCircle2, 
   ArrowRight, 
   ArrowLeft,
-  Sparkles,
-  MapPin,
-  FileText
 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 import { Textarea } from '../../../components/ui/Textarea';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../../../components/ui/Card';
+import { Card, CardContent, CardFooter } from '../../../components/ui/Card';
 import { completeOnboarding } from '../../auth/store/authSlice';
 
 const onboardingSchema = z.object({
@@ -42,7 +38,6 @@ const onboardingSchema = z.object({
 export function OnboardingPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
   const [step, setStep] = useState(1);
 
   const {

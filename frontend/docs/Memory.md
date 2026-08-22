@@ -7,12 +7,12 @@ The frontend is a modern, high-aesthetic React + Vite application structured usi
 - `src/app/`: Application core, containing `App.jsx`, `router.jsx`, `providers.jsx`, route `guards/`, and shared `layouts/` (`PublicLayout`, `AuthLayout`, `TouristLayout`, `AuthorityLayout`).
 - `src/components/ui/`: Reusable UI elements (`Button`, `SOSButton`, `Input`, `Select`, `Textarea`, `Card`, `Badge`, `Modal`, `Loader`, `EmptyState`).
 - `src/components/chatbot/`: Floating `ChatbotWidget.jsx` (Rakshak AI Safety Companion).
-- `src/features/`: Domain-specific modules (`auth`, `onboarding`, `tourist`, `authority`, `trips`, `groups`, `incidents`, `profile`, `public`).
+- `src/features/`: Domain-specific modules (`auth`, `onboarding`, `tourist`, `authority`, `trips`, `groups`, `incidents`, `sos`, `profile`, `public`, and upcoming `tracking`/`realtime`).
 - `src/services/`: API clients (`apiClient.js` for Axios, `queryClient.js` for TanStack Query).
 - `src/store/`: Redux store configuration.
 - `src/lib/`: Shared utilities (`utils.js` with `cn()`).
 - `src/styles/`: Global dark theme tokens, glowing border utilities, radar sweep animations in `globals.css`.
-- `docs/`: Project documentation (`Rules.md`, `Phases.md`, `Design.md`, `Architecture.md`, `PRD.md`, `Prachi.md`).
+- `docs/`: Project documentation (`Rules.md`, `Phases.md`, `Design.md`, `Architecture.md`, `PRD.md`, `Prachi.md`, `Aayansh.md`).
 
 ## 2. Technologies & Libraries
 - **Core:** React (v19), Vite (v8)
@@ -44,9 +44,33 @@ The frontend is a modern, high-aesthetic React + Vite application structured usi
   - `AuthorityDashboardPage` (Live SOS triage feed, crowd density monitor, mass broadcast alert modal).
   - `ChatbotWidget` (Rakshak AI 24/7 Safety Assistant).
 
-## 4. Current Phase & Progress
-**Current Phase:** Phase 1-4 & Core Feature UI Design Complete
-**Status:** Completed & Verified against Vite build (`npm run build` passed in 4.05s).
+### Current Phase Status
+- **Phase 1 (Authentication):** Completed & Wired (Redux + Axios Interceptors)
+- **Phase 2 (Onboarding):** Completed & Wired
+- **Phase 3 (Trips & Groups):** Completed & Wired (TanStack React Query)
+- **Phase 4 (Maps & Tracking):** Completed & Wired (React-Leaflet, Background GPS)
+- **Phase 5 (SOS & Incidents):** Completed & Wired (Multipart evidence upload, Dispatch)
+- **Phase 6 (Authority Command Center):** Completed & Wired (Live feeds, Hazard resolution)
 
-## 5. Next Recommended Step
-Proceed to connect live backend REST endpoints / WebSockets for live SOS dispatching and database integration when backend contracts are ready.
+> **Overall Frontend Status:** The functional integration (Aayansh's responsibility) is **100% complete**. The UI is currently using basic Tailwind placeholders. The next step is for Prachi to design these functional components according to the `Design.md` aesthetics.
+
+## 4. Current Phase & Progress
+**Current Phase:** Core Feature UI Design Complete & API Integration Pending.
+**Status:** In Progress. UI verified against Vite build. (Documentation updated for incoming Phase 2 and 3.5 integrations).
+
+- **Backend Availability:** The backend basic flow, SMTP-based OTP email verification, and functional HTTP geofencing (`/api/v1/risk-zones`) are now fully available and documented in `ENDPOINTS.md`.
+- **Frontend Work Remaining:** The frontend must now connect live backend REST endpoints / WebSockets. This includes integrating OTP verification, OpenStreetMap map rendering, browser GPS tracking, and geofence visualization.
+
+## 5. New Technical Decisions
+- **Map Strategy:** Implement map purely as a presentational layer using OpenStreetMap, keeping it decoupled from GPS lifecycle logic so it can be swapped to Google Maps if needed.
+- **GPS Architecture:** Centralize browser geolocation (`watchPosition`) into a dedicated tracking feature independent of the UI map components.
+- **Geofence Authority:** The frontend will visualize geofences fetched from the backend, but the **backend is the absolute authority** on safety decisions. The frontend will not run local overlap algorithms to trigger critical alerts.
+- **Socket.IO Architecture:** Integrate `socket.io-client` with authenticated handshakes.
+- **Server-State Synchronization:** Real-time Socket.IO events will directly update/invalidate TanStack Query caches rather than duplicating data into Redux.
+
+## 6. Known Blockers
+- **Socket.IO Contracts Missing:** The backend's `socketServer.js` currently indicates "Phase 0 exposes no location or incident events." Thus, exact Socket.IO event names, room contracts, payload schemas, and authentication handshake requirements remain unknown and blocked.
+
+## 7. Next Recommended Step
+The exact next implementation task is:
+**Step 0 & 1 of `Aayansh.md`** — Inspect existing Auth slices and implement the OTP Authentication Flow (`/api/v1/auth/register` and `/api/v1/auth/verify-email`) using the newly available backend endpoints. After authentication is wired, proceed to connect live backend REST endpoints / WebSockets for live SOS dispatching and database integration when backend contracts are ready.
