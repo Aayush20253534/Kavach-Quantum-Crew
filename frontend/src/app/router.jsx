@@ -17,6 +17,7 @@ import { NotFoundPage } from '../features/public/pages/NotFoundPage';
 // Pages - Auth
 import LoginPage from '../features/auth/pages/LoginPage';
 import { RegisterPage } from '../features/auth/pages/RegisterPage';
+import { VerifyEmailPage } from '../features/auth/pages/VerifyEmailPage';
 
 // Pages - Onboarding
 import { OnboardingPage } from '../features/onboarding/pages/OnboardingPage';
@@ -51,6 +52,7 @@ export const router = createBrowserRouter([
         children: [
           { path: 'login', element: <LoginPage /> },
           { path: 'register', element: <RegisterPage /> },
+          { path: 'verify-email', element: <VerifyEmailPage /> },
         ],
       },
     ],
