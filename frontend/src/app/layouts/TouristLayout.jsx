@@ -29,11 +29,27 @@ export function TouristLayout() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isSosModalOpen, setIsSosModalOpen] = useState(false);
+  const [sosState, setSosState] = useState('idle'); // 'idle' | 'triggering' | 'active'
 
   const handleLogout = () => {
     dispatch(logout());
     navigate('/login');
+  };
+
+  const handleTriggerSOS = () => {
+    setSosState('triggering');
+    // Simulate API call to POST /api/v1/sos
+    setTimeout(() => {
+      setSosState('active');
+    }, 1500);
+  };
+
+  const closeSosModal = () => {
+    setIsSosModalOpen(false);
+    setTimeout(() => setSosState('idle'), 300); // reset after animation
   };
 
   const navItems = [
@@ -53,7 +69,7 @@ export function TouristLayout() {
   const mobileNavItems = [
     { name: 'Home', path: '/tourist/dashboard', icon: LayoutDashboard },
     { name: 'Radar', path: '/tourist/tracking', icon: Navigation },
-    { name: 'SOS', path: '/tourist/incidents/report', icon: Phone, isSos: true },
+    { name: 'SOS', path: '#', icon: Phone, isSos: true },
     { name: 'Trips', path: '/tourist/trips/current', icon: Compass },
     { name: 'Profile', path: '/tourist/profile', icon: User },
   ];
@@ -62,7 +78,72 @@ export function TouristLayout() {
   const initial = userName.charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] text-slate-900 antialiased font-sans">
+    <div className="min-h-screen bg-[#f8f9fa] text-slate-900 antialiased font-sans relative">
+
+      {/* GLOBAL SOS MODAL */}
+      {isSosModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl relative flex flex-col items-center text-center">
+            
+            {sosState === 'idle' && (
+              <>
+                <button 
+                  onClick={closeSosModal}
+                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-slate-500 hover:text-slate-900 cursor-pointer transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
+                  <Phone className="w-10 h-10 animate-pulse" />
+                </div>
+                <h2 className="text-[20px] font-black text-slate-900 uppercase tracking-tight mb-2">Emergency SOS</h2>
+                <p className="text-[13px] text-slate-500 font-medium mb-8 leading-relaxed">
+                  This will immediately alert local police, medical teams, and your emergency contacts with your live location.
+                </p>
+                <button 
+                  onClick={handleTriggerSOS}
+                  className="w-full bg-[#e11d48] hover:bg-[#be123c] text-white py-4 rounded-xl font-black text-[14px] uppercase tracking-widest shadow-[0_4px_20px_0_rgba(225,29,72,0.4)] transition-all active:scale-95 cursor-pointer"
+                >
+                  PRESS TO TRIGGER SOS
+                </button>
+                <button 
+                  onClick={closeSosModal}
+                  className="w-full mt-3 py-3 text-slate-500 font-bold text-[12px] uppercase tracking-wider hover:text-slate-900 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+
+            {sosState === 'triggering' && (
+              <div className="py-8">
+                <div className="w-20 h-20 border-4 border-red-100 border-t-red-600 rounded-full animate-spin mx-auto mb-6"></div>
+                <h2 className="text-[18px] font-black text-slate-900 uppercase tracking-tight">Transmitting...</h2>
+                <p className="text-[12px] text-slate-500 font-medium mt-2">Connecting to Prayagraj Command Center</p>
+              </div>
+            )}
+
+            {sosState === 'active' && (
+              <div className="py-4">
+                <div className="w-24 h-24 bg-red-600 text-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_rgba(225,29,72,0.6)] animate-pulse">
+                  <ShieldCheck className="w-12 h-12" />
+                </div>
+                <h2 className="text-[22px] font-black text-slate-900 uppercase tracking-tight mb-2">SOS ACTIVE</h2>
+                <p className="text-[13px] text-slate-600 font-medium mb-6 leading-relaxed">
+                  Police Patrol PCR #14 is en route to your location. Stay calm and remain at your current position if safe.
+                </p>
+                <button 
+                  onClick={closeSosModal}
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl font-bold text-[12px] uppercase tracking-widest shadow-lg transition-colors cursor-pointer"
+                >
+                  I Understand
+                </button>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
 
       {/* =========================================================
           DESKTOP SIDEBAR
@@ -187,7 +268,11 @@ export function TouristLayout() {
 
         {/* Bottom Actions */}
         <div className={`pt-4 border-t border-slate-100 bg-white space-y-4 ${isCollapsed ? 'p-3' : 'p-6'}`}>
-          <button className={`w-full bg-[#e11d48] hover:bg-[#be123c] text-white py-3.5 rounded-xl font-bold text-[13px] tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 cursor-pointer ${isCollapsed ? 'px-0' : 'px-4'}`} title={isCollapsed ? "SOS EMERGENCY" : undefined}>
+          <button 
+            onClick={() => setIsSosModalOpen(true)}
+            className={`w-full bg-[#e11d48] hover:bg-[#be123c] text-white py-3.5 rounded-xl font-bold text-[13px] tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 cursor-pointer ${isCollapsed ? 'px-0' : 'px-4'}`} 
+            title={isCollapsed ? "SOS EMERGENCY" : undefined}
+          >
             <Phone className="w-4 h-4 shrink-0" />
             {!isCollapsed && "SOS EMERGENCY"}
           </button>
@@ -238,11 +323,6 @@ export function TouristLayout() {
 
           {/* Right: Actions & Profile */}
           <div className="flex items-center gap-2 sm:gap-4">
-            <button className="hidden sm:flex bg-[#e11d48] hover:bg-[#be123c] text-white px-6 py-2.5 rounded-xl font-bold text-[13px] tracking-wide items-center justify-center gap-2 shadow-[0_4px_10px_0_rgba(225,29,72,0.2)] transition-all active:scale-95 cursor-pointer">
-              <Phone className="w-4 h-4" />
-              SOS
-            </button>
-
             <NotificationsDropdown />
 
             <Link to="/tourist/profile" className="hidden sm:flex items-center gap-3 pl-4 border-l border-slate-200 cursor-pointer group hover:opacity-80 transition-opacity">
@@ -273,12 +353,16 @@ export function TouristLayout() {
               
             if (item.isSos) {
               return (
-                <Link key={item.name} to={item.path} className="flex flex-col items-center justify-center gap-1 relative -top-4">
+                <button 
+                  key={item.name} 
+                  onClick={() => setIsSosModalOpen(true)}
+                  className="flex flex-col items-center justify-center gap-1 relative -top-4 cursor-pointer"
+                >
                   <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-white shadow-lg border-4 border-[#f8f9fa] shadow-red-500/30">
                     <Icon className="w-5 h-5" />
                   </div>
                   <span className="text-[10px] font-bold text-slate-900 mt-1">{item.name}</span>
-                </Link>
+                </button>
               );
             }
 
