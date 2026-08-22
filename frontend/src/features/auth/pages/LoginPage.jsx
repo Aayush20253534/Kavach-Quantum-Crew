@@ -68,7 +68,7 @@ export default function LoginPage() {
         email: data.identifier.includes('@') ? data.identifier : `${data.identifier}@touristsafety.in`,
         role: data.role,
         department: isAuthority ? 'Prayagraj Police & Tourism Security' : undefined,
-        onboardingComplete: true,
+        onboardingComplete: isAuthority ? true : false,
       };
 
       dispatch(setAuth({ user: userPayload }));
@@ -99,7 +99,7 @@ export default function LoginPage() {
   };
 
   return (
-    <Card variant="elevated" className="border-slate-800/80 bg-slate-900/85 backdrop-blur-2xl shadow-2xl rounded-3xl overflow-hidden">
+    <Card variant="elevated" className="border-slate-200 bg-white/90 backdrop-blur-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-3xl overflow-hidden">
       {/* Top Accent Stripe */}
       <div className={`h-1.5 w-full transition-colors duration-500 ${selectedRole === 'AUTHORITY' ? 'bg-amber-500' : 'bg-sky-500'}`} />
 
@@ -107,22 +107,22 @@ export default function LoginPage() {
         <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-500/25">
           <ShieldCheck className="h-7 w-7" />
         </div>
-        <CardTitle className="justify-center text-2xl font-black tracking-tight text-white">
+        <CardTitle className="justify-center text-2xl font-black tracking-tight text-slate-900">
           Prayagraj Safety Portal
         </CardTitle>
-        <CardDescription className="text-xs text-slate-400">
+        <CardDescription className="text-xs text-slate-500">
           Sign in to access real-time tourist monitoring, SOS networks & passes
         </CardDescription>
 
         {/* Role Toggle Tab */}
-        <div className="mt-5 grid grid-cols-2 gap-1 rounded-2xl bg-slate-950/80 p-1.5 border border-slate-800">
+        <div className="mt-5 grid grid-cols-2 gap-1 rounded-2xl bg-slate-100 p-1.5 border border-slate-200">
           <button
             type="button"
             onClick={() => handleRoleChange('TOURIST')}
             className={`flex items-center justify-center gap-2 rounded-xl py-2 text-xs font-bold transition-all ${
               selectedRole === 'TOURIST'
                 ? 'bg-sky-500 text-white shadow-md shadow-sky-500/30'
-                : 'text-slate-400 hover:text-white'
+                : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             <User className="h-3.5 w-3.5" />
@@ -133,8 +133,8 @@ export default function LoginPage() {
             onClick={() => handleRoleChange('AUTHORITY')}
             className={`flex items-center justify-center gap-2 rounded-xl py-2 text-xs font-bold transition-all ${
               selectedRole === 'AUTHORITY'
-                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-amber-500 text-white shadow-md shadow-amber-500/30'
+                : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             <ShieldAlert className="h-3.5 w-3.5" />
@@ -148,6 +148,7 @@ export default function LoginPage() {
           <input type="hidden" {...register('role')} />
 
           <Input
+            variant="light"
             label={selectedRole === 'AUTHORITY' ? 'Badge ID or Official Email' : 'Email or Username'}
             leftIcon={User}
             placeholder={selectedRole === 'AUTHORITY' ? 'officer_sharma' : 'prachi_m or prachi@example.com'}
@@ -157,6 +158,7 @@ export default function LoginPage() {
 
           <div className="relative">
             <Input
+              variant="light"
               label="Password"
               type={showPassword ? 'text' : 'password'}
               leftIcon={LockKeyhole}
@@ -168,28 +170,43 @@ export default function LoginPage() {
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
+<<<<<<< HEAD
               className="absolute right-3.5 top-9 text-slate-400 hover:text-white transition-colors"
+=======
+              className="absolute right-3.5 top-9 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+>>>>>>> f0a68452 (feat: implement authentication module with login page, onboarding structure, and reusable UI form components)
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
 
           <div className="flex items-center justify-between text-xs">
-            <label className="flex items-center gap-2 text-slate-300 cursor-pointer select-none">
+            <label className="flex items-center gap-2 text-slate-700 cursor-pointer select-none">
               <input
                 type="checkbox"
                 {...register('rememberMe')}
-                className="h-4 w-4 rounded bg-slate-950 border-slate-700 text-sky-500 focus:ring-sky-500"
+                className="h-4 w-4 rounded bg-white border-slate-300 text-sky-600 focus:ring-sky-600"
               />
               Remember me
             </label>
+<<<<<<< HEAD
             <a href="#forgot" onClick={(e) => { e.preventDefault(); alert('Please contact tourism support or your registered phone number.'); }} className="text-sky-400 hover:underline">
+=======
+            <a
+              href="#forgot"
+              onClick={(e) => {
+                e.preventDefault();
+                alert('Please contact tourism support at 1363 or your registered mobile number.');
+              }}
+              className="text-sky-600 hover:underline font-medium"
+            >
+>>>>>>> f0a68452 (feat: implement authentication module with login page, onboarding structure, and reusable UI form components)
               Forgot password?
             </a>
           </div>
 
           {authError && (
-            <div className="rounded-xl bg-red-950/40 border border-red-500/30 p-3 text-xs text-red-300">
+            <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-600 font-medium">
               {authError}
             </div>
           )}
@@ -213,37 +230,45 @@ export default function LoginPage() {
         {/* 1-Click Demo Buttons for presentation */}
         <div className="pt-2">
           <div className="relative flex py-1 items-center">
-            <div className="flex-grow border-t border-slate-800"></div>
+            <div className="flex-grow border-t border-slate-200"></div>
             <span className="flex-shrink mx-2 text-[10px] uppercase tracking-wider text-slate-500 font-semibold flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-sky-400" /> Demo Quick Login
+              <Sparkles className="w-3 h-3 text-sky-500" /> Demo Quick Login
             </span>
-            <div className="flex-grow border-t border-slate-800"></div>
+            <div className="flex-grow border-t border-slate-200"></div>
           </div>
 
           <div className="grid grid-cols-2 gap-2 mt-2">
             <button
               type="button"
               onClick={() => handleQuickDemoLogin('TOURIST')}
+<<<<<<< HEAD
               className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/80 hover:bg-sky-500/10 border border-slate-800 hover:border-sky-500/30 text-[11px] font-bold text-slate-300 transition-all"
+=======
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-sky-50 border border-slate-200 hover:border-sky-200 text-[11px] font-bold text-slate-600 transition-all cursor-pointer shadow-sm"
+>>>>>>> f0a68452 (feat: implement authentication module with login page, onboarding structure, and reusable UI form components)
             >
-              <CheckCircle2 className="w-3.5 h-3.5 text-sky-400" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-sky-500" />
               Fill Tourist Demo
             </button>
             <button
               type="button"
               onClick={() => handleQuickDemoLogin('AUTHORITY')}
+<<<<<<< HEAD
               className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/80 hover:bg-amber-500/10 border border-slate-800 hover:border-amber-500/30 text-[11px] font-bold text-slate-300 transition-all"
+=======
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-200 text-[11px] font-bold text-slate-600 transition-all cursor-pointer shadow-sm"
+>>>>>>> f0a68452 (feat: implement authentication module with login page, onboarding structure, and reusable UI form components)
             >
-              <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-amber-500" />
               Fill Police Demo
             </button>
           </div>
         </div>
 
         {/* Bottom register link */}
-        <div className="pt-2 text-center text-xs text-slate-400 border-t border-slate-800/80">
+        <div className="pt-2 text-center text-xs text-slate-600 border-t border-slate-200">
           New tourist in Prayagraj?{' '}
-          <Link to="/register" className="font-bold text-sky-400 hover:underline">
+          <Link to="/register" className="font-bold text-sky-600 hover:underline">
             Register Digital ID →
           </Link>
         </div>
