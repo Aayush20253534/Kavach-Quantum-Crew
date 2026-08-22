@@ -67,23 +67,22 @@ These are the foundational building blocks following the dark theme guidelines i
 
 ---
 
-# 📍 NEW: Tracking, Map, & Real-Time Assignments
-*Backend capabilities for geofencing, OTP, and tracking are now functional. Please design the following UI states:*
+# 📍 NEW: Functional Integration Design Tasks
+*The backend APIs are ready and we are wiring up the logic. Please design the following micro-interactions and missing screens to support the data flow:*
 
-## 🗺️ Map and Live Tracking
-- `[ ]` **Map Visual State**: General styling for the OpenStreetMap layout.
-- `[ ]` **Current Location Marker**: With uncertainty/accuracy radius if applicable.
-- `[ ]` **Group Member Markers**: Distinct from the current user.
-- `[ ]` **Safe Zone / Geofence Visualization**: How risk polygons/circles appear on the map.
-- `[ ]` **Permission States**: Request state, Denied state, Location Unavailable state.
+## 🔐 Authentication & Flow
+- `[ ]` **OTP Verification Screen**: Design the 6-digit PIN input screen that appears after Registration for Email Verification (`/verify-email`).
+- `[ ]` **Form States**: Ensure all inputs in Login/Register/Onboarding have clear `Loading`, `Disabled`, and inline `Error` text states.
+- `[ ]` **Toast Notifications**: Design a generic success/error toast component (e.g., "Invalid Credentials", "Trip Created Successfully").
 
-## 🚨 Active Trip & Alerts
-- `[ ]` **Active Tracking State**: Indicator that GPS tracking is currently active.
-- `[ ]` **Alert Presentation**: Severity levels (Warning, Danger), New Alert toast/modal, Acknowledged state, Resolved state.
+## 🗺️ Map & Tracking Overlays
+- `[ ]` **Map HUD (Heads Up Display)**: Design the floating cards that sit *on top* of the map during an Active Trip (e.g., Current Speed, Distance to Safe Zone, Next Checkpoint).
+- `[ ]` **Risk Zone Polygons**: Define the exact opacity, border thickness, and colors for drawing Danger Zones (Red), Warning Zones (Yellow), and Safe Havens (Green) on the map.
+- `[ ]` **GPS Permission Modals**: Design the "Please enable Location Services" educational prompt and the fallback "Location Denied" state.
 
-## 🔔 Notifications
-- `[ ]` **Notification Center**: List/panel for historical and real-time notifications.
-- `[ ]` **Unread & Critical States**: Visual distinction for unread or critical notifications.
+## 🚨 SOS & Incident States
+- `[ ]` **SOS Post-Trigger State**: What does the screen look like immediately *after* the SOS is confirmed and dispatched? (e.g., "Help is on the way", dispatch ETA, instructions to stay calm).
+- `[ ]` **Evidence Upload UI**: Design the image attachment thumbnail, progress bar, and remove button for the `ReportIncidentPage.jsx`.
 
 *(Note: Prachi designs the visual experience. Aayansh will implement the technical API and Socket.IO integrations).*
 
