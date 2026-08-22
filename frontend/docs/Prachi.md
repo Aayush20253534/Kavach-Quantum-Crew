@@ -29,14 +29,14 @@ Please design and polish the following newly functional pages and components fro
 - `[ ]` **EmptyState.jsx**: Friendly "No data found" views for empty lists.
 
 ## 📐 Application Layouts (`src/app/layouts/`)
-- `[ ]` **PublicLayout.jsx**: Navbars and Footers for the landing page.
-- `[ ]` **AuthLayout.jsx**: A clean, distraction-free split-screen layout for login/register.
-- `[ ]` **TouristLayout.jsx**: Must include a mobile-first Bottom Navigation Bar and a desktop sidebar.
-- `[ ]` **AuthorityLayout.jsx**: A professional, dense sidebar layout for disaster managers.
+- `[x]` **PublicLayout.jsx**: Navbars and Footers for the landing page.
+- `[x]` **AuthLayout.jsx**: A clean, distraction-free split-screen layout for login/register.
+- `[x]` **TouristLayout.jsx**: Must include a mobile-first Bottom Navigation Bar and a desktop sidebar.
+- `[x]` **AuthorityLayout.jsx**: A professional, dense sidebar layout for disaster managers.
 
 ## 🌐 Public Pages (`src/features/public/pages/`)
 - `[ ]` **HomePage.jsx**: The high-converting landing page. Hero section, features, safety statistics, and call-to-actions.
-- `[ ]` **NotFoundPage.jsx**: Creative 404 page.
+- `[x]` **NotFoundPage.jsx**: Creative 404 page.
 
 ## 🔐 Auth Pages (`src/features/auth/pages/`)
 - `[x]` **LoginPage.jsx**: Login form with role selection (Tourist/Authority/Admin).
