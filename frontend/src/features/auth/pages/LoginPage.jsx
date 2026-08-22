@@ -22,6 +22,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import { authService } from "../api/authService";
 import prayagrajImage from "../../../assets/prayagraj-temple.jpg";
 
 
@@ -98,23 +99,40 @@ export default function LoginPage() {
     setLoginError("");
 
     try {
-      console.log({
-        ...data,
-        role: selectedRole,
+      // If backend uses "email" or "username" field, handle it.
+      // Assuming 'identifier' is used in the backend for both, or we map it:
+      const response = await authService.login({
+        identifier: data.identifier,
+        password: data.password,
+        role: selectedRole.toUpperCase(), // Assuming backend expects TOURIST / AUTHORITY
       });
 
-      if (selectedRole === "tourist") {
-        navigate("/tourist/dashboard");
-      } else {
-        navigate("/authority/dashboard");
+      // Save token and fetch user
+      if (response.accessToken) {
+        localStorage.setItem('quantum_access_token', response.accessToken);
+        
+        // We can either fetch /me right here or let a window reload / App redirect handle it
+        // Or we could dispatch directly if we imported dispatch & setAuth
+        
+        if (selectedRole === "tourist") {
+          navigate("/tourist/dashboard");
+        } else {
+          navigate("/authority/dashboard");
+        }
+        
+        // Force reload to trigger AuthInitializer to fetch /me and redirect
+        window.location.reload();
       }
 
     } catch (error) {
       console.error(error);
-
-      setLoginError(
-        "Unable to login. Please check your credentials."
-      );
+      const errMsg = error.response?.data?.message || "Unable to login. Please check your credentials.";
+      setLoginError(errMsg);
+      
+      // If email verification is required:
+      if (error.response?.data?.code === 'EMAIL_VERIFICATION_REQUIRED' || errMsg.includes('verification')) {
+        navigate('/verify-email', { state: { email: data.identifier } });
+      }
     }
   };
 
