@@ -34,7 +34,7 @@ const authSlice = createSlice({
       } catch (e) {}
     },
     completeOnboarding: (state, action) => {
-      state.user = { ...state.user, ...action.payload, onboardingComplete: true };
+      state.user = { ...state.user, ...action.payload, onboardingCompleted: true };
       try {
         localStorage.setItem('kavach_auth', JSON.stringify({ user: state.user, isAuthenticated: state.isAuthenticated }));
       } catch (e) {}
@@ -47,6 +47,7 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       try {
         localStorage.removeItem('kavach_auth');
+        localStorage.removeItem('quantum_access_token');
       } catch (e) {}
     },
   },

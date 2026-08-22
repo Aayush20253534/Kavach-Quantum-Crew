@@ -72,7 +72,7 @@ export const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           {
-            element: <RoleRoute allowedRoles={['TOURIST', 'ADMIN', 'AUTHORITY']} />,
+            element: <RoleRoute allowedRoles={['TOURIST']} />,
             children: [
               {
                 element: <TouristLayout />,
@@ -97,7 +97,7 @@ export const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           {
-            element: <RoleRoute allowedRoles={['AUTHORITY', 'ADMIN', 'TOURIST']} />,
+            element: <RoleRoute allowedRoles={['DISASTER_MANAGER', 'SYSTEM_ADMIN']} />,
             children: [
               {
                 element: <AuthorityLayout />,
