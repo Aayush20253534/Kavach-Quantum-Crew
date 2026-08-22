@@ -44,7 +44,7 @@ Please design and polish the following newly functional pages and components fro
 - `[x]` **VerifyEmailPage.jsx**: The 6-box OTP input screen with auto-focus, email editor, and resend countdown.
 
 ## 👤 Onboarding & Profile
-- `[ ]` **OnboardingPage.jsx** (`src/features/onboarding/pages/`): A wizard for Medical Details and dynamically adding Emergency Contacts.
+- `[x]` **OnboardingPage.jsx** (`src/features/onboarding/pages/`): A wizard for Medical Details and dynamically adding Emergency Contacts.
 - `[ ]` **ProfilePage.jsx** (`src/features/profile/pages/`): A digital Tourist ID card displaying the user's safety profile and settings.
 
 ## 🗺️ Tourist Dashboard & Tracking
@@ -65,7 +65,7 @@ Please design and polish the following newly functional pages and components fro
 - `[ ]` **IncidentHistoryPage.jsx**: List of past reports and their resolution status.
 
 ## 🤖 Chatbot (`src/components/chatbot/`)
-- `[ ]` **ChatbotWidget.jsx**: The floating Rakshak AI widget. Needs a chat bubble, message history window, and quick-action chips.
+- `[x]` **ChatbotWidget.jsx**: The floating Rakshak AI widget. Needs a chat bubble, message history window, and quick-action chips.
 
 ## 🏢 Authority Command Center (`src/features/authority/pages/`)
 - `[ ]` **AuthorityDashboardPage.jsx**: The disaster manager's view. Needs to look dense but readable. Style the "Active SOS Alerts" feed to look like a high-tech dispatch terminal with pulsing red indicators. Style the "Recent Hazards" feed.
