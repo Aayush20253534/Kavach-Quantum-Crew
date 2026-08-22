@@ -67,7 +67,7 @@ export function AuthLayout() {
         {/* Top Bar (Language Selector) */}
 
         {/* Center Form Container */}
-        <div className="flex-1 flex flex-col justify-center w-full mx-auto relative z-0 h-full overflow-hidden pt-12">
+        <div className="flex-1 flex flex-col justify-center w-full mx-auto relative z-0 h-full overflow-hidden">
           <div className="mx-auto flex w-full max-w-[440px] flex-col px-6 sm:px-10 h-full justify-center">
             <Outlet />
           </div>
