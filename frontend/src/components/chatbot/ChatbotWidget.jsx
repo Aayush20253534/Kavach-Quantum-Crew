@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+<<<<<<< HEAD
 import { MessageSquare, X, Send, Bot, User, Sparkles, Shield, MapPin, PhoneCall, AlertTriangle } from 'lucide-react';
 import { Button } from '../ui/Button';
 
@@ -22,6 +23,27 @@ export function ChatbotWidget() {
     '🌊 Is Sangam ghat safe right now?',
     '🚨 Emergency police helpline numbers?',
     '👥 How do I invite my family to my group?',
+=======
+import { MessageSquare, X, Send, Bot, User, AlertCircle, MapPin, Activity } from 'lucide-react';
+
+export function ChatbotWidget() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      sender: 'ai',
+      text: 'Namaste! I am your Prayagraj safety assistant. How can I help you today?',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    },
+  ]);
+  const messagesEndRef = useRef(null);
+
+  const quickActions = [
+    { label: 'Nearest Safe Zone', icon: MapPin },
+    { label: 'Report Issue', icon: AlertCircle },
+    { label: 'Current Crowds', icon: Activity },
+>>>>>>> afb0877c (feat: implement GlobalLayout and move ChatbotWidget to root-level layout for consistent access across all routes)
   ];
 
   const scrollToBottom = () => {
@@ -29,6 +51,7 @@ export function ChatbotWidget() {
   };
 
   useEffect(() => {
+<<<<<<< HEAD
     if (isOpen) {
       scrollToBottom();
     }
@@ -111,10 +134,64 @@ export function ChatbotWidget() {
                   <span className="text-[10px] px-1.5 py-0.2 rounded bg-sky-500/20 text-sky-400 font-semibold">Safety Bot</span>
                 </div>
                 <p className="text-[10px] text-emerald-400 font-medium">Live • 24/7 Tourist Support</p>
+=======
+    scrollToBottom();
+  }, [messages, isOpen]);
+
+  const handleSend = (e) => {
+    e.preventDefault();
+    if (!message.trim()) return;
+
+    // Add user message
+    const newMsg = {
+      id: Date.now(),
+      sender: 'user',
+      text: message,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setMessages((prev) => [...prev, newMsg]);
+    setMessage('');
+
+    // Simulate AI response
+    setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          sender: 'ai',
+          text: 'Acknowledged. Retrieving relevant data from the municipal grid...',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    }, 1000);
+  };
+
+  const handleQuickAction = (action) => {
+    setMessage(action.label);
+  };
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end font-sans">
+      {/* Chat Window */}
+      {isOpen && (
+        <div className="w-[340px] sm:w-[380px] h-[500px] max-h-[80vh] bg-white rounded-md shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 mb-4 flex flex-col overflow-hidden">
+          {/* Header */}
+          <div className="bg-white border-b border-slate-200 p-4 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-red-50 flex items-center justify-center border border-red-100 text-red-600 rounded-md">
+                <Bot size={16} />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 text-[13px] tracking-tight mb-0.5">
+                  Rakshak AI
+                </h3>
+                <p className="text-[10px] text-slate-500 font-medium">Tourist Safety Assistant</p>
+>>>>>>> afb0877c (feat: implement GlobalLayout and move ChatbotWidget to root-level layout for consistent access across all routes)
               </div>
             </div>
             <button
               onClick={() => setIsOpen(false)}
+<<<<<<< HEAD
               className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
@@ -203,6 +280,93 @@ export function ChatbotWidget() {
           </div>
         </div>
       )}
+=======
+              className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-md transition-colors"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex gap-2 max-w-[85%] ${
+                  msg.sender === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'
+                }`}
+              >
+                <div
+                  className={`w-6 h-6 flex items-center justify-center shrink-0 mt-0.5 rounded-md ${
+                    msg.sender === 'user'
+                      ? 'bg-red-50 text-red-600 border border-red-100'
+                      : 'bg-white text-slate-600 border border-slate-200'
+                  }`}
+                >
+                  {msg.sender === 'user' ? <User size={12} /> : <Bot size={12} />}
+                </div>
+                <div className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
+                  <div
+                    className={`px-3 py-2 text-xs leading-relaxed shadow-sm ${
+                      msg.sender === 'user'
+                        ? 'bg-[#e33636] text-white rounded-md rounded-tr-none'
+                        : 'bg-white border border-slate-200 text-slate-800 rounded-md rounded-tl-none'
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
+                  <span className="text-[9px] text-slate-400 mt-1 px-0.5">{msg.time}</span>
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Quick Actions & Input Area */}
+          <div className="bg-white border-t border-slate-200 p-3 shrink-0 flex flex-col gap-3">
+            {/* Quick Action Chips */}
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide shrink-0">
+              {quickActions.map((action, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleQuickAction(action)}
+                  className="flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 rounded-md bg-white border border-slate-200 text-[10px] font-semibold text-slate-500 hover:bg-red-50/50 hover:text-red-600 hover:border-red-200 transition-colors"
+                >
+                  <action.icon size={12} />
+                  {action.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Input Form */}
+            <form onSubmit={handleSend} className="relative flex items-center">
+              <input
+                type="text"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Type your message..."
+                className="h-9 w-full rounded-md border border-slate-200 bg-white pl-3 pr-10 text-xs text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
+              />
+              <button
+                type="submit"
+                disabled={!message.trim()}
+                className="absolute right-1 w-7 h-7 bg-[#e33636] text-white flex items-center justify-center rounded-md disabled:opacity-60 hover:bg-red-700 transition shadow-sm"
+              >
+                <Send size={12} className="ml-0.5" />
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Toggle Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-12 h-12 rounded-md flex items-center justify-center shadow-[0_4px_14px_0_rgb(227,54,54,0.39)] transition-colors border-none bg-[#e33636] text-white hover:bg-red-700"
+      >
+        {isOpen ? <X size={20} /> : <MessageSquare size={20} />}
+      </button>
+>>>>>>> afb0877c (feat: implement GlobalLayout and move ChatbotWidget to root-level layout for consistent access across all routes)
     </div>
   );
 }
