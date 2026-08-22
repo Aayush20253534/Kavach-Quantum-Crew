@@ -69,27 +69,17 @@ export const router = createBrowserRouter([
       },
       {
         path: '/tourist',
-        element: <ProtectedRoute />,
+        element: <TouristLayout />,
         children: [
-          {
-            element: <RoleRoute allowedRoles={['TOURIST']} />,
-            children: [
-              {
-                element: <TouristLayout />,
-                children: [
-                  { path: 'dashboard', element: <TouristDashboardPage /> },
-                  { path: 'trips/create', element: <CreateTripPage /> },
-                  { path: 'trips/current', element: <CurrentTripPage /> },
-                  { path: 'trips/history', element: <TripHistoryPage /> },
-                  { path: 'groups/create', element: <CreateGroupPage /> },
-                  { path: 'groups/join', element: <JoinGroupPage /> },
-                  { path: 'incidents/report', element: <ReportIncidentPage /> },
-                  { path: 'incidents/history', element: <IncidentHistoryPage /> },
-                  { path: 'profile', element: <ProfilePage /> },
-                ],
-              },
-            ],
-          },
+          { path: 'dashboard', element: <TouristDashboardPage /> },
+          { path: 'trips/create', element: <CreateTripPage /> },
+          { path: 'trips/current', element: <CurrentTripPage /> },
+          { path: 'trips/history', element: <TripHistoryPage /> },
+          { path: 'groups/create', element: <CreateGroupPage /> },
+          { path: 'groups/join', element: <JoinGroupPage /> },
+          { path: 'incidents/report', element: <ReportIncidentPage /> },
+          { path: 'incidents/history', element: <IncidentHistoryPage /> },
+          { path: 'profile', element: <ProfilePage /> },
         ],
       },
       {
