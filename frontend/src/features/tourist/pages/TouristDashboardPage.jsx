@@ -57,76 +57,76 @@ export function TouristDashboardPage() {
       </div>
 
       {/* Metrics Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         
         {/* TOTAL TOURISTS */}
         <Link 
           to="/tourist/groups/create" 
-          className={`bg-white rounded-md p-5 shadow-sm border border-slate-200 flex flex-col gap-2 relative overflow-hidden group hover:border-[#8b5cf6] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer block transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
+          className={`bg-white rounded-md p-3.5 shadow-sm border border-slate-200 flex flex-col gap-1.5 relative overflow-hidden group hover:border-[#8b5cf6] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer block transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
           style={{ transitionDelay: '50ms' }}
         >
-          <div className="absolute top-0 right-0 p-5 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500">
-            <Users className="w-14 h-14 text-[#8b5cf6]" />
+          <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500">
+            <Users className="w-10 h-10 text-[#8b5cf6]" />
           </div>
           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Total Tourists</p>
-          <div className="flex items-end gap-2 relative z-10">
-            <h3 className="text-[26px] font-black text-slate-900 tracking-tight leading-none">1,24,580</h3>
+          <div className="flex items-end gap-1.5 relative z-10">
+            <h3 className="text-[20px] font-black text-slate-900 tracking-tight leading-none">1,24,580</h3>
           </div>
-          <p className="text-[10px] font-bold text-[#16a34a] flex items-center gap-1">
+          <p className="text-[9px] font-bold text-[#16a34a] flex items-center gap-1">
             <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6" /></svg>
-            12.5% vs yesterday
+            12.5% vs yday
           </p>
         </Link>
 
         {/* ACTIVE ALERTS */}
         <Link 
           to="/tourist/incidents/history" 
-          className={`bg-white rounded-md p-5 shadow-sm border border-slate-200 flex flex-col gap-2 relative overflow-hidden group hover:border-[#e11d48] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer block transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
+          className={`bg-white rounded-md p-3.5 shadow-sm border border-slate-200 flex flex-col gap-1.5 relative overflow-hidden group hover:border-[#e11d48] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer block transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
           style={{ transitionDelay: '100ms' }}
         >
-          <div className="absolute top-0 right-0 p-5 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500">
-            <Bell className="w-14 h-14 text-[#e11d48]" />
+          <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500">
+            <Bell className="w-10 h-10 text-[#e11d48]" />
           </div>
           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Active Alerts</p>
-          <div className="flex items-end gap-2 relative z-10">
-            <h3 className="text-[26px] font-black text-[#e11d48] tracking-tight leading-none">07</h3>
+          <div className="flex items-end gap-1.5 relative z-10">
+            <h3 className="text-[20px] font-black text-[#e11d48] tracking-tight leading-none">07</h3>
           </div>
-          <p className="text-[10px] font-bold text-[#e11d48] flex items-center gap-1">
+          <p className="text-[9px] font-bold text-[#e11d48] flex items-center gap-1">
             <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-            2 vs yesterday
+            2 vs yday
           </p>
         </Link>
 
         {/* SAFE ZONE STATUS */}
         <div 
-          className={`bg-white rounded-md p-5 shadow-sm border border-slate-200 flex flex-col gap-2 relative overflow-hidden group hover:border-[#16a34a] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
+          className={`bg-white rounded-md p-3.5 shadow-sm border border-slate-200 flex flex-col gap-1.5 relative overflow-hidden group hover:border-[#16a34a] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
           style={{ transitionDelay: '150ms' }}
         >
-          <div className="absolute top-0 right-0 p-5 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500">
-            <ShieldCheck className="w-14 h-14 text-[#16a34a]" />
+          <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500">
+            <ShieldCheck className="w-10 h-10 text-[#16a34a]" />
           </div>
           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Safe Zone Status</p>
-          <div className="flex items-end gap-2 relative z-10">
-            <h3 className="text-[22px] font-black text-slate-900 tracking-tight leading-tight">All Clear</h3>
+          <div className="flex items-end gap-1.5 relative z-10">
+            <h3 className="text-[18px] font-black text-slate-900 tracking-tight leading-tight">All Clear</h3>
           </div>
-          <p className="text-[10px] font-bold text-slate-500">No major threats</p>
+          <p className="text-[9px] font-bold text-slate-500">No major threats</p>
         </div>
 
         {/* RESPONSE TIME */}
         <div 
-          className={`bg-white rounded-md p-5 shadow-sm border border-slate-200 flex flex-col gap-2 relative overflow-hidden group hover:border-[#0ea5e9] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
+          className={`bg-white rounded-md p-3.5 shadow-sm border border-slate-200 flex flex-col gap-1.5 relative overflow-hidden group hover:border-[#0ea5e9] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
           style={{ transitionDelay: '200ms' }}
         >
-          <div className="absolute top-0 right-0 p-5 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500">
-            <Clock className="w-14 h-14 text-[#0ea5e9]" />
+          <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500">
+            <Clock className="w-10 h-10 text-[#0ea5e9]" />
           </div>
-          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Response Time (Avg)</p>
-          <div className="flex items-end gap-2 relative z-10">
-            <h3 className="text-[26px] font-black text-slate-900 tracking-tight leading-none">12.4m</h3>
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Response Time</p>
+          <div className="flex items-end gap-1.5 relative z-10">
+            <h3 className="text-[20px] font-black text-slate-900 tracking-tight leading-none">12.4m</h3>
           </div>
-          <p className="text-[10px] font-bold text-[#16a34a] flex items-center gap-1">
+          <p className="text-[9px] font-bold text-[#16a34a] flex items-center gap-1">
             <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-            1.8m vs yesterday
+            1.8m vs yday
           </p>
         </div>
       </div>
@@ -143,11 +143,11 @@ export function TouristDashboardPage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="flex overflow-x-auto gap-3 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x snap-mandatory">
           {TOP_DESTINATIONS.map((place, idx) => (
             <div
               key={place.id}
-              className={`group relative h-40 rounded-md overflow-hidden cursor-pointer shadow-sm border border-slate-200 transition-all duration-500 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
+              className={`group relative h-36 w-[220px] shrink-0 snap-center rounded-md overflow-hidden cursor-pointer shadow-sm border border-slate-200 transition-all duration-500 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
               style={{ transitionDelay: `${350 + (idx * 50)}ms` }}
             >
               <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
@@ -249,7 +249,7 @@ export function TouristDashboardPage() {
         </div>
 
         {/* Right Panel: The Leaflet Map */}
-        <div className="flex-1 h-[400px] lg:h-auto relative bg-slate-100 overflow-hidden">
+        <div className="flex-1 h-[300px] sm:h-[400px] lg:h-auto lg:min-h-[400px] relative bg-slate-100 overflow-hidden">
           {/* Subtle fade-in overlay for the map container */}
           <div className={`absolute inset-0 z-10 pointer-events-none transition-opacity duration-1000 ${mounted ? 'opacity-0' : 'opacity-100 bg-white'}`} />
           <MapComponent
