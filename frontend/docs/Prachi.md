@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 This document is the bridge between Frontend Architecture (Aayansh) and UI/UX Design (Prachi). 
-Aayansh has successfully wired up the complete functional logic of the React application to the Backend across all 6 phases. The components are functional but are currently using very basic, placeholder Tailwind styling.
+Aayansh has successfully wired up the complete functional logic of the React application to the Backend. The components are functional but are currently using very basic, placeholder Tailwind styling.
 
 Your task is to take these functional components and apply the **Premium Design Aesthetics** (Dark modes, glassmorphism, vibrant gradients, micro-animations, modern typography) as requested by the project requirements.
 
@@ -16,40 +16,59 @@ Hi Prachi! 👋
 
 # 🚀 CURRENT DESIGN ASSIGNMENTS
 
-Please design and polish the following newly functional pages and components:
+Please design and polish the following newly functional pages and components from scratch. Since Aayansh has provided the basic structural placeholders, it's your job to make them look world-class.
 
-## 🔐 Phase 1: Authentication
-- `[ ]` **VerifyEmailPage.jsx**: Style the OTP input screen. Make it look secure and modern. Add focus states to the input.
-- `[ ]` **LoginPage.jsx & RegisterPage.jsx**: Upgrade the basic forms to have glassmorphic cards, glowing borders on focus, and smooth validation error transitions.
+## 🎨 Shared UI Components (`src/components/ui/`)
+- `[ ]` **SOSButton.jsx**: The critical "Hold to Trigger" emergency button. Make it highly visible, pulsing, and scary to press.
+- `[ ]` **Button.jsx**: Create primary, secondary, ghost, and danger variations. Add hover effects and loading states.
+- `[ ]` **Input.jsx / Select.jsx / Textarea.jsx**: Modern, clean form fields with focus rings, icons, and error states.
+- `[ ]` **Card.jsx**: Glassmorphic, elevated containers used throughout the dashboards.
+- `[ ]` **Modal.jsx**: Overlay popups with backdrop blur.
+- `[ ]` **Badge.jsx**: Status indicators (e.g. Danger, Safe, Pending).
+- `[ ]` **Loader.jsx**: Spinners and skeleton screens.
+- `[ ]` **EmptyState.jsx**: Friendly "No data found" views for empty lists.
 
-## 👤 Phase 2: Onboarding
-- `[ ]` **OnboardingPage.jsx**: This form uses `react-hook-form` to dynamically add multiple emergency contacts. Style the "Add another contact" button and make the dynamic fields look like cohesive cards rather than basic borders.
+## 📐 Application Layouts (`src/app/layouts/`)
+- `[ ]` **PublicLayout.jsx**: Navbars and Footers for the landing page.
+- `[ ]` **AuthLayout.jsx**: A clean, distraction-free split-screen layout for login/register.
+- `[ ]` **TouristLayout.jsx**: Must include a mobile-first Bottom Navigation Bar and a desktop sidebar.
+- `[ ]` **AuthorityLayout.jsx**: A professional, dense sidebar layout for disaster managers.
 
-## 🗺️ Phase 3: Trips & Groups
-- `[ ]` **CreateTripPage.jsx**: Style the "Solo vs Group" toggle to look like premium segmented controls. Make the date pickers look modern.
-- `[ ]` **CurrentTripPage.jsx**: This is the live trip dashboard. Style the "Start Trip", "Mark as Completed", and "Cancel Trip" buttons. They currently look very basic. Add micro-animations on hover.
-- `[ ]` **TripHistoryPage.jsx**: Style the history table. Make it look like a sleek data grid.
-- `[ ]` **CreateGroupPage.jsx**: This page generates a QR/Invite token. Style the token display to look like a premium digital ticket. (You can also replace the placeholder with a real `react-qr-code` component if you wish).
-- `[ ]` **JoinGroupPage.jsx**: Style the token input field. Make it look like a scanner or a high-tech input terminal.
+## 🌐 Public Pages (`src/features/public/pages/`)
+- `[ ]` **HomePage.jsx**: The high-converting landing page. Hero section, features, safety statistics, and call-to-actions.
+- `[ ]` **NotFoundPage.jsx**: Creative 404 page.
 
-## 📍 Phase 4: Maps & Tracking
-- `[ ]` **TouristDashboardPage.jsx**: This page now houses the live `MapComponent`. 
-  - Design the "Ready for your trip?" banner to look inviting.
-  - Design a premium HUD (Heads Up Display) overlay that sits *on top* of the map (using `absolute z-[1000]`) to show speed, accuracy, and active tracking status.
-- `[ ]` **MapComponent.jsx**: (Optional) You can customize the Leaflet tile layer URL to a dark mode map provider (like CartoDB Dark Matter) if you want it to fit a dark aesthetic.
+## 🔐 Auth Pages (`src/features/auth/pages/`)
+- `[ ]` **LoginPage.jsx**: Login form with role selection (Tourist/Authority/Admin).
+- `[ ]` **RegisterPage.jsx**: Multi-field registration form with password strength indicator.
+- `[ ]` **VerifyEmailPage.jsx**: The 6-digit OTP input screen. Make it look secure and modern.
 
-## 🚨 Phase 5: SOS & Incidents
-- `[ ]` **SOSButton.jsx**: Aayansh built a 3-second "Hold to Trigger" logic. 
-  - Make the button look extremely critical and important. 
-  - Add a visual fill or ripple animation while the user is holding it down (using the `holding` state). 
-  - Make the "SOS DISPATCHED" state look highly urgent.
-- `[ ]` **ReportIncidentPage.jsx**: Style the incident reporting form. Make the file upload input look like a modern drag-and-drop zone instead of a default browser `<input type="file">`.
+## 👤 Onboarding & Profile
+- `[ ]` **OnboardingPage.jsx** (`src/features/onboarding/pages/`): A wizard for Medical Details and dynamically adding Emergency Contacts.
+- `[ ]` **ProfilePage.jsx** (`src/features/profile/pages/`): A digital Tourist ID card displaying the user's safety profile and settings.
 
-## 🏢 Phase 6: Authority Command Center
-- `[ ]` **AuthorityDashboardPage.jsx**: This is the disaster manager's view.
-  - Style the "Active SOS Alerts" feed to look like a high-tech dispatch terminal with pulsing red alerts.
-  - Style the "Recent Hazards" feed.
-  - Ensure the layout is dense but readable, suitable for a desktop command center monitor.
+## 🗺️ Tourist Dashboard & Tracking
+- `[ ]` **TouristDashboardPage.jsx** (`src/features/tourist/pages/`): The primary home screen. Design a "Ready for trip?" banner and a premium Heads-Up Display (HUD) that sits on top of the map when tracking is active.
+- `[ ]` **MapComponent.jsx** (`src/features/tracking/components/`): Customize the map frame and tooltips.
+
+## 🎒 Trips (`src/features/trips/pages/`)
+- `[ ]` **CreateTripPage.jsx**: A sleek form to plan a trip with segmented controls for Solo vs. Group.
+- `[ ]` **CurrentTripPage.jsx**: The live trip screen. Style the itinerary, checkpoints, and action buttons (Start, Complete, Cancel).
+- `[ ]` **TripHistoryPage.jsx**: A modern data grid/table showing past trips.
+
+## 👥 Groups (`src/features/groups/pages/`)
+- `[ ]` **CreateGroupPage.jsx**: Displays a generated Invite Token (QR Code placeholder). Make it look like a premium digital ticket.
+- `[ ]` **JoinGroupPage.jsx**: Token input field. Style it like a high-tech scanner.
+
+## 🚨 Incidents & Safety (`src/features/incidents/pages/`)
+- `[ ]` **ReportIncidentPage.jsx**: The hazard reporting form. Make the file upload look like a modern drag-and-drop zone.
+- `[ ]` **IncidentHistoryPage.jsx**: List of past reports and their resolution status.
+
+## 🤖 Chatbot (`src/components/chatbot/`)
+- `[ ]` **ChatbotWidget.jsx**: The floating Rakshak AI widget. Needs a chat bubble, message history window, and quick-action chips.
+
+## 🏢 Authority Command Center (`src/features/authority/pages/`)
+- `[ ]` **AuthorityDashboardPage.jsx**: The disaster manager's view. Needs to look dense but readable. Style the "Active SOS Alerts" feed to look like a high-tech dispatch terminal with pulsing red indicators. Style the "Recent Hazards" feed.
 
 ---
 
