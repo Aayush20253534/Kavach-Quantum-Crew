@@ -1365,3 +1365,63 @@ frontend/
 The frontend agent may inspect the broader workspace for context but must never modify anything outside the frontend directory.
 
 The architecture should evolve only when required by the product and should avoid unnecessary complexity or restructuring.
+
+---
+
+# 40. OTP Email Verification Architecture
+
+The frontend authentication flow integrates with an SMTP-based backend OTP verification system.
+- **Registration**: `/api/v1/auth/register` creates an unverified account.
+- **Verification**: `/api/v1/auth/verify-email` consumes a 6-digit OTP and establishes the session.
+- **Resend**: `/api/v1/auth/resend-verification` handles resend subject to cooldown.
+Redux Toolkit handles the global authenticated state once verification succeeds.
+
+---
+
+# 41. GPS Tracking & Map Architecture
+
+## 41.1 Browser Geolocation Lifecycle
+Location tracking logic is centralized (e.g., in `src/features/tracking/`) and independent of the visual map component. 
+It must handle:
+- Permission flows (granted, denied).
+- Position unavailable/timeout errors.
+- `navigator.geolocation.watchPosition` for continuous tracking during active trips.
+- Strict cleanup on unmount or when a trip ends to avoid memory leaks.
+
+## 41.2 Map Integration (OpenStreetMap Strategy)
+The initial map implementation uses OpenStreetMap.
+The architecture separates:
+```text
+Location State -> Map Component Rendering -> Markers/Polygons
+```
+The map rendering layer does NOT own the GPS tracking lifecycle. The abstraction must allow future migration to Google Maps API if OSM is insufficient.
+
+---
+
+# 42. Geofencing Architecture
+
+**The backend is the absolute authority on safety and geofence evaluations.**
+The frontend architecture must follow this flow:
+```text
+Browser GPS -> Frontend Tracking Service -> Backend Ping (`/api/v1/tracking/pings`) -> Backend Geofence Evaluation -> Server State (HTTP/Socket) -> Frontend UI Update
+```
+- The frontend will visualize geofences by fetching `/api/v1/risk-zones` but MUST NOT execute local algorithms to trigger critical safety alerts based solely on client-side overlap checks.
+- Geometry definitions (polygons/circles) are strictly consumed from backend API contracts.
+
+---
+
+# 43. Socket.IO Real-Time Architecture
+
+The backend exposes a Socket.IO connection (currently Phase 0, without full location/incident event support yet).
+When authenticated gateways are enabled, the frontend architecture for real-time data will follow:
+
+## 43.1 Socket Lifecycle
+1. Connect after establishing a verified session.
+2. Complete authentication handshake (using established tokens).
+3. Join relevant rooms (Trip, Group).
+4. Register single-instance listeners for real-time events.
+5. Invalidate/update TanStack Query caches based on payload.
+6. Cleanly disconnect on logout or unmount.
+
+## 43.2 Server-State Synchronization
+Socket.IO events MUST NOT duplicate backend data into Redux. Instead, events will trigger `queryClient.setQueryData` or `queryClient.invalidateQueries` to immediately reflect live alerts, incident updates, and notifications on the UI.
