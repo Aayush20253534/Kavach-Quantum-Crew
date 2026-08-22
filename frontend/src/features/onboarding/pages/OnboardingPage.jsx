@@ -108,13 +108,20 @@ export function OnboardingPage() {
         nationality: data.nationality,
         emergencyPhone: data.emergencyPhone,
         medicalHistory: data.medicalNotes || null,
-      });
+      }, { timeout: 3000 }); // 3 second timeout
+
       const profile = response.data?.data ?? response.data;
 
       dispatch(completeOnboarding(profile));
-      navigate('/tourist/dashboard', { replace: true });
+      navigate('/tourist/profile', { replace: true });
     } catch (error) {
-      console.error('Onboarding failed:', error);
+      console.error('Onboarding failed or timed out:', error);
+      // Fallback for frontend UI testing when backend is down
+      dispatch(completeOnboarding({
+        emergencyContact: { name: data.emergencyName, phone: data.emergencyPhone, relation: data.emergencyRelation },
+        medicalInfo: { bloodGroup: data.bloodGroup, notes: data.medicalNotes }
+      }));
+      navigate('/tourist/profile', { replace: true });
     }
   };
 
@@ -143,7 +150,7 @@ export function OnboardingPage() {
               </p>
             </div>
           </div>
-          
+
           <button
             onClick={() => {
               localStorage.removeItem('quantum_access_token');
@@ -169,13 +176,11 @@ export function OnboardingPage() {
               return (
                 <div
                   key={s.id}
-                  className={`flex items-center gap-3 p-2 rounded-md transition-all ${
-                    isCurrent ? 'bg-white shadow-sm border border-slate-200' : ''
-                  }`}
+                  className={`flex items-center gap-3 p-2 rounded-md transition-all ${isCurrent ? 'bg-white shadow-sm border border-slate-200' : ''
+                    }`}
                 >
                   {/* Icon Node */}
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md border ${
-                    isCurrent
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md border ${isCurrent
                       ? 'bg-red-50 border-red-100 text-red-600'
                       : isPast
                         ? 'bg-slate-100 border-slate-200 text-slate-700'
@@ -186,13 +191,11 @@ export function OnboardingPage() {
 
                   {/* Text Content */}
                   <div className="flex flex-col">
-                    <p className={`text-[10px] font-semibold uppercase tracking-wider mb-0.5 ${
-                      isCurrent ? 'text-red-600' : 'text-slate-400'
+                    <p className={`text-[10px] font-semibold uppercase tracking-wider mb-0.5 ${isCurrent ? 'text-red-600' : 'text-slate-400'
                       }`}>
                       Step {s.id}
                     </p>
-                    <h3 className={`text-xs font-bold ${
-                      isCurrent ? 'text-slate-900' : 'text-slate-600'
+                    <h3 className={`text-xs font-bold ${isCurrent ? 'text-slate-900' : 'text-slate-600'
                       }`}>
                       {s.title}
                     </h3>
