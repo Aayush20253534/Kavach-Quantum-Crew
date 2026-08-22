@@ -68,7 +68,27 @@ Once the foundation is complete, we will move on to these features:
 
 ---
 
+# 📍 NEW: Tracking, Map, & Real-Time Assignments
+*Backend capabilities for geofencing, OTP, and tracking are now functional. Please design the following UI states:*
+
+## 🗺️ Map and Live Tracking
+- `[ ]` **Map Visual State**: General styling for the OpenStreetMap layout.
+- `[ ]` **Current Location Marker**: With uncertainty/accuracy radius if applicable.
+- `[ ]` **Group Member Markers**: Distinct from the current user.
+- `[ ]` **Safe Zone / Geofence Visualization**: How risk polygons/circles appear on the map.
+- `[ ]` **Permission States**: Request state, Denied state, Location Unavailable state.
+
+## 🚨 Active Trip & Alerts
+- `[ ]` **Active Tracking State**: Indicator that GPS tracking is currently active.
+- `[ ]` **Alert Presentation**: Severity levels (Warning, Danger), New Alert toast/modal, Acknowledged state, Resolved state.
+
+## 🔔 Notifications
+- `[ ]` **Notification Center**: List/panel for historical and real-time notifications.
+- `[ ]` **Unread & Critical States**: Visual distinction for unread or critical notifications.
+
+*(Note: Prachi designs the visual experience. Aayansh will implement the technical API and Socket.IO integrations).*
+
+---
+
 ## 📝 Design Notes & Discussion
 *(Prachi, feel free to drop any questions, Figma links, or global design notes here!)*
-
-- **Figma Link:** `[Paste Link Here]`
