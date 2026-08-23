@@ -37,6 +37,8 @@ import { ProfilePage } from '../features/profile/pages/ProfilePage';
 
 // Pages - Authority
 import { AuthorityDashboardPage } from '../features/authority/pages/AuthorityDashboardPage';
+import { AuthorityIncidentsPage } from '../features/authority/pages/AuthorityIncidentsPage';
+import { AuthorityIncidentDetailsPage } from '../features/authority/pages/AuthorityIncidentDetailsPage';
 
 export const router = createBrowserRouter([
   {
@@ -95,6 +97,8 @@ export const router = createBrowserRouter([
                 element: <AuthorityLayout />,
                 children: [
                   { path: 'dashboard', element: <AuthorityDashboardPage /> },
+                  { path: 'incidents', element: <AuthorityIncidentsPage /> },
+                  { path: 'incidents/:id', element: <AuthorityIncidentDetailsPage /> },
                 ],
               },
             ],
