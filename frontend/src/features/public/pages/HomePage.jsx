@@ -68,7 +68,7 @@ export function HomePage() {
       {/* =========================================================
           CINEMATIC HERO SECTION
       ========================================================= */}
-      <section className="relative w-full min-h-[100svh] md:min-h-[590px] flex items-start md:items-center pt-[5.25rem] sm:pt-24 pb-4 sm:pb-9 md:pb-10 overflow-hidden bg-[#050505]">
+      <section className="relative w-full min-h-[100svh] md:min-h-[590px] flex items-center pt-[5.5rem] sm:pt-24 pb-[3.25rem] sm:pb-9 md:pb-10 overflow-hidden bg-[#050505]">
 
         {/* Background Image Wrapper */}
         <div className={`absolute inset-0 transition-opacity duration-1000 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
@@ -86,10 +86,10 @@ export function HomePage() {
         <div className="relative z-10 w-full max-w-[1400px] mx-auto px-5 sm:px-6 lg:px-12 flex flex-col lg:flex-row items-center justify-between gap-4 sm:gap-6 lg:gap-8">
 
           {/* Left Hero Content */}
-          <div className="flex-1 max-w-2xl text-left">
+          <div className="flex-1 max-w-2xl text-left flex flex-col justify-center">
 
             {/* Location Badge */}
-            <div className={`inline-flex items-center gap-3 px-3 py-1.5 rounded-full border border-white/20 bg-white/5 backdrop-blur-md text-[10px] font-bold uppercase tracking-[0.2em] text-white mb-3 sm:mb-5 transition-all duration-1000 delay-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+            <div className={`inline-flex items-center gap-3 px-3 py-1.5 rounded-full border border-white/20 bg-white/5 backdrop-blur-md text-[10px] font-bold uppercase tracking-[0.2em] text-white mb-5 sm:mb-5 transition-all duration-1000 delay-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
               <div className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
@@ -99,7 +99,7 @@ export function HomePage() {
             </div>
 
             {/* Main Headline */}
-            <h1 className="text-[34px] sm:text-[52px] md:text-[64px] lg:text-[74px] leading-[1.02] tracking-[-0.03em] font-black text-white mb-2 sm:mb-3">
+            <h1 className="text-[34px] sm:text-[52px] md:text-[64px] lg:text-[74px] leading-[1.02] tracking-[-0.03em] font-black text-white mb-4 sm:mb-3">
               <div className={`overflow-hidden transition-all duration-1000 delay-500 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
                 EXPLORE
               </div>
@@ -109,24 +109,24 @@ export function HomePage() {
             </h1>
 
             {/* Description */}
-            <p className={`text-[12px] sm:text-[16px] leading-[1.55] text-white/70 max-w-lg mb-4 sm:mb-6 font-medium transition-all duration-1000 delay-1000 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+            <p className={`text-[12px] sm:text-[16px] leading-[1.55] text-white/70 max-w-lg mb-5 sm:mb-6 font-medium transition-all duration-1000 delay-1000 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
               A smarter safety network for pilgrims and tourists exploring Prayagraj. Stay connected, stay aware, and get help when you need it.
             </p>
 
             {/* CTAs */}
-            <div className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto transition-all duration-1000 delay-1200 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-              <Link to="/register" className="group w-full sm:w-auto justify-center relative overflow-hidden rounded-full bg-gradient-to-r from-rose-600 to-orange-500 px-5 py-2.5 sm:px-7 sm:py-3.5 text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.1em] text-white shadow-[0_10px_30px_rgba(225,29,72,0.3)] transition-all duration-300 hover:shadow-[0_15px_40px_rgba(225,29,72,0.5)] hover:-translate-y-1 active:scale-95 flex items-center gap-2">
+            <div className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 sm:gap-3 w-full sm:w-auto transition-all duration-1000 delay-1200 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+              <Link to="/register" className="group w-full sm:w-auto justify-center relative overflow-hidden rounded-full bg-gradient-to-r from-rose-600 to-orange-500 px-5 py-3 sm:px-7 sm:py-3.5 text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.1em] text-white shadow-[0_10px_30px_rgba(225,29,72,0.3)] transition-all duration-300 hover:shadow-[0_15px_40px_rgba(225,29,72,0.5)] hover:-translate-y-1 active:scale-95 flex items-center gap-2">
                 <span className="pointer-events-none absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[150%] skew-x-[-20deg] group-hover:animate-[shine_0.8s_ease-in-out]" />
                 <span>Create Safety ID</span>
                 <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
 
-              <Link to="/tourist/dashboard" className="group w-full sm:w-auto justify-center flex items-center gap-3 rounded-full border border-white/20 bg-white/5 backdrop-blur-md px-5 py-2.5 sm:px-7 sm:py-3.5 text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.1em] text-white transition-all duration-300 hover:bg-white/10 hover:border-white/30 hover:-translate-y-1 active:scale-95">
+              <Link to="/tourist/dashboard" className="group w-full sm:w-auto justify-center flex items-center gap-3 rounded-full border border-white/20 bg-white/5 backdrop-blur-md px-5 py-3 sm:px-7 sm:py-3.5 text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.1em] text-white transition-all duration-300 hover:bg-white/10 hover:border-white/30 hover:-translate-y-1 active:scale-95">
                 <span>View Live Map</span>
               </Link>
             </div>
 
-            <div className={`mt-3.5 sm:mt-5 grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-x-3 sm:gap-x-5 gap-y-2 text-[8.5px] sm:text-[10px] font-bold uppercase tracking-[0.12em] text-white/55 transition-all duration-1000 delay-[1350ms] transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'}`}>
+            <div className={`mt-5 sm:mt-5 grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-x-3 sm:gap-x-5 gap-y-2 text-[8.5px] sm:text-[10px] font-bold uppercase tracking-[0.12em] text-white/55 transition-all duration-1000 delay-[1350ms] transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'}`}>
               <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Verified help points</span>
               <span className="inline-flex items-center gap-1.5"><Navigation className="h-3.5 w-3.5 text-sky-400" /> Live safety radar</span>
               <span className="inline-flex items-center gap-1.5 col-span-2 sm:col-span-1"><Clock className="h-3.5 w-3.5 text-amber-400" /> 24/7 emergency access</span>
