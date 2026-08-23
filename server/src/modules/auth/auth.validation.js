@@ -1,3 +1,4 @@
+import { ROLES } from "../../constants/roles.js";
 import { z } from "zod";
 
 const username = z
@@ -44,6 +45,9 @@ export const registerBodySchema = z
 export const loginBodySchema = z.object({
   identifier: z.string().trim().min(3).max(254),
   password: z.string().min(1).max(128),
+  role: z
+    .enum([ROLES.TOURIST, ROLES.DISASTER_MANAGER, ROLES.SYSTEM_ADMIN])
+    .optional(),
 });
 
 export const refreshBodySchema = z.object({

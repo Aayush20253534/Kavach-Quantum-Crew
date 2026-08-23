@@ -27,9 +27,14 @@ const loginSchema = z.object({
 });
 
 const roles = [
-  { id: 'TOURIST', title: 'Tourist', icon: UserRound },
-  { id: 'DISASTER_MANAGER', title: 'Authority', icon: Building2 },
-  { id: 'SYSTEM_ADMIN', title: 'Admin', icon: UserCog },
+  { id: 'TOURIST', title: 'Tourist', subtitle: 'Tourist access', icon: UserRound },
+  {
+    id: 'DISASTER_MANAGER',
+    title: 'Disaster Management',
+    subtitle: 'Emergency command',
+    icon: Building2,
+  },
+  { id: 'SYSTEM_ADMIN', title: 'Admin', subtitle: 'System administration', icon: UserCog },
 ];
 
 export default function LoginPage() {
@@ -72,6 +77,7 @@ export default function LoginPage() {
       const response = await authService.login({
         identifier: data.identifier.trim(),
         password: data.password,
+        role: data.role,
       });
 
       // Handles either:
@@ -159,13 +165,15 @@ export default function LoginPage() {
                 className={active ? 'text-red-500' : 'text-slate-400'}
               />
               <div className="hidden flex-col items-start text-left leading-tight sm:flex">
-                <span>{role.title}</span>
+                <span className={role.id === 'DISASTER_MANAGER' ? 'text-[10px] sm:text-[11px]' : ''}>
+                  {role.title}
+                </span>
                 <span
                   className={`text-[9px] font-normal ${
                     active ? 'text-red-400' : 'text-slate-400'
                   }`}
                 >
-                  I am a {role.title}
+                  {role.subtitle}
                 </span>
               </div>
             </button>
