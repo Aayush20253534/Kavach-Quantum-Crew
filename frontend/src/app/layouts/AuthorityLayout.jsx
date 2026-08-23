@@ -78,7 +78,6 @@ export function AuthorityLayout() {
     { name: 'Personnel Roster', path: '/authority/responders', icon: Users2 },
     { name: 'Risk Zones', path: '/authority/zones', icon: Map },
     { name: 'Analytics', path: '/authority/analytics', icon: BarChart4 },
-    { name: 'Tourist Dashboard View', path: '/tourist/dashboard', icon: Users },
   ];
 
   return (
