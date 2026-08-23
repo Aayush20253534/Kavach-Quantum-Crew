@@ -1,6 +1,18 @@
 import apiClient from '../../../services/apiClient';
 
 export const authService = {
+
+  /**
+   * Public username availability check.
+   * The UI calls this only for valid usernames with at least 6 characters.
+   */
+  checkUsernameAvailability: async (username) => {
+    const response = await apiClient.get('/auth/username-availability', {
+      params: { username },
+    });
+    return response.data?.data ?? response.data;
+  },
+
   /**
    * Register a new tourist account.
    * Returns generic message on success, requiring email verification.

@@ -5,7 +5,7 @@ import { ROLES } from "../../constants/roles.js";
 import { authenticate } from "../../middleware/authenticate.middleware.js";
 import { authorize } from "../../middleware/authorize.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
-import { profileImageUpload } from "../../middleware/upload.middleware.js";
+import { medicalDocumentUpload, profileImageUpload } from "../../middleware/upload.middleware.js";
 import { touristController } from "./tourist.controller.js";
 import {
   onboardingBodySchema,
@@ -26,6 +26,12 @@ export const createTouristRouter = ({ controller = touristController } = {}) => 
     "/me",
     validate({ body: updateTouristProfileBodySchema }),
     asyncHandler(controller.updateMe),
+  );
+
+  router.post(
+    "/me/medical-document",
+    medicalDocumentUpload,
+    asyncHandler(controller.uploadMedicalDocument),
   );
 
   router.post(

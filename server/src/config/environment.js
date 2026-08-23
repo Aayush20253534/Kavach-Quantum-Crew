@@ -278,6 +278,10 @@ const environmentSchema = z
       1024,
       10485760,
     ).default(5242880),
+    MEDICAL_DOCUMENT_MAX_FILE_BYTES: integerFromEnvironment(
+      1024,
+      20971520,
+    ).default(10485760),
   })
   .superRefine((value, context) => {
     const origins = value.CORS_ORIGINS

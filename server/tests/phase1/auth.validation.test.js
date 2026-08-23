@@ -74,6 +74,19 @@ describe("Phase 1 request validation", () => {
     });
   });
 
+  test("requires usernames to contain at least six characters", () => {
+    const base = {
+      name: "Tourist One",
+      email: "tourist@example.com",
+      phone: "9876543210",
+      password: "Tourist123",
+      confirmPassword: "Tourist123",
+    };
+
+    expect(registerBodySchema.safeParse({ ...base, username: "travel" }).success).toBe(true);
+    expect(registerBodySchema.safeParse({ ...base, username: "abc12" }).success).toBe(false);
+  });
+
   test("accepts age boundaries and rejects impossible ages", () => {
     const base = {
       gender: "MALE",

@@ -15,6 +15,8 @@ const toProfile = (user) => ({
   nationality: user.nationality ?? null,
   age: user.age ?? null,
   medicalHistory: user.medicalHistory ?? null,
+  medicalDocumentUrl: user.medicalDocumentUrl ?? null,
+  medicalDocumentName: user.medicalDocumentName ?? null,
   preferredLanguage: user.preferredLanguage ?? null,
   emergencyContactName: user.emergencyContactName ?? null,
   emergencyContactRelation: user.emergencyContactRelation ?? null,
@@ -71,6 +73,30 @@ export const createTouristService = ({
         geoAlertsEnabled: input.geoAlertsEnabled,
       });
       return toProfile(updated);
+    },
+
+    async updateMedicalDocument(userId, file) {
+      const existing = await repository.findByUserId(userId);
+      if (!existing) {
+        throw ApiError.notFound("Tourist account not found", {
+          code: "TOURIST_NOT_FOUND",
+        });
+      }
+
+      const uploaded = await imageStorage.uploadTouristMedicalDocument({
+        userId,
+        file,
+      });
+
+      const updated = await repository.updateProfile(userId, {
+        medicalDocumentUrl: uploaded.url,
+        medicalDocumentName: uploaded.name,
+      });
+
+      return {
+        profile: toProfile(updated),
+        document: uploaded,
+      };
     },
 
     async updateProfileImage(userId, file) {

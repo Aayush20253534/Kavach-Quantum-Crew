@@ -3,7 +3,7 @@ import { z } from "zod";
 const username = z
   .string()
   .trim()
-  .min(3)
+  .min(6)
   .max(40)
   .regex(/^[a-zA-Z0-9._-]+$/, "Username may contain letters, numbers, dot, underscore and hyphen only")
   .transform((value) => value.toLowerCase());
@@ -58,3 +58,8 @@ export const verifyEmailBodySchema = z.object({
 });
 
 export const resendEmailVerificationBodySchema = z.object({ email });
+
+
+export const usernameAvailabilityQuerySchema = z.object({
+  username,
+});

@@ -8,6 +8,8 @@ import {
   ArrowRight,
   CheckCircle2,
   HeartPulse,
+  FileUp,
+  Loader2,
   MapPin,
   PhoneCall,
   ShieldCheck,
@@ -16,6 +18,7 @@ import {
 
 import { completeOnboarding } from '../../auth/store/authSlice';
 import apiClient from '../../../services/apiClient';
+import { profileService } from '../../profile/api/profileService';
 import { ScrollableSelect } from '../components/ScrollableSelect';
 import {
   BLOOD_GROUPS,
@@ -42,8 +45,12 @@ const onboardingSchema = z
     medicalNotes: z.string().max(5000).optional(),
     idType: z.enum(['AADHAAR', 'PASSPORT']),
     idNumber: z.string().trim().min(1, 'ID number is required'),
-    liveTracking: z.boolean().default(true),
-    geoAlerts: z.boolean().default(true),
+    liveTracking: z.boolean().refine((value) => value === true, {
+      message: 'Please consent to live location sharing',
+    }),
+    geoAlerts: z.boolean().refine((value) => value === true, {
+      message: 'Please consent to safety/geofence data sharing',
+    }),
   })
   .superRefine((data, context) => {
     if (data.idType === 'AADHAAR' && !/^\d{12}$/.test(data.idNumber)) {
@@ -82,6 +89,12 @@ export function OnboardingPage() {
   const dispatch = useDispatch();
   const [step, setStep] = useState(1);
   const [onboardingError, setOnboardingError] = useState('');
+  const [medicalUpload, setMedicalUpload] = useState({
+    state: 'idle',
+    name: '',
+    url: '',
+    error: '',
+  });
 
   const {
     register,
@@ -104,8 +117,8 @@ export function OnboardingPage() {
       medicalNotes: '',
       idType: 'AADHAAR',
       idNumber: '',
-      liveTracking: true,
-      geoAlerts: true,
+      liveTracking: false,
+      geoAlerts: false,
     },
   });
 
@@ -116,7 +129,71 @@ export function OnboardingPage() {
     if (step === 1) fields = ['gender', 'age', 'nationality', 'language'];
     if (step === 2) fields = ['emergencyName', 'emergencyRelation', 'emergencyPhone'];
     if (step === 3) fields = ['bloodGroup', 'idType', 'idNumber'];
+    if (step === 4) fields = ['liveTracking', 'geoAlerts'];
     if (await trigger(fields)) setStep((current) => Math.min(current + 1, 4));
+  };
+
+  const handleMedicalDocument = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const allowed = [
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+    ];
+
+    if (!allowed.includes(file.type)) {
+      setMedicalUpload({
+        state: 'error',
+        name: file.name,
+        url: '',
+        error: 'Upload a PDF, JPEG, PNG, or WebP file.',
+      });
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setMedicalUpload({
+        state: 'error',
+        name: file.name,
+        url: '',
+        error: 'Medical document must be 10 MB or smaller.',
+      });
+      event.target.value = '';
+      return;
+    }
+
+    setMedicalUpload({
+      state: 'uploading',
+      name: file.name,
+      url: '',
+      error: '',
+    });
+
+    try {
+      const result = await profileService.uploadMedicalDocument(file);
+      setMedicalUpload({
+        state: 'done',
+        name: result?.document?.name || file.name,
+        url: result?.document?.url || '',
+        error: '',
+      });
+    } catch (error) {
+      setMedicalUpload({
+        state: 'error',
+        name: file.name,
+        url: '',
+        error:
+          error?.response?.data?.error?.message ||
+          error?.message ||
+          'Medical document upload failed.',
+      });
+    } finally {
+      event.target.value = '';
+    }
   };
 
   const onSubmit = async (data) => {
@@ -236,24 +313,35 @@ export function OnboardingPage() {
               <>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <Field label="Gender" error={errors.gender?.message}>
-                    <select {...register('gender')} className="onboarding-control">
-                      <option value="">Select gender</option>
-                      <option>Female</option>
-                      <option>Male</option>
-                      <option>Other</option>
-                      <option>Prefer not to say</option>
-                    </select>
+                    <Controller
+                      control={control}
+                      name="gender"
+                      render={({ field }) => (
+                        <ScrollableSelect
+                          {...field}
+                          options={['Female', 'Male', 'Other', 'Prefer not to say']}
+                          placeholder="Select gender"
+                          error={errors.gender}
+                        />
+                      )}
+                    />
                   </Field>
 
                   <Field label="Age" error={errors.age?.message}>
                     <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="1"
+                      type="text"
                       inputMode="numeric"
-                      placeholder="0 - 100"
+                      maxLength={3}
+                      placeholder="Select age"
                       {...register('age')}
+                      onInput={(event) => {
+                        const digits = event.target.value.replace(/\D/g, '').slice(0, 3);
+                        if (!digits) {
+                          event.target.value = '';
+                          return;
+                        }
+                        event.target.value = String(Math.min(100, Number(digits)));
+                      }}
                       className="onboarding-control"
                     />
                   </Field>
@@ -391,17 +479,70 @@ export function OnboardingPage() {
                     rows={4}
                     maxLength={5000}
                     {...register('medicalNotes')}
-                    className="onboarding-control h-auto py-3 resize-y"
+                    className="onboarding-control h-auto min-h-28 px-3 py-4 resize-y leading-5"
                     placeholder="Allergies, conditions, medications, or other emergency information"
                   />
                 </Field>
+
+                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <div className="mt-0.5 rounded-lg bg-white border border-slate-200 p-2">
+                      {medicalUpload.state === 'uploading' ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-red-600" />
+                      ) : (
+                        <FileUp className="w-4 h-4 text-slate-500" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-black text-slate-800">
+                        Upload medical history (optional)
+                      </p>
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        PDF, JPEG, PNG or WebP, up to 10 MB.
+                      </p>
+                      {medicalUpload.name && (
+                        <p className={`mt-2 text-[10px] font-semibold break-all ${
+                          medicalUpload.state === 'done'
+                            ? 'text-emerald-600'
+                            : medicalUpload.state === 'error'
+                              ? 'text-red-600'
+                              : 'text-slate-500'
+                        }`}>
+                          {medicalUpload.state === 'done'
+                            ? `Uploaded: ${medicalUpload.name}`
+                            : medicalUpload.error || medicalUpload.name}
+                        </p>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      accept=".pdf,image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      disabled={medicalUpload.state === 'uploading'}
+                      onChange={handleMedicalDocument}
+                    />
+                  </label>
+                </div>
               </>
             )}
 
             {step === 4 && (
               <div className="space-y-3">
-                <Toggle register={register('liveTracking')} title="Live Tracking" description="Share location while an active trip is being monitored." />
-                <Toggle register={register('geoAlerts')} title="Geofence Alerts" description="Receive alerts when entering configured risk areas." />
+                <p className="text-xs text-slate-500">
+                  These permissions are not pre-selected. Read them and provide consent explicitly.
+                </p>
+                <Toggle
+                  register={register('liveTracking')}
+                  title="Consent to Live Location Sharing"
+                  description="Allow KAVACH to share your live location while an active trip is being monitored."
+                  error={errors.liveTracking?.message}
+                />
+                <Toggle
+                  register={register('geoAlerts')}
+                  title="Consent to Safety & Geofence Sharing"
+                  description="Allow KAVACH to evaluate your location against safety zones and send geofence alerts."
+                  error={errors.geoAlerts?.message}
+                />
               </div>
             )}
 
@@ -457,14 +598,19 @@ function Field({ label, error, children }) {
   );
 }
 
-function Toggle({ register, title, description }) {
+function Toggle({ register, title, description, error }) {
   return (
-    <label className="flex items-start gap-3 p-4 border border-slate-200 rounded-xl bg-white">
-      <input type="checkbox" {...register} className="mt-0.5 w-4 h-4 accent-red-600" />
-      <span>
-        <span className="block text-sm font-black">{title}</span>
-        <span className="block text-xs text-slate-500 mt-1">{description}</span>
-      </span>
-    </label>
+    <div>
+      <label className={`flex items-start gap-3 p-4 border rounded-xl bg-white ${
+        error ? 'border-red-300' : 'border-slate-200'
+      }`}>
+        <input type="checkbox" {...register} className="mt-0.5 w-4 h-4 accent-red-600" />
+        <span>
+          <span className="block text-sm font-black">{title}</span>
+          <span className="block text-xs text-slate-500 mt-1">{description}</span>
+        </span>
+      </label>
+      {error && <p className="mt-1 text-[10px] font-semibold text-red-600">{error}</p>}
+    </div>
   );
 }

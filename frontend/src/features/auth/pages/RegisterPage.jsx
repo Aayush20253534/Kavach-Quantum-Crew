@@ -22,7 +22,7 @@ const registerSchema = z
     username: z
       .string()
       .trim()
-      .min(3, 'Username must be at least 3 characters')
+      .min(6, 'Username must be at least 6 characters')
       .max(40, 'Username must be at most 40 characters')
       .regex(
         /^[a-zA-Z0-9._-]+$/,
@@ -54,6 +54,10 @@ export function RegisterPage() {
 
   const [registerError, setRegisterError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState({
+    state: 'idle',
+    message: 'Username must be at least 6 characters',
+  });
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -63,6 +67,9 @@ export function RegisterPage() {
   const {
     register,
     handleSubmit,
+    watch,
+    setError,
+    clearErrors,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(registerSchema),
@@ -77,8 +84,74 @@ export function RegisterPage() {
     },
   });
 
+  const usernameValue = watch('username');
+
+  useEffect(() => {
+    const username = String(usernameValue || '').trim().toLowerCase();
+
+    if (username.length < 6) {
+      setUsernameStatus({
+        state: 'short',
+        message: 'Username must be at least 6 characters',
+      });
+      return undefined;
+    }
+
+    if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
+      setUsernameStatus({ state: 'idle', message: '' });
+      return undefined;
+    }
+
+    let cancelled = false;
+    setUsernameStatus({ state: 'checking', message: 'Checking availability…' });
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const result = await authService.checkUsernameAvailability(username);
+        if (cancelled) return;
+
+        if (result?.available) {
+          clearErrors('username');
+          setUsernameStatus({
+            state: 'available',
+            message: 'Username is available',
+          });
+        } else {
+          setError('username', {
+            type: 'availability',
+            message: 'This username is already taken',
+          });
+          setUsernameStatus({
+            state: 'taken',
+            message: 'Username is already taken',
+          });
+        }
+      } catch {
+        if (!cancelled) {
+          setUsernameStatus({
+            state: 'unknown',
+            message: 'Availability check unavailable. You can still submit.',
+          });
+        }
+      }
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [usernameValue, clearErrors, setError]);
+
   const onSubmit = async (data) => {
     setRegisterError('');
+
+    if (usernameStatus.state === 'taken') {
+      setError('username', {
+        type: 'availability',
+        message: 'This username is already taken',
+      });
+      return;
+    }
 
     try {
       await authService.register({
@@ -162,7 +235,7 @@ export function RegisterPage() {
               />
               <input
                 type="text"
-                placeholder="e.g. prachi_m"
+                placeholder="Minimum 6 characters"
                 {...register('username')}
                 className={`h-9 w-full rounded-md border bg-white pl-9 pr-3 text-xs text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-red-500 focus:ring-1 focus:ring-red-500 ${
                   errors.username ? 'border-red-500' : 'border-slate-200'
@@ -172,6 +245,19 @@ export function RegisterPage() {
             {errors.username && (
               <p className="mt-1 text-[10px] text-red-500">
                 {errors.username.message}
+              </p>
+            )}
+            {!errors.username && usernameStatus.message && (
+              <p
+                className={`mt-1 text-[10px] ${
+                  usernameStatus.state === 'available'
+                    ? 'text-emerald-600'
+                    : usernameStatus.state === 'checking'
+                      ? 'text-slate-400'
+                      : 'text-slate-500'
+                }`}
+              >
+                {usernameStatus.message}
               </p>
             )}
           </div>

@@ -103,6 +103,15 @@ export const createAuthService = ({
   };
 
   return Object.freeze({
+    async checkUsernameAvailability(username) {
+      const normalized = username.trim().toLowerCase();
+      const exists = await repository.usernameExists(normalized);
+      return {
+        username: normalized,
+        available: !exists,
+      };
+    },
+
     async register(input) {
       const conflict = await repository.findRegistrationConflict(input);
       if (conflict) {

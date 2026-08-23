@@ -11,10 +11,17 @@ import {
   registerBodySchema,
   resendEmailVerificationBodySchema,
   verifyEmailBodySchema,
+  usernameAvailabilityQuerySchema,
 } from "./auth.validation.js";
 
 export const createAuthRouter = ({ controller = authController } = {}) => {
   const router = Router();
+
+  router.get(
+    "/username-availability",
+    validate({ query: usernameAvailabilityQuerySchema }),
+    asyncHandler(controller.usernameAvailability),
+  );
 
   router.post(
     "/register",
