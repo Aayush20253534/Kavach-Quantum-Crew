@@ -27,6 +27,8 @@ import { AIChatWidget } from '../../features/chatbot/components/AIChatWidget';
 import { NotificationsDropdown } from '../components/NotificationsDropdown';
 import { useGeolocation } from '../../features/tracking/hooks/useGeolocation';
 import { tripService } from '../../features/trips/api/tripService';
+import { useCurrentTrip } from '../../features/trips/api/tripQueries';
+import { useTouristDashboardSummary } from '../../features/dashboard/api/dashboardQueries';
 import { safetyService } from '../../features/safety/api/safetyService';
 
 export function TouristLayout() {
@@ -40,7 +42,14 @@ export function TouristLayout() {
   const [sosState, setSosState] = useState('idle');
   const [sosError, setSosError] = useState('');
   const [now, setNow] = useState(() => new Date());
-  const { location: liveLocation, permission: locationPermission } = useGeolocation(undefined, false);
+  const [locationLabel, setLocationLabel] = useState('Detecting current location...');
+  const { data: currentTrip } = useCurrentTrip();
+  const isTripActive = currentTrip?.status === 'ACTIVE';
+  const { location: liveLocation, permission: locationPermission } = useGeolocation(
+    currentTrip?.id,
+    isTripActive,
+  );
+  const { data: backgroundSafetySummary } = useTouristDashboardSummary(liveLocation);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
@@ -49,9 +58,15 @@ export function TouristLayout() {
 
   const timeLabel = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const dateLabel = now.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric', weekday: 'long' });
-  const coordinateLabel = liveLocation
-    ? `${liveLocation.lat.toFixed(4)}° N, ${liveLocation.lng.toFixed(4)}° E`
-    : locationPermission === 'denied' ? 'Location permission denied' : 'Detecting current location...';
+  useEffect(() => {
+    if (locationPermission === 'denied') {
+      setLocationLabel('Location permission denied');
+    } else if (!liveLocation) {
+      setLocationLabel('Detecting current location...');
+    }
+  }, [liveLocation, locationPermission]);
+
+  const safetyLevel = backgroundSafetySummary?.safetyStatus?.level || 'UNKNOWN';
 
   const handleLogout = () => {
     dispatch(logout());
@@ -353,10 +368,12 @@ export function TouristLayout() {
             <div>
               <div className="flex items-center gap-1 cursor-pointer group">
                 <span className="text-[11px] sm:text-[13px] font-black text-slate-900 uppercase tracking-wide group-hover:text-red-600 transition-colors truncate max-w-[140px] sm:max-w-none">
-                  {liveLocation ? 'CURRENT LIVE LOCATION' : 'LOCATION PENDING'}
+                  {liveLocation ? locationLabel : 'LOCATION PENDING'}
                 </span>
               </div>
-              <p className="text-[9px] sm:text-[11px] text-slate-400 font-mono mt-0.5 hidden sm:block">{coordinateLabel}</p>
+              <p className="text-[9px] sm:text-[11px] text-slate-400 mt-0.5 hidden sm:block">
+                {liveLocation ? `Live location · ${safetyLevel === 'DANGER' ? 'Danger zone' : safetyLevel === 'SAFE' ? 'Safe zone' : 'Checking safety'}` : locationLabel}
+              </p>
             </div>
           </div>
 
@@ -388,7 +405,13 @@ export function TouristLayout() {
 
         {/* Page Main Content Area */}
         <main className="flex-1 p-4 lg:p-8 mt-16 pb-24 lg:pb-8 max-w-[1400px] w-full mx-auto">
-          <Outlet />
+          <Outlet context={{
+            liveLocation,
+            locationPermission,
+            locationLabel,
+            setLocationLabel,
+            safetySummary: backgroundSafetySummary,
+          }} />
         </main>
 
         {/* =========================================================
