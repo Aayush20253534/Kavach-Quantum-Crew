@@ -893,3 +893,24 @@ enum DispatchEventType {
   COMPLETED
   CANCELLED
 }
+
+model Destination {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique @db.VarChar(80)
+  name        String   @unique @db.VarChar(120)
+  state       String   @db.VarChar(120)
+  country     String   @db.VarChar(80) @default("India")
+  latitude    Float
+  longitude   Float
+  description String?  @db.VarChar(500)
+  imageUrl    String?
+  featured    Boolean  @default(true)
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active, featured, sortOrder])
+  @@index([name])
+  @@map("destinations")
+}
