@@ -50,9 +50,6 @@ import { AuthorityAnalyticsPage } from '../features/authority/pages/AuthorityAna
 import { AdminDashboardPage } from '../features/admin/pages/AdminDashboardPage';
 import { AdminAccountsPage } from '../features/admin/pages/AdminAccountsPage';
 import { AdminAuditPage } from '../features/admin/pages/AdminAuditPage';
-import { AdminSettingsPage } from '../features/admin/pages/AdminSettingsPage';
-import { AdminIntegrationsPage } from '../features/admin/pages/AdminIntegrationsPage';
-import { AdminJobsPage } from '../features/admin/pages/AdminJobsPage';
 import { AdminLocationsPage } from '../features/admin/pages/AdminLocationsPage';
 
 export const router = createBrowserRouter([
@@ -132,7 +129,7 @@ export const router = createBrowserRouter([
                   { path: 'incidents/:id', element: <AuthorityIncidentDetailsPage /> },
                   { path: 'hazards', element: <AuthorityHazardsPage /> },
                   { path: 'dispatch', element: <AuthorityDispatchPage /> },
-                  { path: 'zones', element: <AuthorityRiskZonesPage /> },
+                  { path: 'zones', element: <div className="admin-risk-zone-page"><AuthorityRiskZonesPage /></div> },
                   { path: 'responders', element: <AuthorityRespondersPage /> },
                   { path: 'analytics', element: <AuthorityAnalyticsPage /> },
                 ],
@@ -156,9 +153,6 @@ export const router = createBrowserRouter([
                   { path: 'zones', element: <AuthorityRiskZonesPage /> },
                   { path: 'accounts', element: <AdminAccountsPage /> },
                   { path: 'audit', element: <AdminAuditPage /> },
-                  { path: 'integrations', element: <AdminIntegrationsPage /> },
-                  { path: 'jobs', element: <AdminJobsPage /> },
-                  { path: 'settings', element: <AdminSettingsPage /> },
                 ],
               },
             ],

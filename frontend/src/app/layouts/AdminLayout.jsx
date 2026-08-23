@@ -2,16 +2,11 @@ import React, { useState } from 'react';
 import { Outlet, Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
-  Building2,
   Users,
   ShieldCheck,
-  Activity,
   LogOut,
-  ExternalLink,
-  Settings,
   FileText,
   ChevronLeft,
-  Puzzle,
   LayoutDashboard,
   MapPinned
 } from 'lucide-react';
@@ -56,23 +51,20 @@ export function AdminLayout() {
     { name: 'Danger Zones', path: '/admin/zones', icon: ShieldCheck },
     { name: 'Accounts', path: '/admin/accounts', icon: Users },
     { name: 'Audit Logs', path: '/admin/audit', icon: FileText },
-    { name: 'Integrations', path: '/admin/integrations', icon: Puzzle },
-    { name: 'Background Sweeps', path: '/admin/jobs', icon: Activity },
-    { name: 'Settings', path: '/admin/settings', icon: Settings },
-    { name: 'Tourist View', path: '/tourist/dashboard', icon: ExternalLink },
   ];
 
   return (
+    <>
       <SignOutConfirmModal
         open={logoutOpen}
         busy={logoutBusy}
         onCancel={() => !logoutBusy && setLogoutOpen(false)}
         onConfirm={handleLogout}
       />
-    <div className="min-h-screen bg-slate-50 text-slate-900 antialiased font-sans">
+      <div className="min-h-screen bg-slate-50 text-slate-900 antialiased font-sans">
       
       {/* Authority Sidebar */}
-      <aside className={`hidden md:flex flex-col bg-white border-r border-slate-200 fixed top-0 left-0 h-screen z-30 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-72'}`}>
+      <aside className={`hidden md:flex flex-col bg-white border-r border-slate-200 fixed top-0 left-0 h-screen z-30 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
         
         {/* Collapse Toggle Button (Desktop Only) */}
         <button
@@ -83,17 +75,17 @@ export function AdminLayout() {
         </button>
 
         {/* Brand Header */}
-        <div className={`p-6 border-b border-slate-200 flex items-center bg-white ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}>
+        <div className={`p-5 border-b border-slate-200 flex items-center bg-white ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}>
           {!isCollapsed ? (
             <Link to="/admin/dashboard" className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-md bg-indigo-600 flex items-center justify-center text-white shadow-sm shrink-0">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-[14px] font-black tracking-tight text-slate-900 flex items-center gap-1.5 uppercase">
+                <h1 className="text-[13px] font-black tracking-tight text-slate-900 flex items-center gap-1.5 uppercase">
                   PLATFORM <span className="text-[9px] px-1.5 py-0.5 rounded text-indigo-700 font-bold border border-indigo-200 bg-indigo-50 uppercase">ADMIN</span>
                 </h1>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Core Infrastructure</p>
+                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Core Infrastructure</p>
               </div>
             </Link>
           ) : (
@@ -104,7 +96,7 @@ export function AdminLayout() {
         </div>
 
         {/* Nav Items */}
-        <nav className={`flex-1 py-6 space-y-2 ${isCollapsed ? 'px-3 mt-4' : 'px-4'}`}>
+        <nav className={`flex-1 py-5 space-y-1.5 ${isCollapsed ? 'px-3 mt-4' : 'px-4'}`}>
           <p className={`px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ${isCollapsed ? 'text-center pl-0 text-[8px]' : ''}`}>
             {isCollapsed ? 'SYS' : 'System Administration'}
           </p>
@@ -115,7 +107,7 @@ export function AdminLayout() {
               <NavLink
                 key={item.name}
                 to={item.path}
-                className={`group flex items-center gap-3 py-3 rounded-md text-[12px] font-bold uppercase tracking-wider transition-all duration-200 ${
+                className={`group flex items-center gap-3 py-2.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${
                   isCollapsed ? 'justify-center px-0' : 'px-4'
                 } ${isActive
                     ? 'bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-sm'
@@ -138,10 +130,10 @@ export function AdminLayout() {
                 HQ
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-black text-slate-900 truncate uppercase text-[12px] tracking-wide">
+                <p className="font-black text-slate-900 truncate uppercase text-[11px] tracking-wide">
                   {user?.name || user?.username || 'System Administrator'}
                 </p>
-                <p className="text-[10px] text-slate-500 font-bold truncate tracking-wider mt-0.5">
+                <p className="text-[9px] text-slate-500 font-bold truncate tracking-wider mt-0.5">
                   {user?.email || 'Platform Operations'}
                 </p>
               </div>
@@ -156,7 +148,7 @@ export function AdminLayout() {
           
           <button
             onClick={requestLogout}
-            className={`group w-full flex items-center gap-2 py-2.5 rounded-md text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer border border-transparent hover:border-indigo-100 ${isCollapsed ? 'justify-center px-0' : 'justify-center'}`}
+            className={`group w-full flex items-center gap-2 py-2.5 rounded-md text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer border border-transparent hover:border-indigo-100 ${isCollapsed ? 'justify-center px-0' : 'justify-center'}`}
             title={isCollapsed ? "Sign Out" : undefined}
           >
             <LogOut className="w-4 h-4 transition-colors text-slate-500 group-hover:text-indigo-600" />
@@ -166,8 +158,8 @@ export function AdminLayout() {
       </aside>
 
       {/* Main Content */}
-      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 pl-0 md:pl-72 ${isCollapsed ? 'md:pl-20' : ''}`}>
-        <header className={`fixed top-0 right-0 z-20 h-16 bg-white/95 backdrop-blur-xl border-b border-slate-200 px-4 md:px-6 flex items-center justify-between shadow-sm transition-all duration-300 w-full ${isCollapsed ? 'md:w-[calc(100%-5rem)]' : 'md:w-[calc(100%-18rem)]'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 pl-0 md:pl-64 ${isCollapsed ? 'md:pl-20' : ''}`}>
+        <header className={`fixed top-0 right-0 z-20 h-16 bg-white/95 backdrop-blur-xl border-b border-slate-200 px-4 md:px-6 flex items-center justify-between shadow-sm transition-all duration-300 w-full ${isCollapsed ? 'md:w-[calc(100%-5rem)]' : 'md:w-[calc(100%-16rem)]'}`}>
           <div className="flex items-center gap-2 md:gap-3">
             <div className="bg-indigo-600 text-white text-[10px] font-bold px-2 py-1.5 md:px-3 md:py-1.5 uppercase tracking-widest rounded shadow-sm flex items-center gap-2">
               <span className="hidden sm:inline">QUANTUM CREW SYSADMIN</span>
@@ -175,13 +167,6 @@ export function AdminLayout() {
             </div>
           </div>
           <div className="flex items-center gap-2 md:gap-3">
-            <Link to="/tourist/dashboard">
-              <button className="flex items-center gap-2 px-2.5 py-1.5 md:px-4 md:py-2 bg-slate-900 text-white text-[9px] md:text-[11px] font-bold uppercase tracking-wider hover:bg-slate-800 transition-colors rounded-md shadow-sm cursor-pointer">
-                <span className="hidden sm:inline">Switch to Tourist App</span>
-                <span className="sm:hidden">Tourist App</span>
-                <ExternalLink className="w-3.5 h-3.5 hidden sm:block" />
-              </button>
-            </Link>
             <button
               type="button"
               onClick={requestLogout}
@@ -195,7 +180,7 @@ export function AdminLayout() {
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-6 pb-24 mt-16 max-w-7xl w-full mx-auto">
+        <main className="system-admin-content flex-1 p-4 md:p-5 pb-24 mt-16 max-w-7xl w-full mx-auto">
           <Outlet />
         </main>
 
@@ -219,5 +204,6 @@ export function AdminLayout() {
 
       </div>
     </div>
+    </>
   );
 }

@@ -260,3 +260,37 @@ body,
     max-width: calc(100vw - 92px);
   }
 }
+
+
+/* System Admin pages use denser typography than the tourist-facing UI. */
+.system-admin-content {
+  font-size: 0.94rem;
+}
+
+.admin-risk-zone-page h1 {
+  font-size: 1.15rem !important;
+}
+
+.admin-risk-zone-page h2,
+.admin-risk-zone-page h3 {
+  font-size: 0.95rem !important;
+}
+
+.admin-risk-zone-page p,
+.admin-risk-zone-page label,
+.admin-risk-zone-page button,
+.admin-risk-zone-page input,
+.admin-risk-zone-page select,
+.admin-risk-zone-page textarea {
+  font-size: 0.72rem !important;
+}
+
+.admin-risk-zone-page [class*="text-[20px]"],
+.admin-risk-zone-page [class*="text-[24px]"] {
+  font-size: 1.15rem !important;
+}
+
+.admin-risk-zone-page [class*="text-[13px]"],
+.admin-risk-zone-page [class*="text-[12px]"] {
+  font-size: 0.72rem !important;
+}

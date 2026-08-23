@@ -77,10 +77,10 @@ export function AdminAccountsPage() {
         <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">
           System Admin
         </p>
-        <h1 className="mt-1 text-2xl font-black uppercase tracking-tight flex items-center gap-2">
+        <h1 className="mt-1 text-xl font-black uppercase tracking-tight flex items-center gap-2">
           <Users className="w-6 h-6" /> Account Management
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-xs text-slate-500 mt-1">
           Real tourist, disaster-manager and system-admin accounts from PostgreSQL.
         </p>
       </div>
@@ -109,13 +109,13 @@ export function AdminAccountsPage() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Name, username, email or phone"
-            className="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm outline-none"
+            className="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-xs outline-none"
           />
         </div>
       </div>
 
       {error && (
-        <div className="mb-5 bg-red-50 border border-red-200 rounded-xl p-5 text-red-700 text-sm flex gap-3">
+        <div className="mb-5 bg-red-50 border border-red-200 rounded-xl p-5 text-red-700 text-xs flex gap-3">
           <ServerCrash className="w-5 h-5 shrink-0" /> {error}
         </div>
       )}
@@ -145,10 +145,10 @@ export function AdminAccountsPage() {
               {accounts.map((account) => (
                 <tr key={`${account.role}-${account.id}`}>
                   <td className="px-5 py-4">
-                    <p className="font-black text-sm">
+                    <p className="font-black text-xs">
                       {account.name || account.username}
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-[11px] text-slate-500 mt-1">
                       {account.email || account.phone}
                     </p>
                   </td>
@@ -162,15 +162,15 @@ export function AdminAccountsPage() {
                       {account.role}
                     </span>
                   </td>
-                  <td className="px-5 py-4 text-xs font-bold">
+                  <td className="px-5 py-4 text-[11px] font-bold">
                     {account.status}
                   </td>
-                  <td className="px-5 py-4 text-xs text-slate-500">
+                  <td className="px-5 py-4 text-[11px] text-slate-500">
                     {account.lastLoginAt
                       ? new Date(account.lastLoginAt).toLocaleString()
                       : 'Never'}
                   </td>
-                  <td className="px-5 py-4 text-xs text-slate-500">
+                  <td className="px-5 py-4 text-[11px] text-slate-500">
                     {new Date(account.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-5 py-4">
@@ -190,7 +190,7 @@ export function AdminAccountsPage() {
               ))}
               {accounts.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-8 text-sm text-slate-500 text-center">
+                  <td colSpan={6} className="p-8 text-xs text-slate-500 text-center">
                     No accounts match the filters.
                   </td>
                 </tr>

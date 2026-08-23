@@ -44,10 +44,10 @@ export function AdminAuditPage() {
         <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">
           System Admin
         </p>
-        <h1 className="mt-1 text-2xl font-black uppercase tracking-tight flex items-center gap-2">
+        <h1 className="mt-1 text-xl font-black uppercase tracking-tight flex items-center gap-2">
           <Activity className="w-6 h-6" /> Audit & Diagnostics
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-xs text-slate-500 mt-1">
           Live audit records and backend diagnostics. No decorative uptime numbers involved.
         </p>
       </div>
@@ -78,7 +78,7 @@ export function AdminAuditPage() {
 
       <div className="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden min-h-[520px]">
         <div className="p-4 border-b border-slate-800">
-          <h2 className="text-xs font-black uppercase tracking-widest text-slate-300">
+          <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-300">
             System Audit Trail
           </h2>
         </div>
@@ -88,7 +88,7 @@ export function AdminAuditPage() {
             <Loader2 className="w-7 h-7 animate-spin text-slate-500" />
           </div>
         ) : (
-          <div className="p-4 overflow-x-auto font-mono text-[11px] space-y-2">
+          <div className="p-4 overflow-x-auto font-mono text-[10px] space-y-2">
             {logs.map((log) => (
               <div key={log.id} className="min-w-[760px] grid grid-cols-[160px_180px_120px_1fr] gap-3">
                 <span className="text-slate-500">
@@ -125,7 +125,7 @@ function Metric({ icon: Icon, label, value }) {
       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-3">
         {label}
       </p>
-      <p className="text-xl font-black mt-1">{value}</p>
+      <p className="text-lg font-black mt-1">{value}</p>
     </div>
   );
 }
