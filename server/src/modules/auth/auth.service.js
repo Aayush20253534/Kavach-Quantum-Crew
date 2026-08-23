@@ -244,12 +244,24 @@ export const createAuthService = ({
       return { accepted: true };
     },
 
-    async login({ identifier, password }, context = {}) {
+    async login({ identifier, password, role }, context = {}) {
       const user = await repository.findByLoginIdentifier(identifier);
       if (!user || !(await verifyPassword(user.passwordHash, password))) {
         throw ApiError.unauthorized("Invalid username/email or password", {
           code: "INVALID_CREDENTIALS",
         });
+      }
+
+      if (role && user.role !== role) {
+        throw ApiError.forbidden(
+          "This account does not belong to the selected login portal",
+          {
+            code: "LOGIN_ROLE_MISMATCH",
+            details: {
+              selectedRole: role,
+            },
+          },
+        );
       }
       if (user.status !== "ACTIVE") {
         throw ApiError.forbidden("Account is not active", {
