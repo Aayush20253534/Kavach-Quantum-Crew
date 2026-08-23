@@ -2,28 +2,47 @@ import { prisma } from "../../config/database.js";
 
 export const createDashboardRepository = ({ db = prisma } = {}) => ({
   totalTourists() {
+    // "Total Tourists" means every row in the tourist users table.
+    // Staff accounts live in separate tables and are intentionally excluded.
     return db.user.count();
   },
+
   activeAlerts(userId) {
     return db.safetyAlert.count({
-      where: { userId, status: { in: ["OPEN", "ACKNOWLEDGED"] } },
+      where: {
+        userId,
+        status: { in: ["OPEN", "ACKNOWLEDGED"] },
+      },
     });
   },
+
   currentTrip(userId) {
     return db.trip.findFirst({
-      where: { touristId: userId, status: { in: ["PLANNED", "ACTIVE"] } },
+      where: {
+        touristId: userId,
+        status: { in: ["PLANNED", "ACTIVE"] },
+      },
       include: {
         group: {
           include: {
-            members: { where: { leftAt: null }, select: { id: true } },
+            members: {
+              where: { leftAt: null },
+              select: { id: true },
+            },
           },
         },
       },
       orderBy: { createdAt: "desc" },
     });
   },
+
   activeRiskZones() {
-    return db.safetyZone.findMany({ where: { active: true, type: "RISK" } });
+    return db.safetyZone.findMany({
+      where: {
+        active: true,
+        type: "RISK",
+      },
+    });
   },
 });
 
