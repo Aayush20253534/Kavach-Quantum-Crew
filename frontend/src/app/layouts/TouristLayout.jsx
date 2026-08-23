@@ -88,8 +88,12 @@ export function TouristLayout() {
     { name: 'Profile', path: '/tourist/profile', icon: User },
   ];
 
-  const userName = user?.name || 'Aayansh Niranjan';
+  const userName = user?.name?.trim() || user?.username || 'Tourist';
   const initial = userName.charAt(0).toUpperCase();
+  const profileImage = user?.profilePicUrl || user?.profilePic || null;
+  const userIdLabel = user?.id
+    ? `#${String(user.id).slice(0, 8).toUpperCase()}`
+    : 'Authenticated tourist';
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-slate-900 antialiased font-sans relative">
@@ -198,13 +202,24 @@ export function TouristLayout() {
         <div className={`px-6 py-4 ${isCollapsed ? 'px-3' : ''}`}>
           <div className={`bg-white border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-2xl flex flex-col gap-4 ${isCollapsed ? 'p-2 items-center' : 'p-4'}`}>
             <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
-              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-700 shrink-0 cursor-pointer" title={isCollapsed ? userName : undefined}>
-                {initial}
+              <div
+                className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center text-sm font-bold text-slate-700 shrink-0 cursor-pointer"
+                title={isCollapsed ? userName : undefined}
+              >
+                {profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt={`${userName} profile`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  initial
+                )}
               </div>
               {!isCollapsed && (
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-bold text-slate-900 truncate uppercase tracking-wide">{userName}</p>
-                  <p className="text-[10px] text-slate-400 font-mono truncate">ID: #DTD-PRY-8924</p>
+                  <p className="text-[10px] text-slate-400 font-mono truncate">ID: {userIdLabel}</p>
                 </div>
               )}
             </div>

@@ -11,8 +11,9 @@ const savedAuth = (() => {
 })();
 
 const initialState = {
+  // Cached user is presentation-only until AuthInitializer verifies a real session.
   user: savedAuth?.user || null,
-  isAuthenticated: savedAuth?.isAuthenticated ?? false,
+  isAuthenticated: false,
   initialized: false,
 };
 

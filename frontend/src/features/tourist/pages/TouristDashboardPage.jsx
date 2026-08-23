@@ -28,7 +28,7 @@ const unwrap = (value) => value?.data ?? value;
 export function TouristDashboardPage() {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
-  const userName = user?.name?.split(' ')[0] || 'Tourist';
+  const userName = (user?.name?.trim() || user?.username || 'Tourist').split(/\s+/)[0];
 
   const { data: currentTripResponse } = useCurrentTrip();
   const currentTrip = unwrap(currentTripResponse);
