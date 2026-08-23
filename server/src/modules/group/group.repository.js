@@ -27,6 +27,28 @@ export const createGroupRepository = ({ db = prisma } = {}) => ({
       where: { userId, leftAt: null, group: { tripId, status: "ACTIVE" } },
     });
   },
+  findOpenTripForUser(userId) {
+    return db.trip.findFirst({
+      where: {
+        status: { in: ["PLANNED", "ACTIVE"] },
+        OR: [
+          { touristId: userId },
+          {
+            group: {
+              is: {
+                status: "ACTIVE",
+                members: {
+                  some: { userId, leftAt: null },
+                },
+              },
+            },
+          },
+        ],
+      },
+      select: { id: true, status: true, locationName: true },
+      orderBy: { createdAt: "desc" },
+    });
+  },
   async createGroup(tripId, leaderId, now) {
     return db.$transaction(async (tx) => {
       const group = await tx.tripGroup.create({ data: { tripId, leaderId } });

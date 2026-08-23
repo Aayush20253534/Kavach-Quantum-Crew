@@ -19,6 +19,7 @@ const toProfile = (user) => ({
   emergencyContactName: user.emergencyContactName ?? null,
   emergencyContactRelation: user.emergencyContactRelation ?? null,
   bloodGroup: user.bloodGroup ?? null,
+  governmentIdType: user.governmentIdType ?? null,
   governmentIdNumber: user.governmentIdNumber ?? null,
   liveTrackingEnabled: user.liveTrackingEnabled,
   geoAlertsEnabled: user.geoAlertsEnabled,
@@ -64,6 +65,7 @@ export const createTouristService = ({
         emergencyContactName: input.emergencyContactName,
         emergencyContactRelation: input.emergencyContactRelation,
         bloodGroup: input.bloodGroup,
+        governmentIdType: input.governmentIdType,
         governmentIdNumber: input.governmentIdNumber,
         liveTrackingEnabled: input.liveTrackingEnabled,
         geoAlertsEnabled: input.geoAlertsEnabled,
@@ -163,6 +165,8 @@ export const createTouristService = ({
       if (input.emergencyContactRelation !== undefined)
         data.emergencyContactRelation = input.emergencyContactRelation;
       if (input.bloodGroup !== undefined) data.bloodGroup = input.bloodGroup;
+      if (input.governmentIdType !== undefined)
+        data.governmentIdType = input.governmentIdType;
       if (input.governmentIdNumber !== undefined)
         data.governmentIdNumber = input.governmentIdNumber;
       if (input.liveTrackingEnabled !== undefined)

@@ -30,6 +30,7 @@ model User {
   emergencyContactName      String?       @db.VarChar(120)
   emergencyContactRelation  String?       @db.VarChar(60)
   bloodGroup                String?       @db.VarChar(8)
+  governmentIdType          String?       @db.VarChar(20)
   governmentIdNumber        String?       @db.VarChar(120)
   liveTrackingEnabled       Boolean       @default(true)
   geoAlertsEnabled          Boolean       @default(true)
