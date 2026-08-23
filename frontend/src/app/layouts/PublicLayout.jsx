@@ -13,38 +13,38 @@ export function PublicLayout() {
     <div className="min-h-screen flex flex-col bg-[#060B16] text-white selection:bg-sky-500/30">
 
       {/* Floating Premium Navbar */}
-      <header className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${isHome ? 'pt-4 px-4 sm:pt-6 sm:px-6' : 'bg-[#060B16]/90 backdrop-blur-xl border-b border-white/5 py-4 px-4 sm:px-6'}`}>
-        <div className={`mx-auto max-w-[1400px] flex items-center justify-between transition-all duration-300 ${isHome ? 'bg-black/20 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 sm:px-6 sm:py-3 shadow-[0_4px_30px_rgba(0,0,0,0.1)]' : ''}`}>
+      <header className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${isHome ? 'pt-3 px-3 sm:pt-5 sm:px-5' : 'bg-[#060B16]/90 backdrop-blur-xl border-b border-white/5 py-3 px-3 sm:px-5'}`}>
+        <div className={`mx-auto max-w-[1400px] flex items-center justify-between transition-all duration-300 ${isHome ? 'bg-black/20 backdrop-blur-md border border-white/10 rounded-full px-3 py-1.5 sm:px-5 sm:py-2.5 shadow-[0_4px_30px_rgba(0,0,0,0.1)]' : ''}`}>
 
           {/* Brand Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 border border-white/20 text-white backdrop-blur-md transition-all duration-300 group-hover:scale-105 group-hover:bg-white/20">
-              <ShieldCheck className="h-5 w-5" />
+            <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-white/10 border border-white/20 text-white backdrop-blur-md transition-all duration-300 group-hover:scale-105 group-hover:bg-white/20">
+              <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div className="flex flex-col justify-center">
-              <span className="text-sm font-black tracking-[0.15em] text-white leading-none">
+              <span className="text-[12px] sm:text-sm font-black tracking-[0.15em] text-white leading-none">
                 KAVACH
               </span>
-              <span className="text-[7px] font-bold uppercase tracking-[0.2em] text-white/50 leading-none mt-1">
+              <span className="text-[6px] sm:text-[7px] font-bold uppercase tracking-[0.2em] text-white/50 leading-none mt-1">
                 Tourist Safety Network
               </span>
             </div>
           </Link>
 
           {/* Center Links */}
-          <nav className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-xs font-semibold uppercase tracking-widest text-white/70 hover:text-white transition-colors">Features</a>
-            <a href="#safe-zones" className="text-xs font-semibold uppercase tracking-widest text-white/70 hover:text-white transition-colors">Safe Zones</a>
-            <a href="#emergency" className="text-xs font-semibold uppercase tracking-widest text-white/70 hover:text-white transition-colors">Emergency</a>
+          <nav className="hidden md:flex items-center gap-6 lg:gap-8">
+            <a href="#features" className="text-[11px] font-semibold uppercase tracking-widest text-white/70 hover:text-white transition-colors">Features</a>
+            <a href="#safe-zones" className="text-[11px] font-semibold uppercase tracking-widest text-white/70 hover:text-white transition-colors">Safe Zones</a>
+            <a href="#emergency" className="text-[11px] font-semibold uppercase tracking-widest text-white/70 hover:text-white transition-colors">Emergency</a>
           </nav>
 
           {/* CTAs */}
-          <div className="flex items-center gap-4">
-            <Link to="/login" className="text-xs font-semibold uppercase tracking-widest text-white/80 hover:text-white transition-colors hidden sm:block">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Link to="/login" className="text-[11px] font-semibold uppercase tracking-widest text-white/80 hover:text-white transition-colors hidden sm:block">
               Sign In
             </Link>
 
-            <Link to="/register" className="hidden sm:flex group relative overflow-hidden rounded-full bg-gradient-to-r from-rose-500 to-orange-500 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white shadow-[0_4px_20px_rgba(244,63,94,0.3)] transition-all duration-300 hover:shadow-[0_8px_30px_rgba(244,63,94,0.5)] hover:-translate-y-0.5 active:scale-95 items-center gap-2">
+            <Link to="/register" className="hidden sm:flex group relative overflow-hidden rounded-full bg-gradient-to-r from-rose-500 to-orange-500 px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-white shadow-[0_4px_20px_rgba(244,63,94,0.3)] transition-all duration-300 hover:shadow-[0_8px_30px_rgba(244,63,94,0.5)] hover:-translate-y-0.5 active:scale-95 items-center gap-2">
               <span className="pointer-events-none absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[150%] skew-x-[-20deg] group-hover:animate-[shine_0.8s_ease-in-out]" />
               <span>Create Account</span>
               <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
