@@ -155,7 +155,7 @@ export function LiveTrackingPage() {
         Use two fingers to move the map. Active danger zones are shown in red, and group members are shown inside a 500 m geofence.
       </div>
 
-      <div className="h-[calc(100vh-285px)] min-h-[460px] sm:min-h-[500px] rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+      <div className="h-[220px] sm:h-[340px] lg:h-[clamp(340px,calc(100dvh-405px),430px)] rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
         <MapComponent
           currentLocation={location}
           groupLocations={memberLocations}
