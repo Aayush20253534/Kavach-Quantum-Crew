@@ -306,3 +306,12 @@ CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 PROFILE_IMAGE_MAX_FILE_BYTES=5242880
 ```
+
+
+### Disaster Management jurisdiction overview
+
+- GET `/api/v1/disaster-management/jurisdiction-overview`
+  - Role: `DISASTER_MANAGER`
+  - Uses the responder's backend `jurisdiction`.
+  - Returns jurisdiction-scoped active tourists, trips, incidents, emergency units, and Google Places police/fire/hospital locations.
+  - Server-side Google lookup requires `GOOGLE_MAPS_API_KEY`.

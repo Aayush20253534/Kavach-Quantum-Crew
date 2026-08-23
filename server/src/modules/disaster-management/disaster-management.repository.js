@@ -108,7 +108,7 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
     });
   },
 
-  listIncidentQueue({ status, severity, scope, actorId, limit }) {
+  listIncidentQueue({ status, severity, scope, actorId, jurisdiction, limit }) {
     const assignmentFilter =
       scope === "MINE"
         ? { assignedToId: actorId, assignedToRole: "DISASTER_MANAGER" }
@@ -120,6 +120,16 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
       where: {
         ...(status ? { status } : { status: { in: ACTIVE_INCIDENT_STATUSES } }),
         ...(severity ? { severity } : {}),
+        ...(jurisdiction
+          ? {
+              trip: {
+                locationName: {
+                  contains: jurisdiction,
+                  mode: "insensitive",
+                },
+              },
+            }
+          : {}),
         ...assignmentFilter,
       },
       orderBy: [{ severity: "desc" }, { createdAt: "asc" }],
@@ -127,17 +137,112 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
     });
   },
 
-  async dashboard(responderId) {
-    const activeFilter = { status: { in: ACTIVE_INCIDENT_STATUSES } };
-    const [open, critical, unassigned, mine, resolvedToday, availableResponders] = await Promise.all([
+  async dashboard(responderId, jurisdiction = null) {
+    const incidentJurisdictionFilter = jurisdiction
+      ? {
+          trip: {
+            locationName: {
+              contains: jurisdiction,
+              mode: "insensitive",
+            },
+          },
+        }
+      : {};
+
+    const activeFilter = {
+      status: { in: ACTIVE_INCIDENT_STATUSES },
+      ...incidentJurisdictionFilter,
+    };
+
+    const tripFilter = jurisdiction
+      ? {
+          status: "ACTIVE",
+          locationName: {
+            contains: jurisdiction,
+            mode: "insensitive",
+          },
+        }
+      : { status: "ACTIVE" };
+
+    const unitFilter = jurisdiction
+      ? {
+          jurisdiction: {
+            equals: jurisdiction,
+            mode: "insensitive",
+          },
+        }
+      : {};
+
+    const responderFilter = jurisdiction
+      ? {
+          jurisdiction: {
+            equals: jurisdiction,
+            mode: "insensitive",
+          },
+        }
+      : {};
+
+    const [
+      open,
+      critical,
+      unassigned,
+      mine,
+      resolvedToday,
+      availableResponders,
+      activeTrips,
+      activeTripRows,
+      emergencyUnits,
+    ] = await Promise.all([
       db.incident.count({ where: activeFilter }),
       db.incident.count({ where: { ...activeFilter, severity: "CRITICAL" } }),
       db.incident.count({ where: { ...activeFilter, assignedToId: null } }),
-      db.incident.count({ where: { ...activeFilter, assignedToId: responderId, assignedToRole: "DISASTER_MANAGER" } }),
-      db.incident.count({ where: { status: "RESOLVED", resolvedAt: { gte: new Date(new Date().setUTCHours(0, 0, 0, 0)) } } }),
-      db.disasterManager.count({ where: { status: "ACTIVE", responderStatus: "AVAILABLE" } }),
+      db.incident.count({
+        where: {
+          ...activeFilter,
+          assignedToId: responderId,
+          assignedToRole: "DISASTER_MANAGER",
+        },
+      }),
+      db.incident.count({
+        where: {
+          status: "RESOLVED",
+          resolvedAt: {
+            gte: new Date(new Date().setUTCHours(0, 0, 0, 0)),
+          },
+          ...incidentJurisdictionFilter,
+        },
+      }),
+      db.disasterManager.count({
+        where: {
+          status: "ACTIVE",
+          responderStatus: "AVAILABLE",
+          ...responderFilter,
+        },
+      }),
+      db.trip.count({ where: tripFilter }),
+      db.trip.findMany({
+        where: tripFilter,
+        distinct: ["touristId"],
+        select: { touristId: true },
+      }),
+      db.emergencyUnit.findMany({
+        where: unitFilter,
+        orderBy: [{ type: "asc" }, { status: "asc" }, { name: "asc" }],
+      }),
     ]);
-    return { openIncidents: open, criticalIncidents: critical, unassignedIncidents: unassigned, myActiveIncidents: mine, resolvedToday, availableResponders };
+
+    return {
+      jurisdiction,
+      openIncidents: open,
+      criticalIncidents: critical,
+      unassignedIncidents: unassigned,
+      myActiveIncidents: mine,
+      resolvedToday,
+      availableResponders,
+      activeTrips,
+      activeTourists: activeTripRows.length,
+      emergencyUnits,
+    };
   },
 
   createAudit({ actorId, actorRole, action, entityId, metadata }) {

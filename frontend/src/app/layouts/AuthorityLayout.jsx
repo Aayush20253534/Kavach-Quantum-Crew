@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -21,6 +21,7 @@ import { logout } from '../../features/auth/store/authSlice';
 import { authService } from '../../features/auth/api/authService';
 import { markExplicitSignOut } from '../../services/apiClient';
 import { SignOutConfirmModal } from '../components/SignOutConfirmModal';
+import { authorityService } from '../../features/authority/api/authorityService';
 
 export function AuthorityLayout() {
   const { user } = useSelector((state) => state.auth);
@@ -30,6 +31,23 @@ export function AuthorityLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [logoutBusy, setLogoutBusy] = useState(false);
+  const [jurisdictionOverview, setJurisdictionOverview] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    authorityService.getJurisdictionOverview()
+      .then((data) => {
+        if (!cancelled) setJurisdictionOverview(data);
+      })
+      .catch(() => {
+        if (!cancelled) setJurisdictionOverview(null);
+      });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  const jurisdiction = jurisdictionOverview?.responder?.jurisdiction || 'Assigned Area';
+  const commandStats = jurisdictionOverview?.stats || {};
 
   const handleLogout = async () => {
     setLogoutBusy(true);
@@ -74,7 +92,7 @@ export function AuthorityLayout() {
       <div className="min-h-screen bg-slate-50 text-slate-900 antialiased font-sans">
 
       {/* Authority Sidebar */}
-      <aside className={`hidden md:flex flex-col bg-white border-r border-slate-200 fixed top-0 left-0 h-screen z-30 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-72'}`}>
+      <aside className={`hidden md:flex flex-col bg-white border-r border-slate-200 fixed top-0 left-0 h-screen z-30 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
 
         {/* Collapse Toggle Button (Desktop Only) */}
         <button
@@ -85,7 +103,7 @@ export function AuthorityLayout() {
         </button>
 
         {/* Brand Header */}
-        <div className={`p-6 border-b border-slate-200 flex items-center bg-white ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}>
+        <div className={`p-5 border-b border-slate-200 flex items-center bg-white ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}>
           {!isCollapsed ? (
             <Link to="/authority/dashboard" className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-md bg-[#e11d48] flex items-center justify-center text-white shadow-sm shrink-0">
@@ -93,9 +111,9 @@ export function AuthorityLayout() {
               </div>
               <div>
                 <h1 className="text-[14px] font-black tracking-tight text-slate-900 flex items-center gap-1.5 uppercase">
-                  PRAYAGRAJ <span className="text-[9px] px-1.5 py-0.5 rounded text-[#b91c1c] font-bold border border-[#fecaca] bg-[#fef2f2] uppercase">HQ</span>
+                  {jurisdiction.toUpperCase()} <span className="text-[9px] px-1.5 py-0.5 rounded text-[#b91c1c] font-bold border border-[#fecaca] bg-[#fef2f2] uppercase">HQ</span>
                 </h1>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Police & Tourism Command</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Disaster Management Command</p>
               </div>
             </Link>
           ) : (
@@ -118,22 +136,22 @@ export function AuthorityLayout() {
             <div className="text-[11px] text-slate-600 space-y-1.5 pt-1 font-medium border-t border-slate-200 pt-3">
               <div className="flex justify-between items-center">
                 <span>Active Tourists:</span>
-                <span className="font-mono font-bold text-slate-900">12,480</span>
+                <span className="font-mono font-bold text-slate-900">{commandStats.activeTourists ?? 0}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span>Patrol Units Deployed:</span>
-                <span className="font-mono font-bold text-slate-900">64</span>
+                <span>Emergency Units:</span>
+                <span className="font-mono font-bold text-slate-900">{commandStats.emergencyUnits?.filter((unit) => unit.status !== "OUT_OF_SERVICE").length ?? 0}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span>Open SOS Tickets:</span>
-                <span className="font-mono font-bold text-[#e11d48]">2</span>
+                <span className="font-mono font-bold text-[#e11d48]">{commandStats.openIncidents ?? 0}</span>
               </div>
             </div>
           </div>
         )}
 
         {/* Nav Items */}
-        <nav className={`flex-1 py-6 space-y-2 ${isCollapsed ? 'px-3 mt-4' : 'px-4'}`}>
+        <nav className={`flex-1 py-5 space-y-1.5 ${isCollapsed ? 'px-3 mt-4' : 'px-4'}`}>
           <p className={`px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ${isCollapsed ? 'text-center pl-0 text-[8px]' : ''}`}>
             {isCollapsed ? 'CTRL' : 'Authority Controls'}
           </p>
@@ -144,7 +162,7 @@ export function AuthorityLayout() {
               <NavLink
                 key={item.name}
                 to={item.path}
-                className={`group flex items-center gap-3 py-3 rounded-md text-[12px] font-bold uppercase tracking-wider transition-all duration-200 ${isCollapsed ? 'justify-center px-0' : 'px-4'
+                className={`group flex items-center gap-3 py-2.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${isCollapsed ? 'justify-center px-0' : 'px-4'
                   } ${location.pathname.startsWith(item.path)
                     ? 'bg-[#fff1f2] text-[#be123c] border border-[#ffe4e6] shadow-sm'
                     : 'text-slate-600 border border-transparent hover:text-[#e11d48] hover:bg-slate-50 hover:border-slate-200'
@@ -166,8 +184,8 @@ export function AuthorityLayout() {
                 HQ
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-black text-slate-900 truncate uppercase text-[12px] tracking-wide">Officer In-Charge</p>
-                <p className="text-[10px] text-slate-500 font-bold truncate tracking-wider mt-0.5">Sangam Command Post</p>
+                <p className="font-black text-slate-900 truncate uppercase text-[11px] tracking-wide">{jurisdictionOverview?.responder?.name || user?.name || "Officer In-Charge"}</p>
+                <p className="text-[9px] text-slate-500 font-bold truncate tracking-wider mt-0.5">{jurisdiction}</p>
               </div>
             </div>
           ) : (
@@ -190,13 +208,13 @@ export function AuthorityLayout() {
       </aside>
 
       {/* Main Content */}
-      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 pl-0 md:pl-72 ${isCollapsed ? 'md:pl-20' : ''}`}>
-        <header className={`fixed top-0 right-0 z-20 h-16 bg-white/95 backdrop-blur-xl border-b border-slate-200 px-4 md:px-6 flex items-center justify-between shadow-sm transition-all duration-300 w-full ${isCollapsed ? 'md:w-[calc(100%-5rem)]' : 'md:w-[calc(100%-18rem)]'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 pl-0 md:pl-64 ${isCollapsed ? 'md:pl-20' : ''}`}>
+        <header className={`fixed top-0 right-0 z-20 h-16 bg-white/95 backdrop-blur-xl border-b border-slate-200 px-4 md:px-6 flex items-center justify-between shadow-sm transition-all duration-300 w-full ${isCollapsed ? 'md:w-[calc(100%-5rem)]' : 'md:w-[calc(100%-16rem)]'}`}>
           <div className="flex items-center gap-2 md:gap-3">
             <div className="bg-[#e11d48] text-white text-[10px] font-bold px-2 py-1.5 md:px-3 md:py-1.5 uppercase tracking-widest rounded shadow-sm flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
-              <span className="hidden sm:inline">PRAYAGRAJ SECTOR 1-8 LIVE RADAR</span>
-              <span className="sm:hidden">HQ RADAR</span>
+              <span className="hidden sm:inline">{jurisdiction.toUpperCase()} LIVE MAP</span>
+              <span className="sm:hidden">LIVE MAP</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -210,7 +228,7 @@ export function AuthorityLayout() {
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-6 pb-24 mt-16 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-3 sm:p-4 md:p-5 pb-24 mt-16 max-w-[1400px] w-full mx-auto">
           <Outlet />
         </main>
 

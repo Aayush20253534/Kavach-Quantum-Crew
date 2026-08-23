@@ -21,6 +21,7 @@ export const createDisasterManagementRouter = ({ controller = disasterManagement
   router.use(authenticate, authorize(ROLES.DISASTER_MANAGER, ROLES.SYSTEM_ADMIN));
 
   router.get("/dashboard", asyncHandler(controller.dashboard));
+  router.get("/jurisdiction-overview", asyncHandler(controller.jurisdictionOverview));
   router.get("/responders", validate({ query: responderListQuerySchema }), asyncHandler(controller.responders));
   router.get("/responders/me", asyncHandler(controller.me));
   router.patch("/responders/me/status", validate({ body: responderStatusBodySchema }), asyncHandler(controller.updateStatus));

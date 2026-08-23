@@ -3,6 +3,10 @@ import { disasterManagementService } from "./disaster-management.service.js";
 
 export const createDisasterManagementController = ({ service = disasterManagementService } = {}) => ({
   dashboard: async (request, response) => ApiResponse.success(response, { message: "Disaster management dashboard", data: await service.dashboard(request.user) }),
+  jurisdictionOverview: async (request, response) => ApiResponse.success(response, {
+    message: "Jurisdiction emergency overview",
+    data: await service.jurisdictionOverview(request.user),
+  }),
   me: async (request, response) => ApiResponse.success(response, { message: "Responder profile", data: await service.me(request.user) }),
   responders: async (request, response) => ApiResponse.success(response, { message: "Responders", data: await service.listResponders(request.user, request.query) }),
   responder: async (request, response) => ApiResponse.success(response, { message: "Responder", data: await service.getResponder(request.user, request.params.responderId) }),

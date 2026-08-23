@@ -165,6 +165,10 @@ const environmentSchema = z
       3600,
     ).default(30),
 
+    GOOGLE_MAPS_API_KEY: optionalString(
+      z.string().trim().min(1),
+    ),
+
     ACCESS_TOKEN_SECRET: z
       .string()
       .min(16)
