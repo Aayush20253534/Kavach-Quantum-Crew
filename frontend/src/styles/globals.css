@@ -88,6 +88,12 @@
   }
 }
 
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 .animate-pulse-glow {
   animation: pulseGlow 2s infinite ease-in-out;
 }
