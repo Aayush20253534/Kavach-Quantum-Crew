@@ -276,16 +276,16 @@ export function MapComponent({
           <InfoWindowF
             position={{ lat: selectedPlace.lat, lng: selectedPlace.lng }}
             onCloseClick={() => setSelectedPlace(null)}
-            options={{ pixelOffset: new window.google.maps.Size(0, -8) }}
+            options={{ pixelOffset: new window.google.maps.Size(0, -22) }}
           >
-            <div className="w-[240px] sm:w-[280px] pr-1 text-slate-900 font-sans">
-              <h3 className="text-[14px] leading-5 font-extrabold text-slate-900 break-words whitespace-normal">
+            <div className="emergency-info-window-content w-[210px] sm:w-[250px] pr-1 text-slate-900 font-sans">
+              <h3 className="text-[12px] sm:text-[13px] leading-4 font-extrabold text-slate-900 break-words whitespace-normal">
                 {selectedPlace.name}
               </h3>
               {selectedPlace.vicinity && (
                 <div className="mt-2 flex items-start gap-2">
                   <MapPin className="w-3 h-3 mt-0.5 text-slate-400 shrink-0" />
-                  <p className="min-w-0 text-[11px] leading-4 text-slate-600 font-medium break-words whitespace-normal">
+                  <p className="min-w-0 text-[10px] sm:text-[11px] leading-4 text-slate-600 font-medium break-words whitespace-normal">
                     {selectedPlace.vicinity}
                   </p>
                 </div>

@@ -202,3 +202,48 @@ body,
     @apply w-full min-h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400;
   }
 }
+
+
+/* Compact Google Maps emergency popup inside the tourist app.
+   Google injects inline sizes on its close button, so these need !important. */
+.tourist-font .gm-style .gm-ui-hover-effect {
+  top: -5px !important;
+  right: -5px !important;
+  width: 30px !important;
+  height: 30px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  outline: 0 !important;
+  border-radius: 9999px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tourist-font .gm-style .gm-ui-hover-effect:focus,
+.tourist-font .gm-style .gm-ui-hover-effect:focus-visible,
+.tourist-font .gm-style .gm-ui-hover-effect:active {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+.tourist-font .gm-style .gm-ui-hover-effect > span {
+  width: 18px !important;
+  height: 18px !important;
+  margin: 6px !important;
+}
+
+.tourist-font .gm-style .gm-style-iw-c {
+  max-width: calc(100vw - 56px) !important;
+  border-radius: 12px !important;
+}
+
+.tourist-font .gm-style .gm-style-iw-d {
+  overflow: hidden !important;
+}
+
+@media (max-width: 640px) {
+  .tourist-font .emergency-info-window-content {
+    max-width: calc(100vw - 92px);
+  }
+}

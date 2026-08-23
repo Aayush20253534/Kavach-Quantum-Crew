@@ -187,13 +187,13 @@ export function TouristDashboardPage() {
   ], [dashboardSnapshot, frozenSummary, safetyIsDanger]);
 
   return (
-    <div className="space-y-7 max-w-[1240px] mx-auto pb-10 overflow-visible">
-      <section className={`relative z-30 overflow-visible rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm transition-all duration-500 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'}`}>
+    <div className="space-y-5 sm:space-y-7 max-w-[1240px] mx-auto pb-8 sm:pb-10 overflow-visible">
+      <section className={`relative z-30 overflow-visible rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm transition-all duration-500 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'}`}>
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 mb-5">
           <div className="min-w-0">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600">Tourist safety</p>
-            <h2 className="mt-1 text-[22px] sm:text-[26px] font-black text-slate-950 tracking-tight">Welcome back, {userName}</h2>
-            <p className="text-[12px] sm:text-[13px] text-slate-500 font-medium mt-1.5">Search a destination to create a group trip.</p>
+            <h2 className="mt-1 text-[19px] sm:text-[25px] font-black text-slate-950 tracking-tight">Welcome back, {userName}</h2>
+            <p className="text-[11px] sm:text-[13px] text-slate-500 font-medium mt-1.5">Search a destination to create a group trip.</p>
           </div>
         </div>
 
@@ -265,7 +265,7 @@ export function TouristDashboardPage() {
         })}
       </div>
 
-      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
+      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
         <div className="flex items-center justify-between">
           <h2 className="text-[15px] font-black text-slate-950 uppercase tracking-wide flex items-center gap-2">
             <Star className="w-4 h-4 text-[#e11d48]" strokeWidth={2.5} /> Top Destinations
@@ -303,12 +303,12 @@ export function TouristDashboardPage() {
       </section>
 
       <section className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h2 className="text-[15px] font-black text-slate-950 uppercase tracking-wide">Nearby Emergency Services</h2>
-            <p className="text-[11px] text-slate-500 font-medium mt-1.5">Live Google Maps results within approximately 5 km of your current location.</p>
+            <h2 className="text-[13px] sm:text-[15px] font-black text-slate-950 uppercase tracking-wide">Nearby Emergency Services</h2>
+            <p className="text-[10px] sm:text-[11px] leading-4 text-slate-500 font-medium mt-1">Live Google Maps results within approximately 5 km of your current location.</p>
           </div>
-          <div className="flex flex-wrap gap-2 text-[9px] font-bold uppercase tracking-wider">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">
             <span className="px-2 py-1 rounded bg-blue-50 text-blue-700">
               P Police · {emergencyCounts.police}
             </span>
@@ -323,7 +323,7 @@ export function TouristDashboardPage() {
             </span>
           </div>
         </div>
-        <div className="h-[420px] sm:h-[500px] relative bg-slate-100">
+        <div className="h-[390px] sm:h-[500px] relative bg-slate-100">
           <MapComponent
             currentLocation={location}
             showEmergencyServicesOnly
