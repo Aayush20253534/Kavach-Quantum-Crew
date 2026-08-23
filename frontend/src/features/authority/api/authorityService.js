@@ -42,14 +42,30 @@ export const authorityService = {
     return response.data;
   },
 
-  // Phase 2: Dispatch & Zones (Will be implemented later, but placeholders are good)
+  // Phase 2: Dispatch & Zones
   getUnits: async () => {
     const response = await apiClient.get('/dispatch/units');
+    return response.data;
+  },
+  assignUnit: async (dispatchId, data) => {
+    const response = await apiClient.post(`/dispatch/${dispatchId}/assign`, data);
     return response.data;
   },
   
   getRiskZones: async () => {
     const response = await apiClient.get('/risk-zones');
+    return response.data;
+  },
+  createRiskZone: async (data) => {
+    const response = await apiClient.post('/risk-zones', data);
+    return response.data;
+  },
+  activateRiskZone: async (zoneId) => {
+    const response = await apiClient.post(`/risk-zones/${zoneId}/activate`);
+    return response.data;
+  },
+  deactivateRiskZone: async (zoneId) => {
+    const response = await apiClient.post(`/risk-zones/${zoneId}/deactivate`);
     return response.data;
   }
 };

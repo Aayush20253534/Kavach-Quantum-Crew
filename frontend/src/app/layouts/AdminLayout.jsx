@@ -4,19 +4,17 @@ import { useSelector, useDispatch } from 'react-redux';
 import {
   Building2,
   Users,
-  Radio,
+  ShieldCheck,
   Activity,
   LogOut,
   ExternalLink,
   Menu,
   ChevronLeft,
-  AlertTriangle,
-  Car,
-  Map
+  Settings
 } from 'lucide-react';
 import { logout } from '../../features/auth/store/authSlice';
 
-export function AuthorityLayout() {
+export function AdminLayout() {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -29,19 +27,18 @@ export function AuthorityLayout() {
   };
 
   const navItems = [
-    { name: 'Live Command Map', path: '/authority/dashboard', icon: Activity },
-    { name: 'Incident Queue', path: '/authority/incidents', icon: AlertTriangle },
-    { name: 'Fleet Dispatch', path: '/authority/dispatch', icon: Car },
-    { name: 'Risk Zones', path: '/authority/zones', icon: Map },
-    { name: 'Tourist Dashboard View', path: '/tourist/dashboard', icon: Users },
+    { name: 'Accounts', path: '/admin/accounts', icon: Users },
+    { name: 'Audit Trail', path: '/admin/audit', icon: Activity },
+    { name: 'System Settings', path: '/admin/settings', icon: Settings },
+    { name: 'Tourist View', path: '/tourist/dashboard', icon: ExternalLink },
   ];
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 antialiased font-sans">
-
+      
       {/* Authority Sidebar */}
       <aside className={`hidden md:flex flex-col bg-white border-r border-slate-200 fixed top-0 left-0 h-screen z-30 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-72'}`}>
-
+        
         {/* Collapse Toggle Button (Desktop Only) */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
@@ -53,55 +50,28 @@ export function AuthorityLayout() {
         {/* Brand Header */}
         <div className={`p-6 border-b border-slate-200 flex items-center bg-white ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}>
           {!isCollapsed ? (
-            <Link to="/authority/dashboard" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-md bg-[#e11d48] flex items-center justify-center text-white shadow-sm shrink-0">
-                <Building2 className="w-5 h-5" />
+            <Link to="/admin/accounts" className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-md bg-indigo-600 flex items-center justify-center text-white shadow-sm shrink-0">
+                <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
                 <h1 className="text-[14px] font-black tracking-tight text-slate-900 flex items-center gap-1.5 uppercase">
-                  PRAYAGRAJ <span className="text-[9px] px-1.5 py-0.5 rounded text-[#b91c1c] font-bold border border-[#fecaca] bg-[#fef2f2] uppercase">HQ</span>
+                  PLATFORM <span className="text-[9px] px-1.5 py-0.5 rounded text-indigo-700 font-bold border border-indigo-200 bg-indigo-50 uppercase">ADMIN</span>
                 </h1>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Police & Tourism Command</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Core Infrastructure</p>
               </div>
             </Link>
           ) : (
-            <Link to="/authority/dashboard" className="w-10 h-10 rounded-md bg-[#e11d48] flex items-center justify-center text-white shadow-sm shrink-0">
-              <Building2 className="w-5 h-5" />
+            <Link to="/admin/accounts" className="w-10 h-10 rounded-md bg-indigo-600 flex items-center justify-center text-white shadow-sm shrink-0">
+              <ShieldCheck className="w-5 h-5" />
             </Link>
           )}
         </div>
 
-        {/* Live System Status Ticker */}
-        {!isCollapsed && (
-          <div className="p-4 mx-4 mt-5 rounded-md bg-slate-50 border border-slate-200 space-y-3 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5 uppercase tracking-wider">
-                <Radio className="w-4 h-4 text-[#e11d48] animate-pulse" />
-                Dispatch Grid
-              </span>
-              <div className="text-[9px] py-0.5 px-2 bg-[#fef2f2] text-[#b91c1c] border border-[#fecaca] font-bold rounded uppercase tracking-wider">LIVE</div>
-            </div>
-            <div className="text-[11px] text-slate-600 space-y-1.5 pt-1 font-medium border-t border-slate-200 pt-3">
-              <div className="flex justify-between items-center">
-                <span>Active Tourists:</span>
-                <span className="font-mono font-bold text-slate-900">12,480</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Patrol Units Deployed:</span>
-                <span className="font-mono font-bold text-slate-900">64</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Open SOS Tickets:</span>
-                <span className="font-mono font-bold text-[#e11d48]">2</span>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Nav Items */}
         <nav className={`flex-1 py-6 space-y-2 ${isCollapsed ? 'px-3 mt-4' : 'px-4'}`}>
           <p className={`px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ${isCollapsed ? 'text-center pl-0 text-[8px]' : ''}`}>
-            {isCollapsed ? 'CTRL' : 'Authority Controls'}
+            {isCollapsed ? 'SYS' : 'System Administration'}
           </p>
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -110,14 +80,15 @@ export function AuthorityLayout() {
               <NavLink
                 key={item.name}
                 to={item.path}
-                className={`group flex items-center gap-3 py-3 rounded-md text-[12px] font-bold uppercase tracking-wider transition-all duration-200 ${isCollapsed ? 'justify-center px-0' : 'px-4'
-                  } ${location.pathname.startsWith(item.path)
-                    ? 'bg-[#fff1f2] text-[#be123c] border border-[#ffe4e6] shadow-sm'
-                    : 'text-slate-600 border border-transparent hover:text-[#e11d48] hover:bg-slate-50 hover:border-slate-200'
+                className={`group flex items-center gap-3 py-3 rounded-md text-[12px] font-bold uppercase tracking-wider transition-all duration-200 ${
+                  isCollapsed ? 'justify-center px-0' : 'px-4'
+                } ${isActive
+                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-sm'
+                    : 'text-slate-600 border border-transparent hover:text-indigo-600 hover:bg-slate-50 hover:border-slate-200'
                   }`}
                 title={isCollapsed ? item.name : undefined}
               >
-                <Icon className={`w-4 h-4 shrink-0 transition-colors ${location.pathname.startsWith(item.path) ? 'text-[#e11d48]' : 'text-slate-400 group-hover:text-[#e11d48]'}`} />
+                <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-600'}`} />
                 {!isCollapsed && <span>{item.name}</span>}
               </NavLink>
             );
@@ -132,24 +103,24 @@ export function AuthorityLayout() {
                 HQ
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-black text-slate-900 truncate uppercase text-[12px] tracking-wide">Officer In-Charge</p>
-                <p className="text-[10px] text-slate-500 font-bold truncate tracking-wider mt-0.5">Sangam Command Post</p>
+                <p className="font-black text-slate-900 truncate uppercase text-[12px] tracking-wide">Root Administrator</p>
+                <p className="text-[10px] text-slate-500 font-bold truncate tracking-wider mt-0.5">Platform Operations</p>
               </div>
             </div>
           ) : (
             <div className="flex items-center justify-center py-1">
-              <div className="w-10 h-10 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center font-black text-slate-700 text-[14px]" title="Officer In-Charge">
+              <div className="w-10 h-10 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center font-black text-slate-700 text-[14px]" title="Root Admin">
                 HQ
               </div>
             </div>
           )}
-
+          
           <button
             onClick={handleLogout}
-            className={`group w-full flex items-center gap-2 py-2.5 rounded-md text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#e11d48] hover:bg-[#fff1f2] transition-colors cursor-pointer border border-transparent hover:border-[#ffe4e6] ${isCollapsed ? 'justify-center px-0' : 'justify-center'}`}
+            className={`group w-full flex items-center gap-2 py-2.5 rounded-md text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer border border-transparent hover:border-indigo-100 ${isCollapsed ? 'justify-center px-0' : 'justify-center'}`}
             title={isCollapsed ? "Sign Out" : undefined}
           >
-            <LogOut className="w-4 h-4 transition-colors text-slate-500 group-hover:text-[#e11d48]" />
+            <LogOut className="w-4 h-4 transition-colors text-slate-500 group-hover:text-indigo-600" />
             {!isCollapsed && <span>Sign Out</span>}
           </button>
         </div>
@@ -159,10 +130,9 @@ export function AuthorityLayout() {
       <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 pl-0 md:pl-72 ${isCollapsed ? 'md:pl-20' : ''}`}>
         <header className={`fixed top-0 right-0 z-20 h-16 bg-white/95 backdrop-blur-xl border-b border-slate-200 px-4 md:px-6 flex items-center justify-between shadow-sm transition-all duration-300 w-full ${isCollapsed ? 'md:w-[calc(100%-5rem)]' : 'md:w-[calc(100%-18rem)]'}`}>
           <div className="flex items-center gap-2 md:gap-3">
-            <div className="bg-[#e11d48] text-white text-[10px] font-bold px-2 py-1.5 md:px-3 md:py-1.5 uppercase tracking-widest rounded shadow-sm flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
-              <span className="hidden sm:inline">PRAYAGRAJ SECTOR 1-8 LIVE RADAR</span>
-              <span className="sm:hidden">HQ RADAR</span>
+            <div className="bg-indigo-600 text-white text-[10px] font-bold px-2 py-1.5 md:px-3 md:py-1.5 uppercase tracking-widest rounded shadow-sm flex items-center gap-2">
+              <span className="hidden sm:inline">QUANTUM CREW SYSADMIN</span>
+              <span className="sm:hidden">SYSADMIN</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -186,13 +156,13 @@ export function AuthorityLayout() {
             const Icon = item.icon;
             const isActive = location.pathname.startsWith(item.path);
             return (
-              <Link
-                key={item.name}
-                to={item.path}
-                className={`flex flex-col items-center justify-center gap-1 w-20 h-full ${isActive ? 'text-[#be123c]' : 'text-slate-400 hover:text-slate-900'}`}
+              <Link 
+                key={item.name} 
+                to={item.path} 
+                className={`flex flex-col items-center justify-center gap-1 w-20 h-full ${isActive ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-900'}`}
               >
                 <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
-                <span className={`text-[9px] font-bold text-center leading-tight px-1 ${isActive ? 'text-[#be123c]' : 'text-slate-500'}`}>{item.name}</span>
+                <span className={`text-[9px] font-bold text-center leading-tight px-1 ${isActive ? 'text-indigo-600' : 'text-slate-500'}`}>{item.name}</span>
               </Link>
             );
           })}

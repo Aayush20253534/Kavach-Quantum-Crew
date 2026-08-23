@@ -4,6 +4,7 @@ import { PublicLayout } from './layouts/PublicLayout';
 import { AuthLayout } from './layouts/AuthLayout';
 import { TouristLayout } from './layouts/TouristLayout';
 import { AuthorityLayout } from './layouts/AuthorityLayout';
+import { AdminLayout } from './layouts/AdminLayout';
 
 // Guards
 import { PublicRoute } from './guards/PublicRoute';
@@ -38,6 +39,12 @@ import { ProfilePage } from '../features/profile/pages/ProfilePage';
 import { AuthorityDashboardPage } from '../features/authority/pages/AuthorityDashboardPage';
 import { AuthorityIncidentsPage } from '../features/authority/pages/AuthorityIncidentsPage';
 import { AuthorityIncidentDetailsPage } from '../features/authority/pages/AuthorityIncidentDetailsPage';
+import { AuthorityDispatchPage } from '../features/authority/pages/AuthorityDispatchPage';
+import { AuthorityRiskZonesPage } from '../features/authority/pages/AuthorityRiskZonesPage';
+
+// Pages - Admin
+import { AdminAccountsPage } from '../features/admin/pages/AdminAccountsPage';
+import { AdminAuditPage } from '../features/admin/pages/AdminAuditPage';
 
 export const router = createBrowserRouter([
   {
@@ -108,6 +115,26 @@ export const router = createBrowserRouter([
                   { path: 'dashboard', element: <AuthorityDashboardPage /> },
                   { path: 'incidents', element: <AuthorityIncidentsPage /> },
                   { path: 'incidents/:id', element: <AuthorityIncidentDetailsPage /> },
+                  { path: 'dispatch', element: <AuthorityDispatchPage /> },
+                  { path: 'zones', element: <AuthorityRiskZonesPage /> },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        path: '/admin',
+        element: <ProtectedRoute />,
+        children: [
+          {
+            element: <RoleRoute allowedRoles={['SYSTEM_ADMIN']} />,
+            children: [
+              {
+                element: <AdminLayout />,
+                children: [
+                  { path: 'accounts', element: <AdminAccountsPage /> },
+                  { path: 'audit', element: <AdminAuditPage /> },
                 ],
               },
             ],
