@@ -4,7 +4,8 @@ import {
   Radio, 
   Users, 
   ShieldCheck, 
-  MapPin, 
+  Building2,
+  Flame,
   Clock, 
   BellRing, 
   Send, 
@@ -14,29 +15,33 @@ import {
 } from 'lucide-react';
 import { useAllIncidents, useResolveIncident } from '../api/authorityQueries';
 import { authorityService } from '../api/authorityService';
+import { AuthorityJurisdictionMap } from '../components/AuthorityJurisdictionMap';
 
 export function AuthorityDashboardPage() {
   const [broadcastModalOpen, setBroadcastModalOpen] = useState(false);
   const [broadcastMessage, setBroadcastMessage] = useState('');
-  const [broadcastTarget, setBroadcastTarget] = useState('All Sectors (Sangam + Kumbh + City)');
+  const [broadcastTarget, setBroadcastTarget] = useState('');
   const [broadcastSent, setBroadcastSent] = useState(false);
   const [commandStats, setCommandStats] = useState(null);
-  const [fleet, setFleet] = useState([]);
+  const [jurisdictionData, setJurisdictionData] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      authorityService.getDashboard(),
-      authorityService.getUnits(),
-      authorityService.getAnalyticsOverview(),
-    ]).then(([dashboard, units, overview]) => {
-      if (!cancelled) {
-        setCommandStats({ ...(overview || {}), ...(dashboard || {}) });
-        setFleet(Array.isArray(units) ? units : []);
-      }
-    }).catch(() => {
-      if (!cancelled) { setCommandStats(null); setFleet([]); }
-    });
+
+    authorityService.getJurisdictionOverview()
+      .then((overview) => {
+        if (cancelled) return;
+        setJurisdictionData(overview);
+        setCommandStats(overview?.stats || null);
+        setBroadcastTarget(overview?.responder?.jurisdiction || '');
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setJurisdictionData(null);
+          setCommandStats(null);
+        }
+      });
+
     return () => { cancelled = true; };
   }, []);
 
@@ -51,13 +56,12 @@ export function AuthorityDashboardPage() {
     
   // Filter active vs resolved for display
   const activeIncidents = incidentsList.filter(inc => inc.status !== 'RESOLVED');
+  const jurisdiction = jurisdictionData?.responder?.jurisdiction || 'Assigned Jurisdiction';
+  const nearbyServices = jurisdictionData?.nearbyServices || {};
+  const policeCount = nearbyServices.policeStations?.length || 0;
+  const fireCount = nearbyServices.fireStations?.length || 0;
+  const activeTourists = commandStats?.activeTourists ?? 0;
 
-  const sectorTelemetry = [
-    { sector: 'Sector 1 (Sangam Confluence)', density: '78% (High)', status: 'bg-[#fef2f2] text-[#b91c1c] border-[#fecaca]', patrols: '18 Units' },
-    { sector: 'Sector 2 (Akshayavat & Fort)', density: '42% (Normal)', status: 'bg-[#f0fdf4] text-[#16a34a] border-[#dcfce7]', patrols: '12 Units' },
-    { sector: 'Sector 3 (Bade Hanuman Ghat)', density: '65% (Moderate)', status: 'bg-[#fefce8] text-[#a16207] border-[#fef08a]', patrols: '14 Units' },
-    { sector: 'Sector 4 (Civil Lines Hub)', density: '30% (Low)', status: 'bg-[#f0fdf4] text-[#16a34a] border-[#dcfce7]', patrols: '8 Units' },
-  ];
 
   const handleSendBroadcast = (e) => {
     e.preventDefault();
@@ -74,74 +78,74 @@ export function AuthorityDashboardPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-[1200px] mx-auto pb-10 font-sans">
+    <div className="space-y-4 max-w-[1320px] mx-auto pb-8 font-sans">
       
       {/* Top Banner Ticker */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-8 rounded-lg bg-[#e11d48] border border-[#be123c] shadow-md">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-xl bg-[#e11d48] border border-[#be123c] shadow-md">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="bg-white text-[#e11d48] text-[10px] font-black px-2.5 py-1 uppercase tracking-widest rounded-md shadow-sm">
-              PRAYAGRAJ COMMAND
+              {jurisdiction.toUpperCase()} COMMAND
             </span>
-            <span className="text-[11px] text-[#ffe4e6] font-bold tracking-widest uppercase">SECTOR 1-8 INTEGRATED GRID</span>
+            <span className="text-[11px] text-[#ffe4e6] font-bold tracking-widest uppercase">JURISDICTION-AWARE EMERGENCY GRID</span>
           </div>
-          <h1 className="text-[26px] sm:text-[32px] font-black text-white tracking-tight">
-            Emergency Dispatch & Live Radar
+          <h1 className="text-[22px] sm:text-[24px] font-black text-white tracking-tight">
+            Emergency Dispatch & Live Map
           </h1>
         </div>
 
         <button
           onClick={() => setBroadcastModalOpen(true)}
-          className="flex items-center gap-2 px-6 py-3.5 bg-white text-[#e11d48] hover:bg-slate-50 text-[12px] font-bold uppercase tracking-widest rounded-md shadow-sm transition-colors active:scale-95 cursor-pointer"
+          className="flex items-center gap-2 px-5 py-3 bg-white text-[#e11d48] hover:bg-slate-50 text-[12px] font-bold uppercase tracking-widest rounded-md shadow-sm transition-colors active:scale-95 cursor-pointer"
         >
           <BellRing className="w-4 h-4" /> Broadcast Safety Alert
         </button>
       </div>
 
       {/* Overview Stats Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm space-y-2">
           <div className="flex justify-between items-center text-[12px] font-bold text-slate-500 uppercase tracking-widest">
-            <span>Active Pilgrims</span>
+            <span>Active Tourists</span>
             <Users className="w-4 h-4 text-slate-400" />
           </div>
-          <p className="text-[28px] font-black text-slate-900">{commandStats?.tourists ?? 0}</p>
+          <p className="text-[24px] font-black text-slate-900">{activeTourists}</p>
           <span className="text-[11px] text-[#16a34a] font-bold">{commandStats?.activeTrips ?? 0} active trips</span>
         </div>
 
-        <div className="bg-[#fff1f2] p-6 rounded-lg border border-[#ffe4e6] shadow-sm space-y-2">
+        <div className="bg-[#fff1f2] p-4 sm:p-5 rounded-xl border border-[#ffe4e6] shadow-sm space-y-2">
           <div className="flex justify-between items-center text-[12px] font-bold text-[#b91c1c] uppercase tracking-widest">
             <span>Live SOS Emergencies</span>
             <Radio className="w-4 h-4 text-[#e11d48] animate-pulse" />
           </div>
-          <p className="text-[28px] font-black text-[#e11d48]">{activeIncidents.length} Active</p>
+          <p className="text-[24px] font-black text-[#e11d48]">{activeIncidents.length} Active</p>
           <span className="text-[11px] text-[#991b1b] font-bold">{commandStats?.criticalIncidents ?? 0} critical incidents</span>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-2">
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm space-y-2">
           <div className="flex justify-between items-center text-[12px] font-bold text-slate-500 uppercase tracking-widest">
-            <span>Active Patrol Units</span>
-            <ShieldCheck className="w-4 h-4 text-[#16a34a]" />
+            <span>Police Stations</span>
+            <Building2 className="w-4 h-4 text-[#2563eb]" />
           </div>
-          <p className="text-[28px] font-black text-[#16a34a]">{fleet.filter((unit) => unit.status !== "OUT_OF_SERVICE").length} Units</p>
-          <span className="text-[11px] text-slate-500 font-bold">{fleet.filter((unit) => unit.status === "AVAILABLE").length} available</span>
+          <p className="text-[24px] font-black text-[#2563eb]">{policeCount}</p>
+          <span className="text-[10px] text-slate-500 font-bold">Google Places · {jurisdiction}</span>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-2">
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm space-y-2">
           <div className="flex justify-between items-center text-[12px] font-bold text-slate-500 uppercase tracking-widest">
-            <span>Safe Havens Online</span>
-            <MapPin className="w-4 h-4 text-sky-500" />
+            <span>Fire Fighting Stations</span>
+            <Flame className="w-4 h-4 text-[#dc2626]" />
           </div>
-          <p className="text-[28px] font-black text-sky-600">{commandStats?.availableResponders ?? 0} Staff</p>
-          <span className="text-[11px] text-slate-500 font-bold">available responders</span>
+          <p className="text-[24px] font-black text-[#dc2626]">{fireCount}</p>
+          <span className="text-[10px] text-slate-500 font-bold">Google Places · {jurisdiction}</span>
         </div>
       </div>
 
       {/* Main Grid: Active SOS Triage Feed & Sector Telemetry */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         
         {/* Active SOS Triage List */}
-        <div className="lg:col-span-8 space-y-6">
+        <div className="lg:col-span-7 space-y-4">
           <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
             <div className="flex flex-row items-center justify-between p-5 border-b border-slate-100 bg-slate-50/50">
               <div className="flex items-center gap-2.5">
@@ -155,7 +159,7 @@ export function AuthorityDashboardPage() {
               </span>
             </div>
             
-            <div className="p-6 space-y-5 bg-slate-50/30">
+            <div className="p-4 space-y-4 bg-slate-50/30">
               {incidentsLoading ? (
                 <div className="flex justify-center items-center h-32">
                    <div className="w-6 h-6 border-2 border-slate-200 border-t-[#e11d48] rounded-full animate-spin"></div>
@@ -169,7 +173,7 @@ export function AuthorityDashboardPage() {
                 activeIncidents.map((ticket) => (
                   <div
                     key={ticket.id}
-                    className="p-5 rounded-md bg-white border border-[#fecaca] shadow-[0_2px_10px_rgba(225,29,72,0.05)] space-y-4 transition-all"
+                    className="p-4 rounded-lg bg-white border border-[#fecaca] shadow-[0_2px_10px_rgba(225,29,72,0.05)] space-y-4 transition-all"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
                       <div className="flex items-center gap-3">
@@ -227,28 +231,37 @@ export function AuthorityDashboardPage() {
           </div>
         </div>
 
-        {/* Sector Telemetry Summary */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-5 border-b border-slate-100 bg-slate-50/50">
-              <h2 className="text-[14px] font-black text-slate-900 tracking-wide">Sector Crowd & Patrol Density</h2>
-            </div>
-            <div className="p-5 space-y-3">
-              {sectorTelemetry.map((sec, idx) => (
-                <div key={idx} className="p-4 rounded-md bg-white border border-slate-200 space-y-2 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-slate-900 text-[13px]">{sec.sector}</span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 uppercase tracking-widest rounded border ${sec.status}`}>
-                      {sec.density}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-[11px] font-bold border-t border-slate-100 pt-2">
-                    <span className="text-slate-400 uppercase tracking-widest">Patrol Deployment:</span>
-                    <span className="text-[#16a34a]">{sec.patrols}</span>
-                  </div>
+        {/* Jurisdiction Emergency Services Map */}
+        <div className="lg:col-span-5">
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-100 bg-slate-50/70 px-4 py-3.5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-[13px] font-black text-slate-900">Jurisdiction Emergency Services</h2>
+                  <p className="mt-0.5 text-[10px] font-semibold text-slate-500">{jurisdiction}</p>
                 </div>
-              ))}
+                <div className="flex flex-wrap justify-end gap-1.5 text-[9px] font-bold">
+                  <span className="rounded-md bg-blue-50 px-2 py-1 text-blue-700">Police {policeCount}</span>
+                  <span className="rounded-md bg-red-50 px-2 py-1 text-red-700">Fire {fireCount}</span>
+                  <span className="rounded-md bg-green-50 px-2 py-1 text-green-700">
+                    Hospitals {nearbyServices.hospitals?.length || 0}
+                  </span>
+                </div>
+              </div>
             </div>
+
+            <div className="h-[420px]">
+              <AuthorityJurisdictionMap
+                jurisdiction={jurisdiction}
+                services={nearbyServices}
+              />
+            </div>
+
+            {!nearbyServices.configured && (
+              <div className="border-t border-amber-100 bg-amber-50 px-4 py-2.5 text-[10px] font-semibold text-amber-800">
+                Server-side Places lookup is not configured. Add GOOGLE_MAPS_API_KEY on the backend.
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -266,11 +279,11 @@ export function AuthorityDashboardPage() {
               {!broadcastSent ? (
                 <form onSubmit={handleSendBroadcast} className="space-y-5">
                   <p className="text-[12px] text-slate-600 font-medium leading-relaxed">
-                    Transmit urgent push notifications and SMS banners to all registered pilgrims and tourists in the designated sectors.
+                    Transmit an urgent safety advisory to tourists in your assigned jurisdiction.
                   </p>
 
                   <div className="space-y-1.5">
-                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest">Target Sector</label>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest">Target Jurisdiction</label>
                     <input
                       type="text"
                       value={broadcastTarget}
@@ -315,7 +328,7 @@ export function AuthorityDashboardPage() {
                   </div>
                   <div>
                     <h3 className="text-[18px] font-black text-slate-900 tracking-tight mb-1">Broadcast Transmitted!</h3>
-                    <p className="text-[13px] text-slate-500 font-medium">Sent to 12,480 active tourists across Prayagraj.</p>
+                    <p className="text-[13px] text-slate-500 font-medium">Sent to {activeTourists} active tourists across {jurisdiction}.</p>
                   </div>
                 </div>
               )}

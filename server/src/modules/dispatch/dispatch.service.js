@@ -17,7 +17,15 @@ export const createDispatchService = ({ repository = dispatchRepository, publish
 
   return Object.freeze({
     async createUnit(actor, input) { adminOnly(actor); const unit = await repository.createUnit({ ...input, status: "AVAILABLE" }); await repository.createAudit({ actorId: actor.id, actorRole: actor.role, action: "EMERGENCY_UNIT_CREATED", entityId: unit.id, metadata: { type: unit.type } }); publisher.publishEmergencyUnitUpdated?.(unit, { type: "CREATED" }); return unit; },
-    listUnits(actor, query) { staffOnly(actor); return repository.listUnits(query); },
+    async listUnits(actor, query) {
+      staffOnly(actor);
+      const jurisdiction =
+        actor.role === ROLES.DISASTER_MANAGER
+          ? await repository.findResponderJurisdiction(actor.id)
+          : null;
+
+      return repository.listUnits({ ...query, jurisdiction });
+    },
     async setUnitStatus(actor, id, status) { adminOnly(actor); const unit = await getUnit(id); if (unit.status === "DISPATCHED" && status === "OUT_OF_SERVICE") throw ApiError.conflict("Dispatched unit cannot be taken out of service", { code: "EMERGENCY_UNIT_ACTIVE" }); const updated = await repository.updateUnit(id, { status }); await repository.createAudit({ actorId: actor.id, actorRole: actor.role, action: "EMERGENCY_UNIT_STATUS_CHANGED", entityId: id, metadata: { status } }); publisher.publishEmergencyUnitUpdated?.(updated, { type: "STATUS_CHANGED" }); return updated; },
     async create(actor, incidentId, input) { staffOnly(actor); const incident = await repository.findIncident(incidentId); if (!incident) throw ApiError.notFound("Incident not found", { code: "INCIDENT_NOT_FOUND" }); if (["RESOLVED", "DISMISSED"].includes(incident.status)) throw ApiError.conflict("Closed incident cannot be dispatched", { code: "INCIDENT_CLOSED" }); let unit = null; if (input.unitId) unit = await ensureAssignableUnit(input.unitId, input.unitType); const now = clock(); const dispatch = await repository.createDispatch({ incidentId, requestedUnitType: input.unitType, unitId: unit?.id ?? null, status: unit ? "ASSIGNED" : "REQUESTED", requestedById: actor.id, requestedByRole: actor.role, requestedAt: now, assignedAt: unit ? now : null }); if (unit) await repository.updateUnit(unit.id, { status: "DISPATCHED" }); return record(dispatch, actor, unit ? "ASSIGNED" : "REQUESTED", input.note, { unitId: unit?.id ?? null }); },
     async assign(actor, id, input) { staffOnly(actor); const current = await getDispatch(id); if (TERMINAL.has(current.status)) throw ApiError.conflict("Closed dispatch cannot be assigned", { code: "DISPATCH_CLOSED" }); if (current.unitId) throw ApiError.conflict("Dispatch already has an assigned unit", { code: "DISPATCH_ALREADY_ASSIGNED" }); const unit = await ensureAssignableUnit(input.unitId, current.requestedUnitType); const now = clock(); const updated = await repository.updateDispatch(id, { unitId: unit.id, status: "ASSIGNED", assignedAt: now }); await repository.updateUnit(unit.id, { status: "DISPATCHED" }); return record(updated, actor, "ASSIGNED", input.note, { unitId: unit.id }); },

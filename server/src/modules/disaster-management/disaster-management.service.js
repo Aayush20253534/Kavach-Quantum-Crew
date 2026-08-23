@@ -3,11 +3,13 @@ import { ROLES } from "../../constants/roles.js";
 import { incidentService } from "../incident/incident.service.js";
 import { disasterManagementRepository } from "./disaster-management.repository.js";
 import { realtimePublisher } from "../../realtime/realtimePublisher.js";
+import { jurisdictionPlacesService } from "./jurisdiction-places.service.js";
 
 export const createDisasterManagementService = ({
   repository = disasterManagementRepository,
   incidents = incidentService,
   publisher = realtimePublisher,
+  places = jurisdictionPlacesService,
   clock = () => new Date(),
 } = {}) => {
   const requireResponder = async (id) => {
@@ -20,7 +22,41 @@ export const createDisasterManagementService = ({
 
   return Object.freeze({
     async dashboard(actor) {
-      return repository.dashboard(actor.role === ROLES.DISASTER_MANAGER ? actor.id : null);
+      if (actor.role !== ROLES.DISASTER_MANAGER) {
+        return repository.dashboard(null, null);
+      }
+
+      const responder = await requireResponder(actor.id);
+      return repository.dashboard(actor.id, responder.jurisdiction || null);
+    },
+
+    async jurisdictionOverview(actor) {
+      if (actor.role !== ROLES.DISASTER_MANAGER) {
+        throw ApiError.forbidden(
+          "Jurisdiction overview is only available to disaster managers",
+          { code: "JURISDICTION_OVERVIEW_FORBIDDEN" },
+        );
+      }
+
+      const responder = await requireResponder(actor.id);
+      const jurisdiction = responder.jurisdiction || null;
+      const [dashboard, nearbyServices] = await Promise.all([
+        repository.dashboard(actor.id, jurisdiction),
+        places.lookup(jurisdiction),
+      ]);
+
+      return {
+        responder: {
+          id: responder.id,
+          name: responder.name,
+          organization: responder.organization,
+          department: responder.department,
+          jurisdiction,
+          responderStatus: responder.responderStatus,
+        },
+        stats: dashboard,
+        nearbyServices,
+      };
     },
 
     async me(actor) {
@@ -66,11 +102,21 @@ export const createDisasterManagementService = ({
       return repository.listAssignedIncidents(actor.id, query);
     },
 
-    queue(actor, query) {
+    async queue(actor, query) {
       if (query.scope === "MINE" && actor.role !== ROLES.DISASTER_MANAGER) {
         throw ApiError.badRequest("MINE scope requires a disaster manager account", { code: "INCIDENT_SCOPE_INVALID" });
       }
-      return repository.listIncidentQueue({ ...query, actorId: actor.id });
+
+      const jurisdiction =
+        actor.role === ROLES.DISASTER_MANAGER
+          ? (await requireResponder(actor.id)).jurisdiction || null
+          : null;
+
+      return repository.listIncidentQueue({
+        ...query,
+        actorId: actor.id,
+        jurisdiction,
+      });
     },
 
     get: (actor, id) => incidents.get(actor, id),
