@@ -1,6 +1,12 @@
 import apiClient from '../../../services/apiClient';
 
-const unwrap = (response) => response.data?.data ?? response.data;
+const unwrap = (response) => {
+  const payload = response?.data;
+  if (payload && Object.prototype.hasOwnProperty.call(payload, 'data')) {
+    return payload.data;
+  }
+  return payload;
+};
 
 export const tripService = {
   async createTrip(data) {
