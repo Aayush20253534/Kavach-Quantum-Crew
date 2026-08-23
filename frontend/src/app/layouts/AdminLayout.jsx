@@ -16,6 +16,7 @@ import {
   MapPinned
 } from 'lucide-react';
 import { logout } from '../../features/auth/store/authSlice';
+import { authService } from '../../features/auth/api/authService';
 
 export function AdminLayout() {
   const { user } = useSelector((state) => state.auth);
@@ -24,9 +25,17 @@ export function AdminLayout() {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      // Revoke the server-side refresh session and clear the refresh cookie.
+      // Without this, a later page refresh can silently authenticate the user again.
+      await authService.logout();
+    } catch {
+      // Local sign-out must still complete if the network is unavailable.
+    } finally {
+      dispatch(logout());
+      navigate('/', { replace: true });
+    }
   };
 
   const navItems = [
@@ -158,11 +167,12 @@ export function AdminLayout() {
             <button
               type="button"
               onClick={handleLogout}
-              className="md:hidden inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:bg-slate-50 hover:text-rose-600"
+              className="inline-flex h-8 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-2.5 text-slate-600 shadow-sm transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 md:h-9 md:px-3"
               aria-label="Sign out"
               title="Sign out"
             >
               <LogOut className="h-4 w-4" />
+              <span className="hidden text-[10px] font-bold uppercase tracking-wider md:inline">Sign Out</span>
             </button>
           </div>
         </header>

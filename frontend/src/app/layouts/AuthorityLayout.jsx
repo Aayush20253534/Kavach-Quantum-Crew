@@ -18,6 +18,7 @@ import {
   BarChart4
 } from 'lucide-react';
 import { logout } from '../../features/auth/store/authSlice';
+import { authService } from '../../features/auth/api/authService';
 
 export function AuthorityLayout() {
   const { user } = useSelector((state) => state.auth);
@@ -26,9 +27,17 @@ export function AuthorityLayout() {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      // Revoke the server-side refresh session and clear the refresh cookie.
+      // Without this, a later page refresh can silently authenticate the user again.
+      await authService.logout();
+    } catch {
+      // Local sign-out must still complete if the network is unavailable.
+    } finally {
+      dispatch(logout());
+      navigate('/', { replace: true });
+    }
   };
 
   const navItems = [
