@@ -23,7 +23,6 @@ import {
 import { logout } from '../../features/auth/store/authSlice';
 import { authService } from '../../features/auth/api/authService';
 import { markExplicitSignOut } from '../../services/apiClient';
-import { AIChatWidget } from '../../features/chatbot/components/AIChatWidget';
 import { NotificationsDropdown } from '../components/NotificationsDropdown';
 import { useGeolocation } from '../../features/tracking/hooks/useGeolocation';
 import { tripService } from '../../features/trips/api/tripService';
@@ -455,7 +454,6 @@ export function TouristLayout() {
 
       </div>
 
-      <AIChatWidget />
     </div>
   );
 }
