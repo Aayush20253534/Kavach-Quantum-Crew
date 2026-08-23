@@ -33,7 +33,9 @@ export function MapComponent({
   const [emergencyPlaces, setEmergencyPlaces] = useState([]);
   const [selectedPlace, setSelectedPlace] = useState(null);
   const hasPositionedCamera = useRef(false);
-  const [cameraCenter, setCameraCenter] = useState({ lat: 25.4358, lng: 81.8463 });
+  const [cameraCenter, setCameraCenter] = useState(() => currentLocation
+    ? { lat: currentLocation.lat, lng: currentLocation.lng }
+    : { lat: 25.4358, lng: 81.8463 });
 
   const center = useMemo(
     () => currentLocation
@@ -79,6 +81,7 @@ export function MapComponent({
     }
 
     map.panTo(center);
+    map.setZoom(16);
   }, [center, currentLocation, map, showEmergencyServicesOnly]);
 
   useEffect(() => {
