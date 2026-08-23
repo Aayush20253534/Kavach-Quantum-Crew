@@ -33,7 +33,7 @@ Use `.env.example` as the source of defaults. Never commit real `.env` secrets.
 | `JWT_ISSUER` | JWT issuer |
 | `JWT_AUDIENCE` | JWT audience |
 | `REFRESH_COOKIE_NAME` | Refresh cookie |
-| `SEED_ADMIN_*` | Optional System Admin seed |
+| `SEED_ADMIN_*` | System Admin seed values. Development has demo fallbacks; production requires explicit email/password. |
 | `SEED_DM_*` | Optional Disaster Manager seed |
 | `INCIDENT_ACK_TIMEOUT_MINUTES` | Escalation acknowledgement threshold |
 | `INCIDENT_ESCALATION_INTERVAL_MINUTES` | Repeat escalation interval |
@@ -76,3 +76,28 @@ Do not use the normal Gmail account password. Use a dedicated Google App Passwor
 6. Generate a strong independent `EMAIL_OTP_SECRET`.
 
 In production, Gmail and OTP secrets are validated at startup. Gmail SMTP is suitable for project/demo volume; a transactional email provider can later replace the mailer without changing the OTP domain logic.
+
+
+## System Admin seed
+
+Run the seed from the `server` directory:
+
+```bash
+npm run prisma:seed
+```
+
+In non-production environments, when `SEED_ADMIN_EMAIL` and
+`SEED_ADMIN_PASSWORD` are not set, the seed creates/refreshes this development
+account:
+
+- Username: `system.admin`
+- Email: `admin@quantumcrew.local`
+- Password: `QuantumAdmin@123`
+- Phone: `9000000001`
+
+The development fallback is disabled when `NODE_ENV=production`. Production
+seeding requires explicit `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` values.
+
+Re-running the seed updates the seeded admin password hash from the currently
+configured `SEED_ADMIN_PASSWORD`, which makes credential rotation predictable
+instead of preserving an old seed password forever.

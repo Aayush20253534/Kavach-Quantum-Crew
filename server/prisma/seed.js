@@ -35,19 +35,47 @@ try {
       create: destination,
     });
   }
-  if (process.env.SEED_ADMIN_EMAIL && process.env.SEED_ADMIN_PASSWORD) {
+  // System Admin seed
+  //
+  // Local/development seeding works out of the box so a fresh clone can open
+  // the admin console immediately. Production never falls back to demo
+  // credentials: set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD explicitly.
+  const isProduction = process.env.NODE_ENV === "production";
+  const adminEmail =
+    process.env.SEED_ADMIN_EMAIL ||
+    (!isProduction ? "admin@quantumcrew.local" : null);
+  const adminPassword =
+    process.env.SEED_ADMIN_PASSWORD ||
+    (!isProduction ? "QuantumAdmin@123" : null);
+
+  if (adminEmail && adminPassword) {
     const data = await accountData({
-      name: "System Admin",
+      name: process.env.SEED_ADMIN_NAME ?? "System Admin",
       username: process.env.SEED_ADMIN_USERNAME ?? "system.admin",
-      email: process.env.SEED_ADMIN_EMAIL,
-      phone: process.env.SEED_ADMIN_PHONE ?? "+910000000001",
-      password: process.env.SEED_ADMIN_PASSWORD,
+      email: adminEmail,
+      phone: process.env.SEED_ADMIN_PHONE ?? "9000000001",
+      password: adminPassword,
     });
+
     await prisma.systemAdmin.upsert({
-      where: { email: data.email },
-      update: { ...data, passwordHash: undefined },
+      where: { username: data.username },
+      update: {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        passwordHash: data.passwordHash,
+        status: "ACTIVE",
+      },
       create: data,
     });
+
+    console.info(
+      `[seed] System Admin ready: ${data.username} (${data.email})`,
+    );
+  } else {
+    console.info(
+      "[seed] System Admin skipped. Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD to seed one in production.",
+    );
   }
 
   if (process.env.SEED_DM_EMAIL && process.env.SEED_DM_PASSWORD) {
