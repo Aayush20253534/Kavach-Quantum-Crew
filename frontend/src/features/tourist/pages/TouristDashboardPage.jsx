@@ -18,8 +18,6 @@ import { useTouristDashboardSummary } from '../../dashboard/api/dashboardQueries
 import { destinationService } from '../../destinations/api/destinationService';
 import { groupService } from '../../groups/api/groupService';
 import { MapComponent } from '../../tracking/components/MapComponent';
-import { trackingService } from '../../tracking/api/trackingService';
-import { findDangerZoneForTrip } from '../../tracking/utils/geofenceSafety';
 import { useCreateTrip, useCurrentTrip } from '../../trips/api/tripQueries';
 import { tripService } from '../../trips/api/tripService';
 
@@ -60,26 +58,8 @@ export function TouristDashboardPage() {
     total: 0,
   });
   const [dashboardSnapshot, setDashboardSnapshot] = useState(null);
-  const [riskZones, setRiskZones] = useState([]);
 
   useEffect(() => setMounted(true), []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    trackingService.getRiskZones()
-      .then((data) => {
-        if (cancelled) return;
-        setRiskZones(data?.items || data || []);
-      })
-      .catch(() => {
-        if (!cancelled) setRiskZones([]);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     destinationService.list({ featured: true, limit: 8 })
@@ -174,20 +154,12 @@ export function TouristDashboardPage() {
 
   const frozenSummary = dashboardSnapshot?.summary;
 
-  // Use the same geofence rule as the Trips / Live Map page. For a GROUP trip,
-  // an overlapping danger geofence makes the whole group boundary dangerous,
-  // even when the tourist marker itself is just outside that geofence.
-  const liveDangerZone = useMemo(
-    () =>
-      findDangerZoneForTrip({
-        location,
-        zones: riskZones,
-        trip: currentTrip,
-      }),
-    [location, riskZones, currentTrip],
-  );
-  const safetyIsDanger = Boolean(liveDangerZone);
-  const safetyResolved = Boolean(location);
+  // Safety status is authoritative from /dashboard/tourist.
+  // TouristLayout uses this same endpoint for the sidebar badge, so both surfaces
+  // always agree, including GROUP-trip boundary intersections.
+  const liveSafetyStatus = summary?.safetyStatus;
+  const safetyIsDanger = liveSafetyStatus?.level === 'DANGER';
+  const safetyResolved = liveSafetyStatus?.level === 'SAFE' || safetyIsDanger;
 
   const cards = useMemo(() => [
     {
@@ -206,7 +178,7 @@ export function TouristDashboardPage() {
       label: 'Safety Status',
       value: safetyResolved ? (safetyIsDanger ? 'Danger Zone' : 'Safe Zone') : 'Locating...',
       sub: safetyIsDanger
-        ? liveDangerZone?.name || 'Danger geofence overlaps your trip safety area'
+        ? liveSafetyStatus?.zone?.name || 'Danger geofence overlaps your trip safety area'
         : 'Outside all danger geofences',
       icon: safetyIsDanger ? AlertTriangle : ShieldCheck,
     },
@@ -216,7 +188,7 @@ export function TouristDashboardPage() {
       sub: frozenSummary?.currentTrip?.locationName ? `Current trip: ${frozenSummary.currentTrip.locationName}` : 'No open group trip',
       icon: Users,
     },
-  ], [dashboardSnapshot, frozenSummary, safetyIsDanger, safetyResolved, liveDangerZone]);
+  ], [dashboardSnapshot, frozenSummary, safetyIsDanger, safetyResolved, liveSafetyStatus]);
 
   return (
     <div className="space-y-5 sm:space-y-7 max-w-[1240px] mx-auto pb-8 sm:pb-10 overflow-visible">
