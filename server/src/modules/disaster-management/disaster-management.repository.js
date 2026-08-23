@@ -108,7 +108,7 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
     });
   },
 
-  listIncidentQueue({ status, severity, scope, actorId, jurisdiction, limit }) {
+  async listIncidentQueue({ status, severity, scope, actorId, jurisdiction, limit }) {
     const assignmentFilter =
       scope === "MINE"
         ? { assignedToId: actorId, assignedToRole: "DISASTER_MANAGER" }
@@ -116,20 +116,25 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
           ? { assignedToId: null }
           : {};
 
+    const jurisdictionTripIds = jurisdiction
+      ? (
+          await db.trip.findMany({
+            where: {
+              locationName: {
+                contains: jurisdiction,
+                mode: "insensitive",
+              },
+            },
+            select: { id: true },
+          })
+        ).map((trip) => trip.id)
+      : null;
+
     return db.incident.findMany({
       where: {
         ...(status ? { status } : { status: { in: ACTIVE_INCIDENT_STATUSES } }),
         ...(severity ? { severity } : {}),
-        ...(jurisdiction
-          ? {
-              trip: {
-                locationName: {
-                  contains: jurisdiction,
-                  mode: "insensitive",
-                },
-              },
-            }
-          : {}),
+        ...(jurisdictionTripIds ? { tripId: { in: jurisdictionTripIds } } : {}),
         ...assignmentFilter,
       },
       orderBy: [{ severity: "desc" }, { createdAt: "asc" }],
@@ -138,15 +143,22 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
   },
 
   async dashboard(responderId, jurisdiction = null) {
-    const incidentJurisdictionFilter = jurisdiction
-      ? {
-          trip: {
-            locationName: {
-              contains: jurisdiction,
-              mode: "insensitive",
+    const jurisdictionTripIds = jurisdiction
+      ? (
+          await db.trip.findMany({
+            where: {
+              locationName: {
+                contains: jurisdiction,
+                mode: "insensitive",
+              },
             },
-          },
-        }
+            select: { id: true },
+          })
+        ).map((trip) => trip.id)
+      : null;
+
+    const incidentJurisdictionFilter = jurisdictionTripIds
+      ? { tripId: { in: jurisdictionTripIds } }
       : {};
 
     const activeFilter = {
