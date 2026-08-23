@@ -56,7 +56,8 @@ export function TouristLayout() {
     return () => window.clearInterval(timer);
   }, []);
 
-  const timeLabel = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const timeLabel = now.toLocaleTimeString([], {
+        hour12: true, hour: '2-digit', minute: '2-digit' });
   const dateLabel = now.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric', weekday: 'long' });
   useEffect(() => {
     if (locationPermission === 'denied') {
