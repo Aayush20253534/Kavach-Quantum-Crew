@@ -1,37 +1,31 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSendPing } from '../api/trackingQueries';
 
-export const useGeolocation = (tripId, active) => {
+export const useGeolocation = (tripId, active = false) => {
   const [location, setLocation] = useState(null);
   const [error, setError] = useState('');
   const [permission, setPermission] = useState('prompt');
-  
+  const [isTracking, setIsTracking] = useState(false);
   const pingMutation = useSendPing();
   const watchId = useRef(null);
 
-  // Check initial permission
   useEffect(() => {
-    if (navigator.permissions) {
-      navigator.permissions.query({ name: 'geolocation' }).then(result => {
-        setPermission(result.state);
-        result.onchange = () => setPermission(result.state);
-      });
-    }
+    if (!navigator.permissions?.query) return undefined;
+    let permissionStatus;
+    navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+      permissionStatus = result;
+      setPermission(result.state);
+      result.onchange = () => setPermission(result.state);
+    }).catch(() => {});
+    return () => {
+      if (permissionStatus) permissionStatus.onchange = null;
+    };
   }, []);
 
   useEffect(() => {
-    // Only track if there's an active trip and we want to track
-    if (!active || !tripId) {
-      if (watchId.current) {
-        navigator.geolocation.clearWatch(watchId.current);
-        watchId.current = null;
-      }
-      return;
-    }
-
     if (!('geolocation' in navigator)) {
       setError('Geolocation is not supported by your browser');
-      return;
+      return undefined;
     }
 
     const successHandler = (position) => {
@@ -42,39 +36,42 @@ export const useGeolocation = (tripId, active) => {
         speed: position.coords.speed,
         heading: position.coords.heading,
         timestamp: position.timestamp,
-        tripId
+        ...(tripId ? { tripId } : {}),
       };
-      
+
       setLocation(coords);
       setError('');
-      
-      // Ping backend silently
-      pingMutation.mutate(coords).catch(err => {
-        console.error('Failed to ping location', err);
-      });
+      setIsTracking(true);
+
+      // Dashboard/location UI should work without an active trip. Backend pings are
+      // sent only while a real trip is active.
+      if (active && tripId) {
+        pingMutation.mutate(coords, {
+          onError: (err) => console.error('Failed to ping location', err),
+        });
+      }
     };
 
     const errorHandler = (err) => {
-      setError(err.message);
+      setError(err.message || 'Unable to get your location');
+      setIsTracking(false);
       if (err.code === 1) setPermission('denied');
     };
 
-    const options = {
+    watchId.current = navigator.geolocation.watchPosition(successHandler, errorHandler, {
       enableHighAccuracy: true,
-      maximumAge: 5000,
+      maximumAge: 3000,
       timeout: 10000,
-    };
-
-    // Start watching
-    watchId.current = navigator.geolocation.watchPosition(successHandler, errorHandler, options);
+    });
 
     return () => {
-      if (watchId.current) {
+      if (watchId.current !== null) {
         navigator.geolocation.clearWatch(watchId.current);
         watchId.current = null;
       }
+      setIsTracking(false);
     };
-  }, [tripId, active, pingMutation]);
+  }, [tripId, active]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { location, error, permission };
+  return { location, error, permission, isTracking };
 };

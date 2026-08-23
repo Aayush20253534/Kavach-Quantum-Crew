@@ -12,9 +12,11 @@ Read:
 
 Frontend must implement the signup verification UX: register -> OTP entry -> verify-email, expose resend after cooldown, and only enter the authenticated app after verification succeeds. Future normal login does not require OTP. Frontend also owns device GPS acquisition, UI state, access-token usage/refresh flow, multipart evidence upload, and Socket.IO reconnect/subscription behavior.
 
+The current `ChatbotWidget.jsx` is UI-only and simulated. There is no tourist chatbot backend route yet. Do not connect it to `/integrations/ai/risk-assessment` or `/integrations/ai/hazard-analysis`; those routes are staff-only analysis contracts. Read `CHATBOT-INTEGRATION.md` before implementing chatbot networking.
+
 ## AI team
 
-Read `AI-CATALOGUE.md`. Implement providers for risk assessment and hazard analysis, and agree on a versioned response schema.
+Read `AI-CATALOGUE.md` and `CHATBOT-INTEGRATION.md`. The mounted AI routes cover staff risk assessment and hazard analysis only. A tourist conversational assistant requires a separate backend contract; it does not currently exist.
 
 ## Blockchain team
 

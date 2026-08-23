@@ -17,6 +17,7 @@ export const createApiRateLimiter = (config = environment) =>
     standardHeaders: "draft-8",
     legacyHeaders: false,
     passOnStoreError: true,
+    skip: (request) => request.method === "OPTIONS",
     handler: rateLimitHandler,
   });
 
