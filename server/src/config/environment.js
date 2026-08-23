@@ -103,7 +103,7 @@ const environmentSchema = z
     RATE_LIMIT_MAX: integerFromEnvironment(
       1,
       100000,
-    ).default(100),
+    ).default(500),
 
     SENSITIVE_RATE_LIMIT_WINDOW_MS: integerFromEnvironment(
       1000,

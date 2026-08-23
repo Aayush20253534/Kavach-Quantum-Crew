@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   MapPin,
   Compass,
-  Users,
   AlertTriangle,
   User,
   LogOut,
@@ -16,7 +15,6 @@ import {
   ChevronDown,
   Navigation,
   FileText,
-  PlusCircle,
   History,
   Menu,
   ChevronLeft,
@@ -101,29 +99,22 @@ export function TouristLayout() {
     setTimeout(() => setSosState('idle'), 300); // reset after animation
   };
 
-  const navItems = [
-    { name: 'Dashboard', path: '/tourist/dashboard', icon: LayoutDashboard },
-    { name: 'Live Tracking', path: '/tourist/tracking', icon: Navigation },
-    { name: 'My Trips', path: '/tourist/trips/current', icon: Compass },
-    { name: 'Join Group', path: '/tourist/groups/join', icon: Users },
-    { name: 'Report Incident', path: '/tourist/incidents/report', icon: ShieldAlert },
-    { name: 'Incident History', path: '/tourist/incidents/history', icon: History },
-    { name: 'Safety Check-ins', path: '/tourist/checkins', icon: ShieldCheck },
-    { name: 'Safety ID Profile', path: '/tourist/profile', icon: User },
-  ];
-
-  const tripTools = [
-    { name: 'Plan New Trip', path: '/tourist/trips/create', icon: PlusCircle },
-    { name: 'Trip History', path: '/tourist/trips/history', icon: History },
-  ];
-
-  const mobileNavItems = [
+  // Keep desktop and mobile navigation names/routes identical. The desktop
+  // sidebar renders the non-SOS entries here and keeps SOS as its dedicated
+  // emergency button below; mobile renders the complete list in one scroller.
+  const touristNavItems = [
     { name: 'Home', path: '/tourist/dashboard', icon: LayoutDashboard },
     { name: 'Radar', path: '/tourist/tracking', icon: Navigation },
     { name: 'SOS', path: '#', icon: Phone, isSos: true },
     { name: 'Trips', path: '/tourist/trips/current', icon: Compass },
+    { name: 'Trip History', path: '/tourist/trips/history', icon: History },
+    { name: 'Report Incident', path: '/tourist/incidents/report', icon: ShieldAlert },
+    { name: 'Incident History', path: '/tourist/incidents/history', icon: FileText },
     { name: 'Profile', path: '/tourist/profile', icon: User },
   ];
+
+  const desktopNavItems = touristNavItems.filter((item) => !item.isSos);
+  const mobileNavItems = touristNavItems;
 
   const userName = user?.name?.trim() || user?.username || 'Tourist';
   const initial = userName.charAt(0).toUpperCase();
@@ -280,7 +271,7 @@ export function TouristLayout() {
             <p className={`text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ${isCollapsed ? 'text-center pl-0 text-[8px]' : 'pl-2'}`}>
               {isCollapsed ? 'MAIN' : 'Main Menu'}
             </p>
-            {navItems.map((item) => {
+            {desktopNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = item.path === '/tourist/dashboard'
                 ? location.pathname === item.path
@@ -304,31 +295,6 @@ export function TouristLayout() {
             })}
           </div>
 
-          <div className={`space-y-1 mb-6 ${isCollapsed ? 'px-3' : 'px-6'}`}>
-            <p className={`text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ${isCollapsed ? 'text-center pl-0 text-[8px]' : 'pl-2'}`}>
-              {isCollapsed ? 'TRIP' : 'Trip Tools'}
-            </p>
-            {tripTools.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname.startsWith(item.path);
-
-              return (
-                <Link
-                  key={item.name}
-                  to={item.path}
-                  className={`flex items-center gap-3 py-3 rounded-xl text-[12px] font-semibold transition-all ${isCollapsed ? 'justify-center px-0' : 'px-4'
-                    } ${isActive
-                      ? 'bg-red-50 text-red-600 relative after:absolute after:left-0 after:top-2 after:bottom-2 after:w-1 after:bg-red-600 after:rounded-r-full'
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                    }`}
-                  title={isCollapsed ? item.name : undefined}
-                >
-                  <Icon className="w-4 h-4 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
-                  {!isCollapsed && <span>{item.name}</span>}
-                </Link>
-              );
-            })}
-          </div>
         </div>
 
         {/* Bottom Actions */}
@@ -336,10 +302,10 @@ export function TouristLayout() {
           <button
             onClick={() => setIsSosModalOpen(true)}
             className={`w-full bg-[#e11d48] hover:bg-[#be123c] text-white py-3.5 rounded-xl font-bold text-[13px] tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 cursor-pointer ${isCollapsed ? 'px-0' : 'px-4'}`}
-            title={isCollapsed ? "SOS EMERGENCY" : undefined}
+            title={isCollapsed ? "SOS" : undefined}
           >
             <Phone className="w-4 h-4 shrink-0" />
-            {!isCollapsed && "SOS EMERGENCY"}
+            {!isCollapsed && "SOS"}
           </button>
           <button
             onClick={handleLogout}
@@ -415,7 +381,8 @@ export function TouristLayout() {
         {/* =========================================================
             MOBILE BOTTOM NAVIGATION BAR
         ========================================================= */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 w-full h-16 bg-white border-t border-slate-200 z-50 flex items-center justify-around px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe">
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 w-full h-[68px] bg-white border-t border-slate-200 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex items-stretch min-w-max h-full px-2 gap-1">
           {mobileNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = item.path === '/tourist/dashboard'
@@ -427,12 +394,12 @@ export function TouristLayout() {
                 <button
                   key={item.name}
                   onClick={() => setIsSosModalOpen(true)}
-                  className="flex flex-col items-center justify-center gap-1 relative -top-4 cursor-pointer"
+                  className="w-[72px] shrink-0 flex flex-col items-center justify-center gap-1 cursor-pointer text-red-600"
                 >
-                  <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-white shadow-lg border-4 border-[#f8f9fa] shadow-red-500/30">
-                    <Icon className="w-5 h-5" />
+                  <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white shadow-sm shadow-red-500/20">
+                    <Icon className="w-4 h-4" />
                   </div>
-                  <span className="text-[10px] font-bold text-slate-900 mt-1">{item.name}</span>
+                  <span className="text-[9px] font-bold text-red-600 whitespace-nowrap">{item.name}</span>
                 </button>
               );
             }
@@ -441,13 +408,14 @@ export function TouristLayout() {
               <Link
                 key={item.name}
                 to={item.path}
-                className={`flex flex-col items-center justify-center gap-1 w-14 h-full ${isActive ? 'text-red-600' : 'text-slate-400 hover:text-slate-900'}`}
+                className={`w-[78px] shrink-0 flex flex-col items-center justify-center gap-1 h-full ${isActive ? 'text-red-600' : 'text-slate-400 hover:text-slate-900'}`}
               >
                 <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
                 <span className={`text-[9px] font-bold ${isActive ? 'text-red-600' : 'text-slate-500'}`}>{item.name}</span>
               </Link>
             );
           })}
+          </div>
         </nav>
 
       </div>
