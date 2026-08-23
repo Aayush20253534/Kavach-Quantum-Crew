@@ -159,3 +159,35 @@
   border-color: rgb(239 68 68);
   box-shadow: 0 0 0 1px rgb(239 68 68);
 }
+
+
+/* Keep every application scrollbar light instead of inheriting dark browser/theme chrome. */
+html,
+body,
+* {
+  scrollbar-color: #ffffff #ffffff;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #ffffff;
+}
+
+*::-webkit-scrollbar-corner {
+  background: #ffffff;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #ffffff;
+  border: 2px solid #cbd5e1;
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
