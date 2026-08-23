@@ -365,14 +365,17 @@ export function TouristLayout() {
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
               <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
             </div>
-            <div>
-              <div className="flex items-center gap-1 cursor-pointer group">
-                <span className="text-[11px] sm:text-[13px] font-black text-slate-900 uppercase tracking-wide group-hover:text-red-600 transition-colors truncate max-w-[140px] sm:max-w-none">
-                  {liveLocation ? locationLabel : 'LOCATION PENDING'}
+            <div className="min-w-0 max-w-[190px] sm:max-w-[320px] lg:max-w-[390px]">
+              <div className="flex items-center gap-1">
+                <span className="text-[9px] sm:text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.12em]">
+                  {liveLocation ? 'Current location' : 'Location pending'}
                 </span>
               </div>
-              <p className="text-[9px] sm:text-[11px] text-slate-400 mt-0.5 hidden sm:block">
-                {liveLocation ? `Live location · ${safetyLevel === 'DANGER' ? 'Danger zone' : safetyLevel === 'SAFE' ? 'Safe zone' : 'Checking safety'}` : locationLabel}
+              <p
+                className="mt-0.5 text-[10px] sm:text-[11px] leading-[1.25rem] font-semibold text-slate-800 line-clamp-2 break-words"
+                title={locationLabel}
+              >
+                {locationLabel}
               </p>
             </div>
           </div>
