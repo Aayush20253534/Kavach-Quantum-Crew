@@ -32,16 +32,27 @@ export function AuthInitializer({ children }) {
 
         let user;
 
-        if (getAccessToken()) {
-          const data = await authService.getMe();
-          user = data?.data ?? data;
+        // SAFE DEV BYPASS: Only active in local development
+        const devRole = import.meta.env.DEV ? localStorage.getItem('DEV_ROLE') : null;
+        
+        if (devRole) {
+          user = { 
+            name: 'Local Dev (Spoofed)', 
+            role: devRole, 
+            onboardingCompleted: true 
+          };
         } else {
-          const refreshed = await refreshSession();
-          user = refreshed.user;
-
-          if (!user) {
+          if (getAccessToken()) {
             const data = await authService.getMe();
             user = data?.data ?? data;
+          } else {
+            const refreshed = await refreshSession();
+            user = refreshed.user;
+
+            if (!user) {
+              const data = await authService.getMe();
+              user = data?.data ?? data;
+            }
           }
         }
 

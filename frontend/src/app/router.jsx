@@ -35,7 +35,6 @@ import { ReportIncidentPage } from '../features/incidents/pages/ReportIncidentPa
 import { IncidentHistoryPage } from '../features/incidents/pages/IncidentHistoryPage';
 import { ProfilePage } from '../features/profile/pages/ProfilePage';
 
-// Pages - Authority
 import { AuthorityDashboardPage } from '../features/authority/pages/AuthorityDashboardPage';
 import { AuthorityIncidentsPage } from '../features/authority/pages/AuthorityIncidentsPage';
 import { AuthorityIncidentDetailsPage } from '../features/authority/pages/AuthorityIncidentDetailsPage';
