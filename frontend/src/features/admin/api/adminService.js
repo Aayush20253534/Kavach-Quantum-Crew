@@ -46,23 +46,9 @@ export const adminService = {
     return unwrap(await apiClient.get('/observability/diagnostics'));
   },
 
-  async getIntegrations() {
-    return unwrap(await apiClient.get('/integrations/capabilities'));
-  },
 
-  async triggerEscalationRun() {
-    return unwrap(await apiClient.post('/escalations/run'));
-  },
 
-  async triggerNotificationSweep() {
-    return unwrap(
-      await apiClient.post('/notification-deliveries/process-due'),
-    );
-  },
 
-  async triggerMonitoringSweep() {
-    return unwrap(await apiClient.post('/monitoring/sweep'));
-  },
 
   async getDestinations(params = {}) {
     return unwrap(await apiClient.get('/admin/destinations', { params }));

@@ -61,16 +61,16 @@ export function AdminDashboardPage() {
         <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">
           System Admin
         </p>
-        <h1 className="mt-1 text-2xl font-black uppercase tracking-tight">
+        <h1 className="mt-1 text-xl font-black uppercase tracking-tight">
           Platform Overview
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-xs text-slate-500 mt-1">
           Live platform totals, operational health and tourist destination management.
         </p>
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-700">
           {error}
         </div>
       )}
@@ -85,7 +85,7 @@ export function AdminDashboardPage() {
                 </p>
                 <Icon className="w-4 h-4 text-slate-400" />
               </div>
-              <p className="mt-3 text-2xl font-black text-slate-900">
+              <p className="mt-3 text-xl font-black text-slate-900">
                 {summary[key] ?? 0}
               </p>
             </div>
@@ -95,7 +95,7 @@ export function AdminDashboardPage() {
 
       <div className="grid lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-          <h2 className="font-black text-sm uppercase tracking-wide">
+          <h2 className="font-black text-xs uppercase tracking-wide">
             Administrative shortcuts
           </h2>
           <div className="grid sm:grid-cols-3 gap-3 mt-5">
@@ -125,7 +125,7 @@ export function AdminDashboardPage() {
             Backend health
           </p>
           <p
-            className={`mt-3 text-xl font-black ${
+            className={`mt-3 text-lg font-black ${
               diagnostics?.status === 'healthy'
                 ? 'text-emerald-400'
                 : 'text-amber-400'
@@ -133,7 +133,7 @@ export function AdminDashboardPage() {
           >
             {(diagnostics?.status || 'unknown').toUpperCase()}
           </p>
-          <div className="mt-5 space-y-2 text-xs">
+          <div className="mt-5 space-y-2 text-[11px]">
             <p className="flex justify-between gap-3">
               <span className="text-slate-400">Database</span>
               <span>{diagnostics?.database?.status || 'unknown'}</span>
@@ -166,8 +166,8 @@ function Shortcut({ to, icon: Icon, title, text }) {
       className="p-4 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40 transition"
     >
       <Icon className="w-5 h-5 text-indigo-600" />
-      <p className="mt-3 text-sm font-black">{title}</p>
-      <p className="mt-1 text-xs text-slate-500 leading-relaxed">{text}</p>
+      <p className="mt-3 text-xs font-black">{title}</p>
+      <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">{text}</p>
     </Link>
   );
 }
