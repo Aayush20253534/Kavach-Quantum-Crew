@@ -7,6 +7,8 @@ const unwrap = (response) => {
 
 export const authorityService = {
   getDashboard: async () => unwrap(await apiClient.get('/disaster-management/dashboard')),
+  getJurisdictionOverview: async () =>
+    unwrap(await apiClient.get('/disaster-management/jurisdiction-overview')),
   getAllIncidents: async () => unwrap(await apiClient.get('/disaster-management/incidents')),
   getAllAlerts: async () => unwrap(await apiClient.get('/hazards')),
   getMe: async () => unwrap(await apiClient.get('/disaster-management/responders/me')),
