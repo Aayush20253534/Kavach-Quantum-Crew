@@ -230,6 +230,12 @@ export const createTripService = ({
           details: { required: REQUIRED_CONSENTS },
         });
       }
+      if (trip.tripType === "GROUP" && (trip.group?.members?.length ?? 0) < 2) {
+        throw ApiError.badRequest("A group trip requires at least 2 active members before start", {
+          code: "GROUP_MIN_MEMBERS_REQUIRED",
+          details: { minimumMembers: 2, activeMembers: trip.group?.members?.length ?? 0 },
+        });
+      }
 
       const now = clock();
       if (!isSafetyIdActive(trip.safetyId, now)) {

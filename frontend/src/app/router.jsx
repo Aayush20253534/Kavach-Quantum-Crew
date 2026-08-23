@@ -148,6 +148,7 @@ export const router = createBrowserRouter([
                 children: [
                   { path: 'dashboard', element: <AdminDashboardPage /> },
                   { path: 'locations', element: <AdminLocationsPage /> },
+                  { path: 'zones', element: <AuthorityRiskZonesPage /> },
                   { path: 'accounts', element: <AdminAccountsPage /> },
                   { path: 'audit', element: <AdminAuditPage /> },
                   { path: 'integrations', element: <AdminIntegrationsPage /> },

@@ -7,6 +7,7 @@ import { groupService } from '../../groups/api/groupService';
 import { tripService } from '../api/tripService';
 
 const dateText = (value) => value ? new Date(value).toLocaleString() : '—';
+const MIN_GROUP_MEMBERS_TO_START = 2;
 
 export function CurrentTripPage() {
   const { user } = useSelector((state) => state.auth);
@@ -47,6 +48,9 @@ export function CurrentTripPage() {
   };
 
   const start = () => run('start', async () => {
+    if (trip.tripType === 'GROUP' && (group?.members?.length || 0) < MIN_GROUP_MEMBERS_TO_START) {
+      throw new Error('A group trip needs at least 2 members before it can be started.');
+    }
     await tripService.grantConsent(trip.id, 'LOCATION_TRACKING');
     await tripService.grantConsent(trip.id, 'EMERGENCY_SHARING');
     if (!trip.safetyId?.active) await tripService.issueSafetyId(trip.id);
@@ -63,6 +67,8 @@ export function CurrentTripPage() {
   if (loading) return <div className="py-24 flex justify-center"><Loader2 className="animate-spin" /></div>;
 
   const isOwner = trip?.touristId === user?.id;
+  const groupMemberCount = group?.members?.length || 0;
+  const groupTooSmallToStart = trip?.tripType === 'GROUP' && groupMemberCount < MIN_GROUP_MEMBERS_TO_START;
 
   if (!trip) {
     return (
@@ -76,15 +82,15 @@ export function CurrentTripPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto pb-10 space-y-6">
+    <div className="max-w-4xl mx-auto pb-8 sm:pb-10 space-y-4 sm:space-y-6">
       {error && <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{error}</div>}
 
-      <div className="bg-white border border-slate-200 rounded-2xl p-7 shadow-sm">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-7 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-5">
           <div>
             <span className="text-[10px] uppercase tracking-widest font-black text-rose-600">{trip.status}</span>
-            <h1 className="text-2xl font-black mt-1">{trip.locationName}</h1>
-            <div className="mt-4 space-y-2 text-sm text-slate-600">
+            <h1 className="text-xl sm:text-2xl font-black mt-1">{trip.locationName}</h1>
+            <div className="mt-3 sm:mt-4 space-y-2 text-xs sm:text-sm text-slate-600">
               <p><Calendar className="w-4 h-4 inline mr-2" />{dateText(trip.plannedStartAt)} → {dateText(trip.plannedEndAt)}</p>
               <p><Users className="w-4 h-4 inline mr-2" />{trip.tripType}</p>
             </div>
@@ -93,29 +99,35 @@ export function CurrentTripPage() {
           <div className="flex flex-wrap gap-2">
             {isOwner && trip.status === 'PLANNED' && (
               <>
-                <button onClick={start} disabled={busy} className="px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-xs font-black flex items-center gap-2">
+                <button onClick={start} disabled={Boolean(busy) || groupTooSmallToStart} title={groupTooSmallToStart ? 'Add at least one more member before starting this group trip.' : undefined} className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-emerald-600 text-white text-[11px] sm:text-xs font-black flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                   <Play className="w-4 h-4" /> Start Trip
                 </button>
-                <button onClick={() => run('cancel', () => tripService.cancelTrip(trip.id))} disabled={busy} className="px-4 py-2.5 rounded-lg border border-red-200 text-red-600 text-xs font-black">
+                <button onClick={() => run('cancel', () => tripService.cancelTrip(trip.id))} disabled={busy} className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-lg border border-red-200 text-red-600 text-[11px] sm:text-xs font-black">
                   Cancel
                 </button>
               </>
             )}
             {isOwner && trip.status === 'ACTIVE' && (
-              <button onClick={() => run('complete', () => tripService.completeTrip(trip.id))} disabled={busy} className="px-4 py-2.5 rounded-lg bg-slate-900 text-white text-xs font-black flex items-center gap-2">
+              <button onClick={() => run('complete', () => tripService.completeTrip(trip.id))} disabled={busy} className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-slate-900 text-white text-[11px] sm:text-xs font-black flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4" /> Complete
               </button>
             )}
           </div>
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-4 mt-7">
-          <div className="p-4 bg-slate-50 rounded-xl">
+        {groupTooSmallToStart && trip.status === 'PLANNED' && (
+          <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-[11px] sm:text-xs font-semibold text-amber-800">
+            Add at least one more group member before starting. Group trips require a minimum of 2 members.
+          </div>
+        )}
+
+        <div className="grid sm:grid-cols-2 gap-3 sm:gap-4 mt-5 sm:mt-7">
+          <div className="p-3.5 sm:p-4 bg-slate-50 rounded-xl">
             <p className="text-[10px] uppercase tracking-wider font-black text-slate-400">Safety ID</p>
             <p className="mt-1 font-mono text-sm text-slate-800">{trip.safetyId?.publicId || 'Issued automatically before start'}</p>
             <p className="text-[10px] text-indigo-600 mt-2">Blockchain proof: mock / not connected</p>
           </div>
-          <Link to="/tourist/checkins" className="p-4 bg-slate-50 rounded-xl">
+          <Link to="/tourist/checkins" className="p-3.5 sm:p-4 bg-slate-50 rounded-xl">
             <p className="text-[10px] uppercase tracking-wider font-black text-slate-400">Safety Check-ins</p>
             <p className="mt-1 font-bold text-sm">Open check-in schedule →</p>
           </Link>
@@ -123,14 +135,14 @@ export function CurrentTripPage() {
       </div>
 
       {trip.tripType === 'GROUP' && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="font-black">Trip Group</h2>
-              <p className="text-xs text-slate-500 mt-1">{group?.members?.length || 0} active member(s)</p>
+              <h2 className="text-sm sm:text-base font-black">Trip Group</h2>
+              <p className="text-[11px] sm:text-xs text-slate-500 mt-1">{groupMemberCount} active member(s)</p>
             </div>
             {group && (
-              <button onClick={createInvite} disabled={busy === 'invite'} className="px-4 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold">
+              <button onClick={createInvite} disabled={busy === 'invite'} className="px-3.5 sm:px-4 py-2 rounded-lg bg-slate-900 text-white text-[11px] sm:text-xs font-bold">
                 Create Invite
               </button>
             )}
@@ -139,8 +151,8 @@ export function CurrentTripPage() {
           {group?.members?.length > 0 && (
             <div className="mt-4 grid sm:grid-cols-2 gap-2">
               {group.members.map((member) => (
-                <div key={member.id} className="p-3 border border-slate-100 rounded-lg">
-                  <p className="text-sm font-bold">{member.user?.name || member.user?.username || 'Member'}</p>
+                <div key={member.id} className="p-2.5 sm:p-3 border border-slate-100 rounded-lg">
+                  <p className="text-xs sm:text-sm font-bold">{member.user?.name || member.user?.username || 'Member'}</p>
                   <p className="text-[10px] text-slate-400 uppercase">{member.role}</p>
                 </div>
               ))}

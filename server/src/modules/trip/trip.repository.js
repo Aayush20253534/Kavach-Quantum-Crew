@@ -3,6 +3,11 @@ import { prisma } from "../../config/database.js";
 const tripInclude = {
   safetyId: true,
   consents: { orderBy: { createdAt: "asc" } },
+  group: {
+    include: {
+      members: { where: { leftAt: null }, select: { id: true, userId: true } },
+    },
+  },
 };
 
 export const createTripRepository = ({ db = prisma } = {}) => ({

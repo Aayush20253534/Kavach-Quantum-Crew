@@ -15,8 +15,10 @@ const SERVICE_TYPES = [
 export function MapComponent({
   currentLocation,
   groupLocations = [],
+  groupGeofenceRadiusM = 0,
   riskZones = [],
   showEmergencyServicesOnly = false,
+  mapGestureHandling = 'greedy',
   onEmergencyCountsChange,
   onLocationLabelChange,
   className = 'h-96 w-full rounded-lg shadow-md',
@@ -205,7 +207,7 @@ export function MapComponent({
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: false,
-          gestureHandling: 'greedy',
+          gestureHandling: mapGestureHandling,
           scrollwheel: true,
           draggable: true,
           styles: [
@@ -224,6 +226,20 @@ export function MapComponent({
                 options={{
                   fillOpacity: 0.03,
                   strokeOpacity: 0.8,
+                  strokeWeight: 2,
+                  clickable: false,
+                }}
+              />
+            )}
+            {!showEmergencyServicesOnly && groupGeofenceRadiusM > 0 && (
+              <CircleF
+                center={center}
+                radius={groupGeofenceRadiusM}
+                options={{
+                  fillColor: '#2563eb',
+                  fillOpacity: 0.06,
+                  strokeColor: '#2563eb',
+                  strokeOpacity: 0.65,
                   strokeWeight: 2,
                   clickable: false,
                 }}
@@ -254,18 +270,31 @@ export function MapComponent({
               <MarkerF
                 key={loc.userId || loc.id}
                 position={{ lat: loc.lat, lng: loc.lng }}
-                label={{ text: loc.userName?.[0] || 'G', color: 'white', fontWeight: 'bold' }}
+                label={{ text: loc.userName?.[0]?.toUpperCase() || 'G', color: 'white', fontWeight: 'bold' }}
+                title={`${loc.userName || 'Group member'}${loc.stale ? ' (last known location)' : ''}`}
               />
             ))}
             {riskZones.map((zone) => {
-              const isDanger = zone.severity === 'CRITICAL' || zone.severity === 'HIGH';
-              const color = isDanger ? '#ef4444' : zone.severity === 'LOW' ? '#22c55e' : '#f97316';
-              if (zone.type === 'POLYGON' && zone.coordinates) {
-                const paths = zone.coordinates.map((coord) => Array.isArray(coord) ? { lat: coord[0], lng: coord[1] } : coord);
-                return <PolygonF key={zone.id} paths={paths} options={{ fillColor: color, fillOpacity: 0.35, strokeColor: color, strokeWeight: 2 }} />;
+              if (zone.active === false) return null;
+
+              const isDanger = zone.type === 'RISK' || zone.severity === 'CRITICAL' || zone.severity === 'HIGH';
+              const color = isDanger ? '#ef4444' : zone.type === 'SAFE' || zone.severity === 'LOW' ? '#22c55e' : '#f97316';
+              const geometryType = zone.geometryType || zone.type;
+
+              if (geometryType === 'POLYGON' && Array.isArray(zone.polygon || zone.coordinates)) {
+                const coordinates = zone.polygon || zone.coordinates;
+                const paths = coordinates.map((coord) => {
+                  if (Array.isArray(coord)) return { lat: coord[0], lng: coord[1] };
+                  return { lat: coord.latitude ?? coord.lat, lng: coord.longitude ?? coord.lng };
+                });
+                return <PolygonF key={zone.id} paths={paths} options={{ fillColor: color, fillOpacity: 0.25, strokeColor: color, strokeWeight: 2 }} />;
               }
-              if (zone.type === 'CIRCLE') {
-                return <CircleF key={zone.id} center={{ lat: zone.center.lat, lng: zone.center.lng }} radius={zone.radius} options={{ fillColor: color, fillOpacity: 0.35, strokeColor: color, strokeWeight: 2 }} />;
+
+              const latitude = zone.latitude ?? zone.center?.lat;
+              const longitude = zone.longitude ?? zone.center?.lng;
+              const radius = zone.radiusM ?? zone.radius;
+              if (geometryType === 'CIRCLE' && Number.isFinite(latitude) && Number.isFinite(longitude) && Number.isFinite(radius)) {
+                return <CircleF key={zone.id} center={{ lat: latitude, lng: longitude }} radius={radius} options={{ fillColor: color, fillOpacity: 0.25, strokeColor: color, strokeWeight: 2 }} />;
               }
               return null;
             })}
