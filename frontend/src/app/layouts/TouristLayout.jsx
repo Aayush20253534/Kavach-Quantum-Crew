@@ -21,6 +21,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { logout } from '../../features/auth/store/authSlice';
+import { authService } from '../../features/auth/api/authService';
 import { AIChatWidget } from '../../features/chatbot/components/AIChatWidget';
 import { NotificationsDropdown } from '../components/NotificationsDropdown';
 import { useGeolocation } from '../../features/tracking/hooks/useGeolocation';
@@ -67,9 +68,17 @@ export function TouristLayout() {
 
   const safetyLevel = backgroundSafetySummary?.safetyStatus?.level || 'UNKNOWN';
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      // Revoke the server-side refresh session and clear the refresh cookie.
+      // Without this, a later page refresh can silently authenticate the user again.
+      await authService.logout();
+    } catch {
+      // Local sign-out must still complete if the network is unavailable.
+    } finally {
+      dispatch(logout());
+      navigate('/', { replace: true });
+    }
   };
 
   const handleTriggerSOS = async () => {
