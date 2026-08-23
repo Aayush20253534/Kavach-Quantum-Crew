@@ -13,6 +13,15 @@ export function AuthorityIncidentsPage() {
   const [error, setError] = useState('');
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState('ALL');
+  const [responseMetrics, setResponseMetrics] = useState({
+    averageMinutes: null,
+    respondedCount: 0,
+  });
+  const [unitMetrics, setUnitMetrics] = useState({
+    deployed: 0,
+    active: 0,
+    total: 0,
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -23,9 +32,39 @@ export function AuthorityIncidentsPage() {
     try {
       setLoading(true);
       setError('');
-      const response = await authorityService.getIncidentQueue();
+
+      const to = new Date();
+      const from = new Date(to);
+      from.setUTCDate(from.getUTCDate() - 29);
+
+      const [response, responseTimes, units] = await Promise.all([
+        authorityService.getIncidentQueue(),
+        authorityService.getResponseTimeAnalytics({
+          from: from.toISOString(),
+          to: to.toISOString(),
+        }),
+        authorityService.getUnits(),
+      ]);
+
       const data = response || [];
+      const unitList = Array.isArray(units) ? units : [];
+      const deployedUnits = unitList.filter(
+        (unit) => String(unit.status || '').toUpperCase() === 'DISPATCHED',
+      ).length;
+      const activeUnits = unitList.filter(
+        (unit) => String(unit.status || '').toUpperCase() !== 'OUT_OF_SERVICE',
+      ).length;
+
       setIncidents(Array.isArray(data) ? data : []);
+      setResponseMetrics({
+        averageMinutes: responseTimes?.incidents?.responseStartMinutes ?? null,
+        respondedCount: responseTimes?.incidents?.respondedCount ?? 0,
+      });
+      setUnitMetrics({
+        deployed: deployedUnits,
+        active: activeUnits,
+        total: unitList.length,
+      });
     } catch (err) {
       setError(err.response?.data?.error?.message || err.message || 'Failed to load incidents');
     } finally {
@@ -118,17 +157,28 @@ export function AuthorityIncidentsPage() {
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-24">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Avg Response Time</span>
           <div className="flex items-end justify-between">
-            <span className="text-3xl font-black text-slate-900">4.2<span className="text-lg">m</span></span>
-            <span className="text-[10px] font-bold text-emerald-500 mb-1">
-              Target: {'<'} 5m
+            <span className="text-3xl font-black text-slate-900">
+              {responseMetrics.averageMinutes == null ? '—' : responseMetrics.averageMinutes}
+              {responseMetrics.averageMinutes != null && <span className="text-lg">m</span>}
+            </span>
+            <span className={`text-[10px] font-bold mb-1 ${
+              responseMetrics.averageMinutes != null && responseMetrics.averageMinutes < 5
+                ? 'text-emerald-500'
+                : 'text-slate-400'
+            }`}>
+              {responseMetrics.respondedCount > 0
+                ? `${responseMetrics.respondedCount} responded · target < 5m`
+                : 'No response data yet'}
             </span>
           </div>
         </div>
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-24">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Units Deployed</span>
           <div className="flex items-end justify-between">
-            <span className="text-3xl font-black text-slate-900">22</span>
-            <span className="text-[10px] font-bold text-slate-400 mb-1">of 45 active</span>
+            <span className="text-3xl font-black text-slate-900">{unitMetrics.deployed}</span>
+            <span className="text-[10px] font-bold text-slate-400 mb-1">
+              of {unitMetrics.active} active · {unitMetrics.total} total
+            </span>
           </div>
         </div>
       </div>

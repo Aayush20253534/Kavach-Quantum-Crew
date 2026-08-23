@@ -131,8 +131,8 @@ export default function LoginPage() {
     <>
       <div className={`tourist-font transition-all duration-700 transform ${mounted ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"}`}>
 
-        <div className="mb-4 mt-4 text-center">
-          <h2 className="mb-1 text-2xl font-bold tracking-tight text-slate-900">
+        <div className="mb-3 mt-3 text-center">
+          <h2 className="mb-1 text-[22px] font-bold tracking-tight text-slate-900">
             Welcome Back!
           </h2>
           <p className="text-xs text-slate-500">
@@ -140,7 +140,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="mb-4 grid grid-cols-3 overflow-hidden rounded-lg border border-slate-200 bg-white">
+        <div className="mb-4 grid grid-cols-[0.9fr_1.25fr_0.9fr] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           {roles.map((role, idx) => {
             const Icon = role.icon;
             const active = selectedRole === role.id;
@@ -150,7 +150,7 @@ export default function LoginPage() {
                 key={role.id}
                 type="button"
                 onClick={() => handleRoleChange(role.id)}
-                className={`relative flex min-h-[54px] min-w-0 items-center justify-center gap-2 px-2 py-2.5 transition-colors ${
+                className={`relative flex min-h-[58px] min-w-0 items-center justify-center gap-2 px-2.5 py-2.5 transition-colors ${
                   active
                     ? 'z-10 bg-red-50 text-red-600'
                     : 'bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800'
@@ -167,16 +167,16 @@ export default function LoginPage() {
 
                 <div className="min-w-0 text-left leading-tight">
                   <span
-                    className={`block whitespace-nowrap font-bold ${
+                    className={`block font-bold ${
                       role.id === 'DISASTER_MANAGER'
-                        ? 'text-[9px] sm:text-[10px]'
-                        : 'text-[10px] sm:text-[11px]'
+                        ? 'whitespace-normal text-[9px] leading-[1.15] sm:whitespace-nowrap sm:text-[10px]'
+                        : 'whitespace-nowrap text-[10px] sm:text-[11px]'
                     }`}
                   >
                     {role.title}
                   </span>
                   <span
-                    className={`mt-0.5 hidden whitespace-nowrap text-[8px] font-medium lg:block ${
+                    className={`mt-0.5 hidden whitespace-nowrap text-[8px] font-medium xl:block ${
                       active ? 'text-red-400' : 'text-slate-400'
                     }`}
                   >
