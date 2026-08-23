@@ -24,6 +24,7 @@ import { logout } from '../../features/auth/store/authSlice';
 import { authService } from '../../features/auth/api/authService';
 import { markExplicitSignOut } from '../../services/apiClient';
 import { NotificationsDropdown } from '../components/NotificationsDropdown';
+import { SignOutConfirmModal } from '../components/SignOutConfirmModal';
 import { useGeolocation } from '../../features/tracking/hooks/useGeolocation';
 import { tripService } from '../../features/trips/api/tripService';
 import { useCurrentTrip } from '../../features/trips/api/tripQueries';
@@ -38,6 +39,8 @@ export function TouristLayout() {
   const mobileNavRef = useRef(null);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [logoutBusy, setLogoutBusy] = useState(false);
   const [isSosModalOpen, setIsSosModalOpen] = useState(false);
   const [sosState, setSosState] = useState('idle');
   const [sosError, setSosError] = useState('');
@@ -70,8 +73,7 @@ export function TouristLayout() {
   const safetyLevel = backgroundSafetySummary?.safetyStatus?.level || 'UNKNOWN';
 
   const handleLogout = async () => {
-    if (!window.confirm('Do you want to sign out?')) return;
-
+    setLogoutBusy(true);
     // Record the user's intent before any network request so a reload cannot
     // resurrect the session while logout is in flight or if it fails.
     markExplicitSignOut();
@@ -83,9 +85,13 @@ export function TouristLayout() {
       // Local sign-out must still complete if the network is unavailable.
     } finally {
       dispatch(logout());
+      setLogoutBusy(false);
+      setLogoutOpen(false);
       navigate('/', { replace: true });
     }
   };
+
+  const requestLogout = () => setLogoutOpen(true);
 
   const handleTriggerSOS = async () => {
     setSosState('triggering');
@@ -162,6 +168,12 @@ export function TouristLayout() {
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-slate-900 antialiased tourist-font relative">
+      <SignOutConfirmModal
+        open={logoutOpen}
+        busy={logoutBusy}
+        onCancel={() => !logoutBusy && setLogoutOpen(false)}
+        onConfirm={handleLogout}
+      />
 
       {/* GLOBAL SOS MODAL */}
       {isSosModalOpen && (
@@ -345,7 +357,7 @@ export function TouristLayout() {
             {!isCollapsed && "SOS"}
           </button>
           <button
-            onClick={handleLogout}
+            onClick={requestLogout}
             className={`w-full flex items-center gap-2 py-2 text-[12px] font-semibold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer ${isCollapsed ? 'justify-center px-0' : 'px-4'}`}
             title={isCollapsed ? "Sign Out" : undefined}
           >

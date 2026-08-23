@@ -235,18 +235,45 @@ export function MapComponent({
               />
             )}
             {!showEmergencyServicesOnly && groupGeofenceRadiusM > 0 && (
-              <CircleF
-                center={center}
-                radius={groupGeofenceRadiusM}
-                options={{
-                  fillColor: '#2563eb',
-                  fillOpacity: 0.06,
-                  strokeColor: '#2563eb',
-                  strokeOpacity: 0.65,
-                  strokeWeight: 2,
-                  clickable: false,
-                }}
-              />
+              <>
+                {/* Layered low-opacity circles soften the group geofence edge instead
+                    of drawing one harsh boundary line. */}
+                <CircleF
+                  center={center}
+                  radius={groupGeofenceRadiusM + 35}
+                  options={{
+                    fillColor: '#2563eb',
+                    fillOpacity: 0.012,
+                    strokeOpacity: 0,
+                    clickable: false,
+                    zIndex: 1,
+                  }}
+                />
+                <CircleF
+                  center={center}
+                  radius={groupGeofenceRadiusM}
+                  options={{
+                    fillColor: '#2563eb',
+                    fillOpacity: 0.045,
+                    strokeColor: '#2563eb',
+                    strokeOpacity: 0.22,
+                    strokeWeight: 1,
+                    clickable: false,
+                    zIndex: 2,
+                  }}
+                />
+                <CircleF
+                  center={center}
+                  radius={Math.max(0, groupGeofenceRadiusM - 28)}
+                  options={{
+                    fillColor: '#2563eb',
+                    fillOpacity: 0.018,
+                    strokeOpacity: 0,
+                    clickable: false,
+                    zIndex: 1,
+                  }}
+                />
+              </>
             )}
           </>
         )}
@@ -290,14 +317,28 @@ export function MapComponent({
                   if (Array.isArray(coord)) return { lat: coord[0], lng: coord[1] };
                   return { lat: coord.latitude ?? coord.lat, lng: coord.longitude ?? coord.lng };
                 });
-                return <PolygonF key={zone.id} paths={paths} options={{ fillColor: color, fillOpacity: 0.25, strokeColor: color, strokeWeight: 2 }} />;
+                return <PolygonF key={zone.id} paths={paths} options={{
+                  fillColor: color,
+                  fillOpacity: isDanger ? 0.34 : 0.22,
+                  strokeColor: color,
+                  strokeOpacity: isDanger ? 0.9 : 0.65,
+                  strokeWeight: isDanger ? 1.5 : 1,
+                  zIndex: isDanger ? 30 : 10,
+                }} />;
               }
 
               const latitude = zone.latitude ?? zone.center?.lat;
               const longitude = zone.longitude ?? zone.center?.lng;
               const radius = zone.radiusM ?? zone.radius;
               if (geometryType === 'CIRCLE' && Number.isFinite(latitude) && Number.isFinite(longitude) && Number.isFinite(radius)) {
-                return <CircleF key={zone.id} center={{ lat: latitude, lng: longitude }} radius={radius} options={{ fillColor: color, fillOpacity: 0.25, strokeColor: color, strokeWeight: 2 }} />;
+                return <CircleF key={zone.id} center={{ lat: latitude, lng: longitude }} radius={radius} options={{
+                  fillColor: color,
+                  fillOpacity: isDanger ? 0.34 : 0.22,
+                  strokeColor: color,
+                  strokeOpacity: isDanger ? 0.9 : 0.65,
+                  strokeWeight: isDanger ? 1.5 : 1,
+                  zIndex: isDanger ? 30 : 10,
+                }} />;
               }
               return null;
             })}
