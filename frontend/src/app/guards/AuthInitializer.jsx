@@ -10,6 +10,7 @@ import {
 } from '../../features/auth/store/authSlice';
 import {
   getAccessToken,
+  isExplicitlySignedOut,
   refreshSession,
   resetAuthFailure,
 } from '../../services/apiClient';
@@ -28,6 +29,13 @@ export function AuthInitializer({ children }) {
 
     const checkSession = async () => {
       try {
+        // An explicit sign-out is authoritative. Do not exchange any leftover
+        // refresh cookie for a new access token on the next page load.
+        if (isExplicitlySignedOut()) {
+          dispatch(logout());
+          return;
+        }
+
         resetAuthFailure();
 
         let user;
