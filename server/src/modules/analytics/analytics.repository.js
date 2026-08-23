@@ -25,15 +25,55 @@ export const createAnalyticsRepository = ({ db = prisma } = {}) => ({
     return { tourists, activeTrips, openIncidents, criticalIncidents, pendingHazards, activeDispatches, sosRequests };
   },
 
-  async incidentBreakdown(range) {
-    const where = createdAtWhere(range);
+  async incidentBreakdown(range, jurisdictionTripIds = null) {
+    const where = {
+      ...createdAtWhere(range),
+      ...(jurisdictionTripIds ? { tripId: { in: jurisdictionTripIds } } : {}),
+    };
+
     const [byStatus, bySeverity, bySource, timingRows] = await Promise.all([
       db.incident.groupBy({ by: ["status"], where, _count: { _all: true } }),
       db.incident.groupBy({ by: ["severity"], where, _count: { _all: true } }),
       db.incident.groupBy({ by: ["sourceType"], where, _count: { _all: true } }),
-      db.incident.findMany({ where, select: { createdAt: true, acknowledgedAt: true, startedAt: true, resolvedAt: true } }),
+      db.incident.findMany({
+        where,
+        select: {
+          id: true,
+          createdAt: true,
+          acknowledgedAt: true,
+          startedAt: true,
+          resolvedAt: true,
+        },
+        orderBy: { createdAt: "asc" },
+      }),
     ]);
+
     return { byStatus, bySeverity, bySource, timingRows };
+  },
+
+  async jurisdictionTripIds(jurisdiction) {
+    if (!jurisdiction) return null;
+
+    const rows = await db.trip.findMany({
+      where: {
+        locationName: {
+          contains: jurisdiction,
+          mode: "insensitive",
+        },
+      },
+      select: { id: true },
+    });
+
+    return rows.map((row) => row.id);
+  },
+
+  async responderJurisdiction(responderId) {
+    if (!responderId) return null;
+    const responder = await db.disasterManager.findUnique({
+      where: { id: responderId },
+      select: { jurisdiction: true },
+    });
+    return responder?.jurisdiction || null;
   },
 
   async tripBreakdown(range) {
