@@ -149,7 +149,7 @@ export default function PrayagrajGallery({ onSelectPlace }) {
       {/* ------------------------------------------------
           3. MAIN HERO CONTENT (LEFT SIDE)
       ------------------------------------------------ */}
-      <div className="absolute top-28 bottom-36 left-8 right-8 z-20 flex flex-col justify-end max-w-xl mb-5">
+      <div className="absolute top-[6.25rem] bottom-36 left-8 right-8 z-20 flex flex-col justify-start pt-5 max-w-xl">
         {/* Destination Category Pill */}
         <div className="mb-3 flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 border border-red-200 backdrop-blur-md">
