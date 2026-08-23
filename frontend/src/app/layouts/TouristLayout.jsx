@@ -138,7 +138,7 @@ export function TouristLayout() {
       {/* GLOBAL SOS MODAL */}
       {isSosModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl relative flex flex-col items-center text-center">
+          <div className="bg-white w-full max-w-[340px] sm:max-w-sm rounded-2xl p-4 sm:p-6 shadow-2xl relative flex flex-col items-center text-center">
 
             {sosState === 'idle' && (
               <>
@@ -148,17 +148,17 @@ export function TouristLayout() {
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
-                <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
-                  <Phone className="w-10 h-10 animate-pulse" />
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
+                  <Phone className="w-8 h-8 sm:w-10 sm:h-10 animate-pulse" />
                 </div>
-                <h2 className="text-[20px] font-black text-slate-900 uppercase tracking-tight mb-2">Emergency SOS</h2>
-                <p className="text-[13px] text-slate-500 font-medium mb-8 leading-relaxed">
+                <h2 className="text-[17px] sm:text-[20px] font-black text-slate-900 uppercase tracking-tight mb-2">Emergency SOS</h2>
+                <p className="text-[11px] sm:text-[13px] text-slate-500 font-medium mb-5 sm:mb-8 leading-relaxed">
                   This will immediately alert local police, medical teams, and your emergency contacts with your live location.
                 </p>
                 {sosError && <p className="w-full mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-xs font-semibold">{sosError}</p>}
                 <button
                   onClick={handleTriggerSOS}
-                  className="w-full bg-[#e11d48] hover:bg-[#be123c] text-white py-4 rounded-xl font-black text-[14px] uppercase tracking-widest shadow-[0_4px_20px_0_rgba(225,29,72,0.4)] transition-all active:scale-95 cursor-pointer"
+                  className="w-full bg-[#e11d48] hover:bg-[#be123c] text-white py-3 sm:py-4 rounded-xl font-black text-[12px] sm:text-[14px] uppercase tracking-widest shadow-[0_4px_20px_0_rgba(225,29,72,0.4)] transition-all active:scale-95 cursor-pointer"
                 >
                   PRESS TO TRIGGER SOS
                 </button>
@@ -173,19 +173,19 @@ export function TouristLayout() {
 
             {sosState === 'triggering' && (
               <div className="py-8">
-                <div className="w-20 h-20 border-4 border-red-100 border-t-red-600 rounded-full animate-spin mx-auto mb-6"></div>
-                <h2 className="text-[18px] font-black text-slate-900 uppercase tracking-tight">Transmitting...</h2>
+                <div className="w-16 h-16 sm:w-20 sm:h-20 border-4 border-red-100 border-t-red-600 rounded-full animate-spin mx-auto mb-6"></div>
+                <h2 className="text-[16px] sm:text-[18px] font-black text-slate-900 uppercase tracking-tight">Transmitting...</h2>
                 <p className="text-[12px] text-slate-500 font-medium mt-2">Transmitting to emergency response backend</p>
               </div>
             )}
 
             {sosState === 'active' && (
               <div className="py-4">
-                <div className="w-24 h-24 bg-red-600 text-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_rgba(225,29,72,0.6)] animate-pulse">
-                  <ShieldCheck className="w-12 h-12" />
+                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-red-600 text-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_rgba(225,29,72,0.6)] animate-pulse">
+                  <ShieldCheck className="w-10 h-10 sm:w-12 sm:h-12" />
                 </div>
-                <h2 className="text-[22px] font-black text-slate-900 uppercase tracking-tight mb-2">SOS ACTIVE</h2>
-                <p className="text-[13px] text-slate-600 font-medium mb-6 leading-relaxed">
+                <h2 className="text-[18px] sm:text-[22px] font-black text-slate-900 uppercase tracking-tight mb-2">SOS ACTIVE</h2>
+                <p className="text-[11px] sm:text-[13px] text-slate-600 font-medium mb-5 sm:mb-6 leading-relaxed">
                   Your SOS has been recorded by the emergency backend. Stay in a safe location and watch notifications for responder updates.
                 </p>
                 <button
@@ -358,7 +358,7 @@ export function TouristLayout() {
       <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 pl-0 ${isCollapsed ? 'lg:pl-20' : 'lg:pl-[280px]'}`}>
 
         {/* Top Navbar */}
-        <header className={`fixed top-0 right-0 z-20 h-16 bg-white border-b border-slate-200 px-4 lg:px-8 flex items-center justify-between transition-all duration-300 w-full ${isCollapsed ? 'lg:w-[calc(100%-5rem)]' : 'lg:w-[calc(100%-280px)]'}`}>
+        <header className={`fixed top-0 right-0 z-[60] h-16 bg-white border-b border-slate-200 px-4 lg:px-8 flex items-center justify-between transition-all duration-300 w-full ${isCollapsed ? 'lg:w-[calc(100%-5rem)]' : 'lg:w-[calc(100%-280px)]'}`}>
 
           {/* Left: Location */}
           <div className="flex items-center gap-2 sm:gap-3">

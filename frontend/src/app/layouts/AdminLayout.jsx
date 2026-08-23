@@ -32,6 +32,7 @@ export function AdminLayout() {
   const navItems = [
     { name: 'Overview', path: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Destinations', path: '/admin/locations', icon: MapPinned },
+    { name: 'Danger Zones', path: '/admin/zones', icon: ShieldCheck },
     { name: 'Accounts', path: '/admin/accounts', icon: Users },
     { name: 'Audit Logs', path: '/admin/audit', icon: FileText },
     { name: 'Integrations', path: '/admin/integrations', icon: Puzzle },

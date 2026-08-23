@@ -150,6 +150,31 @@ describe("Phase 4 trip service", () => {
     });
   });
 
+  test("rejects starting a group trip with fewer than two active members", async () => {
+    const safetyId = {
+      id: SAFETY_RECORD,
+      publicId: "STS-test-safe-id",
+      issuedAt: NOW,
+      expiresAt: END,
+      revokedAt: null,
+    };
+    const repository = makeRepository({
+      findByIdForTourist: jest.fn().mockResolvedValue({
+        ...baseTrip,
+        tripType: "GROUP",
+        consents: grantedConsents,
+        safetyId,
+        group: { members: [{ id: "member-1", userId: USER_ID }] },
+      }),
+    });
+    const service = makeService(repository);
+
+    await expect(service.startTrip(USER_ID, TRIP_ID)).rejects.toMatchObject({
+      code: "GROUP_MIN_MEMBERS_REQUIRED",
+    });
+    expect(repository.startTrip).not.toHaveBeenCalled();
+  });
+
   test("starts a planned trip after consent and Safety ID checks", async () => {
     const safetyId = {
       id: SAFETY_RECORD,
