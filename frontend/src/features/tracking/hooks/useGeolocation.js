@@ -8,6 +8,7 @@ export const useGeolocation = (tripId, active = false) => {
   const [isTracking, setIsTracking] = useState(false);
   const pingMutation = useSendPing();
   const watchId = useRef(null);
+  const lastPingAt = useRef(0);
 
   useEffect(() => {
     if (!navigator.permissions?.query) return undefined;
@@ -45,7 +46,8 @@ export const useGeolocation = (tripId, active = false) => {
 
       // Dashboard/location UI should work without an active trip. Backend pings are
       // sent only while a real trip is active.
-      if (active && tripId) {
+      if (active && tripId && Date.now() - lastPingAt.current >= 3000) {
+        lastPingAt.current = Date.now();
         pingMutation.mutate(coords, {
           onError: (err) => console.error('Failed to ping location', err),
         });

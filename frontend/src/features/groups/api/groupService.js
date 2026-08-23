@@ -1,33 +1,27 @@
 import apiClient from '../../../services/apiClient';
 
+const unwrap = (response) => response.data?.data ?? response.data;
+
 export const groupService = {
-  createGroupForTrip: async (tripId) => {
-    const response = await apiClient.post(`/groups/trips/${tripId}`);
-    return response.data;
+  async createGroupForTrip(tripId) {
+    return unwrap(await apiClient.post(`/groups/trips/${tripId}`));
   },
-
-  getGroupForTrip: async (tripId) => {
-    const response = await apiClient.get(`/groups/trips/${tripId}`);
-    return response.data;
+  async getGroupForTrip(tripId) {
+    return unwrap(await apiClient.get(`/groups/trips/${tripId}`));
   },
-
-  getGroupDetails: async (groupId) => {
-    const response = await apiClient.get(`/groups/${groupId}`);
-    return response.data;
+  async getGroupDetails(groupId) {
+    return unwrap(await apiClient.get(`/groups/${groupId}`));
   },
-
-  createInvitation: async (groupId) => {
-    const response = await apiClient.post(`/groups/${groupId}/invitations`, {});
-    return response.data; // Should return { token, ... }
+  async createInvitation(groupId, expiresInMinutes = 60) {
+    return unwrap(await apiClient.post(`/groups/${groupId}/invitations`, { expiresInMinutes }));
   },
-
-  joinGroup: async (token) => {
-    const response = await apiClient.post(`/groups/join`, { inviteToken: token });
-    return response.data;
+  async joinGroup(inviteToken) {
+    return unwrap(await apiClient.post('/groups/join', { inviteToken }));
   },
-  
-  leaveGroup: async (groupId) => {
-    const response = await apiClient.post(`/groups/${groupId}/leave`);
-    return response.data;
-  }
+  async leaveGroup(groupId) {
+    return unwrap(await apiClient.post(`/groups/${groupId}/leave`));
+  },
+  async removeMember(groupId, memberId) {
+    return unwrap(await apiClient.delete(`/groups/${groupId}/members/${memberId}`));
+  },
 };

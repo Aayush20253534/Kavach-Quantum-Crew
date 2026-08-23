@@ -1,107 +1,75 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { AlertTriangle, Loader2, ShieldAlert } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { 
-  AlertTriangle, 
-  MapPin, 
-  Clock, 
-  FileText
-} from 'lucide-react';
+import { safetyService } from '../../safety/api/safetyService';
+
+const asArray = (value) => value?.items || value || [];
 
 export function IncidentHistoryPage() {
-  const incidents = [
-    {
-      id: 'INC-PRY-9421',
-      category: 'Crowd Surge at Ghat 4',
-      date: 'Today, 10:15 AM',
-      location: 'Sangam Sector 4 Ghats',
-      status: 'Dispatched',
-      severity: 'High',
-      policeNote: 'Patrol PCR #14 en route to manage barricades.',
-    },
-    {
-      id: 'INC-PRY-8102',
-      category: 'Unauthorized Boat Fare Overcharging',
-      date: '14 Aug 2026, 03:20 PM',
-      location: 'Qila Ghat Boat Stand',
-      status: 'Resolved',
-      severity: 'Medium',
-      policeNote: 'Tourist assistance booth resolved issue and refunded excess fare.',
-    },
-    {
-      id: 'INC-PRY-7619',
-      category: 'Lost Child Assistance',
-      date: '08 Aug 2026, 11:45 AM',
-      location: 'Kumbh Sector 2 Mela Ground',
-      status: 'Resolved',
-      severity: 'High',
-      policeNote: 'Child safely reunited with family via Khoya-Paya booth sync.',
-    },
-  ];
-  const [mounted, setMounted] = useState(false);
+  const [hazards, setHazards] = useState([]);
+  const [incidents, setIncidents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
   useEffect(() => {
-    setMounted(true);
+    Promise.all([
+      safetyService.listMyHazards({ limit: 50 }),
+      safetyService.listMyIncidents({ limit: 50 }),
+    ])
+      .then(([hazardData, incidentData]) => {
+        setHazards(asArray(hazardData));
+        setIncidents(asArray(incidentData));
+      })
+      .catch((e) => setError(e?.response?.data?.error?.message || 'Unable to load report history'))
+      .finally(() => setLoading(false));
   }, []);
 
+  if (loading) return <div className="py-24 flex justify-center"><Loader2 className="animate-spin" /></div>;
+
   return (
-    <div className={`space-y-6 max-w-[800px] mx-auto pb-10 font-sans transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-[22px] font-black text-slate-900 tracking-tight">Reported Incidents & Status</h1>
-          </div>
-          <p className="text-[13px] text-slate-500 font-medium mt-1">
-            Real-time status tracking and police investigation logs.
-          </p>
-        </div>
-
-        <Link to="/tourist/incidents/report">
-          <button className="bg-[#e11d48] hover:bg-[#be123c] text-white px-6 py-3 text-[12px] font-bold uppercase tracking-widest rounded-md shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
-            <AlertTriangle className="w-4 h-4" /> Report New
-          </button>
-        </Link>
+    <div className="max-w-4xl mx-auto pb-10 space-y-6">
+      <div className="flex justify-between gap-4">
+        <div><h1 className="text-2xl font-black">Safety Reports & Incidents</h1><p className="text-sm text-slate-500">Real reports submitted by this tourist account.</p></div>
+        <Link to="/tourist/incidents/report" className="px-4 py-2 bg-rose-600 text-white rounded-lg text-xs font-black h-fit">Report New</Link>
       </div>
+      {error && <div className="p-3 bg-red-50 text-red-700 rounded-lg">{error}</div>}
 
-      <div className="space-y-5">
-        {incidents.map((inc, index) => {
-           const isResolved = inc.status === 'Resolved';
-           const isDispatched = inc.status === 'Dispatched';
-           
-           return (
-              <div 
-                key={inc.id} 
-                className={`bg-white rounded-lg p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 hover:border-slate-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
-                style={{ transitionDelay: `${150 + (index * 75)}ms` }}
-              >
-                 <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-50 pb-4 mb-4">
-                    <div className="flex items-center gap-3">
-                       <span className="font-mono text-[11px] font-bold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-100">ID: {inc.id}</span>
-                       <span className={`text-[10px] font-bold px-2.5 py-1 uppercase tracking-widest rounded-lg flex items-center gap-1.5 shadow-sm ${
-                          isResolved ? 'bg-[#f0fdf4] text-[#16a34a] border border-[#dcfce7]' : 
-                          isDispatched ? 'bg-amber-50 text-amber-600 border border-amber-200' : 'bg-red-50 text-red-600 border border-red-200'
-                       }`}>
-                          {isDispatched && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>}
-                          {inc.status}
-                       </span>
-                    </div>
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                       <Clock className="w-3.5 h-3.5" /> {inc.date}
-                    </span>
-                 </div>
-                 
-                 <div className="space-y-1.5 mb-5">
-                    <h3 className="text-[16px] font-black text-slate-900 tracking-wide">{inc.category}</h3>
-                    <p className="text-[12px] font-semibold text-slate-500 flex items-center gap-1.5">
-                       <MapPin className="w-3.5 h-3.5 text-red-500" /> {inc.location}
-                    </p>
-                 </div>
-                 
-                 <div className="p-4 rounded-md bg-slate-50 border border-slate-100">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Authority Response Note</span>
-                    <p className="text-[13px] font-medium text-slate-700 leading-relaxed">{inc.policeNote}</p>
-                 </div>
-              </div>
-           );
-        })}
+      <section>
+        <h2 className="text-sm font-black uppercase tracking-wider text-slate-500 mb-3">Emergency incidents / SOS</h2>
+        <div className="space-y-3">
+          {incidents.length === 0 && <Empty text="No SOS incidents." />}
+          {incidents.map((item) => <Card key={item.id} icon={ShieldAlert} title={item.title || 'Emergency incident'} status={item.status} meta={new Date(item.createdAt).toLocaleString()} detail={item.description || item.sourceType} />)}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-sm font-black uppercase tracking-wider text-slate-500 mb-3">Safety concern reports</h2>
+        <div className="space-y-3">
+          {hazards.length === 0 && <Empty text="No hazard reports." />}
+          {hazards.map((item) => <Card key={item.id} icon={AlertTriangle} title={item.title} status={item.status} meta={new Date(item.createdAt).toLocaleString()} detail={item.locationName || item.description} />)}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function Empty({ text }) {
+  return <div className="p-6 bg-white border border-slate-200 rounded-xl text-sm text-slate-500">{text}</div>;
+}
+
+function Card({ icon: Icon, title, status, meta, detail }) {
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl p-5">
+      <div className="flex justify-between gap-4">
+        <div className="flex gap-3">
+          <Icon className="w-5 h-5 text-rose-600 mt-0.5" />
+          <div>
+            <h3 className="font-black text-sm">{title}</h3>
+            <p className="text-xs text-slate-500 mt-1">{detail}</p>
+            <p className="text-[10px] text-slate-400 mt-2">{meta}</p>
+          </div>
+        </div>
+        <span className="text-[10px] font-black uppercase bg-slate-100 rounded-full px-3 py-1 h-fit">{status}</span>
       </div>
     </div>
   );

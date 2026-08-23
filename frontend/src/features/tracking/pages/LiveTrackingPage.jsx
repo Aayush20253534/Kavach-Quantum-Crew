@@ -1,154 +1,95 @@
-import React, { useState, useEffect } from 'react';
-import { useCurrentTrip } from '../../trips/api/tripQueries';
-import { useGeolocation } from '../hooks/useGeolocation';
-import { useRiskZones } from '../api/trackingQueries';
-import { MapComponent } from '../components/MapComponent';
-import { 
-  Navigation, 
-  MapPin, 
-  ShieldCheck, 
-  Wifi, 
-  Radio, 
-  AlertTriangle,
-  BatteryMedium
-} from 'lucide-react';
-import { useSelector } from 'react-redux';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, BatteryMedium, Loader2, Navigation, ShieldCheck, Users, Wifi } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-export function LiveTrackingPage() {
-  const { user } = useSelector((state) => state.auth);
-  const { data: currentTrip } = useCurrentTrip();
-  
-  // Tracking logic
-  const isActive = currentTrip?.status === 'ACTIVE';
-  const { location, isTracking } = useGeolocation(currentTrip?.id, isActive);
-  const { data: riskZonesData } = useRiskZones();
-  const riskZones = riskZonesData?.items || riskZonesData || [];
+import { groupService } from '../../groups/api/groupService';
+import { useCurrentTrip } from '../../trips/api/tripQueries';
+import { trackingService } from '../api/trackingService';
+import { MapComponent } from '../components/MapComponent';
+import { useGeolocation } from '../hooks/useGeolocation';
 
-  const [mounted, setMounted] = useState(false);
+const metersBetween = (a, b) => {
+  const R = 6371000;
+  const toRad = (v) => v * Math.PI / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+};
+
+export function LiveTrackingPage() {
+  const { data: trip, isLoading } = useCurrentTrip();
+  const isActive = trip?.status === 'ACTIVE';
+  const { location, isTracking, permission, error: geoError } = useGeolocation(trip?.id, isActive);
+
+  const [zones, setZones] = useState([]);
+  const [group, setGroup] = useState(null);
+  const [memberLocations, setMemberLocations] = useState([]);
+  const [battery, setBattery] = useState(null);
+
   useEffect(() => {
-    setMounted(true);
+    trackingService.getRiskZones().then((data) => setZones(data?.items || data || [])).catch(() => setZones([]));
   }, []);
 
+  useEffect(() => {
+    if (!trip || trip.tripType !== 'GROUP') return;
+    groupService.getGroupForTrip(trip.id)
+      .then((g) => {
+        setGroup(g);
+        return trackingService.getLatestLocations(g.id);
+      })
+      .then((data) => setMemberLocations(data?.items || data || []))
+      .catch(() => {});
+  }, [trip?.id, trip?.tripType]);
+
+  useEffect(() => {
+    let batteryManager;
+    if (navigator.getBattery) {
+      navigator.getBattery().then((value) => {
+        batteryManager = value;
+        const update = () => setBattery(Math.round(value.level * 100));
+        update();
+        value.addEventListener('levelchange', update);
+      }).catch(() => {});
+    }
+    return () => batteryManager?.removeEventListener?.('levelchange', () => {});
+  }, []);
+
+  const currentZone = useMemo(() => {
+    if (!location) return null;
+    const point = { lat: location.lat, lng: location.lng };
+    return zones.find((zone) => {
+      if (zone.geometryType !== 'CIRCLE' || zone.latitude == null || zone.longitude == null || !zone.radiusM) return false;
+      return metersBetween(point, { lat: zone.latitude, lng: zone.longitude }) <= zone.radiusM;
+    }) || null;
+  }, [zones, location]);
+
+  if (isLoading) return <div className="py-24 flex justify-center"><Loader2 className="animate-spin" /></div>;
+
+  if (!trip) {
+    return <div className="max-w-xl mx-auto py-16 text-center bg-white border rounded-2xl"><h2 className="font-black text-xl">No current trip</h2><p className="text-sm text-slate-500 mt-2">Create a trip before using live trip tracking.</p><Link to="/tourist/trips/create" className="inline-block mt-5 px-5 py-3 bg-rose-600 text-white rounded-lg text-xs font-black">Create Trip</Link></div>;
+  }
+
   return (
-    <div className={`relative w-full h-[calc(100vh-140px)] rounded-lg overflow-hidden border border-slate-200 shadow-md flex flex-col font-sans transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-      
-      {/* Top Map Overlay / HUD */}
-      <div className="absolute top-4 left-4 right-4 z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pointer-events-none">
-        
-        {/* Left Side Status */}
-        <div className="bg-white/95 backdrop-blur-md border border-slate-200 rounded-md p-3 shadow-lg pointer-events-auto flex items-center gap-4">
-          <div className="flex items-center gap-3 pr-4 border-r border-slate-200">
-            <div className={`w-10 h-10 rounded-md flex items-center justify-center shadow-sm ${
-              isTracking ? 'bg-[#f0fdf4] border border-[#dcfce7] text-[#16a34a]' : 'bg-slate-100 border border-slate-200 text-slate-400'
-            }`}>
-              <Navigation className={`w-5 h-5 ${isTracking ? 'animate-pulse' : ''}`} />
-            </div>
-            <div>
-              <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-wide">
-                {isTracking ? 'GPS Tracking Active' : 'GPS Offline'}
-              </h2>
-              <p className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5 uppercase tracking-widest mt-0.5">
-                <Wifi className="w-3 h-3" /> Signal Strong
-              </p>
-            </div>
-          </div>
-          
-          <div className="hidden sm:block">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Current Zone</p>
-            <p className="text-[13px] font-bold text-[#16a34a] flex items-center gap-1">
-              <ShieldCheck className="w-4 h-4" /> Sangam Safe Zone
-            </p>
-          </div>
-        </div>
-
-        {/* Right Side Actions */}
-        <div className="flex flex-col gap-2 pointer-events-auto">
-          <button className="w-12 h-12 bg-white/95 backdrop-blur-md border border-slate-200 rounded-md shadow-lg flex items-center justify-center text-slate-700 hover:text-[#e11d48] hover:border-red-200 transition-colors cursor-pointer" title="Report Hazard">
-            <AlertTriangle className="w-5 h-5" />
-          </button>
-          <button className="w-12 h-12 bg-white/95 backdrop-blur-md border border-slate-200 rounded-md shadow-lg flex items-center justify-center text-slate-700 hover:text-sky-500 hover:border-sky-200 transition-colors cursor-pointer" title="Center Map">
-            <CrosshairIcon className="w-5 h-5" />
-          </button>
-        </div>
+    <div className="space-y-4 pb-10">
+      <div className="grid sm:grid-cols-4 gap-3">
+        <Metric label="Tracking" value={isTracking && isActive ? 'Active' : isActive ? 'Waiting GPS' : 'Trip not started'} icon={Navigation} />
+        <Metric label="Current zone" value={currentZone ? `${currentZone.name} (${currentZone.type})` : 'Outside configured risk zones'} icon={ShieldCheck} />
+        <Metric label="Group online" value={trip.tripType === 'GROUP' ? `${memberLocations.length}/${group?.members?.length || 0}` : 'Solo trip'} icon={Users} />
+        <Metric label="Battery" value={battery == null ? 'Unavailable' : `${battery}%`} icon={BatteryMedium} />
       </div>
 
-      {/* The Actual Map Layer */}
-      <div className="flex-1 w-full h-full bg-slate-100 z-0 relative">
-        {/* Placeholder / Error state if no location (though MapComponent usually handles this) */}
-        {!isTracking && !location && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100/80 backdrop-blur-sm z-20">
-            <Radio className="w-12 h-12 text-slate-300 mb-4" />
-            <h3 className="text-[16px] font-black text-slate-700 uppercase tracking-wide">Tracking Paused</h3>
-            <p className="text-[13px] font-medium text-slate-500 max-w-md text-center mt-2">
-              Start a trip or enable GPS permissions to begin live tracking.
-            </p>
-            <Link to="/tourist/trips/create">
-              <button className="mt-6 px-6 py-3 bg-[#e11d48] hover:bg-[#be123c] text-white text-[12px] font-bold uppercase tracking-widest rounded-md shadow-sm transition-colors">
-                Start Trip Now
-              </button>
-            </Link>
-          </div>
-        )}
+      {(geoError || permission === 'denied') && <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-sm">{geoError || 'Location permission denied'}</div>}
 
-        <MapComponent
-          currentLocation={location}
-          riskZones={riskZones}
-          className="w-full h-full"
-        />
+      <div className="h-[calc(100vh-260px)] min-h-[500px] rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+        <MapComponent currentLocation={location} riskZones={zones} className="w-full h-full" />
       </div>
-
-      {/* Bottom Floating Telemetry Panel */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 w-[95%] max-w-xl pointer-events-none">
-        <div className="bg-white/95 backdrop-blur-md border border-slate-200 rounded-lg p-4 shadow-xl pointer-events-auto flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Companion Sync</p>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#16a34a] animate-pulse"></span>
-                <span className="text-[13px] font-bold text-slate-900">4 Online</span>
-              </div>
-            </div>
-            <div className="h-8 w-px bg-slate-200"></div>
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Battery</p>
-              <div className="flex items-center gap-1.5 text-slate-900">
-                <BatteryMedium className="w-4 h-4 text-[#16a34a]" />
-                <span className="text-[13px] font-bold">88%</span>
-              </div>
-            </div>
-          </div>
-          
-          <button className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold uppercase tracking-widest rounded-md shadow-sm transition-colors">
-            Share Live Location
-          </button>
-        </div>
-      </div>
-      
     </div>
   );
 }
 
-// Inline Crosshair icon since it might not be imported at the top
-function CrosshairIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <line x1="22" x2="18" y1="12" y2="12" />
-      <line x1="6" x2="2" y1="12" y2="12" />
-      <line x1="12" x2="12" y1="6" y2="2" />
-      <line x1="12" x2="12" y1="22" y2="18" />
-    </svg>
-  );
+function Metric({ label, value, icon: Icon }) {
+  return <div className="bg-white border border-slate-200 rounded-xl p-4"><Icon className="w-4 h-4 text-slate-400" /><p className="text-[10px] uppercase tracking-wider font-black text-slate-400 mt-2">{label}</p><p className="text-sm font-bold mt-1">{value}</p></div>;
 }

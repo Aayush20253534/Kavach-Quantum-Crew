@@ -1,145 +1,86 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Bot, X, Send, Loader2, MessageSquare, ShieldAlert 
-} from 'lucide-react';
-import apiClient from '../../../services/apiClient';
+import React, { useMemo, useState } from 'react';
+import { Bot, MessageCircle, Send, X } from 'lucide-react';
+
+const mockAnswer = (text) => {
+  const q = text.toLowerCase();
+  if (q.includes('sos') || q.includes('emergency')) {
+    return 'Mock AI: use the red SOS control for immediate emergencies. It sends your active trip and live location to the real backend.';
+  }
+  if (q.includes('safe') || q.includes('risk')) {
+    return 'Mock AI: check Live Tracking and the dashboard safety status for real geofence data. AI risk analysis is not connected yet.';
+  }
+  if (q.includes('trip')) {
+    return 'Mock AI: create or manage a trip from My Trips. Trip, group, tracking and check-in data are connected to the real backend.';
+  }
+  return 'Mock AI assistant: this section is intentionally not connected to an AI provider yet. Core tourist safety features continue to use the real backend.';
+};
 
 export function AIChatWidget() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
   const [messages, setMessages] = useState([
-    { id: 1, text: "Hello! I'm your AI Safety Assistant. How can I help you today?", isBot: true }
+    { id: 1, bot: true, text: 'Mock AI assistant ready. Core safety actions use the real backend.' },
   ]);
-  const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isOpen]);
-
-  const handleSend = async (e) => {
-    e.preventDefault();
-    if (!inputValue.trim()) return;
-
-    const userMessage = { id: Date.now(), text: inputValue, isBot: false };
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
-    setIsLoading(true);
-
-    try {
-      // Assuming a conversationId could be maintained, leaving out for simplicity
-      const response = await apiClient.post('/chatbot/messages', { 
-        message: userMessage.text 
-      });
-      
-      const botMessage = { 
-        id: Date.now() + 1, 
-        text: response?.data?.reply || "I've received your message, but the AI engine is currently running in fallback mode.", 
-        isBot: true 
-      };
-      setMessages(prev => [...prev, botMessage]);
-    } catch (err) {
-      const errorMsg = { 
-        id: Date.now() + 1, 
-        text: err.response?.status === 501 
-          ? "The AI Provider has not been configured by the System Admin yet. Emergency services are still available via the SOS button." 
-          : "Sorry, I couldn't connect to the AI engine.", 
-        isBot: true,
-        isError: true
-      };
-      setMessages(prev => [...prev, errorMsg]);
-    } finally {
-      setIsLoading(false);
-    }
+  const send = (event) => {
+    event?.preventDefault();
+    const value = text.trim();
+    if (!value) return;
+    setMessages((items) => [
+      ...items,
+      { id: Date.now(), bot: false, text: value },
+      { id: Date.now() + 1, bot: true, text: mockAnswer(value) },
+    ]);
+    setText('');
   };
 
   return (
     <>
-      {/* Floating Toggle Button */}
-      {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-indigo-700 hover:scale-105 transition-all z-50 group border-4 border-white/20"
-        >
-          <Bot className="w-6 h-6 group-hover:animate-pulse" />
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="fixed right-5 bottom-24 lg:bottom-6 z-40 w-12 h-12 rounded-full bg-slate-900 text-white shadow-xl flex items-center justify-center"
+        title="Mock AI assistant"
+      >
+        <MessageCircle className="w-5 h-5" />
+      </button>
 
-      {/* Chat Window */}
-      {isOpen && (
-        <div className="fixed bottom-6 right-6 w-[360px] h-[500px] max-h-[80vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col z-50 overflow-hidden animate-in slide-in-from-bottom-5">
-          
-          {/* Header */}
-          <div className="bg-slate-900 p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
-                <Bot className="w-4 h-4 text-indigo-400" />
-              </div>
+      {open && (
+        <div className="fixed right-4 bottom-24 lg:bottom-20 z-50 w-[min(380px,calc(100vw-2rem))] bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden">
+          <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bot className="w-5 h-5" />
               <div>
-                <h3 className="text-[13px] font-black text-white uppercase tracking-wider">AI Assistant</h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online
-                </p>
+                <p className="text-sm font-black">AI Safety Assistant</p>
+                <p className="text-[10px] text-slate-300 uppercase tracking-wider">Mock mode</p>
               </div>
             </div>
-            <button 
-              onClick={() => setIsOpen(false)}
-              className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:bg-white/20 hover:text-white transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <button type="button" onClick={() => setOpen(false)}><X className="w-4 h-4" /></button>
           </div>
 
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 bg-slate-50 space-y-4">
-            {messages.map(msg => (
-              <div key={msg.id} className={`flex ${msg.isBot ? 'justify-start' : 'justify-end'}`}>
-                <div className={`max-w-[85%] p-3 rounded-2xl text-[13px] ${
-                  msg.isBot && !msg.isError ? 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm shadow-sm' : 
-                  msg.isError ? 'bg-red-50 border border-red-200 text-red-800 rounded-tl-sm shadow-sm' :
-                  'bg-indigo-600 text-white rounded-tr-sm shadow-sm'
+          <div className="h-72 overflow-y-auto p-4 space-y-3 bg-slate-50">
+            {messages.map((message) => (
+              <div key={message.id} className={`flex ${message.bot ? 'justify-start' : 'justify-end'}`}>
+                <div className={`max-w-[85%] px-3 py-2 rounded-xl text-xs leading-relaxed ${
+                  message.bot ? 'bg-white border border-slate-200 text-slate-700' : 'bg-slate-900 text-white'
                 }`}>
-                  {msg.isError && <ShieldAlert className="w-4 h-4 text-red-600 mb-1" />}
-                  {msg.text}
+                  {message.text}
                 </div>
               </div>
             ))}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-white border border-slate-200 text-slate-500 rounded-2xl rounded-tl-sm shadow-sm p-3 flex gap-1">
-                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></span>
-                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></span>
-                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></span>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Area */}
-          <div className="p-3 bg-white border-t border-slate-200">
-            <form onSubmit={handleSend} className="flex gap-2">
-              <input 
-                type="text" 
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Ask for guidance or report issues..."
-                className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-2.5 text-[13px] focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
-              />
-              <button 
-                type="submit"
-                disabled={!inputValue.trim() || isLoading}
-                className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 disabled:bg-slate-300 disabled:text-slate-500 transition-colors shrink-0"
-              >
-                <Send className="w-4 h-4 ml-0.5" />
-              </button>
-            </form>
-          </div>
-
+          <form onSubmit={send} className="p-3 border-t border-slate-200 flex gap-2">
+            <input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Ask the mock assistant..."
+              className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none"
+            />
+            <button className="w-10 h-10 rounded-lg bg-slate-900 text-white flex items-center justify-center">
+              <Send className="w-4 h-4" />
+            </button>
+          </form>
         </div>
       )}
     </>

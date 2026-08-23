@@ -269,3 +269,19 @@ This catalogue documents **148 mounted HTTP routes/aliases** in the current back
 - Selecting a destination creates a `GROUP` trip through `POST /api/v1/trips`, then creates its group through `POST /api/v1/groups/trips/:tripId`.
 - Notifications use `/api/v1/notifications`, `/unread-count`, `/:notificationId/read`, and `/read-all`.
 - The dashboard Google Map requests nearby `police`, `hospital`, and `fire_station` places from the Google Places library around the browser's live geolocation.
+
+
+## Tourist frontend integration status
+
+The tourist application now uses real backend endpoints for all core workflows:
+
+- Dashboard: `/dashboard/tourist`, `/destinations`, notifications.
+- Trips: create/current/history/start/complete/cancel, consent and Safety ID.
+- Groups: create-for-trip, invitation, join, leave and group details.
+- Live tracking: `/tracking/pings`, `/tracking/latest`, `/tracking/groups/:groupId`, `/risk-zones`.
+- Safety check-ins: `/safety/trips/:tripId/check-ins` and `/safety/check-ins/:checkInId/complete`.
+- Safety reports: general tourist concerns are submitted as `/hazards`; emergency SOS creates real incidents through `/sos`; history combines `/hazards?mine=true` and `/incidents/mine`.
+- Evidence: `/evidence`.
+- Profile: `/tourists/me` and profile-image upload.
+- AI: intentionally mocked in the tourist UI.
+- Blockchain: intentionally mocked in the tourist UI. Real evidence storage and Safety ID lifecycle still use the backend, but no blockchain provider is required.

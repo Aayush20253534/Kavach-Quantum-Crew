@@ -1,217 +1,120 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { 
-  AlertTriangle, 
-  MapPin, 
-  Camera, 
-  ArrowRight, 
-  CheckCircle2, 
-  History
-} from 'lucide-react';
+import React, { useState } from 'react';
+import { AlertTriangle, CheckCircle2, Loader2, MapPin } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+import { useGeolocation } from '../../tracking/hooks/useGeolocation';
 import { EvidenceUploader } from '../components/EvidenceUploader';
+import { safetyService } from '../../safety/api/safetyService';
+
+const TYPES = [
+  ['CROWD', 'Crowd / stampede risk'],
+  ['MEDICAL', 'Medical emergency'],
+  ['FIRE', 'Fire / smoke'],
+  ['ROAD_BLOCK', 'Road obstruction'],
+  ['UNSAFE_AREA', 'Unsafe area / harassment / theft concern'],
+  ['WEATHER', 'Severe weather'],
+  ['OTHER', 'Other safety concern'],
+];
 
 export function ReportIncidentPage() {
-  const navigate = useNavigate();
-  const [category, setCategory] = useState('Crowd Overcrowding / Stampede Risk');
-  const [severity, setSeverity] = useState('High');
-  const [location, setLocation] = useState('Sangam Ghat Sector 4, Prayagraj (25.4358° N, 81.8463° E)');
+  const { location, permission } = useGeolocation(undefined, false);
+  const [type, setType] = useState('CROWD');
+  const [severity, setSeverity] = useState('HIGH');
+  const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [isAnonymous, setIsAnonymous] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [locationName, setLocationName] = useState('');
+  const [created, setCreated] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const submit = async (event) => {
+    event.preventDefault();
+    if (!location) {
+      setError('Live location is required to submit a safety report.');
+      return;
+    }
 
-  const categories = [
-    'Crowd Overcrowding / Stampede Risk',
-    'Medical Emergency / Heatstroke',
-    'Harassment / Eve-Teasing',
-    'Lost Person / Child / Elder',
-    'Overcharging / Tourist Scam',
-    'Theft / Pickpocketing',
-    'Deep Water / Barricade Breach',
-    'Other Safety Concern',
-  ];
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSubmitted(true);
-    }, 800);
+    setBusy(true);
+    setError('');
+    try {
+      const result = await safetyService.reportHazard({
+        type,
+        severity,
+        title: title.trim(),
+        description: description.trim(),
+        latitude: location.lat,
+        longitude: location.lng,
+        ...(locationName.trim() ? { locationName: locationName.trim() } : {}),
+        occurredAt: new Date().toISOString(),
+      });
+      setCreated(result);
+    } catch (e) {
+      setError(e?.response?.data?.error?.message || e.message || 'Unable to submit report');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
-    <div className={`max-w-[800px] mx-auto space-y-6 pb-10 font-sans transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+    <div className="max-w-3xl mx-auto pb-10">
+      <div className="flex justify-between gap-4 items-start mb-6">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-[22px] font-black text-slate-900 tracking-tight">Report a Safety Concern</h1>
-          </div>
-          <p className="text-[13px] text-slate-500 font-medium mt-1">
-            Directly transmitted to the nearest Tourist Police Assistance Booth & Control Room.
-          </p>
+          <h1 className="text-2xl font-black">Report Safety Concern</h1>
+          <p className="text-sm text-slate-500 mt-1">Creates a real hazard report for authority review. Use SOS for immediate emergencies.</p>
         </div>
-        <Link to="/tourist/incidents/history">
-          <button className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-6 py-3 rounded-md font-bold text-[12px] uppercase tracking-widest transition-colors flex items-center gap-2 cursor-pointer shadow-sm">
-            <History className="w-4 h-4" /> Past Reports
-          </button>
-        </Link>
+        <Link to="/tourist/incidents/history" className="text-xs font-black text-slate-600">History →</Link>
       </div>
 
-      <div className="bg-white rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 overflow-hidden">
-        {!submitted ? (
-          <form onSubmit={handleSubmit}>
-            <div className="p-6 sm:p-8 space-y-6">
-              
-              {/* Category */}
-              <div className="space-y-2">
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest pl-1">Incident Category</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-[14px] font-semibold rounded-md px-4 py-3.5 focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all appearance-none cursor-pointer"
-                >
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
+      {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{error}</div>}
 
-              {/* Severity Level */}
-              <div className="space-y-2">
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest pl-1">Severity Level</label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {[
-                    { level: 'Low', desc: 'Informational', activeClass: 'bg-green-50 border-green-200 ring-2 ring-green-100 text-green-800' },
-                    { level: 'Medium', desc: 'Requires Patrol', activeClass: 'bg-amber-50 border-amber-200 ring-2 ring-amber-100 text-amber-800' },
-                    { level: 'High', desc: 'Urgent Action', activeClass: 'bg-red-50 border-red-200 ring-2 ring-red-100 text-red-800' },
-                  ].map((s) => (
-                    <button
-                      type="button"
-                      key={s.level}
-                      onClick={() => setSeverity(s.level)}
-                      className={`p-4 rounded-lg border text-left transition-all cursor-pointer ${
-                        severity === s.level
-                          ? s.activeClass
-                          : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:shadow-sm'
-                      }`}
-                    >
-                      <p className="text-[14px] font-black tracking-wide">{s.level}</p>
-                      <p className={`text-[11px] mt-0.5 font-medium ${severity === s.level ? 'opacity-80' : 'text-slate-400'}`}>{s.desc}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
+      {!created ? (
+        <form onSubmit={submit} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
+          <div className="p-3 bg-slate-50 rounded-lg text-xs text-slate-600 flex items-center gap-2">
+            <MapPin className="w-4 h-4" />
+            {location ? `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)} stored securely with the report` : permission === 'denied' ? 'Location permission denied' : 'Detecting live location...'}
+          </div>
 
-              {/* Auto-detected GPS location */}
-              <div className="space-y-2">
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest pl-1">Location (Auto-detected via GPS)</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <MapPin className="h-4 w-4 text-slate-400" />
-                  </div>
-                  <input
-                    type="text"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-[13px] font-semibold rounded-md pl-11 pr-4 py-3.5 focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all"
-                  />
-                </div>
-              </div>
+          <label className="block">
+            <span className="text-xs font-bold text-slate-500">Category</span>
+            <select value={type} onChange={(e) => setType(e.target.value)} className="mt-1 w-full border rounded-lg px-3 py-3 text-sm">
+              {TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+          </label>
 
-              {/* Description */}
-              <div className="space-y-2">
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest pl-1">Incident Description</label>
-                <textarea
-                  placeholder="Describe what happened, nearby landmarks (e.g. Near Boat Ghat #4 or Fort Gate), or persons involved..."
-                  rows={4}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  required
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-[14px] font-medium rounded-md px-4 py-3.5 focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all resize-none"
-                />
-              </div>
-
-              {/* Evidence Upload */}
-              <div className="space-y-2">
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest pl-1">Attach Photo / Evidence (Optional)</label>
-                <EvidenceUploader entityId="temp-incident-id" entityType="INCIDENT" onUploadComplete={() => console.log('Evidence uploaded')} />
-              </div>
-
-              {/* Anonymous Check */}
-              <div className="flex items-center gap-3 pt-2">
-                <input
-                  type="checkbox"
-                  id="anon"
-                  checked={isAnonymous}
-                  onChange={(e) => setIsAnonymous(e.target.checked)}
-                  className="h-5 w-5 rounded border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer"
-                />
-                <label htmlFor="anon" className="text-[12px] text-slate-600 font-medium cursor-pointer select-none">
-                  Submit anonymously (Do not disclose my Tourist Safety ID to public records)
-                </label>
-              </div>
-            </div>
-
-            <div className="p-6 sm:p-8 pt-0 flex flex-col-reverse sm:flex-row justify-end gap-3 border-t border-slate-50 mt-4 bg-slate-50/50">
-              <Link to="/tourist/dashboard" className="w-full sm:w-auto mt-4 sm:mt-0">
-                <button type="button" className="w-full sm:w-auto px-8 py-3.5 border border-slate-200 text-slate-600 bg-white hover:bg-slate-100 text-[12px] font-bold uppercase tracking-widest rounded-md transition-all cursor-pointer shadow-sm">
-                  Cancel
+          <div>
+            <span className="text-xs font-bold text-slate-500">Severity</span>
+            <div className="grid grid-cols-4 gap-2 mt-2">
+              {['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((value) => (
+                <button type="button" key={value} onClick={() => setSeverity(value)} className={`p-2 rounded-lg border text-[10px] font-black ${severity === value ? 'bg-rose-50 border-rose-300 text-rose-700' : 'border-slate-200'}`}>
+                  {value}
                 </button>
-              </Link>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full sm:w-auto group flex items-center justify-center gap-2 px-8 py-3.5 bg-[#e11d48] hover:bg-[#be123c] text-white text-[12px] font-bold uppercase tracking-widest rounded-md disabled:opacity-50 cursor-pointer shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 mt-4 sm:mt-0"
-              >
-                {isSubmitting ? 'Submitting...' : 'Submit Emergency Report'}
-                {!isSubmitting && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="p-10 text-center space-y-6 animate-in zoom-in-95 duration-200">
-            <div className="w-20 h-20 rounded-full bg-[#f0fdf4] text-[#16a34a] border border-[#dcfce7] flex items-center justify-center mx-auto shadow-sm">
-              <CheckCircle2 className="w-10 h-10" />
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-[22px] font-black text-slate-900 tracking-tight">Report Logged Successfully!</h3>
-              <p className="text-[14px] text-slate-500 max-w-md mx-auto leading-relaxed font-medium">
-                Ticket <strong className="text-slate-700">#INC-PRY-9421</strong> has been created. The Sangam Sector 4 police post has been alerted.
-              </p>
-            </div>
-            
-            <div className="max-w-md mx-auto p-5 rounded-lg bg-slate-50 border border-slate-100 text-left space-y-3 shadow-sm">
-              <div className="flex justify-between items-center text-[12px]">
-                <span className="text-slate-500 font-bold uppercase tracking-wider">Assigned Unit:</span>
-                <span className="font-black text-slate-900">Patrol PCR Van #14</span>
-              </div>
-              <div className="flex justify-between items-center text-[12px] pt-3 border-t border-slate-200">
-                <span className="text-slate-500 font-bold uppercase tracking-wider">Est. Response:</span>
-                <span className="font-black text-[#16a34a]">4 Minutes</span>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-              <Link to="/tourist/incidents/history">
-                <button className="w-full sm:w-auto px-8 py-3.5 bg-slate-900 hover:bg-slate-800 text-white text-[12px] font-bold uppercase tracking-widest rounded-md transition-all cursor-pointer shadow-md">
-                  Track Status
-                </button>
-              </Link>
-              <Link to="/tourist/dashboard">
-                <button className="w-full sm:w-auto px-8 py-3.5 border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 text-[12px] font-bold uppercase tracking-widest rounded-md transition-all cursor-pointer shadow-sm">
-                  Dashboard
-                </button>
-              </Link>
+              ))}
             </div>
           </div>
-        )}
-      </div>
+
+          <input required minLength={3} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Short title" className="w-full border rounded-lg px-4 py-3 text-sm" />
+          <input value={locationName} onChange={(e) => setLocationName(e.target.value)} placeholder="Readable location / landmark (optional)" className="w-full border rounded-lg px-4 py-3 text-sm" />
+          <textarea required minLength={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe what happened" rows={5} className="w-full border rounded-lg px-4 py-3 text-sm" />
+
+          <button disabled={busy || !location} className="w-full bg-rose-600 text-white rounded-lg py-3 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-50">
+            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
+            Submit Report
+          </button>
+        </form>
+      ) : (
+        <div className="bg-white border border-slate-200 rounded-2xl p-7 shadow-sm">
+          <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+          <h2 className="text-xl font-black mt-4">Report submitted</h2>
+          <p className="text-sm text-slate-500 mt-1">Reference: <span className="font-mono">{created.id}</span></p>
+          <div className="mt-6">
+            <EvidenceUploader entityId={created.id} entityType="HAZARD" />
+          </div>
+          <div className="mt-6 flex gap-3">
+            <Link to="/tourist/incidents/history" className="px-5 py-2.5 bg-slate-900 text-white rounded-lg text-xs font-black">View History</Link>
+            <Link to="/tourist/dashboard" className="px-5 py-2.5 border border-slate-200 rounded-lg text-xs font-black">Dashboard</Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
