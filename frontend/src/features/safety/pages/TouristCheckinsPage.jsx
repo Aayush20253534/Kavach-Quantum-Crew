@@ -46,7 +46,7 @@ export function TouristCheckinsPage() {
     if (!tripId || !newTime) return;
     try {
       // In a real app we'd construct a proper ISO datetime, here just sending a string
-      await tripService.scheduleCheckIn(tripId, { scheduledFor: newTime });
+      await tripService.scheduleCheckIn(tripId, new Date(newTime).toISOString());
       setShowModal(false);
       setNewTime('');
       fetchData();
@@ -57,7 +57,7 @@ export function TouristCheckinsPage() {
 
   const handleComplete = async (checkInId) => {
     try {
-      await tripService.completeCheckIn(checkInId, { location: { latitude: 0, longitude: 0 } });
+      await tripService.completeCheckIn(checkInId);
       fetchData();
     } catch (err) {
       alert(err.response?.data?.error?.message || 'Failed to complete check-in');
@@ -137,7 +137,7 @@ export function TouristCheckinsPage() {
                 </div>
                 <div>
                   <h3 className="text-[15px] font-black text-slate-900">
-                    Scheduled for {new Date(check.scheduledFor).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    Scheduled for {new Date(check.dueAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                   </h3>
                   <div className="flex items-center gap-2 mt-1 text-[11px] font-bold uppercase tracking-widest">
                     <span className={

@@ -16,8 +16,23 @@ export const createTripRepository = ({ db = prisma } = {}) => ({
   findCurrentTrip(userId) {
     return db.trip.findFirst({
       where: {
-        touristId: userId,
         status: { in: ["PLANNED", "ACTIVE"] },
+        OR: [
+          { touristId: userId },
+          {
+            group: {
+              is: {
+                status: "ACTIVE",
+                members: {
+                  some: {
+                    userId,
+                    leftAt: null,
+                  },
+                },
+              },
+            },
+          },
+        ],
       },
       include: tripInclude,
       orderBy: { createdAt: "desc" },

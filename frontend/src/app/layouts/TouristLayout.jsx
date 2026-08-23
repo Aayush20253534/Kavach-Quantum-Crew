@@ -26,6 +26,8 @@ import { logout } from '../../features/auth/store/authSlice';
 import { AIChatWidget } from '../../features/chatbot/components/AIChatWidget';
 import { NotificationsDropdown } from '../components/NotificationsDropdown';
 import { useGeolocation } from '../../features/tracking/hooks/useGeolocation';
+import { tripService } from '../../features/trips/api/tripService';
+import { safetyService } from '../../features/safety/api/safetyService';
 
 export function TouristLayout() {
   const { user } = useSelector((state) => state.auth);
@@ -35,7 +37,8 @@ export function TouristLayout() {
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isSosModalOpen, setIsSosModalOpen] = useState(false);
-  const [sosState, setSosState] = useState('idle'); // 'idle' | 'triggering' | 'active'
+  const [sosState, setSosState] = useState('idle');
+  const [sosError, setSosError] = useState('');
   const [now, setNow] = useState(() => new Date());
   const { location: liveLocation, permission: locationPermission } = useGeolocation(undefined, false);
 
@@ -55,12 +58,27 @@ export function TouristLayout() {
     navigate('/login');
   };
 
-  const handleTriggerSOS = () => {
+  const handleTriggerSOS = async () => {
     setSosState('triggering');
-    // Simulate API call to POST /api/v1/sos
-    setTimeout(() => {
+    setSosError('');
+    try {
+      const trip = await tripService.getCurrentTrip();
+      if (!trip?.id) throw new Error('An active or planned trip is required for SOS.');
+      const result = await safetyService.triggerSOS({
+        tripId: trip.id,
+        emergencyType: 'OTHER',
+        message: 'Tourist triggered SOS from the KAVACH app.',
+        ...(liveLocation ? {
+          latitude: liveLocation.lat,
+          longitude: liveLocation.lng,
+          accuracyM: Math.max(1, liveLocation.accuracy || 1),
+        } : {}),
+      });
       setSosState('active');
-    }, 1500);
+    } catch (error) {
+      setSosError(error?.response?.data?.error?.message || error.message || 'Unable to trigger SOS');
+      setSosState('idle');
+    }
   };
 
   const closeSosModal = () => {
@@ -122,6 +140,7 @@ export function TouristLayout() {
                 <p className="text-[13px] text-slate-500 font-medium mb-8 leading-relaxed">
                   This will immediately alert local police, medical teams, and your emergency contacts with your live location.
                 </p>
+                {sosError && <p className="w-full mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-xs font-semibold">{sosError}</p>}
                 <button
                   onClick={handleTriggerSOS}
                   className="w-full bg-[#e11d48] hover:bg-[#be123c] text-white py-4 rounded-xl font-black text-[14px] uppercase tracking-widest shadow-[0_4px_20px_0_rgba(225,29,72,0.4)] transition-all active:scale-95 cursor-pointer"
@@ -141,7 +160,7 @@ export function TouristLayout() {
               <div className="py-8">
                 <div className="w-20 h-20 border-4 border-red-100 border-t-red-600 rounded-full animate-spin mx-auto mb-6"></div>
                 <h2 className="text-[18px] font-black text-slate-900 uppercase tracking-tight">Transmitting...</h2>
-                <p className="text-[12px] text-slate-500 font-medium mt-2">Connecting to Prayagraj Command Center</p>
+                <p className="text-[12px] text-slate-500 font-medium mt-2">Transmitting to emergency response backend</p>
               </div>
             )}
 
@@ -152,7 +171,7 @@ export function TouristLayout() {
                 </div>
                 <h2 className="text-[22px] font-black text-slate-900 uppercase tracking-tight mb-2">SOS ACTIVE</h2>
                 <p className="text-[13px] text-slate-600 font-medium mb-6 leading-relaxed">
-                  Police Patrol PCR #14 is en route to your location. Stay calm and remain at your current position if safe.
+                  Your SOS has been recorded by the emergency backend. Stay in a safe location and watch notifications for responder updates.
                 </p>
                 <button
                   onClick={closeSosModal}

@@ -22,6 +22,7 @@ const serializeSafetyId = (safetyId, now = new Date()) =>
 
 const serializeTrip = (trip, now = new Date()) => ({
   id: trip.id,
+  touristId: trip.touristId,
   locationName: trip.locationName,
   tripType: trip.tripType,
   status: trip.status,

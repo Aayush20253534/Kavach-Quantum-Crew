@@ -1,52 +1,42 @@
 import apiClient from '../../../services/apiClient';
 
+const unwrap = (response) => response.data?.data ?? response.data;
+
 export const tripService = {
-  createTrip: async (data) => {
-    const response = await apiClient.post('/trips', data);
-    return response.data;
+  async createTrip(data) {
+    return unwrap(await apiClient.post('/trips', data));
   },
-
-  getCurrentTrip: async () => {
-    const response = await apiClient.get('/trips/current');
-    return response.data;
+  async getCurrentTrip() {
+    return unwrap(await apiClient.get('/trips/current'));
   },
-
-  getTripHistory: async () => {
-    const response = await apiClient.get('/trips/history');
-    return response.data;
+  async getTripHistory(params = {}) {
+    return unwrap(await apiClient.get('/trips/history', { params }));
   },
-
-  getTrip: async (tripId) => {
-    const response = await apiClient.get(`/trips/${tripId}`);
-    return response.data;
+  async getTrip(tripId) {
+    return unwrap(await apiClient.get(`/trips/${tripId}`));
   },
-
-  startTrip: async (tripId) => {
-    const response = await apiClient.post(`/trips/${tripId}/start`);
-    return response.data;
+  async startTrip(tripId) {
+    return unwrap(await apiClient.post(`/trips/${tripId}/start`));
   },
-
-  completeTrip: async (tripId) => {
-    const response = await apiClient.post(`/trips/${tripId}/complete`);
-    return response.data;
+  async completeTrip(tripId) {
+    return unwrap(await apiClient.post(`/trips/${tripId}/complete`));
   },
-
-  cancelTrip: async (tripId) => {
-    const response = await apiClient.post(`/trips/${tripId}/cancel`);
-    return response.data;
+  async cancelTrip(tripId) {
+    return unwrap(await apiClient.post(`/trips/${tripId}/cancel`));
   },
-
-  // Check-ins (Phase 3)
-  scheduleCheckIn: async (tripId, data) => {
-    const response = await apiClient.post(`/safety/trips/${tripId}/check-ins`, data);
-    return response.data;
+  async issueSafetyId(tripId) {
+    return unwrap(await apiClient.post(`/trips/${tripId}/safety-id`));
   },
-  getCheckIns: async (tripId) => {
-    const response = await apiClient.get(`/safety/trips/${tripId}/check-ins`);
-    return response.data;
+  async grantConsent(tripId, type) {
+    return unwrap(await apiClient.post(`/trips/${tripId}/consents`, { type }));
   },
-  completeCheckIn: async (checkInId, data) => {
-    const response = await apiClient.post(`/safety/check-ins/${checkInId}/complete`, data);
-    return response.data;
-  }
+  async scheduleCheckIn(tripId, dueAt) {
+    return unwrap(await apiClient.post(`/safety/trips/${tripId}/check-ins`, { dueAt }));
+  },
+  async getCheckIns(tripId) {
+    return unwrap(await apiClient.get(`/safety/trips/${tripId}/check-ins`));
+  },
+  async completeCheckIn(checkInId) {
+    return unwrap(await apiClient.post(`/safety/check-ins/${checkInId}/complete`));
+  },
 };
