@@ -1,3 +1,5 @@
+import { cacheGetOrSet } from "../../common/cache/cache.js";
+import { environment } from "../../config/environment.js";
 import { destinationRepository } from "./destination.repository.js";
 
 const FALLBACK_DESTINATIONS = Object.freeze([
@@ -79,7 +81,16 @@ export const createDestinationService = ({
 } = {}) => ({
   async list(query) {
     try {
-      return await repository.list(query);
+      const search = query.search?.trim().toLowerCase() || "all";
+      const featured = query.featured === undefined ? "any" : String(query.featured);
+      const limit = query.limit ?? 20;
+
+      return await cacheGetOrSet({
+        key: `destinations:list:${featured}:${limit}:${encodeURIComponent(search)}`,
+        ttlSeconds: environment.REDIS_DESTINATIONS_TTL_SECONDS,
+        fetcher: () => repository.list(query),
+        logger,
+      });
     } catch (error) {
       // Keep the dashboard usable if a deployment missed the destination migration.
       // The real fix is still `prisma migrate deploy`; this fallback prevents HTTP 500.

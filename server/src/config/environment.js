@@ -144,6 +144,27 @@ const environmentSchema = z
       120000,
     ).default(10000),
 
+    REDIS_ENABLED: booleanFromEnvironment.default(false),
+    UPSTASH_REDIS_REST_URL: optionalString(
+      z.string().trim().url(),
+    ),
+    UPSTASH_REDIS_REST_TOKEN: optionalString(
+      z.string().trim().min(1),
+    ),
+    REDIS_KEY_PREFIX: z.string().trim().min(1).default("sts"),
+    REDIS_DASHBOARD_TTL_SECONDS: integerFromEnvironment(
+      5,
+      3600,
+    ).default(30),
+    REDIS_DESTINATIONS_TTL_SECONDS: integerFromEnvironment(
+      30,
+      86400,
+    ).default(900),
+    REDIS_RISK_ZONES_TTL_SECONDS: integerFromEnvironment(
+      5,
+      3600,
+    ).default(30),
+
     ACCESS_TOKEN_SECRET: z
       .string()
       .min(16)
@@ -253,6 +274,23 @@ const environmentSchema = z
         message:
           "cannot contain * when CORS_CREDENTIALS is true",
       });
+    }
+
+    if (value.REDIS_ENABLED) {
+      if (!value.UPSTASH_REDIS_REST_URL) {
+        context.addIssue({
+          code: "custom",
+          path: ["UPSTASH_REDIS_REST_URL"],
+          message: "is required when REDIS_ENABLED is true",
+        });
+      }
+      if (!value.UPSTASH_REDIS_REST_TOKEN) {
+        context.addIssue({
+          code: "custom",
+          path: ["UPSTASH_REDIS_REST_TOKEN"],
+          message: "is required when REDIS_ENABLED is true",
+        });
+      }
     }
 
     if (

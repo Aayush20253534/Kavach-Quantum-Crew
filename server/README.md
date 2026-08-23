@@ -281,3 +281,25 @@ Those systems connect through the documented API, Socket.IO, and provider interf
 Tourist email verification is mandatory on first signup and whenever the tourist changes to a new email address. It is not required on every login. Gmail SMTP uses a Google App Password, while the OTP itself is generated and verified entirely by backend code.
 
 See [`documentation/EMAIL-VERIFICATION.md`](documentation/EMAIL-VERIFICATION.md) for configuration, security behavior, API examples, and Postman verification steps.
+
+
+## Upstash Redis caching
+
+Redis is optional and fail-open: if it is unavailable, reads fall back to PostgreSQL.
+
+```env
+REDIS_ENABLED=true
+UPSTASH_REDIS_REST_URL=https://...
+UPSTASH_REDIS_REST_TOKEN=...
+REDIS_KEY_PREFIX=sts
+REDIS_DASHBOARD_TTL_SECONDS=30
+REDIS_DESTINATIONS_TTL_SECONDS=900
+REDIS_RISK_ZONES_TTL_SECONDS=30
+```
+
+The first cache targets are total tourist count, active risk zones, and destination lists.
+Authentication, OTP, SOS/incident writes, and live-location writes remain uncached. Keep
+the Upstash token server-side on Render; never expose it as a `VITE_` variable.
+
+The integration uses Upstash's HTTPS REST API through Node's built-in `fetch`, so it adds
+no Redis npm dependency.
