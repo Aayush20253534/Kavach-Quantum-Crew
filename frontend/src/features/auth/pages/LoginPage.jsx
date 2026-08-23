@@ -318,7 +318,6 @@ export default function LoginPage() {
           Register Now →
         </Link>
       </p>
-      </div>
     </>
   );
 }
