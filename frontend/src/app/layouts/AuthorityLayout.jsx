@@ -1,22 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { 
-  Building2, 
-  ShieldAlert, 
-  Users, 
-  MapPin, 
-  Radio, 
-  AlertTriangle, 
-  Activity, 
-  LogOut, 
-  Bell, 
-  SlidersHorizontal, 
+import {
+  Building2,
+  Users,
+  Radio,
+  Activity,
+  LogOut,
   ExternalLink,
-  ShieldCheck
+  Menu,
+  ChevronLeft
 } from 'lucide-react';
-import { Badge } from '../../components/ui/Badge';
-import { Button } from '../../components/ui/Button';
 import { logout } from '../../features/auth/store/authSlice';
 
 export function AuthorityLayout() {
@@ -24,6 +18,7 @@ export function AuthorityLayout() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -36,52 +31,72 @@ export function AuthorityLayout() {
   ];
 
   return (
-    <div className="min-h-screen flex bg-[#060B16] text-slate-100 antialiased">
+    <div className="min-h-screen bg-slate-50 text-slate-900 antialiased font-sans">
+      
       {/* Authority Sidebar */}
-      <aside className="hidden md:flex w-72 flex-col bg-[#070e1b] border-r border-slate-800 sticky top-0 h-screen z-30">
+      <aside className={`hidden md:flex flex-col bg-white border-r border-slate-200 fixed top-0 left-0 h-screen z-30 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-72'}`}>
+        
+        {/* Collapse Toggle Button (Desktop Only) */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="absolute -right-3 top-8 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 shadow-sm z-40 cursor-pointer transition-transform hover:scale-110"
+        >
+          <ChevronLeft className={`w-3.5 h-3.5 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
+        </button>
+
         {/* Brand Header */}
-        <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-          <Link to="/authority/dashboard" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 to-red-700 flex items-center justify-center text-white shadow-lg shadow-red-600/30">
-              <Building2 className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-sm font-black tracking-tight text-white flex items-center gap-1.5">
-                PRAYAGRAJ <span className="text-[10px] px-1.5 py-0.2 rounded bg-red-500/20 text-red-400 font-bold">HQ</span>
-              </h1>
-              <p className="text-[10px] text-slate-400 font-medium">Police & Tourism Command</p>
-            </div>
-          </Link>
+        <div className={`p-6 border-b border-slate-200 flex items-center bg-white ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}>
+          {!isCollapsed ? (
+            <Link to="/authority/dashboard" className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-md bg-[#e11d48] flex items-center justify-center text-white shadow-sm shrink-0">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h1 className="text-[14px] font-black tracking-tight text-slate-900 flex items-center gap-1.5 uppercase">
+                  PRAYAGRAJ <span className="text-[9px] px-1.5 py-0.5 rounded text-[#b91c1c] font-bold border border-[#fecaca] bg-[#fef2f2] uppercase">HQ</span>
+                </h1>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Police & Tourism Command</p>
+              </div>
+            </Link>
+          ) : (
+            <Link to="/authority/dashboard" className="w-10 h-10 rounded-md bg-[#e11d48] flex items-center justify-center text-white shadow-sm shrink-0">
+              <Building2 className="w-5 h-5" />
+            </Link>
+          )}
         </div>
 
         {/* Live System Status Ticker */}
-        <div className="p-4 mx-4 mt-4 rounded-2xl bg-[#0b1424] border border-red-500/20 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
-              <Radio className="w-3.5 h-3.5 text-red-400 animate-pulse" />
-              Dispatch Grid:
-            </span>
-            <Badge variant="critical" className="text-[10px] py-0">LIVE • ACTIVE</Badge>
+        {!isCollapsed && (
+          <div className="p-4 mx-4 mt-5 rounded-md bg-slate-50 border border-slate-200 space-y-3 shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5 uppercase tracking-wider">
+                <Radio className="w-4 h-4 text-[#e11d48] animate-pulse" />
+                Dispatch Grid
+              </span>
+              <div className="text-[9px] py-0.5 px-2 bg-[#fef2f2] text-[#b91c1c] border border-[#fecaca] font-bold rounded uppercase tracking-wider">LIVE</div>
+            </div>
+            <div className="text-[11px] text-slate-600 space-y-1.5 pt-1 font-medium border-t border-slate-200 pt-3">
+              <div className="flex justify-between items-center">
+                <span>Active Tourists:</span>
+                <span className="font-mono font-bold text-slate-900">12,480</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Patrol Units Deployed:</span>
+                <span className="font-mono font-bold text-slate-900">64</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Open SOS Tickets:</span>
+                <span className="font-mono font-bold text-[#e11d48]">2</span>
+              </div>
+            </div>
           </div>
-          <div className="text-[11px] text-slate-400 space-y-1 pt-1">
-            <div className="flex justify-between">
-              <span>Active Tourists:</span>
-              <span className="font-mono font-bold text-sky-400">12,480</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Patrol Units Deployed:</span>
-              <span className="font-mono font-bold text-emerald-400">64</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Open SOS Tickets:</span>
-              <span className="font-mono font-bold text-amber-400">2</span>
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Nav Items */}
-        <nav className="flex-1 p-4 space-y-1.5">
-          <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Authority Controls</p>
+        <nav className={`flex-1 py-6 space-y-2 ${isCollapsed ? 'px-3 mt-4' : 'px-4'}`}>
+          <p className={`px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ${isCollapsed ? 'text-center pl-0 text-[8px]' : ''}`}>
+            {isCollapsed ? 'CTRL' : 'Authority Controls'}
+          </p>
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
@@ -89,62 +104,95 @@ export function AuthorityLayout() {
               <NavLink
                 key={item.name}
                 to={item.path}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                  isActive
-                    ? 'bg-red-500/15 text-red-400 border border-red-500/30'
-                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/50'
-                }`}
+                className={`group flex items-center gap-3 py-3 rounded-md text-[12px] font-bold uppercase tracking-wider transition-all duration-200 ${
+                  isCollapsed ? 'justify-center px-0' : 'px-4'
+                } ${isActive
+                    ? 'bg-[#fff1f2] text-[#be123c] border border-[#ffe4e6] shadow-sm'
+                    : 'text-slate-600 border border-transparent hover:text-[#e11d48] hover:bg-slate-50 hover:border-slate-200'
+                  }`}
+                title={isCollapsed ? item.name : undefined}
               >
-                <Icon className="w-4 h-4" />
-                <span>{item.name}</span>
+                <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-[#e11d48]' : 'text-slate-400 group-hover:text-[#e11d48]'}`} />
+                {!isCollapsed && <span>{item.name}</span>}
               </NavLink>
             );
           })}
         </nav>
 
         {/* User Info & Logout */}
-        <div className="p-4 border-t border-slate-800 space-y-2">
-          <div className="flex items-center gap-3 px-2 py-1 text-xs">
-            <div className="w-8 h-8 rounded-full bg-red-600/30 border border-red-500/40 flex items-center justify-center font-bold text-red-400">
-              HQ
+        <div className={`border-t border-slate-200 bg-white space-y-3 ${isCollapsed ? 'p-3' : 'p-4'}`}>
+          {!isCollapsed ? (
+            <div className="flex items-center gap-3 px-2 py-1 text-xs">
+              <div className="w-10 h-10 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center font-black text-slate-700 text-[14px]">
+                HQ
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-black text-slate-900 truncate uppercase text-[12px] tracking-wide">Officer In-Charge</p>
+                <p className="text-[10px] text-slate-500 font-bold truncate tracking-wider mt-0.5">Sangam Command Post</p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-slate-200 truncate">Officer In-Charge</p>
-              <p className="text-[10px] text-slate-400 truncate">Sangam Command Post</p>
+          ) : (
+            <div className="flex items-center justify-center py-1">
+              <div className="w-10 h-10 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center font-black text-slate-700 text-[14px]" title="Officer In-Charge">
+                HQ
+              </div>
             </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
+          )}
+          
+          <button
             onClick={handleLogout}
-            className="w-full text-slate-400 hover:text-red-400 justify-start"
-            leftIcon={LogOut}
+            className={`group w-full flex items-center gap-2 py-2.5 rounded-md text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#e11d48] hover:bg-[#fff1f2] transition-colors cursor-pointer border border-transparent hover:border-[#ffe4e6] ${isCollapsed ? 'justify-center px-0' : 'justify-center'}`}
+            title={isCollapsed ? "Sign Out" : undefined}
           >
-            Sign Out
-          </Button>
+            <LogOut className="w-4 h-4 transition-colors text-slate-500 group-hover:text-[#e11d48]" />
+            {!isCollapsed && <span>Sign Out</span>}
+          </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 bg-[#070e1b] border-b border-slate-800 px-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Badge variant="danger" className="text-xs">
-              PRAYAGRAJ SECTOR 1-8 LIVE RADAR
-            </Badge>
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 pl-0 md:pl-72 ${isCollapsed ? 'md:pl-20' : ''}`}>
+        <header className={`fixed top-0 right-0 z-20 h-16 bg-white/95 backdrop-blur-xl border-b border-slate-200 px-4 md:px-6 flex items-center justify-between shadow-sm transition-all duration-300 w-full ${isCollapsed ? 'md:w-[calc(100%-5rem)]' : 'md:w-[calc(100%-18rem)]'}`}>
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="bg-[#e11d48] text-white text-[10px] font-bold px-2 py-1.5 md:px-3 md:py-1.5 uppercase tracking-widest rounded shadow-sm flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+              <span className="hidden sm:inline">PRAYAGRAJ SECTOR 1-8 LIVE RADAR</span>
+              <span className="sm:hidden">HQ RADAR</span>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <Link to="/tourist/dashboard">
-              <Button variant="secondary" size="sm" rightIcon={ExternalLink}>
-                Switch to Tourist App
-              </Button>
+              <button className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-slate-900 text-white text-[10px] md:text-[11px] font-bold uppercase tracking-wider hover:bg-slate-800 transition-colors rounded-md shadow-sm cursor-pointer">
+                <span className="hidden sm:inline">Switch to Tourist App</span>
+                <span className="sm:hidden">Tourist App</span>
+                <ExternalLink className="w-3.5 h-3.5 hidden sm:block" />
+              </button>
             </Link>
           </div>
         </header>
 
-        <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 md:p-6 pb-24 mt-16 max-w-7xl w-full mx-auto">
           <Outlet />
         </main>
+
+        {/* Mobile Bottom Navigation */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 w-full h-16 bg-white border-t border-slate-200 z-50 flex items-center justify-around px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Link 
+                key={item.name} 
+                to={item.path} 
+                className={`flex flex-col items-center justify-center gap-1 w-20 h-full ${isActive ? 'text-[#be123c]' : 'text-slate-400 hover:text-slate-900'}`}
+              >
+                <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
+                <span className={`text-[9px] font-bold text-center leading-tight px-1 ${isActive ? 'text-[#be123c]' : 'text-slate-500'}`}>{item.name}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
       </div>
     </div>
   );

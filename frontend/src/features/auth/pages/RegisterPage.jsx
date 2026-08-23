@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -55,6 +55,11 @@ export function RegisterPage() {
   const [registerError, setRegisterError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const {
     register,
     handleSubmit,
@@ -103,7 +108,7 @@ export function RegisterPage() {
   };
 
   return (
-    <>
+    <div className={`transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
       <div className="mb-4 text-center">
         <h2 className="mb-1 text-2xl font-bold tracking-tight text-slate-900">
           Create an Account
@@ -339,6 +344,6 @@ export function RegisterPage() {
           Login Here →
         </Link>
       </p>
-    </>
+    </div>
   );
 }
