@@ -127,7 +127,7 @@ export default function PrayagrajGallery({ onSelectPlace }) {
       ------------------------------------------------ */}
       <div className="absolute top-8 left-8 right-8 z-30 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 border border-red-200 backdrop-blur-md text-red-600 shadow-sm">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 border border-red-200 backdrop-blur-md text-red-600 shadow-sm">
             <Compass className="h-5 w-5 animate-pulse" />
           </div>
           <div>
@@ -140,7 +140,7 @@ export default function PrayagrajGallery({ onSelectPlace }) {
           </div>
         </div>
 
-        <div className="hidden sm:flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-xs font-medium text-slate-700 backdrop-blur-md shadow-sm">
+        <div className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-3.5 py-2 text-[11px] font-medium text-slate-700 backdrop-blur-md shadow-sm">
           <MapPin className="h-3.5 w-3.5 text-red-500" />
           <span>Uttar Pradesh, India</span>
         </div>
@@ -152,11 +152,11 @@ export default function PrayagrajGallery({ onSelectPlace }) {
       <div className="absolute top-28 bottom-36 left-8 right-8 z-20 flex flex-col justify-end max-w-xl mb-5">
         {/* Destination Category Pill */}
         <div className="mb-3 flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-red-100 text-red-700 border border-red-200 backdrop-blur-md">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 border border-red-200 backdrop-blur-md">
             <ShieldCheck className="h-3.5 w-3.5 text-red-600" />
             {currentPlace.tag}
           </span>
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.14em]">
             {currentPlace.subtitle}
           </span>
         </div>
@@ -164,22 +164,22 @@ export default function PrayagrajGallery({ onSelectPlace }) {
         {/* Big Bold Destination Title */}
         <h1
           key={currentPlace.name}
-          className="text-4xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tight text-slate-900 leading-tight"
+          className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-slate-900 leading-tight"
         >
           {currentPlace.name}
         </h1>
 
         {/* Description */}
-        <p className="mt-4 text-sm sm:text-base leading-relaxed text-slate-700 max-w-lg font-medium">
+        <p className="mt-3 text-xs sm:text-sm leading-relaxed text-slate-700 max-w-lg font-medium">
           {currentPlace.description}
         </p>
 
         {/* Action Button & Safety Tag */}
-        <div className="mt-6 flex flex-wrap items-center gap-4">
+        <div className="mt-5 flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={() => onSelectPlace && onSelectPlace(currentPlace)}
-            className="group flex items-center gap-2.5 rounded-full bg-gradient-to-r from-[#e33636] to-red-600 px-6 py-3 text-sm font-bold text-white shadow-md shadow-red-500/20 transition-all hover:scale-105 hover:shadow-red-500/40 active:scale-95"
+            className="group flex items-center gap-2.5 rounded-lg bg-gradient-to-r from-[#e33636] to-red-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-red-500/20 transition-all hover:scale-105 hover:shadow-red-500/40 active:scale-95"
           >
             <span>Explore {currentPlace.name.split(' ')[0]}</span>
             <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -199,7 +199,7 @@ export default function PrayagrajGallery({ onSelectPlace }) {
                 key={place.id}
                 onClick={() => setActiveIndex(idx)}
                 onMouseEnter={() => setActiveIndex(idx)}
-                className={`group relative h-24 sm:h-28 cursor-pointer overflow-hidden rounded-2xl border transition-all duration-500 ease-out flex-shrink-0 ${isActive
+                className={`group relative h-24 sm:h-28 cursor-pointer overflow-hidden rounded-xl border transition-all duration-500 ease-out flex-shrink-0 ${isActive
                   ? 'w-44 sm:w-52 border-red-400 shadow-xl shadow-red-500/20 scale-100 ring-2 ring-red-400/50'
                   : 'w-24 sm:w-28 border-slate-200 opacity-90 hover:opacity-100 hover:w-36 shadow-sm'
                   }`}
@@ -224,7 +224,7 @@ export default function PrayagrajGallery({ onSelectPlace }) {
                   type="button"
                   onClick={(e) => toggleBookmark(place.id, e)}
                   aria-label="Bookmark destination"
-                  className={`absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full backdrop-blur-md transition-colors ${isBookmarked[place.id]
+                  className={`absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-md backdrop-blur-md transition-colors ${isBookmarked[place.id]
                     ? 'bg-red-500 text-white'
                     : 'bg-white/40 text-slate-900 hover:bg-white hover:text-red-600'
                     }`}
@@ -234,7 +234,7 @@ export default function PrayagrajGallery({ onSelectPlace }) {
 
                 {/* Index badge */}
                 <div className="absolute top-2 left-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-[9px] font-black text-red-600 backdrop-blur-md shadow-sm">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-md bg-white/90 text-[9px] font-black text-red-600 backdrop-blur-md shadow-sm">
                     0{idx + 1}
                   </span>
                 </div>
@@ -261,17 +261,17 @@ export default function PrayagrajGallery({ onSelectPlace }) {
             type="button"
             onClick={handlePrev}
             aria-label="Previous destination"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white/90 text-slate-700 backdrop-blur-md transition-all hover:bg-red-50 hover:border-red-300 hover:text-red-600 hover:scale-110 active:scale-95 shadow-sm"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white/90 text-slate-700 backdrop-blur-md transition-all hover:bg-red-50 hover:border-red-300 hover:text-red-600 hover:scale-110 active:scale-95 shadow-sm"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-4 w-4" />
           </button>
           <button
             type="button"
             onClick={handleNext}
             aria-label="Next destination"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white/90 text-slate-700 backdrop-blur-md transition-all hover:bg-red-50 hover:border-red-300 hover:text-red-600 hover:scale-110 active:scale-95 shadow-sm"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white/90 text-slate-700 backdrop-blur-md transition-all hover:bg-red-50 hover:border-red-300 hover:text-red-600 hover:scale-110 active:scale-95 shadow-sm"
           >
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight className="h-4 w-4" />
           </button>
         </div>
       </div>
