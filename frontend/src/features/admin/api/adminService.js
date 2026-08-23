@@ -1,53 +1,101 @@
 import apiClient from '../../../services/apiClient';
 
+const unwrap = (response) => response.data?.data ?? response.data;
+
 export const adminService = {
-  getAccounts: async () => {
-    const response = await apiClient.get('/admin/accounts');
-    return response.data;
+  async getDashboardSummary() {
+    return unwrap(await apiClient.get('/admin/dashboard'));
   },
 
-  updateAccountStatus: async (role, accountId, statusData) => {
-    const response = await apiClient.patch(`/admin/accounts/${role}/${accountId}/status`, statusData);
-    return response.data;
+  async getAccounts(params = {}) {
+    return unwrap(await apiClient.get('/admin/accounts', { params }));
   },
 
-  getAuditLogs: async (params) => {
-    const response = await apiClient.get('/audit', { params });
-    return response.data;
-  },
-  
-  getAuditSummary: async () => {
-    const response = await apiClient.get('/audit/summary');
-    return response.data;
+  async getAccount(role, accountId) {
+    return unwrap(await apiClient.get(`/admin/accounts/${role}/${accountId}`));
   },
 
-  getObservabilityMetrics: async () => {
-    const response = await apiClient.get('/observability/metrics');
-    return response.data;
-  },
-  
-  getDashboardSummary: async () => {
-    const response = await apiClient.get('/admin/dashboard');
-    return response.data;
-  },
-
-  // Integrations
-  getIntegrations: async () => {
-    const response = await apiClient.get('/integrations/capabilities');
-    return response.data;
+  async updateAccountStatus(role, accountId, statusData) {
+    return unwrap(
+      await apiClient.patch(
+        `/admin/accounts/${role}/${accountId}/status`,
+        statusData,
+      ),
+    );
   },
 
-  // Jobs
-  triggerEscalationRun: async () => {
-    const response = await apiClient.post('/escalations/run');
-    return response.data;
+  async getResources(resource, params = {}) {
+    return unwrap(
+      await apiClient.get(`/admin/resources/${resource}`, { params }),
+    );
   },
-  triggerNotificationSweep: async () => {
-    const response = await apiClient.post('/notification-deliveries/process-due');
-    return response.data;
+
+  async getAuditLogs(params = {}) {
+    return unwrap(await apiClient.get('/audit', { params }));
   },
-  triggerMonitoringSweep: async () => {
-    const response = await apiClient.post('/monitoring/sweep');
-    return response.data;
-  }
+
+  async getAuditSummary(params = {}) {
+    return unwrap(await apiClient.get('/audit/summary', { params }));
+  },
+
+  async getObservabilityMetrics() {
+    return unwrap(await apiClient.get('/observability/metrics'));
+  },
+
+  async getDiagnostics() {
+    return unwrap(await apiClient.get('/observability/diagnostics'));
+  },
+
+  async getIntegrations() {
+    return unwrap(await apiClient.get('/integrations/capabilities'));
+  },
+
+  async triggerEscalationRun() {
+    return unwrap(await apiClient.post('/escalations/run'));
+  },
+
+  async triggerNotificationSweep() {
+    return unwrap(
+      await apiClient.post('/notification-deliveries/process-due'),
+    );
+  },
+
+  async triggerMonitoringSweep() {
+    return unwrap(await apiClient.post('/monitoring/sweep'));
+  },
+
+  async getDestinations(params = {}) {
+    return unwrap(await apiClient.get('/admin/destinations', { params }));
+  },
+
+  async createDestination(data) {
+    return unwrap(await apiClient.post('/admin/destinations', data));
+  },
+
+  async updateDestination(destinationId, data) {
+    return unwrap(
+      await apiClient.patch(`/admin/destinations/${destinationId}`, data),
+    );
+  },
+
+  async deleteDestination(destinationId) {
+    return unwrap(
+      await apiClient.delete(`/admin/destinations/${destinationId}`),
+    );
+  },
+
+  async uploadDestinationImage(destinationId, file) {
+    const form = new FormData();
+    form.append('image', file);
+
+    return unwrap(
+      await apiClient.post(
+        `/admin/destinations/${destinationId}/image`,
+        form,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        },
+      ),
+    );
+  },
 };

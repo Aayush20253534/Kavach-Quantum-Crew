@@ -96,7 +96,7 @@ export default function LoginPage() {
       }
 
       if (user.role === 'SYSTEM_ADMIN') {
-        navigate('/', { replace: true });
+        navigate('/admin/dashboard', { replace: true });
         return;
       }
 

@@ -32,7 +32,7 @@ const resourceConfig = Object.freeze({
 
 export const createSystemAdminRepository = ({ db = prisma } = {}) => ({
   async dashboard() {
-    const [tourists, managers, activeTrips, openIncidents, criticalIncidents, pendingHazards, availableUnits, activeDispatches] = await Promise.all([
+    const [tourists, managers, activeTrips, openIncidents, criticalIncidents, pendingHazards, availableUnits, activeDispatches, activeDestinations] = await Promise.all([
       db.user.count(),
       db.disasterManager.count(),
       db.trip.count({ where: { status: "ACTIVE" } }),
@@ -41,8 +41,9 @@ export const createSystemAdminRepository = ({ db = prisma } = {}) => ({
       db.hazardReport.count({ where: { status: "PENDING" } }),
       db.emergencyUnit.count({ where: { status: "AVAILABLE" } }),
       db.dispatch.count({ where: { status: { in: ["REQUESTED", "ASSIGNED", "DISPATCHED", "EN_ROUTE", "ON_SCENE"] } } }),
+      db.destination.count({ where: { active: true } }),
     ]);
-    return { tourists, disasterManagers: managers, activeTrips, openIncidents, criticalIncidents, pendingHazards, availableEmergencyUnits: availableUnits, activeDispatches };
+    return { tourists, disasterManagers: managers, activeTrips, openIncidents, criticalIncidents, pendingHazards, availableEmergencyUnits: availableUnits, activeDispatches, activeDestinations };
   },
 
   async listAccounts({ role, status, search, limit }) {
@@ -90,6 +91,57 @@ export const createSystemAdminRepository = ({ db = prisma } = {}) => ({
       orderBy: config.orderBy,
       take: limit,
     });
+  },
+
+  listDestinations({ search, active, featured, limit }) {
+    return db.destination.findMany({
+      where: {
+        ...(active === undefined ? {} : { active }),
+        ...(featured === undefined ? {} : { featured }),
+        ...(search
+          ? {
+              OR: [
+                { name: { contains: search, mode: "insensitive" } },
+                { state: { contains: search, mode: "insensitive" } },
+                { country: { contains: search, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      take: limit,
+    });
+  },
+
+  findDestination(destinationId) {
+    return db.destination.findUnique({ where: { id: destinationId } });
+  },
+
+  findDestinationConflict({ name, slug, excludeId }) {
+    return db.destination.findFirst({
+      where: {
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+        OR: [
+          { name: { equals: name, mode: "insensitive" } },
+          { slug },
+        ],
+      },
+    });
+  },
+
+  createDestination(data) {
+    return db.destination.create({ data });
+  },
+
+  updateDestination(destinationId, data) {
+    return db.destination.update({
+      where: { id: destinationId },
+      data,
+    });
+  },
+
+  deleteDestination(destinationId) {
+    return db.destination.delete({ where: { id: destinationId } });
   },
 
   createAudit({ actorId, actorRole, action, entityType, entityId, metadata }) {

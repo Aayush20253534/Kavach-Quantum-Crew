@@ -13,6 +13,9 @@ export function RoleRoute({ allowedRoles }) {
     if (user?.role === 'DISASTER_MANAGER') {
       return <Navigate to="/authority/dashboard" replace />;
     }
+    if (user?.role === 'SYSTEM_ADMIN') {
+      return <Navigate to="/admin/dashboard" replace />;
+    }
     return <Navigate to="/" replace />;
   }
 

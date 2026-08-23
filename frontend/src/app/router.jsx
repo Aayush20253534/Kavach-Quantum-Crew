@@ -47,11 +47,13 @@ import { AuthorityRespondersPage } from '../features/authority/pages/AuthorityRe
 import { AuthorityAnalyticsPage } from '../features/authority/pages/AuthorityAnalyticsPage';
 
 // Pages - Admin
+import { AdminDashboardPage } from '../features/admin/pages/AdminDashboardPage';
 import { AdminAccountsPage } from '../features/admin/pages/AdminAccountsPage';
 import { AdminAuditPage } from '../features/admin/pages/AdminAuditPage';
 import { AdminSettingsPage } from '../features/admin/pages/AdminSettingsPage';
 import { AdminIntegrationsPage } from '../features/admin/pages/AdminIntegrationsPage';
 import { AdminJobsPage } from '../features/admin/pages/AdminJobsPage';
+import { AdminLocationsPage } from '../features/admin/pages/AdminLocationsPage';
 
 export const router = createBrowserRouter([
   {
@@ -144,6 +146,8 @@ export const router = createBrowserRouter([
               {
                 element: <AdminLayout />,
                 children: [
+                  { path: 'dashboard', element: <AdminDashboardPage /> },
+                  { path: 'locations', element: <AdminLocationsPage /> },
                   { path: 'accounts', element: <AdminAccountsPage /> },
                   { path: 'audit', element: <AdminAuditPage /> },
                   { path: 'integrations', element: <AdminIntegrationsPage /> },

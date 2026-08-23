@@ -191,3 +191,14 @@ body,
   background: #f8fafc;
   border-color: #94a3b8;
 }
+
+
+@layer components {
+  .admin-field-label {
+    @apply block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5;
+  }
+
+  .admin-field-control {
+    @apply w-full min-h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400;
+  }
+}

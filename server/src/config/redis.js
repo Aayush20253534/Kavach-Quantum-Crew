@@ -44,6 +44,16 @@ export const createRedisClient = ({
     async del(...keys) {
       return keys.length ? command("DEL", ...keys) : 0;
     },
+    async scan(cursor = "0", { match, count = 100 } = {}) {
+      const parts = ["SCAN", cursor];
+      if (match) parts.push("MATCH", match);
+      if (count) parts.push("COUNT", count);
+      const result = await command(...parts);
+      return {
+        cursor: String(result?.[0] ?? "0"),
+        keys: Array.isArray(result?.[1]) ? result[1] : [],
+      };
+    },
     ping() {
       return command("PING");
     },
