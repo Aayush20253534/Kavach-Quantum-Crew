@@ -261,3 +261,11 @@ This catalogue documents **148 mounted HTTP routes/aliases** in the current back
 |---|---|---|---|
 | `POST` | `/api/v1/auth/verify-email` | Public verification flow | Verify a newly registered tourist using email + 6-digit OTP; successful verification creates the authenticated session. |
 | `POST` | `/api/v1/auth/resend-verification` | Public verification flow | Generate and email a replacement OTP subject to resend cooldown. |
+
+## Dashboard integration
+
+- `GET /api/v1/dashboard/tourist?latitude=<lat>&longitude=<lng>` drives dashboard metrics and safe/danger status.
+- `GET /api/v1/destinations?search=<text>` drives the destination search bar.
+- Selecting a destination creates a `GROUP` trip through `POST /api/v1/trips`, then creates its group through `POST /api/v1/groups/trips/:tripId`.
+- Notifications use `/api/v1/notifications`, `/unread-count`, `/:notificationId/read`, and `/read-all`.
+- The dashboard Google Map requests nearby `police`, `hospital`, and `fire_station` places from the Google Places library around the browser's live geolocation.

@@ -1,265 +1,288 @@
-import React, { useEffect, useState } from 'react';
-import { useCurrentTrip } from '../../trips/api/tripQueries';
-import { useGeolocation } from '../../tracking/hooks/useGeolocation';
-import { useRiskZones } from '../../tracking/api/trackingQueries';
-import { MapComponent } from '../../tracking/components/MapComponent';
-import { Link } from 'react-router-dom';
-import {
-  Users,
-  Bell,
-  ShieldCheck,
-  Clock,
-  Star,
-  ArrowRight,
-  MapPin,
-  Calendar,
-  ChevronDown,
-  Crosshair
-} from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import {
+  AlertTriangle,
+  ArrowRight,
+  Bell,
+  CalendarDays,
+  CheckCircle2,
+  Loader2,
+  MapPin,
+  Search,
+  ShieldCheck,
+  Star,
+  Users,
+  XCircle,
+} from 'lucide-react';
 
-const TOP_DESTINATIONS = [
-  { id: 1, name: 'TRIVENI SANGAM', location: 'Sangam Sector', image: '/destinations/sangam.jpg', distance: '3.2 KM' },
-  { id: 2, name: 'HANUMAN TEMPLE', location: 'Daraganj', image: '/destinations/temple.jpg', distance: '1.5 KM' },
-  { id: 3, name: 'ALLAHABAD FORT', location: 'Kila Road', image: '/destinations/fort.jpg', distance: '4.8 KM' },
-  { id: 4, name: 'KUMBH GROUNDS', location: 'Mela Sector', image: '/destinations/kumbh.jpg', distance: '2.1 KM' }
-];
+import { useTouristDashboardSummary } from '../../dashboard/api/dashboardQueries';
+import { destinationService } from '../../destinations/api/destinationService';
+import { groupService } from '../../groups/api/groupService';
+import { useGeolocation } from '../../tracking/hooks/useGeolocation';
+import { MapComponent } from '../../tracking/components/MapComponent';
+import { useCreateTrip, useCurrentTrip } from '../../trips/api/tripQueries';
+
+const unwrap = (value) => value?.data ?? value;
 
 export function TouristDashboardPage() {
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
-  const userName = user?.name?.split(' ')[0] || 'Aayansh';
+  const userName = user?.name?.split(' ')[0] || 'Tourist';
 
-  // Tracking Logic
-  const { data: currentTrip } = useCurrentTrip();
-  const isActive = currentTrip?.status === 'ACTIVE';
-  const { location } = useGeolocation(currentTrip?.id, isActive);
-  const { data: riskZonesData } = useRiskZones();
-  const riskZones = riskZonesData?.items || riskZonesData || [];
+  const { data: currentTripResponse } = useCurrentTrip();
+  const currentTrip = unwrap(currentTripResponse);
+  const isTripActive = currentTrip?.status === 'ACTIVE';
+  const { location, error: locationError, permission } = useGeolocation(currentTrip?.id, isTripActive);
+  const { data: summary, isLoading: summaryLoading } = useTouristDashboardSummary(location);
+  const createTrip = useCreateTrip();
 
-  // Mount animation state
+  const [featuredDestinations, setFeaturedDestinations] = useState([]);
+  const [searchText, setSearchText] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [creatingLocation, setCreatingLocation] = useState(null);
+  const [actionError, setActionError] = useState('');
   const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
-    setMounted(true);
+    destinationService.list({ featured: true, limit: 8 })
+      .then(setFeaturedDestinations)
+      .catch(() => setFeaturedDestinations([]));
   }, []);
 
+  useEffect(() => {
+    const query = searchText.trim();
+    if (!query) {
+      setSearchResults([]);
+      setSearching(false);
+      return undefined;
+    }
+
+    setSearching(true);
+    const timer = setTimeout(() => {
+      destinationService.list({ search: query, limit: 8 })
+        .then(setSearchResults)
+        .catch(() => setSearchResults([]))
+        .finally(() => setSearching(false));
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+  const createGroupForDestination = async (destination) => {
+    setActionError('');
+    setCreatingLocation(destination.id);
+
+    try {
+      let trip = currentTrip;
+
+      if (trip) {
+        const sameDestination = trip.locationName?.toLowerCase() === destination.name.toLowerCase();
+        if (!sameDestination || trip.tripType !== 'GROUP') {
+          throw new Error(`You already have an open ${trip.tripType.toLowerCase()} trip for ${trip.locationName}. Complete or cancel it before creating another group.`);
+        }
+      } else {
+        const plannedStartAt = new Date(Date.now() + 5 * 60 * 1000);
+        const plannedEndAt = new Date(plannedStartAt.getTime() + 24 * 60 * 60 * 1000);
+        const created = await createTrip.mutateAsync({
+          locationName: destination.name,
+          tripType: 'GROUP',
+          plannedStartAt: plannedStartAt.toISOString(),
+          plannedEndAt: plannedEndAt.toISOString(),
+        });
+        trip = unwrap(created);
+      }
+
+      try {
+        await groupService.createGroupForTrip(trip.id);
+      } catch (error) {
+        // If the group already exists, the location selection is still valid.
+        if (error.response?.data?.error?.code !== 'GROUP_ALREADY_EXISTS') throw error;
+      }
+
+      navigate('/tourist/groups/create', {
+        state: { tripId: trip.id, destination: destination.name },
+      });
+    } catch (error) {
+      setActionError(
+        error.response?.data?.error?.message || error.message || 'Unable to create a group for this location.',
+      );
+    } finally {
+      setCreatingLocation(null);
+      setSearchText('');
+      setSearchResults([]);
+    }
+  };
+
+  const safety = summary?.safetyStatus?.level ?? (location ? 'SAFE' : 'UNKNOWN');
+  const safetyIsDanger = safety === 'DANGER';
+  const locationLabel = location
+    ? `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`
+    : permission === 'denied'
+      ? 'Location permission denied'
+      : 'Waiting for live location';
+
+  const cards = useMemo(() => [
+    {
+      label: 'Total Tourists',
+      value: summaryLoading ? '...' : (summary?.totalTourists ?? 0).toLocaleString('en-IN'),
+      sub: 'Registered tourist users',
+      icon: Users,
+    },
+    {
+      label: 'Active Alerts',
+      value: summaryLoading ? '...' : summary?.activeAlerts ?? 0,
+      sub: 'Your unresolved safety alerts',
+      icon: Bell,
+    },
+    {
+      label: 'Safety Status',
+      value: location ? (safetyIsDanger ? 'Danger Zone' : 'Safe Zone') : 'Locating...',
+      sub: safetyIsDanger ? summary?.safetyStatus?.zone?.name || 'Inside admin-defined risk geofence' : 'Outside all danger geofences',
+      icon: safetyIsDanger ? AlertTriangle : ShieldCheck,
+    },
+    {
+      label: 'Group Members',
+      value: summaryLoading ? '...' : summary?.currentGroupMembers ?? 0,
+      sub: summary?.currentTrip?.locationName ? `Current trip: ${summary.currentTrip.locationName}` : 'No open group trip',
+      icon: Users,
+    },
+  ], [summary, summaryLoading, location, safetyIsDanger]);
+
   return (
-    <div className="space-y-6 font-sans max-w-[1200px] mx-auto pb-8 overflow-hidden">
-      
-      {/* Header Section */}
-      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-        <div>
-          <h2 className="text-[16px] font-black text-slate-900 uppercase tracking-wide">Live City Analytics</h2>
-          <p className="text-[12px] text-slate-500 font-medium mt-0.5">Welcome back, {userName}. Here is your real-time overview.</p>
+    <div className="space-y-6 font-sans max-w-[1200px] mx-auto pb-8 overflow-visible">
+      <section className={`transition-all duration-500 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'}`}>
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-4">
+          <div>
+            <h2 className="text-[18px] font-black text-slate-900 uppercase tracking-wide">Tourist Safety Dashboard</h2>
+            <p className="text-[12px] text-slate-500 font-medium mt-1">Welcome back, {userName}. Search a destination to start a group trip.</p>
+          </div>
+          <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500">
+            <MapPin className="w-4 h-4 text-red-500" />
+            <span>{locationLabel}</span>
+          </div>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-md shadow-sm text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer">
-          <Calendar className="w-3.5 h-3.5 text-slate-400" /> Today <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1" />
-        </button>
-      </div>
 
-      {/* Metrics Cards Grid */}
+        <div className="relative z-20">
+          <div className="flex items-center bg-white border border-slate-200 rounded-xl shadow-sm focus-within:border-red-400 focus-within:ring-2 focus-within:ring-red-100 transition-all">
+            <Search className="w-5 h-5 text-slate-400 ml-4 shrink-0" />
+            <input
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+              placeholder="Search destination, e.g. Prayagraj, Lucknow, Kanpur, Delhi"
+              className="w-full h-12 px-3 text-[13px] font-medium text-slate-900 outline-none bg-transparent placeholder:text-slate-400"
+            />
+            {searching && <Loader2 className="w-4 h-4 mr-4 text-slate-400 animate-spin" />}
+          </div>
+
+          {searchText.trim() && (
+            <div className="absolute left-0 right-0 top-[calc(100%+8px)] bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+              {!searching && searchResults.length === 0 && (
+                <p className="p-4 text-[12px] text-slate-500">No configured destination found.</p>
+              )}
+              {searchResults.map((destination) => (
+                <button
+                  key={destination.id}
+                  type="button"
+                  disabled={Boolean(creatingLocation)}
+                  onClick={() => createGroupForDestination(destination)}
+                  className="w-full p-4 flex items-center justify-between gap-4 text-left hover:bg-slate-50 border-b border-slate-100 last:border-0 disabled:opacity-60"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"><MapPin className="w-4 h-4" /></div>
+                    <div>
+                      <p className="text-[13px] font-bold text-slate-900">{destination.name}</p>
+                      <p className="text-[11px] text-slate-500">{destination.state}, {destination.country}</p>
+                    </div>
+                  </div>
+                  {creatingLocation === destination.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <span className="text-[10px] font-bold uppercase tracking-wider text-red-600">Create group</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {actionError && (
+          <div className="mt-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-[12px] font-medium text-red-700">
+            <XCircle className="w-4 h-4 shrink-0 mt-0.5" /> {actionError}
+          </div>
+        )}
+        {locationError && (
+          <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-[12px] font-medium text-amber-700">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" /> Live location unavailable: {locationError}
+          </div>
+        )}
+      </section>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        
-        {/* TOTAL TOURISTS */}
-        <Link 
-          to="/tourist/groups/create" 
-          className={`bg-white rounded-md p-3.5 shadow-sm border border-slate-200 flex flex-col gap-1.5 relative overflow-hidden group hover:border-[#8b5cf6] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer block transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
-          style={{ transitionDelay: '50ms' }}
-        >
-          <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500">
-            <Users className="w-10 h-10 text-[#8b5cf6]" />
-          </div>
-          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Total Tourists</p>
-          <div className="flex items-end gap-1.5 relative z-10">
-            <h3 className="text-[20px] font-black text-slate-900 tracking-tight leading-none">1,24,580</h3>
-          </div>
-          <p className="text-[9px] font-bold text-[#16a34a] flex items-center gap-1">
-            <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6" /></svg>
-            12.5% vs yday
-          </p>
-        </Link>
-
-        {/* ACTIVE ALERTS */}
-        <Link 
-          to="/tourist/incidents/history" 
-          className={`bg-white rounded-md p-3.5 shadow-sm border border-slate-200 flex flex-col gap-1.5 relative overflow-hidden group hover:border-[#e11d48] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer block transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
-          style={{ transitionDelay: '100ms' }}
-        >
-          <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500">
-            <Bell className="w-10 h-10 text-[#e11d48]" />
-          </div>
-          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Active Alerts</p>
-          <div className="flex items-end gap-1.5 relative z-10">
-            <h3 className="text-[20px] font-black text-[#e11d48] tracking-tight leading-none">07</h3>
-          </div>
-          <p className="text-[9px] font-bold text-[#e11d48] flex items-center gap-1">
-            <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-            2 vs yday
-          </p>
-        </Link>
-
-        {/* SAFE ZONE STATUS */}
-        <div 
-          className={`bg-white rounded-md p-3.5 shadow-sm border border-slate-200 flex flex-col gap-1.5 relative overflow-hidden group hover:border-[#16a34a] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
-          style={{ transitionDelay: '150ms' }}
-        >
-          <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500">
-            <ShieldCheck className="w-10 h-10 text-[#16a34a]" />
-          </div>
-          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Safe Zone Status</p>
-          <div className="flex items-end gap-1.5 relative z-10">
-            <h3 className="text-[18px] font-black text-slate-900 tracking-tight leading-tight">All Clear</h3>
-          </div>
-          <p className="text-[9px] font-bold text-slate-500">No major threats</p>
-        </div>
-
-        {/* RESPONSE TIME */}
-        <div 
-          className={`bg-white rounded-md p-3.5 shadow-sm border border-slate-200 flex flex-col gap-1.5 relative overflow-hidden group hover:border-[#0ea5e9] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
-          style={{ transitionDelay: '200ms' }}
-        >
-          <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500">
-            <Clock className="w-10 h-10 text-[#0ea5e9]" />
-          </div>
-          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Response Time</p>
-          <div className="flex items-end gap-1.5 relative z-10">
-            <h3 className="text-[20px] font-black text-slate-900 tracking-tight leading-none">12.4m</h3>
-          </div>
-          <p className="text-[9px] font-bold text-[#16a34a] flex items-center gap-1">
-            <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-            1.8m vs yday
-          </p>
-        </div>
+        {cards.map((card, index) => {
+          const Icon = card.icon;
+          const dangerCard = card.label === 'Safety Status' && safetyIsDanger;
+          return (
+            <div key={card.label} className={`bg-white rounded-lg p-4 shadow-sm border ${dangerCard ? 'border-red-300 bg-red-50/30' : 'border-slate-200'} transition-all`}>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{card.label}</p>
+                <Icon className={`w-4 h-4 ${dangerCard ? 'text-red-600' : 'text-slate-400'}`} />
+              </div>
+              <h3 className={`text-[20px] font-black tracking-tight leading-none ${dangerCard ? 'text-red-700' : 'text-slate-900'}`}>{card.value}</h3>
+              <p className="text-[9px] font-semibold text-slate-500 mt-2 line-clamp-2">{card.sub}</p>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Top Destinations Section */}
-      <section className={`space-y-4 pt-4 transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`} style={{ transitionDelay: '300ms' }}>
+      <section className="space-y-4 pt-2">
         <div className="flex items-center justify-between">
           <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-wide flex items-center gap-2">
-            <Star className="w-4 h-4 text-[#e11d48]" strokeWidth={2.5} />
-            Top Destinations
+            <Star className="w-4 h-4 text-[#e11d48]" strokeWidth={2.5} /> Top Destinations
           </h2>
-          <Link to="/tourist/trips/create" className="text-[11px] font-bold text-[#e11d48] hover:text-[#be123c] transition-colors flex items-center gap-1 cursor-pointer">
-            Plan a Trip <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+          <Link to="/tourist/trips/create" className="text-[11px] font-bold text-[#e11d48] hover:text-[#be123c] flex items-center gap-1">Plan manually <ArrowRight className="w-3.5 h-3.5" /></Link>
         </div>
 
-        <div className="flex overflow-x-auto gap-3 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x snap-mandatory">
-          {TOP_DESTINATIONS.map((place, idx) => (
-            <div
-              key={place.id}
-              className={`group relative h-36 w-[220px] shrink-0 snap-center rounded-md overflow-hidden cursor-pointer shadow-sm border border-slate-200 transition-all duration-500 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
-              style={{ transitionDelay: `${350 + (idx * 50)}ms` }}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {featuredDestinations.map((destination) => (
+            <button
+              key={destination.id}
+              type="button"
+              onClick={() => createGroupForDestination(destination)}
+              disabled={Boolean(creatingLocation)}
+              className="group text-left h-32 rounded-xl border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-700 p-4 relative overflow-hidden hover:-translate-y-0.5 transition-transform disabled:opacity-60"
             >
-              <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
-                <MapPin className="w-6 h-6 text-slate-700" />
+              <MapPin className="absolute right-3 top-3 w-8 h-8 text-white/10" />
+              <div className="absolute inset-x-0 bottom-0 p-4">
+                <h3 className="text-white text-[13px] font-black uppercase tracking-wide">{destination.name}</h3>
+                <p className="text-slate-300 text-[10px] font-semibold mt-1">{destination.state}</p>
+                <p className="text-red-300 text-[9px] font-bold uppercase tracking-wider mt-2">Click to create group</p>
               </div>
-              <img
-                src={place.image}
-                alt={place.name}
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 opacity-80 group-hover:opacity-100"
-                onError={(e) => { e.target.style.display = 'none'; }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-90 transition-opacity duration-300 group-hover:opacity-100" />
-
-              <div className="absolute inset-x-0 bottom-0 p-4 flex items-end justify-between transition-transform duration-300 group-hover:-translate-y-1">
-                <div>
-                  <h3 className="text-white font-black text-[12px] uppercase tracking-wide mb-1 drop-shadow-md">{place.name}</h3>
-                  <p className="text-slate-300 text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 drop-shadow-sm">
-                    <MapPin className="w-3 h-3 text-rose-400" /> {place.location}
-                  </p>
-                </div>
-                <div className="bg-black/30 backdrop-blur-md px-2 py-1 rounded text-white text-[9px] font-bold tracking-wider border border-white/20 shadow-sm">
-                  {place.distance}
-                </div>
-              </div>
-            </div>
+            </button>
           ))}
         </div>
       </section>
 
-      {/* Live Tactical Map Section */}
-      <div 
-        className={`bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden flex flex-col lg:flex-row transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
-        style={{ transitionDelay: '550ms' }}
-      >
-
-        {/* Left Panel: Active Units */}
-        <div className="w-full lg:w-64 border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-50/50 flex flex-col relative z-10">
-          <div className="p-5 border-b border-slate-200 bg-white">
-            <h2 className="text-[13px] font-black text-slate-900 uppercase tracking-wide flex items-center gap-2">
-              <Crosshair className="w-4 h-4 text-slate-400" />
-              Tactical Map
-            </h2>
-            <div className="flex items-center justify-between mt-2">
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Real-time stats</p>
-              <div className="flex items-center gap-1.5 px-2 py-1 bg-[#f0fdf4] border border-[#dcfce7] rounded shadow-sm">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#16a34a] animate-pulse"></div>
-                <span className="text-[9px] font-bold text-[#16a34a] uppercase tracking-widest">Live Sync</span>
-              </div>
-            </div>
+      <section className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 className="text-[13px] font-black text-slate-900 uppercase tracking-wide">Nearby Emergency Services</h2>
+            <p className="text-[10px] text-slate-500 font-medium mt-1">Live Google Maps results within approximately 5 km of your current location.</p>
           </div>
-
-          <div className="p-5 flex-1">
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-4">Responder Units</p>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between group cursor-pointer hover:bg-slate-100/50 p-1.5 -mx-1.5 rounded transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded border border-[#e0f2fe] bg-[#f0f9ff] flex items-center justify-center transition-transform group-hover:scale-110">
-                    <div className="w-1.5 h-1.5 rounded bg-[#0ea5e9]"></div>
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-700">Police Units</span>
-                </div>
-                <span className="text-[13px] font-black text-slate-900">24</span>
-              </div>
-              <div className="flex items-center justify-between group cursor-pointer hover:bg-slate-100/50 p-1.5 -mx-1.5 rounded transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded border border-[#dcfce7] bg-[#f0fdf4] flex items-center justify-center transition-transform group-hover:scale-110">
-                    <div className="w-1.5 h-1.5 rounded bg-[#16a34a]"></div>
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-700">Medical Teams</span>
-                </div>
-                <span className="text-[13px] font-black text-slate-900">12</span>
-              </div>
-              <div className="flex items-center justify-between group cursor-pointer hover:bg-slate-100/50 p-1.5 -mx-1.5 rounded transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded border border-[#ffe4e6] bg-[#fff1f2] flex items-center justify-center transition-transform group-hover:scale-110">
-                    <div className="w-1.5 h-1.5 rounded bg-[#e11d48]"></div>
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-700">Response PCR</span>
-                </div>
-                <span className="text-[13px] font-black text-slate-900">08</span>
-              </div>
-              <div className="flex items-center justify-between group cursor-pointer hover:bg-slate-100/50 p-1.5 -mx-1.5 rounded transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded border border-[#fae8ff] bg-[#fdf4ff] flex items-center justify-center transition-transform group-hover:scale-110">
-                    <div className="w-1.5 h-1.5 rounded bg-[#d946ef]"></div>
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-700">CCTV Coverage</span>
-                </div>
-                <span className="text-[13px] font-black text-slate-900">45</span>
-              </div>
-            </div>
-
-            <Link to="/tourist/tracking" className="block mt-8">
-              <button className="w-full py-2.5 bg-white border border-slate-200 rounded-md text-[11px] font-bold text-slate-700 uppercase tracking-widest shadow-sm hover:bg-slate-50 transition-all active:scale-95 group flex items-center justify-center gap-2">
-                Open Full Map <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </Link>
+          <div className="flex flex-wrap gap-2 text-[9px] font-bold uppercase tracking-wider">
+            <span className="px-2 py-1 rounded bg-blue-50 text-blue-700">P Police</span>
+            <span className="px-2 py-1 rounded bg-emerald-50 text-emerald-700">H Hospital</span>
+            <span className="px-2 py-1 rounded bg-red-50 text-red-700">F Fire Station</span>
           </div>
         </div>
-
-        {/* Right Panel: The Leaflet Map */}
-        <div className="flex-1 h-[300px] sm:h-[400px] lg:h-auto lg:min-h-[400px] relative bg-slate-100 overflow-hidden">
-          {/* Subtle fade-in overlay for the map container */}
-          <div className={`absolute inset-0 z-10 pointer-events-none transition-opacity duration-1000 ${mounted ? 'opacity-0' : 'opacity-100 bg-white'}`} />
-          <MapComponent
-            currentLocation={location}
-            riskZones={riskZones}
-            className="w-full h-full absolute inset-0 z-0"
-          />
+        <div className="h-[360px] relative bg-slate-100">
+          <MapComponent currentLocation={location} showEmergencyServicesOnly className="w-full h-full absolute inset-0" />
         </div>
+      </section>
+
+      <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium">
+        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+        Safety status is SAFE everywhere except active risk geofences configured by a system administrator.
       </div>
-
     </div>
   );
 }
