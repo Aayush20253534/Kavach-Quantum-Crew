@@ -19,7 +19,7 @@ export function AuthorityDispatchPage() {
       setLoading(true);
       setError('');
       const response = await authorityService.getUnits();
-      const data = response?.data || response || [];
+      const data = response || [];
       setUnits(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.response?.data?.error?.message || err.message || 'Failed to load dispatch units');

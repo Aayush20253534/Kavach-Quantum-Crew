@@ -19,7 +19,7 @@ export function AuthorityRespondersPage() {
       setLoading(true);
       setError('');
       const response = await authorityService.getResponders();
-      const data = response?.data || response || [];
+      const data = response || [];
       setResponders(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.response?.data?.error?.message || err.message || 'Failed to fetch responders');

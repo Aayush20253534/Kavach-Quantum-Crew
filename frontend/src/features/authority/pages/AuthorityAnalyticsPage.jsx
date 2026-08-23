@@ -18,14 +18,21 @@ export function AuthorityAnalyticsPage() {
     try {
       setLoading(true);
       setError('');
-      // In a real implementation we would Promise.all these
-      const overview = await authorityService.getAnalyticsOverview().catch(() => ({ data: null }));
-      const responseTimes = await authorityService.getResponseTimeAnalytics().catch(() => ({ data: null }));
-      
-      // Since the endpoints might not be mocked yet, we'll provide some sensible fallbacks or error boundary
+      const [overview, responseTimes, incidentAnalytics, responderAnalytics] = await Promise.all([
+        authorityService.getAnalyticsOverview(),
+        authorityService.getResponseTimeAnalytics(),
+        authorityService.getIncidentAnalytics(),
+        authorityService.getResponderAnalytics(),
+      ]);
+      const totalIncidents = Object.values(incidentAnalytics?.byStatus || {}).reduce((sum, count) => sum + count, 0);
+      const resolvedIncidents = incidentAnalytics?.byStatus?.RESOLVED || 0;
+      const activeResponders = Object.entries(responderAnalytics?.byAvailability || {})
+        .filter(([status]) => status !== 'OFF_DUTY')
+        .reduce((sum, [, count]) => sum + count, 0);
+      const average = responseTimes?.incidents?.responseStartMinutes ?? null;
       setData({
-        overview: overview?.data || { totalIncidents: 142, resolvedIncidents: 120, activeResponders: 45 },
-        responseTimes: responseTimes?.data || { average: 4.2, target: 5.0, percentUnderTarget: 82 }
+        overview: { ...overview, totalIncidents, resolvedIncidents, activeResponders },
+        responseTimes: { average, target: 5, percentUnderTarget: average == null ? null : (average <= 5 ? 100 : 0) },
       });
     } catch (err) {
       setError(err.message || 'Failed to fetch analytics');

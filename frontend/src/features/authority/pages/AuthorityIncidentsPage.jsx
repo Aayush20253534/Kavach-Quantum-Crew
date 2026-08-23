@@ -24,7 +24,7 @@ export function AuthorityIncidentsPage() {
       setLoading(true);
       setError('');
       const response = await authorityService.getIncidentQueue();
-      const data = response?.data || response || [];
+      const data = response || [];
       setIncidents(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.response?.data?.error?.message || err.message || 'Failed to load incidents');
