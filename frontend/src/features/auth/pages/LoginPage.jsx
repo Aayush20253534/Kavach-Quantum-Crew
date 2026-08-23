@@ -140,45 +140,53 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="mb-4 grid grid-cols-3 gap-0 overflow-hidden rounded-md border border-slate-200">
+        <div className="mb-4 grid grid-cols-3 overflow-hidden rounded-lg border border-slate-200 bg-white">
           {roles.map((role, idx) => {
             const Icon = role.icon;
             const active = selectedRole === role.id;
 
             return (
               <button
-              key={role.id}
-              type="button"
-              onClick={() => handleRoleChange(role.id)}
-              className={`flex items-center justify-center gap-1.5 bg-white py-2 text-[11px] font-semibold transition ${
-                active
-                  ? 'relative z-10 rounded-md border border-red-600 bg-red-50/30 text-red-600 shadow-sm'
-                  : 'border border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-              style={{
-                marginLeft: idx > 0 && active ? '-1px' : '0',
-                marginRight: idx < roles.length - 1 && active ? '-1px' : '0',
-              }}
-            >
-              <Icon
-                size={14}
-                className={active ? 'text-red-500' : 'text-slate-400'}
-              />
-              <div className="hidden flex-col items-start text-left leading-tight sm:flex">
-                <span className={role.id === 'DISASTER_MANAGER' ? 'text-[10px] sm:text-[11px]' : ''}>
-                  {role.title}
-                </span>
-                <span
-                  className={`text-[9px] font-normal ${
-                    active ? 'text-red-400' : 'text-slate-400'
-                  }`}
-                >
-                  {role.subtitle}
-                </span>
-              </div>
-            </button>
-          );
-        })}
+                key={role.id}
+                type="button"
+                onClick={() => handleRoleChange(role.id)}
+                className={`relative flex min-h-[54px] min-w-0 items-center justify-center gap-2 px-2 py-2.5 transition-colors ${
+                  active
+                    ? 'z-10 bg-red-50 text-red-600'
+                    : 'bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                } ${idx > 0 ? 'border-l border-slate-200' : ''}`}
+              >
+                {active && (
+                  <span className="absolute inset-x-0 bottom-0 h-0.5 bg-red-500" />
+                )}
+
+                <Icon
+                  size={15}
+                  className={`shrink-0 ${active ? 'text-red-500' : 'text-slate-400'}`}
+                />
+
+                <div className="min-w-0 text-left leading-tight">
+                  <span
+                    className={`block whitespace-nowrap font-bold ${
+                      role.id === 'DISASTER_MANAGER'
+                        ? 'text-[9px] sm:text-[10px]'
+                        : 'text-[10px] sm:text-[11px]'
+                    }`}
+                  >
+                    {role.title}
+                  </span>
+                  <span
+                    className={`mt-0.5 hidden whitespace-nowrap text-[8px] font-medium lg:block ${
+                      active ? 'text-red-400' : 'text-slate-400'
+                    }`}
+                  >
+                    {role.subtitle}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
