@@ -34,6 +34,7 @@ import { CreateGroupPage } from '../features/groups/pages/CreateGroupPage';
 import { JoinGroupPage } from '../features/groups/pages/JoinGroupPage';
 import { ReportIncidentPage } from '../features/incidents/pages/ReportIncidentPage';
 import { IncidentHistoryPage } from '../features/incidents/pages/IncidentHistoryPage';
+import { TouristCheckinsPage } from '../features/safety/pages/TouristCheckinsPage';
 import { ProfilePage } from '../features/profile/pages/ProfilePage';
 
 import { AuthorityDashboardPage } from '../features/authority/pages/AuthorityDashboardPage';
@@ -41,11 +42,16 @@ import { AuthorityIncidentsPage } from '../features/authority/pages/AuthorityInc
 import { AuthorityIncidentDetailsPage } from '../features/authority/pages/AuthorityIncidentDetailsPage';
 import { AuthorityDispatchPage } from '../features/authority/pages/AuthorityDispatchPage';
 import { AuthorityRiskZonesPage } from '../features/authority/pages/AuthorityRiskZonesPage';
+import { AuthorityHazardsPage } from '../features/authority/pages/AuthorityHazardsPage';
+import { AuthorityRespondersPage } from '../features/authority/pages/AuthorityRespondersPage';
+import { AuthorityAnalyticsPage } from '../features/authority/pages/AuthorityAnalyticsPage';
 
 // Pages - Admin
 import { AdminAccountsPage } from '../features/admin/pages/AdminAccountsPage';
 import { AdminAuditPage } from '../features/admin/pages/AdminAuditPage';
 import { AdminSettingsPage } from '../features/admin/pages/AdminSettingsPage';
+import { AdminIntegrationsPage } from '../features/admin/pages/AdminIntegrationsPage';
+import { AdminJobsPage } from '../features/admin/pages/AdminJobsPage';
 
 export const router = createBrowserRouter([
   {
@@ -96,6 +102,7 @@ export const router = createBrowserRouter([
                   { path: 'groups/join', element: <JoinGroupPage /> },
                   { path: 'incidents/report', element: <ReportIncidentPage /> },
                   { path: 'incidents/history', element: <IncidentHistoryPage /> },
+                  { path: 'checkins', element: <TouristCheckinsPage /> },
                   { path: 'profile', element: <ProfilePage /> },
                 ],
               },
@@ -116,8 +123,11 @@ export const router = createBrowserRouter([
                   { path: 'dashboard', element: <AuthorityDashboardPage /> },
                   { path: 'incidents', element: <AuthorityIncidentsPage /> },
                   { path: 'incidents/:id', element: <AuthorityIncidentDetailsPage /> },
+                  { path: 'hazards', element: <AuthorityHazardsPage /> },
                   { path: 'dispatch', element: <AuthorityDispatchPage /> },
                   { path: 'zones', element: <AuthorityRiskZonesPage /> },
+                  { path: 'responders', element: <AuthorityRespondersPage /> },
+                  { path: 'analytics', element: <AuthorityAnalyticsPage /> },
                 ],
               },
             ],
@@ -136,6 +146,8 @@ export const router = createBrowserRouter([
                 children: [
                   { path: 'accounts', element: <AdminAccountsPage /> },
                   { path: 'audit', element: <AdminAuditPage /> },
+                  { path: 'integrations', element: <AdminIntegrationsPage /> },
+                  { path: 'jobs', element: <AdminJobsPage /> },
                   { path: 'settings', element: <AdminSettingsPage /> },
                 ],
               },

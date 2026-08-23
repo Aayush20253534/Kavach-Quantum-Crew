@@ -34,5 +34,19 @@ export const tripService = {
   cancelTrip: async (tripId) => {
     const response = await apiClient.post(`/trips/${tripId}/cancel`);
     return response.data;
+  },
+
+  // Check-ins (Phase 3)
+  scheduleCheckIn: async (tripId, data) => {
+    const response = await apiClient.post(`/safety/trips/${tripId}/check-ins`, data);
+    return response.data;
+  },
+  getCheckIns: async (tripId) => {
+    const response = await apiClient.get(`/safety/trips/${tripId}/check-ins`);
+    return response.data;
+  },
+  completeCheckIn: async (checkInId, data) => {
+    const response = await apiClient.post(`/safety/check-ins/${checkInId}/complete`, data);
+    return response.data;
   }
 };

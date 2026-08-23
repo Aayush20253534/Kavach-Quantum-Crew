@@ -67,5 +67,48 @@ export const authorityService = {
   deactivateRiskZone: async (zoneId) => {
     const response = await apiClient.post(`/risk-zones/${zoneId}/deactivate`);
     return response.data;
+  },
+  
+  // Phase 1 Extensions: Hazards
+  getHazards: async () => {
+    const response = await apiClient.get('/hazards');
+    return response.data;
+  },
+  verifyHazard: async (hazardId) => {
+    const response = await apiClient.patch(`/hazards/${hazardId}/verify`);
+    return response.data;
+  },
+  rejectHazard: async (hazardId) => {
+    const response = await apiClient.patch(`/hazards/${hazardId}/reject`);
+    return response.data;
+  },
+  resolveHazard: async (hazardId) => {
+    const response = await apiClient.patch(`/hazards/${hazardId}/resolve`);
+    return response.data;
+  },
+
+  // Phase 1 Extensions: Responders
+  getResponders: async () => {
+    const response = await apiClient.get('/disaster-management/responders');
+    return response.data;
+  },
+  updateResponderStatus: async (statusData) => {
+    // Assuming updating own status for now
+    const response = await apiClient.patch('/disaster-management/responders/me/status', statusData);
+    return response.data;
+  },
+
+  // Phase 1 Extensions: Analytics
+  getAnalyticsOverview: async () => {
+    const response = await apiClient.get('/analytics/overview');
+    return response.data;
+  },
+  getIncidentAnalytics: async () => {
+    const response = await apiClient.get('/analytics/incidents');
+    return response.data;
+  },
+  getResponseTimeAnalytics: async () => {
+    const response = await apiClient.get('/analytics/response-times');
+    return response.data;
   }
 };

@@ -100,6 +100,8 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
     const status = error.response?.status;
 
+    const devRole = import.meta.env.DEV ? localStorage.getItem('DEV_ROLE') : null;
+
     if (
       status !== 401 ||
       !originalRequest ||
@@ -107,7 +109,8 @@ apiClient.interceptors.response.use(
       originalRequest.url?.includes('/auth/refresh') ||
       originalRequest.url?.includes('/auth/login') ||
       originalRequest.url?.includes('/auth/register') ||
-      authFailureLatched
+      authFailureLatched ||
+      devRole
     ) {
       return Promise.reject(error);
     }

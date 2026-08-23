@@ -19,9 +19,11 @@ import {
   PlusCircle,
   History,
   Menu,
-  ChevronLeft
+  ChevronLeft,
+  ShieldAlert
 } from 'lucide-react';
 import { logout } from '../../features/auth/store/authSlice';
+import { AIChatWidget } from '../../features/chatbot/components/AIChatWidget';
 import { NotificationsDropdown } from '../components/NotificationsDropdown';
 import { useGeolocation } from '../../features/tracking/hooks/useGeolocation';
 
@@ -70,8 +72,10 @@ export function TouristLayout() {
     { name: 'Dashboard', path: '/tourist/dashboard', icon: LayoutDashboard },
     { name: 'Live Tracking', path: '/tourist/tracking', icon: Navigation },
     { name: 'My Trips', path: '/tourist/trips/current', icon: Compass },
-    { name: 'Groups & QR', path: '/tourist/groups/create', icon: Users },
-    { name: 'Report Incident', path: '/tourist/incidents/report', icon: AlertTriangle },
+    { name: 'Join Group', path: '/tourist/groups/join', icon: Users },
+    { name: 'Report Incident', path: '/tourist/incidents/report', icon: ShieldAlert },
+    { name: 'Incident History', path: '/tourist/incidents/history', icon: History },
+    { name: 'Safety Check-ins', path: '/tourist/checkins', icon: ShieldCheck },
     { name: 'Safety ID Profile', path: '/tourist/profile', icon: User },
   ];
 
@@ -408,6 +412,7 @@ export function TouristLayout() {
 
       </div>
 
+      <AIChatWidget />
     </div>
   );
 }

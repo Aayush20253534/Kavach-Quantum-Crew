@@ -8,9 +8,10 @@ import {
   Activity,
   LogOut,
   ExternalLink,
-  Menu,
+  Settings,
+  FileText,
   ChevronLeft,
-  Settings
+  Puzzle
 } from 'lucide-react';
 import { logout } from '../../features/auth/store/authSlice';
 
@@ -28,8 +29,10 @@ export function AdminLayout() {
 
   const navItems = [
     { name: 'Accounts', path: '/admin/accounts', icon: Users },
-    { name: 'Audit Trail', path: '/admin/audit', icon: Activity },
-    { name: 'System Settings', path: '/admin/settings', icon: Settings },
+    { name: 'Audit Logs', path: '/admin/audit', icon: FileText },
+    { name: 'Integrations', path: '/admin/integrations', icon: Puzzle },
+    { name: 'Background Sweeps', path: '/admin/jobs', icon: Activity },
+    { name: 'Settings', path: '/admin/settings', icon: Settings },
     { name: 'Tourist View', path: '/tourist/dashboard', icon: ExternalLink },
   ];
 
