@@ -156,14 +156,21 @@ export function LiveTrackingPage() {
       </div>
 
       <div className="h-[220px] sm:h-[340px] lg:h-[clamp(340px,calc(100dvh-405px),430px)] rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
-        <MapComponent
-          currentLocation={location}
-          groupLocations={memberLocations}
-          groupGeofenceRadiusM={trip.tripType === 'GROUP' ? GROUP_GEOFENCE_RADIUS_M : 0}
-          riskZones={zones}
-          mapGestureHandling="cooperative"
-          className="w-full h-full"
-        />
+        {location ? (
+          <MapComponent
+            currentLocation={location}
+            groupLocations={memberLocations}
+            groupGeofenceRadiusM={trip.tripType === 'GROUP' ? GROUP_GEOFENCE_RADIUS_M : 0}
+            riskZones={zones}
+            mapGestureHandling="cooperative"
+            className="w-full h-full"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-slate-50 text-slate-500">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <p className="text-[11px] sm:text-xs font-bold">Locating you...</p>
+          </div>
+        )}
       </div>
     </div>
   );
