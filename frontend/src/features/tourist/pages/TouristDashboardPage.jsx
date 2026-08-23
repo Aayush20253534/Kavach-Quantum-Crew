@@ -3,9 +3,7 @@ import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import {
   AlertTriangle,
-  ArrowRight,
   Bell,
-  CalendarDays,
   CheckCircle2,
   Loader2,
   MapPin,
@@ -59,6 +57,7 @@ export function TouristDashboardPage() {
     fireStations: 0,
     total: 0,
   });
+  const [dashboardSnapshot, setDashboardSnapshot] = useState(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -148,35 +147,44 @@ export function TouristDashboardPage() {
     }
   };
 
-  const safety = summary?.safetyStatus?.level ?? (location ? 'SAFE' : 'UNKNOWN');
+  useEffect(() => {
+    if (dashboardSnapshot || summaryLoading || !summary || !location) return;
+    setDashboardSnapshot({
+      summary,
+      safety: summary?.safetyStatus?.level ?? 'SAFE',
+    });
+  }, [dashboardSnapshot, summaryLoading, summary, location]);
+
+  const frozenSummary = dashboardSnapshot?.summary;
+  const safety = dashboardSnapshot?.safety ?? 'UNKNOWN';
   const safetyIsDanger = safety === 'DANGER';
 
   const cards = useMemo(() => [
     {
       label: 'Total Tourists',
-      value: summaryLoading ? '...' : (summary?.totalTourists ?? 0).toLocaleString('en-IN'),
+      value: !dashboardSnapshot ? '...' : (frozenSummary?.totalTourists ?? 0).toLocaleString('en-IN'),
       sub: 'Registered tourist users',
       icon: Users,
     },
     {
       label: 'Active Alerts',
-      value: summaryLoading ? '...' : summary?.activeAlerts ?? 0,
+      value: !dashboardSnapshot ? '...' : frozenSummary?.activeAlerts ?? 0,
       sub: 'Your unresolved safety alerts',
       icon: Bell,
     },
     {
       label: 'Safety Status',
-      value: location ? (safetyIsDanger ? 'Danger Zone' : 'Safe Zone') : 'Locating...',
-      sub: safetyIsDanger ? summary?.safetyStatus?.zone?.name || 'Inside admin-defined risk geofence' : 'Outside all danger geofences',
+      value: dashboardSnapshot ? (safetyIsDanger ? 'Danger Zone' : 'Safe Zone') : 'Locating...',
+      sub: safetyIsDanger ? frozenSummary?.safetyStatus?.zone?.name || 'Inside admin-defined risk geofence' : 'Outside all danger geofences',
       icon: safetyIsDanger ? AlertTriangle : ShieldCheck,
     },
     {
       label: 'Group Members',
-      value: summaryLoading ? '...' : summary?.currentGroupMembers ?? 0,
-      sub: summary?.currentTrip?.locationName ? `Current trip: ${summary.currentTrip.locationName}` : 'No open group trip',
+      value: !dashboardSnapshot ? '...' : frozenSummary?.currentGroupMembers ?? 0,
+      sub: frozenSummary?.currentTrip?.locationName ? `Current trip: ${frozenSummary.currentTrip.locationName}` : 'No open group trip',
       icon: Users,
     },
-  ], [summary, summaryLoading, location, safetyIsDanger]);
+  ], [dashboardSnapshot, frozenSummary, safetyIsDanger]);
 
   return (
     <div className="space-y-7 max-w-[1240px] mx-auto pb-10 overflow-visible">
@@ -185,14 +193,8 @@ export function TouristDashboardPage() {
           <div className="min-w-0">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600">Tourist safety</p>
             <h2 className="mt-1 text-[22px] sm:text-[26px] font-black text-slate-950 tracking-tight">Welcome back, {userName}</h2>
-            <p className="text-[12px] sm:text-[13px] text-slate-500 font-medium mt-1.5">Search a destination to create a group trip, or plan your itinerary manually.</p>
+            <p className="text-[12px] sm:text-[13px] text-slate-500 font-medium mt-1.5">Search a destination to create a group trip.</p>
           </div>
-          <Link
-            to="/tourist/trips/create"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-[11px] font-black uppercase tracking-wider text-white shadow-sm transition hover:bg-slate-800"
-          >
-            Plan a trip <ArrowRight className="w-4 h-4" />
-          </Link>
         </div>
 
         <div className="relative z-20">
@@ -201,7 +203,7 @@ export function TouristDashboardPage() {
             <input
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
-              placeholder="Search destination, e.g. Prayagraj, Lucknow, Kanpur, Delhi"
+              placeholder="Search destination"
               className="w-full h-12 sm:h-14 px-3 text-[13px] sm:text-[14px] font-semibold text-slate-900 outline-none bg-transparent placeholder:font-medium placeholder:text-slate-400"
             />
             {searching && <Loader2 className="w-4 h-4 mr-4 text-slate-400 animate-spin" />}
@@ -246,7 +248,7 @@ export function TouristDashboardPage() {
         )}
       </section>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
         {cards.map((card, index) => {
           const Icon = card.icon;
           const dangerCard = card.label === 'Safety Status' && safetyIsDanger;
@@ -268,10 +270,9 @@ export function TouristDashboardPage() {
           <h2 className="text-[15px] font-black text-slate-950 uppercase tracking-wide flex items-center gap-2">
             <Star className="w-4 h-4 text-[#e11d48]" strokeWidth={2.5} /> Top Destinations
           </h2>
-          <Link to="/tourist/trips/create" className="text-[11px] font-bold text-[#e11d48] hover:text-[#be123c] flex items-center gap-1">Plan manually <ArrowRight className="w-3.5 h-3.5" /></Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
           {featuredDestinations.map((destination) => (
             <button
               key={destination.id}
