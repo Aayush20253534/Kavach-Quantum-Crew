@@ -1,10 +1,14 @@
+import { cacheGetOrSet } from "../../common/cache/cache.js";
 import { prisma } from "../../config/database.js";
+import { environment } from "../../config/environment.js";
 
 export const createDashboardRepository = ({ db = prisma } = {}) => ({
   totalTourists() {
-    // "Total Tourists" means every row in the tourist users table.
-    // Staff accounts live in separate tables and are intentionally excluded.
-    return db.user.count();
+    return cacheGetOrSet({
+      key: "dashboard:total-tourists",
+      ttlSeconds: environment.REDIS_DASHBOARD_TTL_SECONDS,
+      fetcher: () => db.user.count(),
+    });
   },
 
   activeAlerts(userId) {
@@ -37,11 +41,13 @@ export const createDashboardRepository = ({ db = prisma } = {}) => ({
   },
 
   activeRiskZones() {
-    return db.safetyZone.findMany({
-      where: {
-        active: true,
-        type: "RISK",
-      },
+    return cacheGetOrSet({
+      key: "dashboard:active-risk-zones",
+      ttlSeconds: environment.REDIS_RISK_ZONES_TTL_SECONDS,
+      fetcher: () =>
+        db.safetyZone.findMany({
+          where: { active: true, type: "RISK" },
+        }),
     });
   },
 });
