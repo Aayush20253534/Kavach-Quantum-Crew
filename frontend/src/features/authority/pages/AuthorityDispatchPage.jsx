@@ -48,7 +48,7 @@ export function AuthorityDispatchPage() {
             <Car className="w-6 h-6 text-slate-800" /> Fleet Dispatch
           </h1>
           <p className="text-[13px] text-slate-500 font-medium mt-1">
-            Real-time management of active patrol and medical units.
+            Jurisdiction fleet from the backend: police, fire fighting and medical response units.
           </p>
         </div>
         
@@ -116,7 +116,7 @@ export function AuthorityDispatchPage() {
                     <Car className="w-5 h-5 text-slate-600" />
                   </div>
                   <div>
-                    <h3 className="text-[14px] font-black text-slate-900 uppercase tracking-tight">{unit.callSign || `UNIT-${unit.id}`}</h3>
+                    <h3 className="text-[14px] font-black text-slate-900 uppercase tracking-tight">{unit.name || unit.callSign || `UNIT-${unit.id.slice(0, 8)}`}</h3>
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{unit.type || 'PATROL'}</p>
                   </div>
                 </div>
@@ -128,12 +128,17 @@ export function AuthorityDispatchPage() {
               <div className="space-y-3 mt-5 border-t border-slate-100 pt-4">
                 <div className="flex justify-between items-center text-[11px] font-medium text-slate-600">
                   <span className="flex items-center gap-1.5"><Crosshair className="w-3.5 h-3.5" /> Sector</span>
-                  <span className="font-bold text-slate-900">{unit.sector || 'Unassigned'}</span>
+                  <span className="font-bold text-slate-900">{unit.jurisdiction || 'Unassigned'}</span>
                 </div>
-                <div className="flex justify-between items-center text-[11px] font-medium text-slate-600">
-                  <span className="flex items-center gap-1.5"><UserPlus className="w-3.5 h-3.5" /> Personnel</span>
-                  <span className="font-bold text-slate-900">{unit.personnelCount || 2} Active</span>
+                <div className="flex justify-between items-center gap-3 text-[11px] font-medium text-slate-600">
+                  <span className="flex items-center gap-1.5"><UserPlus className="w-3.5 h-3.5" /> Organization</span>
+                  <span className="font-bold text-slate-900 text-right">{unit.organization || 'Emergency Services'}</span>
                 </div>
+                {unit.contactPhone && (
+                  <div className="flex justify-between items-center text-[11px] font-medium text-slate-600">
+                    <span>Contact</span><span className="font-mono font-bold text-slate-900">{unit.contactPhone}</span>
+                  </div>
+                )}
               </div>
             </div>
           ))}

@@ -133,7 +133,7 @@ export function AuthorityHazardsPage() {
                   <div className="flex items-center gap-4 text-[11px] text-slate-500 font-bold">
                     <span className="flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5" /> 
-                      {hazard.location?.latitude}, {hazard.location?.longitude}
+                      {hazard.locationName ? `${hazard.locationName} · ` : ''}{Number(hazard.latitude).toFixed(5)}, {Number(hazard.longitude).toFixed(5)}
                     </span>
                     <span className="flex items-center gap-1.5">
                       <Clock className="w-3.5 h-3.5" /> 

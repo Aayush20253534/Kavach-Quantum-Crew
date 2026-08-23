@@ -222,13 +222,15 @@ export function AuthorityIncidentsPage() {
                       {incident.priority || 'HIGH'}
                     </span>
                     <span className="text-[13px] font-bold text-slate-800 truncate">
-                      {incident.type || incident.title || 'Emergency Reported'}
+                      {incident.title || incident.type || 'Emergency Reported'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-[11px] text-slate-500 font-medium truncate">
-                    <span className="flex items-center gap-1 truncate">
-                      <MapPin className="w-3 h-3 shrink-0" /> 
-                      Lat: {incident.location?.latitude || 'N/A'}, Lng: {incident.location?.longitude || 'N/A'}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 font-medium">
+                    <span className="font-bold text-slate-700">{incident.tourist?.name || 'Tourist'}</span>
+                    {incident.tourist?.phone && <span>{incident.tourist.phone}</span>}
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      {incident.latitude != null && incident.longitude != null ? `${Number(incident.latitude).toFixed(5)}, ${Number(incident.longitude).toFixed(5)}` : 'Location unavailable'}
                     </span>
                     <span className="flex items-center gap-1 shrink-0">
                       <Clock className="w-3 h-3" /> 

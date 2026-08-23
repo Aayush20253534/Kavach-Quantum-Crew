@@ -119,7 +119,10 @@ export const createDisasterManagementService = ({
       });
     },
 
-    get: (actor, id) => incidents.get(actor, id),
+    async get(actor, id) {
+      await incidents.get(actor, id);
+      return repository.getIncidentContext(id);
+    },
     acknowledge: (actor, id, note) => incidents.acknowledge(actor, id, note),
     start: (actor, id, note) => incidents.startResponse(actor, id, note),
     resolve: (actor, id, note) => incidents.resolve(actor, id, note),
