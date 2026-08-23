@@ -13,8 +13,8 @@ export function PublicLayout() {
     <div className="min-h-screen flex flex-col bg-[#060B16] text-white selection:bg-sky-500/30">
 
       {/* Floating Premium Navbar */}
-      <header className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${isHome ? 'pt-3 px-3 sm:pt-5 sm:px-5' : 'bg-[#060B16]/90 backdrop-blur-xl border-b border-white/5 py-3 px-3 sm:px-5'}`}>
-        <div className={`mx-auto max-w-[1400px] flex items-center justify-between transition-all duration-300 ${isHome ? 'bg-black/20 backdrop-blur-md border border-white/10 rounded-full px-3 py-1.5 sm:px-5 sm:py-2.5 shadow-[0_4px_30px_rgba(0,0,0,0.1)]' : ''}`}>
+      <header className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${isHome ? 'pt-2.5 px-3 sm:pt-4 sm:px-5' : 'bg-[#060B16]/90 backdrop-blur-xl border-b border-white/5 py-3 px-3 sm:px-5'}`}>
+        <div className={`mx-auto max-w-[1400px] flex items-center justify-between transition-all duration-300 ${isHome ? 'bg-black/20 backdrop-blur-md border border-white/10 rounded-full px-3 py-1.5 sm:px-5 sm:py-2 shadow-[0_4px_30px_rgba(0,0,0,0.1)]' : ''}`}>
 
           {/* Brand Logo */}
           <Link to="/" className="flex items-center gap-3 group">
