@@ -138,7 +138,15 @@ apiClient.interceptors.response.use(
       return apiClient(originalRequest);
     } catch (refreshError) {
       processQueue(refreshError, null);
-      markAuthFailed();
+
+      // Only destroy the local session when the refresh token is actually
+      // rejected. A temporary 429, network failure, or server error should not
+      // sign the tourist out and make a rate-limit hiccup look like auth loss.
+      const refreshStatus = refreshError?.response?.status;
+      if (refreshStatus === 401 || refreshStatus === 403) {
+        markAuthFailed();
+      }
+
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;

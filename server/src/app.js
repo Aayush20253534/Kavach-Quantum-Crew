@@ -38,7 +38,12 @@ export const createApp = ({
   const app = express();
 
   app.disable("x-powered-by");
-  app.set("trust proxy", config.TRUST_PROXY);
+
+  // Render and similar production hosts sit behind a reverse proxy. Trust one
+  // proxy hop in production so express-rate-limit can use the real client IP
+  // from X-Forwarded-For instead of treating every visitor as 127.0.0.1.
+  const trustProxy = config.TRUST_PROXY || config.NODE_ENV === "production" ? 1 : false;
+  app.set("trust proxy", trustProxy);
 
   app.use(requestIdMiddleware);
   app.use(observabilityMiddleware);

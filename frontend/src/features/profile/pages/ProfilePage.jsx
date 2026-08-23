@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import {
   AlertCircle,
   Camera,
@@ -9,10 +10,11 @@ import {
   MapPin,
   Save,
   ShieldCheck,
+  LogOut,
   User,
 } from 'lucide-react';
 
-import { updateUser } from '../../auth/store/authSlice';
+import { logout, updateUser } from '../../auth/store/authSlice';
 import { ScrollableSelect } from '../../onboarding/components/ScrollableSelect';
 import {
   BLOOD_GROUPS,
@@ -45,6 +47,7 @@ const apiMessage = (error, fallback) =>
 
 export function ProfilePage() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
   const [profile, setProfile] = useState(null);
@@ -208,6 +211,11 @@ export function ProfilePage() {
     }
   };
 
+  const handleSignOut = () => {
+    dispatch(logout());
+    navigate('/login');
+  };
+
   if (loading) {
     return (
       <div className="min-h-[55vh] flex items-center justify-center">
@@ -318,6 +326,15 @@ export function ProfilePage() {
               />
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="mt-3 sm:mt-4 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs sm:text-sm font-bold text-slate-600 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign Out
+          </button>
         </aside>
 
         <main className="lg:col-span-8">
