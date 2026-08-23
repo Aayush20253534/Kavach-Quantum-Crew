@@ -275,3 +275,12 @@ There is currently **no tourist chatbot REST endpoint**. `ChatbotWidget.jsx` is 
 | `POST` | `/api/v1/chatbot/messages` | `TOURIST` | Validate a tourist chatbot message and forward it through the pluggable chatbot AI provider boundary. |
 
 Request body: `message` (required), optional `conversationId`, optional `location { latitude, longitude }`, and optional `context`. The default provider returns `501 CHATBOT_PROVIDER_NOT_CONFIGURED` until the AI branch supplies the provider implementation.
+
+## Tourist dashboard and destinations
+
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| `GET` | `/api/v1/dashboard/tourist?latitude=&longitude=` | TOURIST | Dashboard summary: total tourist users, the caller's active alerts, binary safe/danger geofence status, current group size and current trip. |
+| `GET` | `/api/v1/destinations?search=&featured=&limit=` | TOURIST | Search/list configured destinations used by the dashboard and trip/group creation UI. |
+
+Dashboard safety status is `DANGER` only when the supplied point falls inside an active `RISK` safety zone. Otherwise it is `SAFE`. Risk-zone mutation endpoints are restricted to `SYSTEM_ADMIN`; tourists and disaster managers retain read/evaluate access.
