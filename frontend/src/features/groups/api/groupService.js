@@ -17,12 +17,12 @@ export const groupService = {
   },
 
   createInvitation: async (groupId) => {
-    const response = await apiClient.post(`/groups/${groupId}/invitations`);
+    const response = await apiClient.post(`/groups/${groupId}/invitations`, {});
     return response.data; // Should return { token, ... }
   },
 
   joinGroup: async (token) => {
-    const response = await apiClient.post(`/groups/join`, { token });
+    const response = await apiClient.post(`/groups/join`, { inviteToken: token });
     return response.data;
   },
   
