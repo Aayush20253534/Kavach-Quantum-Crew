@@ -89,7 +89,7 @@ export function HomePage() {
           <div className="flex-1 max-w-2xl text-left flex flex-col justify-center">
 
             {/* Location Badge */}
-            <div className={`inline-flex items-center gap-3 px-3 py-1.5 rounded-full border border-white/20 bg-white/5 backdrop-blur-md text-[10px] font-bold uppercase tracking-[0.2em] text-white mb-5 sm:mb-5 transition-all duration-1000 delay-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+            <div className={`inline-flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.2em] text-white mb-5 sm:mb-5 transition-all duration-1000 delay-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
               <div className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
