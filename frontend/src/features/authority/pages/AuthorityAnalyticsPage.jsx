@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  BarChart4, TrendingUp, Clock, AlertOctagon, 
+  BarChart4, Clock, AlertOctagon, 
   Loader2, ServerCrash, Calendar, Download, Target
 } from 'lucide-react';
 import { authorityService } from '../api/authorityService';
@@ -18,21 +18,34 @@ export function AuthorityAnalyticsPage() {
     try {
       setLoading(true);
       setError('');
-      const [overview, responseTimes, incidentAnalytics, responderAnalytics] = await Promise.all([
-        authorityService.getAnalyticsOverview(),
-        authorityService.getResponseTimeAnalytics(),
-        authorityService.getIncidentAnalytics(),
-        authorityService.getResponderAnalytics(),
+      const to = new Date();
+      const from = new Date(to);
+      from.setUTCDate(from.getUTCDate() - 29);
+
+      const range = {
+        from: from.toISOString(),
+        to: to.toISOString(),
+      };
+
+      const [incidentAnalytics, responseTimes] = await Promise.all([
+        authorityService.getIncidentAnalytics(range),
+        authorityService.getResponseTimeAnalytics(range),
       ]);
-      const totalIncidents = Object.values(incidentAnalytics?.byStatus || {}).reduce((sum, count) => sum + count, 0);
-      const resolvedIncidents = incidentAnalytics?.byStatus?.RESOLVED || 0;
-      const activeResponders = Object.entries(responderAnalytics?.byAvailability || {})
-        .filter(([status]) => status !== 'OFF_DUTY')
-        .reduce((sum, [, count]) => sum + count, 0);
-      const average = responseTimes?.incidents?.responseStartMinutes ?? null;
+
+      const totalIncidents = Object.values(incidentAnalytics?.byStatus || {})
+        .reduce((sum, count) => sum + count, 0);
+
       setData({
-        overview: { ...overview, totalIncidents, resolvedIncidents, activeResponders },
-        responseTimes: { average, target: 5, percentUnderTarget: average == null ? null : (average <= 5 ? 100 : 0) },
+        jurisdiction: incidentAnalytics?.jurisdiction || responseTimes?.jurisdiction || null,
+        totalIncidents,
+        dailyVolume: incidentAnalytics?.dailyVolume || [],
+        responseTimes: {
+          average: responseTimes?.incidents?.responseStartMinutes ?? null,
+          distribution: responseTimes?.incidents?.distribution || [],
+          slaUnderFiveMinutesPercent:
+            responseTimes?.incidents?.slaUnderFiveMinutesPercent ?? 0,
+          respondedCount: responseTimes?.incidents?.respondedCount ?? 0,
+        },
       });
     } catch (err) {
       setError(err.message || 'Failed to fetch analytics');
@@ -53,7 +66,7 @@ export function AuthorityAnalyticsPage() {
             <BarChart4 className="w-6 h-6 text-indigo-600" /> Operational Analytics
           </h1>
           <p className="text-[13px] text-slate-500 font-medium mt-1">
-            Performance metrics, response SLAs, and historical data.
+            Backend-derived incident volume and response performance{data?.jurisdiction ? ` for ${data.jurisdiction}` : ''}.
           </p>
         </div>
         
@@ -89,8 +102,8 @@ export function AuthorityAnalyticsPage() {
               </div>
               <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1 relative z-10">Total Incidents (30d)</h3>
               <div className="flex items-end gap-3 relative z-10">
-                <span className="text-[40px] font-black text-slate-900 leading-none tracking-tighter">{data.overview.totalIncidents}</span>
-                <span className="text-[12px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded flex items-center mb-1.5"><TrendingUp className="w-3 h-3 mr-1" /> 12%</span>
+                <span className="text-[40px] font-black text-slate-900 leading-none tracking-tighter">{data.totalIncidents}</span>
+                <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded mb-1.5">Live DB</span>
               </div>
             </div>
 
@@ -100,8 +113,8 @@ export function AuthorityAnalyticsPage() {
               </div>
               <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1 relative z-10">Avg Response Time</h3>
               <div className="flex items-end gap-3 relative z-10">
-                <span className="text-[40px] font-black text-slate-900 leading-none tracking-tighter">{data.responseTimes.average}<span className="text-[20px] ml-1 text-slate-500">m</span></span>
-                <span className="text-[12px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded flex items-center mb-1.5"><TrendingUp className="w-3 h-3 mr-1" /> 0.8m</span>
+                <span className="text-[40px] font-black text-slate-900 leading-none tracking-tighter">{data.responseTimes.average ?? '—'}{data.responseTimes.average != null && <span className="text-[20px] ml-1 text-slate-500">m</span>}</span>
+                <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded mb-1.5">{data.responseTimes.respondedCount} responded</span>
               </div>
             </div>
 
@@ -111,68 +124,122 @@ export function AuthorityAnalyticsPage() {
               </div>
               <h3 className="text-[11px] font-bold text-indigo-200 uppercase tracking-widest mb-1 relative z-10">SLA Compliance</h3>
               <div className="flex items-end gap-3 relative z-10">
-                <span className="text-[40px] font-black text-white leading-none tracking-tighter">{data.responseTimes.percentUnderTarget}%</span>
+                <span className="text-[40px] font-black text-white leading-none tracking-tighter">{data.responseTimes.slaUnderFiveMinutesPercent}%</span>
                 <span className="text-[12px] font-bold text-white/80 bg-white/10 px-2 py-0.5 rounded mb-1.5">Target: 95%</span>
               </div>
             </div>
           </div>
 
-          {/* Charts Placeholder */}
+          {/* Backend-integrated charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-80 flex flex-col">
-              <h3 className="text-[12px] font-bold text-slate-900 uppercase tracking-widest mb-6">Incident Volume by Day</h3>
-              <div className="flex-1 flex items-end gap-2 border-b border-l border-slate-100 pb-2 pl-2">
-                 {/* Fake Bar Chart */}
-                 {[40, 25, 60, 45, 80, 55, 30, 90, 65, 40, 75, 50, 20, 85].map((height, i) => (
-                   <div key={i} className="flex-1 bg-indigo-100 hover:bg-indigo-200 rounded-t-sm relative group transition-colors" style={{ height: `${height}%` }}>
-                     <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded transition-opacity">
-                       {height * 2}
-                     </div>
-                   </div>
-                 ))}
+              <div className="flex items-start justify-between gap-3 mb-5">
+                <div>
+                  <h3 className="text-[12px] font-bold text-slate-900 uppercase tracking-widest">
+                    Incident Volume by Day
+                  </h3>
+                  <p className="mt-1 text-[10px] font-medium text-slate-400">
+                    Last 30 days from incident records
+                  </p>
+                </div>
+                <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
+                  {data.totalIncidents} incidents
+                </span>
               </div>
+
+              {data.dailyVolume.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center text-[11px] font-semibold text-slate-400">
+                  No incident records in this period.
+                </div>
+              ) : (
+                <div className="flex-1 flex items-end gap-1.5 border-b border-l border-slate-100 pb-2 pl-2">
+                  {(() => {
+                    const maxCount = Math.max(
+                      1,
+                      ...data.dailyVolume.map((item) => Number(item.count) || 0),
+                    );
+
+                    return data.dailyVolume.map((item, index) => {
+                      const height =
+                        item.count === 0
+                          ? 3
+                          : Math.max(8, (item.count / maxCount) * 100);
+                      const showLabel =
+                        index === 0 ||
+                        index === data.dailyVolume.length - 1 ||
+                        index % 7 === 0;
+
+                      return (
+                        <div
+                          key={item.date}
+                          className="group relative flex h-full min-w-0 flex-1 items-end"
+                        >
+                          <div
+                            className="w-full rounded-t-sm bg-indigo-200 transition-colors hover:bg-indigo-500"
+                            style={{ height: `${height}%` }}
+                          />
+
+                          <div className="pointer-events-none absolute -top-9 left-1/2 z-20 hidden -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[9px] font-bold text-white group-hover:block">
+                            {item.date}: {item.count}
+                          </div>
+
+                          {showLabel && (
+                            <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[8px] font-bold text-slate-400">
+                              {item.date.slice(5)}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              )}
             </div>
 
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-80 flex flex-col">
-              <h3 className="text-[12px] font-bold text-slate-900 uppercase tracking-widest mb-6">Response Time Distribution</h3>
+              <div className="mb-5">
+                <h3 className="text-[12px] font-bold text-slate-900 uppercase tracking-widest">
+                  Response Time Distribution
+                </h3>
+                <p className="mt-1 text-[10px] font-medium text-slate-400">
+                  Time from incident creation to response start
+                </p>
+              </div>
+
               <div className="flex-1 flex flex-col justify-center gap-4">
-                 {/* Fake Progress Bars */}
-                 <div>
-                   <div className="flex justify-between text-[11px] font-bold text-slate-600 uppercase mb-1">
-                     <span>&lt; 2 Minutes</span>
-                     <span>45%</span>
-                   </div>
-                   <div className="w-full bg-slate-100 rounded-full h-2.5">
-                     <div className="bg-emerald-500 h-2.5 rounded-full" style={{ width: '45%' }}></div>
-                   </div>
-                 </div>
-                 <div>
-                   <div className="flex justify-between text-[11px] font-bold text-slate-600 uppercase mb-1">
-                     <span>2 - 5 Minutes</span>
-                     <span>37%</span>
-                   </div>
-                   <div className="w-full bg-slate-100 rounded-full h-2.5">
-                     <div className="bg-indigo-500 h-2.5 rounded-full" style={{ width: '37%' }}></div>
-                   </div>
-                 </div>
-                 <div>
-                   <div className="flex justify-between text-[11px] font-bold text-slate-600 uppercase mb-1">
-                     <span>5 - 10 Minutes</span>
-                     <span>12%</span>
-                   </div>
-                   <div className="w-full bg-slate-100 rounded-full h-2.5">
-                     <div className="bg-amber-500 h-2.5 rounded-full" style={{ width: '12%' }}></div>
-                   </div>
-                 </div>
-                 <div>
-                   <div className="flex justify-between text-[11px] font-bold text-slate-600 uppercase mb-1">
-                     <span>&gt; 10 Minutes</span>
-                     <span>6%</span>
-                   </div>
-                   <div className="w-full bg-slate-100 rounded-full h-2.5">
-                     <div className="bg-red-500 h-2.5 rounded-full" style={{ width: '6%' }}></div>
-                   </div>
-                 </div>
+                {data.responseTimes.distribution.map((bucket) => {
+                  const barClass =
+                    bucket.key === 'UNDER_2'
+                      ? 'bg-emerald-500'
+                      : bucket.key === 'TWO_TO_FIVE'
+                        ? 'bg-indigo-500'
+                        : bucket.key === 'FIVE_TO_TEN'
+                          ? 'bg-amber-500'
+                          : 'bg-red-500';
+
+                  return (
+                    <div key={bucket.key}>
+                      <div className="mb-1 flex justify-between text-[11px] font-bold uppercase text-slate-600">
+                        <span>{bucket.label}</span>
+                        <span>
+                          {bucket.percentage}% · {bucket.count}
+                        </span>
+                      </div>
+                      <div className="h-2.5 w-full rounded-full bg-slate-100">
+                        <div
+                          className={`h-2.5 rounded-full transition-all ${barClass}`}
+                          style={{ width: `${Math.min(100, bucket.percentage)}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {data.responseTimes.distribution.length === 0 && (
+                  <div className="text-center text-[11px] font-semibold text-slate-400">
+                    No responded incidents in this period.
+                  </div>
+                )}
               </div>
             </div>
           </div>

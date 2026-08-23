@@ -115,16 +115,16 @@ export const authorityService = {
     const response = await apiClient.get('/analytics/overview');
     return unwrap(response);
   },
-  getIncidentAnalytics: async () => {
-    const response = await apiClient.get('/analytics/incidents');
+  getIncidentAnalytics: async (params = {}) => {
+    const response = await apiClient.get('/analytics/incidents', { params });
     return unwrap(response);
   },
   getResponderAnalytics: async () => {
     const response = await apiClient.get('/analytics/responders');
     return unwrap(response);
   },
-  getResponseTimeAnalytics: async () => {
-    const response = await apiClient.get('/analytics/response-times');
+  getResponseTimeAnalytics: async (params = {}) => {
+    const response = await apiClient.get('/analytics/response-times', { params });
     return unwrap(response);
   }
 };
