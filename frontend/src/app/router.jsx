@@ -45,6 +45,7 @@ import { AuthorityRiskZonesPage } from '../features/authority/pages/AuthorityRis
 // Pages - Admin
 import { AdminAccountsPage } from '../features/admin/pages/AdminAccountsPage';
 import { AdminAuditPage } from '../features/admin/pages/AdminAuditPage';
+import { AdminSettingsPage } from '../features/admin/pages/AdminSettingsPage';
 
 export const router = createBrowserRouter([
   {
@@ -135,6 +136,7 @@ export const router = createBrowserRouter([
                 children: [
                   { path: 'accounts', element: <AdminAccountsPage /> },
                   { path: 'audit', element: <AdminAuditPage /> },
+                  { path: 'settings', element: <AdminSettingsPage /> },
                 ],
               },
             ],
