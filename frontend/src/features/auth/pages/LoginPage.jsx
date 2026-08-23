@@ -18,6 +18,7 @@ import {
 
 import { authService } from '../api/authService';
 import { setAuth } from '../store/authSlice';
+import { setAccessToken } from '../../../services/apiClient';
 
 const loginSchema = z.object({
   identifier: z.string().min(1, 'Email, username, or phone number is required'),
@@ -87,7 +88,7 @@ export default function LoginPage() {
         throw new Error('Invalid login response from server.');
       }
 
-      localStorage.setItem('quantum_access_token', accessToken);
+      setAccessToken(accessToken);
       dispatch(setAuth({ user }));
 
       if (user.role === 'DISASTER_MANAGER') {
@@ -102,7 +103,7 @@ export default function LoginPage() {
 
       if (user.role === 'TOURIST') {
         navigate(
-          user.onboardingCompleted ? '/tourist/profile' : '/onboarding',
+          user.onboardingCompleted ? '/tourist/dashboard' : '/onboarding',
           { replace: true }
         );
         return;

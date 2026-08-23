@@ -204,6 +204,12 @@ const environmentSchema = z
       .min(1)
       .default("sts_refresh"),
 
+    REFRESH_COOKIE_SECURE: booleanFromEnvironment.default(false),
+
+    REFRESH_COOKIE_SAME_SITE: z
+      .enum(["lax", "strict", "none"])
+      .default("lax"),
+
     INCIDENT_ACK_TIMEOUT_MINUTES: integerFromEnvironment(
       1,
       1440,
