@@ -149,7 +149,7 @@ export default function PrayagrajGallery({ onSelectPlace }) {
       {/* ------------------------------------------------
           3. MAIN HERO CONTENT (LEFT SIDE)
       ------------------------------------------------ */}
-      <div className="absolute top-[6.25rem] bottom-36 left-8 right-8 z-20 flex flex-col justify-start pt-5 max-w-xl">
+      <div className="absolute top-28 bottom-[10.5rem] left-8 right-8 z-20 flex max-w-xl flex-col justify-center">
         {/* Destination Category Pill */}
         <div className="mb-3 flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 border border-red-200 backdrop-blur-md">
@@ -189,7 +189,7 @@ export default function PrayagrajGallery({ onSelectPlace }) {
       {/* ------------------------------------------------
           4. FLOATING CAROUSEL CARDS DECK
       ------------------------------------------------ */}
-      <div className="absolute bottom-6 left-8 right-8 z-30 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
+      <div className="absolute bottom-8 left-8 right-8 z-30 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
         {/* Destination Preview Cards Deck */}
         <div className="flex items-center gap-3 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto">
           {prayagrajPlaces.map((place, idx) => {
