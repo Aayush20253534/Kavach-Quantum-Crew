@@ -1,4 +1,5 @@
 import { ApiError } from "../../common/errors/ApiError.js";
+import { cloudinaryAdapter } from "../../integrations/cloudinary/cloudinary.adapter.js";
 import { touristRepository } from "./tourist.repository.js";
 
 const toProfile = (user) => ({
@@ -24,7 +25,10 @@ const toProfile = (user) => ({
   onboardingCompleted: user.onboardingCompleted,
 });
 
-export const createTouristService = ({ repository = touristRepository } = {}) =>
+export const createTouristService = ({
+  repository = touristRepository,
+  imageStorage = cloudinaryAdapter,
+} = {}) =>
   Object.freeze({
     async getProfile(userId) {
       const user = await repository.findByUserId(userId);
@@ -65,6 +69,36 @@ export const createTouristService = ({ repository = touristRepository } = {}) =>
         geoAlertsEnabled: input.geoAlertsEnabled,
       });
       return toProfile(updated);
+    },
+
+    async updateProfileImage(userId, file) {
+      const existing = await repository.findByUserId(userId);
+      if (!existing) {
+        throw ApiError.notFound("Tourist account not found", {
+          code: "TOURIST_NOT_FOUND",
+        });
+      }
+
+      if (!existing.onboardingCompleted) {
+        throw ApiError.badRequest(
+          "Complete onboarding before uploading a profile image",
+          { code: "ONBOARDING_REQUIRED" },
+        );
+      }
+
+      const uploaded = await imageStorage.uploadTouristProfileImage({
+        userId,
+        file,
+      });
+
+      const updated = await repository.updateProfile(userId, {
+        profilePicUrl: uploaded.url,
+      });
+
+      return {
+        profile: toProfile(updated),
+        image: uploaded,
+      };
     },
 
     async updateProfile(userId, input) {

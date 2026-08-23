@@ -284,3 +284,25 @@ Request body: `message` (required), optional `conversationId`, optional `locatio
 | `GET` | `/api/v1/destinations?search=&featured=&limit=` | TOURIST | Search/list configured destinations used by the dashboard and trip/group creation UI. |
 
 Dashboard safety status is `DANGER` only when the supplied point falls inside an active `RISK` safety zone. Otherwise it is `SAFE`. Risk-zone mutation endpoints are restricted to `SYSTEM_ADMIN`; tourists and disaster managers retain read/evaluate access.
+
+
+### POST /api/v1/tourists/me/profile-image
+
+Uploads or replaces the authenticated tourist's profile image.
+
+- Authentication: Tourist bearer access token
+- Content-Type: `multipart/form-data`
+- Form field: `image`
+- Allowed types: JPEG, PNG, WebP
+- Maximum size: configured by `PROFILE_IMAGE_MAX_FILE_BYTES` (5 MB default)
+- Storage: Cloudinary
+- The secure URL is stored in `users.profilePicUrl`
+
+Required server environment variables:
+
+```env
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+PROFILE_IMAGE_MAX_FILE_BYTES=5242880
+```
