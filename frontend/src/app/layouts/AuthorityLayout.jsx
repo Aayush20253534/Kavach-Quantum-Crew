@@ -9,7 +9,8 @@ import {
   LogOut,
   ExternalLink,
   Menu,
-  ChevronLeft
+  ChevronLeft,
+  AlertTriangle
 } from 'lucide-react';
 import { logout } from '../../features/auth/store/authSlice';
 
@@ -27,15 +28,16 @@ export function AuthorityLayout() {
 
   const navItems = [
     { name: 'Live Command Map', path: '/authority/dashboard', icon: Activity },
+    { name: 'Incident Queue', path: '/authority/incidents', icon: AlertTriangle },
     { name: 'Tourist Dashboard View', path: '/tourist/dashboard', icon: Users },
   ];
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 antialiased font-sans">
-      
+
       {/* Authority Sidebar */}
       <aside className={`hidden md:flex flex-col bg-white border-r border-slate-200 fixed top-0 left-0 h-screen z-30 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-72'}`}>
-        
+
         {/* Collapse Toggle Button (Desktop Only) */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
@@ -104,15 +106,14 @@ export function AuthorityLayout() {
               <NavLink
                 key={item.name}
                 to={item.path}
-                className={`group flex items-center gap-3 py-3 rounded-md text-[12px] font-bold uppercase tracking-wider transition-all duration-200 ${
-                  isCollapsed ? 'justify-center px-0' : 'px-4'
-                } ${isActive
+                className={`group flex items-center gap-3 py-3 rounded-md text-[12px] font-bold uppercase tracking-wider transition-all duration-200 ${isCollapsed ? 'justify-center px-0' : 'px-4'
+                  } ${location.pathname.startsWith(item.path)
                     ? 'bg-[#fff1f2] text-[#be123c] border border-[#ffe4e6] shadow-sm'
                     : 'text-slate-600 border border-transparent hover:text-[#e11d48] hover:bg-slate-50 hover:border-slate-200'
                   }`}
                 title={isCollapsed ? item.name : undefined}
               >
-                <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-[#e11d48]' : 'text-slate-400 group-hover:text-[#e11d48]'}`} />
+                <Icon className={`w-4 h-4 shrink-0 transition-colors ${location.pathname.startsWith(item.path) ? 'text-[#e11d48]' : 'text-slate-400 group-hover:text-[#e11d48]'}`} />
                 {!isCollapsed && <span>{item.name}</span>}
               </NavLink>
             );
@@ -138,7 +139,7 @@ export function AuthorityLayout() {
               </div>
             </div>
           )}
-          
+
           <button
             onClick={handleLogout}
             className={`group w-full flex items-center gap-2 py-2.5 rounded-md text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#e11d48] hover:bg-[#fff1f2] transition-colors cursor-pointer border border-transparent hover:border-[#ffe4e6] ${isCollapsed ? 'justify-center px-0' : 'justify-center'}`}
@@ -179,11 +180,11 @@ export function AuthorityLayout() {
         <nav className="md:hidden fixed bottom-0 left-0 right-0 w-full h-16 bg-white border-t border-slate-200 z-50 flex items-center justify-around px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname.startsWith(item.path);
             return (
-              <Link 
-                key={item.name} 
-                to={item.path} 
+              <Link
+                key={item.name}
+                to={item.path}
                 className={`flex flex-col items-center justify-center gap-1 w-20 h-full ${isActive ? 'text-[#be123c]' : 'text-slate-400 hover:text-slate-900'}`}
               >
                 <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
