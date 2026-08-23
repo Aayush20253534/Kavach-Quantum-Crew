@@ -7,7 +7,7 @@ const baseUser = {
   name: "Tourist One",
   username: "tourist.one",
   email: "tourist@example.com",
-  phone: "+919876543210",
+  phone: "9876543210",
   onboardingCompleted: false,
   profilePicUrl: null,
   gender: null,
@@ -35,7 +35,7 @@ describe("Phase 3 tourist profile service", () => {
       onboardingCompleted: true,
       gender: "MALE",
       age: 21,
-      emergencyPhone: "+919876543211",
+      emergencyPhone: "9876543211",
       nationality: "Indian",
     };
     const repository = {
@@ -48,12 +48,12 @@ describe("Phase 3 tourist profile service", () => {
       service.completeOnboarding(baseUser.id, {
         gender: "MALE",
         age: 21,
-        emergencyPhone: "+919876543211",
+        emergencyPhone: "9876543211",
         nationality: "Indian",
       }),
     ).resolves.toMatchObject({
       gender: "MALE",
-      emergencyContact: "+919876543211",
+      emergencyContact: "9876543211",
       onboardingCompleted: true,
     });
   });
@@ -68,7 +68,7 @@ describe("Phase 3 tourist profile service", () => {
       service.completeOnboarding(baseUser.id, {
         gender: "MALE",
         age: 21,
-        emergencyPhone: "+919876543211",
+        emergencyPhone: "9876543211",
         nationality: "Indian",
       }),
     ).rejects.toMatchObject({ code: "ONBOARDING_ALREADY_COMPLETED" });
@@ -81,8 +81,8 @@ describe("Phase 3 tourist profile service", () => {
       name: "Tourist Updated",
       username: "tourist.updated",
       email: "updated@example.com",
-      phone: "+919876543212",
-      emergencyPhone: "+919876543213",
+      phone: "9876543212",
+      emergencyPhone: "9876543213",
       profilePicUrl: "https://cdn.example.com/profile.jpg",
       nationality: "Indian",
     };
@@ -99,8 +99,8 @@ describe("Phase 3 tourist profile service", () => {
       name: "Tourist Updated",
       username: "tourist.updated",
       email: "updated@example.com",
-      phone: "+919876543212",
-      emergencyPhone: "+919876543213",
+      phone: "9876543212",
+      emergencyPhone: "9876543213",
       profilePicUrl: "https://cdn.example.com/profile.jpg",
       nationality: "Indian",
     });
@@ -108,12 +108,12 @@ describe("Phase 3 tourist profile service", () => {
     expect(repository.updateProfile).toHaveBeenCalledWith(baseUser.id, expect.objectContaining({
       username: "tourist.updated",
       email: "updated@example.com",
-      phone: "+919876543212",
+      phone: "9876543212",
     }));
     expect(result).toMatchObject({
       username: "tourist.updated",
       email: "updated@example.com",
-      emergencyContact: "+919876543213",
+      emergencyContact: "9876543213",
       profilePic: "https://cdn.example.com/profile.jpg",
     });
   });
@@ -127,7 +127,7 @@ describe("Phase 3 tourist profile service", () => {
     const values = {
       username: "another.user",
       email: "another@example.com",
-      phone: "+919876543299",
+      phone: "9876543299",
     };
     const repository = {
       findByUserId: jest.fn().mockResolvedValue(existing),

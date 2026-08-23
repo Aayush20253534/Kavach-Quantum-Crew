@@ -12,7 +12,7 @@ const email = z.string().trim().email().max(254).transform((value) => value.toLo
 const phone = z
   .string()
   .trim()
-  .regex(/^\+?[1-9]\d{6,14}$/, "Phone number must contain 7 to 15 digits and may start with +");
+  .regex(/^\d{10}$/, "Phone number must contain exactly 10 digits");
 
 const password = z
   .string()

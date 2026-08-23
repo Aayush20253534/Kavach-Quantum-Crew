@@ -13,7 +13,7 @@ describe("Phase 1 request validation", () => {
       name: "Aayush Kumar",
       username: "Aayush.Dev",
       email: "AAYUSH@example.com",
-      phone: "+919876543210",
+      phone: "9876543210",
       password: "Tourist123",
       confirmPassword: "Tourist123",
     });
@@ -28,7 +28,7 @@ describe("Phase 1 request validation", () => {
       name: "Tourist One",
       username: "tourist.one",
       email: "tourist@example.com",
-      phone: "+919876543210",
+      phone: "9876543210",
       password: "Tourist123",
       confirmPassword: "Different123",
     });
@@ -53,13 +53,14 @@ describe("Phase 1 request validation", () => {
         gender: "MALE",
         age: 21,
         medicalHistory: "None",
-        emergencyPhone: "+919876543211",
+        emergencyPhone: "9876543211",
         nationality: "Indian",
         preferredLanguage: "English",
         emergencyContactName: "Emergency Contact",
-        emergencyContactRelation: "Parent",
+        emergencyContactRelation: "Father",
         bloodGroup: "O+",
-        governmentIdNumber: "TEST-ID-001",
+        governmentIdType: "PASSPORT",
+        governmentIdNumber: "TESTID001",
         liveTrackingEnabled: true,
         geoAlertsEnabled: true,
       }),
@@ -71,6 +72,42 @@ describe("Phase 1 request validation", () => {
       liveTrackingEnabled: true,
       geoAlertsEnabled: true,
     });
+  });
+
+  test("accepts age boundaries and rejects impossible ages", () => {
+    const base = {
+      gender: "MALE",
+      medicalHistory: null,
+      emergencyPhone: "9876543211",
+      nationality: "India",
+      preferredLanguage: "Hindi",
+      emergencyContactName: "Emergency Contact",
+      emergencyContactRelation: "Father",
+      bloodGroup: "AB-",
+      governmentIdType: "AADHAAR",
+      governmentIdNumber: "123456789012",
+      liveTrackingEnabled: true,
+      geoAlertsEnabled: true,
+    };
+
+    expect(onboardingBodySchema.safeParse({ ...base, age: 0 }).success).toBe(true);
+    expect(onboardingBodySchema.safeParse({ ...base, age: 100 }).success).toBe(true);
+    expect(onboardingBodySchema.safeParse({ ...base, age: -1 }).success).toBe(false);
+    expect(onboardingBodySchema.safeParse({ ...base, age: 101 }).success).toBe(false);
+  });
+
+  test("requires exactly ten signup phone digits", () => {
+    const base = {
+      name: "Tourist One",
+      username: "tourist.one",
+      email: "tourist@example.com",
+      password: "Tourist123",
+      confirmPassword: "Tourist123",
+    };
+
+    expect(registerBodySchema.safeParse({ ...base, phone: "9876543210" }).success).toBe(true);
+    expect(registerBodySchema.safeParse({ ...base, phone: "987654321" }).success).toBe(false);
+    expect(registerBodySchema.safeParse({ ...base, phone: "919876543210" }).success).toBe(false);
   });
 
   test("requires at least one field for profile update", () => {

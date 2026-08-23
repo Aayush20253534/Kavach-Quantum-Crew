@@ -86,13 +86,19 @@ export const createSafetyService = ({
     },
 
     async scheduleCheckIn(userId, tripId, dueAtInput) {
-      await requireTrip(repository, tripId, userId, ["ACTIVE"]);
+      const trip = await requireTrip(repository, tripId, userId, ["ACTIVE"]);
       const now = clock();
       const dueAt = new Date(dueAtInput);
       const leadMs = dueAt.getTime() - now.getTime();
       if (leadMs < limits.minCheckInLeadMs || leadMs > limits.maxCheckInLeadMs) {
         throw ApiError.badRequest("Check-in must be scheduled between 1 minute and 24 hours from now", {
           code: "CHECK_IN_TIME_INVALID",
+        });
+      }
+      if (trip.plannedEndAt && dueAt > new Date(trip.plannedEndAt)) {
+        throw ApiError.badRequest("Check-in cannot be scheduled after the trip ends", {
+          code: "CHECK_IN_AFTER_TRIP_END",
+          details: { plannedEndAt: trip.plannedEndAt },
         });
       }
       const checkIn = await repository.createCheckIn({ tripId, userId, dueAt });

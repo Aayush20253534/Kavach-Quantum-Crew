@@ -37,13 +37,21 @@ const requireOpen = (group) => {
     throw ApiError.conflict("Group is closed", { code: "GROUP_CLOSED" });
   }
 };
+const requireMembershipOpen = (group) => {
+  if (group.status !== "ACTIVE" || group.trip.status !== "PLANNED") {
+    throw ApiError.conflict("Group membership is locked after the trip starts", {
+      code: "GROUP_MEMBERSHIP_LOCKED",
+      details: { tripStatus: group.trip.status },
+    });
+  }
+};
 
 export const createGroupService = ({ repository = groupRepository, clock = () => new Date(), tokenFactory = makeToken, codeFactory = makeCode } = {}) => Object.freeze({
   async createGroup(userId, tripId) {
     const trip = await repository.findTrip(tripId);
     if (!trip || trip.touristId !== userId) throw ApiError.notFound("Trip not found", { code: "TRIP_NOT_FOUND" });
     if (trip.tripType !== "GROUP") throw ApiError.badRequest("Groups can only be created for GROUP trips", { code: "GROUP_TRIP_REQUIRED" });
-    if (!["PLANNED", "ACTIVE"].includes(trip.status)) throw ApiError.conflict("Trip is not open", { code: "TRIP_NOT_OPEN" });
+    if (trip.status !== "PLANNED") throw ApiError.conflict("Group must be created before the trip starts", { code: "TRIP_NOT_PLANNED" });
     if (trip.group) throw ApiError.conflict("This trip already has a group", { code: "GROUP_ALREADY_EXISTS" });
     const group = await repository.createGroup(tripId, userId, clock());
     await repository.createAudit({ actorId: userId, action: "GROUP_CREATED", entityId: group.id, metadata: { tripId } });
@@ -61,7 +69,7 @@ export const createGroupService = ({ repository = groupRepository, clock = () =>
     return serializeGroup(group);
   },
   async createInvitation(userId, groupId, expiresInMinutes) {
-    const group = await requireGroup(repository, groupId); requireLeader(group, userId); requireOpen(group);
+    const group = await requireGroup(repository, groupId); requireLeader(group, userId); requireMembershipOpen(group);
     const now = clock(); const rawToken = tokenFactory(); const code = codeFactory();
     const invitation = await repository.createInvitation(groupId, { code, tokenHash: hashToken(rawToken), expiresAt: new Date(now.getTime() + expiresInMinutes * 60000) });
     await repository.createAudit({ actorId: userId, action: "GROUP_INVITATION_CREATED", entityId: groupId, metadata: { invitationId: invitation.id, expiresAt: invitation.expiresAt.toISOString() } });
@@ -80,13 +88,29 @@ export const createGroupService = ({ repository = groupRepository, clock = () =>
     const invitation = await repository.findInvitationByTokenHash(hashToken(inviteToken));
     if (!invitation) throw ApiError.notFound("Invitation not found", { code: "INVITATION_NOT_FOUND" });
     const now = clock(); const group = invitation.group;
-    requireOpen(group);
+    requireMembershipOpen(group);
     if (invitation.revokedAt) throw ApiError.badRequest("Invitation has been revoked", { code: "INVITATION_REVOKED" });
     if (new Date(invitation.expiresAt) <= now) throw ApiError.badRequest("Invitation has expired", { code: "INVITATION_EXPIRED" });
     const existing = await repository.findActiveMembership(group.id, userId);
     if (existing) throw ApiError.conflict("You are already a member of this group", { code: "GROUP_MEMBER_EXISTS" });
     const tripMembership = await repository.findMembershipInTrip(group.tripId, userId);
     if (tripMembership) throw ApiError.conflict("You already belong to a group for this trip", { code: "TRIP_GROUP_MEMBERSHIP_EXISTS" });
+
+    const currentTrip = await repository.findOpenTripForUser(userId);
+    if (currentTrip && currentTrip.id !== group.tripId) {
+      throw ApiError.conflict(
+        "Complete or cancel your current trip before joining another group",
+        {
+          code: "CURRENT_TRIP_EXISTS",
+          details: {
+            tripId: currentTrip.id,
+            status: currentTrip.status,
+            locationName: currentTrip.locationName,
+          },
+        },
+      );
+    }
+
     await repository.joinGroup(group.id, userId, now);
     await repository.createAudit({ actorId: userId, action: "GROUP_JOINED", entityId: group.id, metadata: { invitationId: invitation.id } });
     return serializeGroup(await repository.findGroup(group.id));
