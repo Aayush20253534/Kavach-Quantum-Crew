@@ -207,10 +207,10 @@ body,
 /* Compact Google Maps emergency popup inside the tourist app.
    Google injects inline sizes on its close button, so these need !important. */
 .tourist-font .gm-style .gm-ui-hover-effect {
-  top: -5px !important;
-  right: -5px !important;
-  width: 30px !important;
-  height: 30px !important;
+  top: 2px !important;
+  right: 2px !important;
+  width: 28px !important;
+  height: 28px !important;
   padding: 0 !important;
   border: 0 !important;
   outline: 0 !important;
@@ -228,18 +228,31 @@ body,
 }
 
 .tourist-font .gm-style .gm-ui-hover-effect > span {
-  width: 18px !important;
-  height: 18px !important;
+  width: 16px !important;
+  height: 16px !important;
   margin: 6px !important;
 }
 
 .tourist-font .gm-style .gm-style-iw-c {
   max-width: calc(100vw - 56px) !important;
   border-radius: 12px !important;
+  padding: 12px 34px 12px 12px !important;
+}
+
+/* Google reserves a header row for the close button even when no header exists.
+   Collapse that row so the content has the same visual gap above and below. */
+.tourist-font .gm-style .gm-style-iw-chr {
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-height: 0 !important;
 }
 
 .tourist-font .gm-style .gm-style-iw-d {
   overflow: hidden !important;
+  padding: 0 !important;
 }
 
 @media (max-width: 640px) {
