@@ -64,13 +64,14 @@ export function AuthorityLayout() {
   ];
 
   return (
+    <>
       <SignOutConfirmModal
         open={logoutOpen}
         busy={logoutBusy}
         onCancel={() => !logoutBusy && setLogoutOpen(false)}
         onConfirm={handleLogout}
       />
-    <div className="min-h-screen bg-slate-50 text-slate-900 antialiased font-sans">
+      <div className="min-h-screen bg-slate-50 text-slate-900 antialiased font-sans">
 
       {/* Authority Sidebar */}
       <aside className={`hidden md:flex flex-col bg-white border-r border-slate-200 fixed top-0 left-0 h-screen z-30 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-72'}`}>
@@ -233,5 +234,6 @@ export function AuthorityLayout() {
 
       </div>
     </div>
+    </>
   );
 }

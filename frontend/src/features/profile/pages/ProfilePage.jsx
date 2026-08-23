@@ -252,6 +252,12 @@ export function ProfilePage() {
 
   return (
     <div className="max-w-[1120px] mx-auto space-y-4 sm:space-y-6 pb-8 sm:pb-10">
+      <SignOutConfirmModal
+        open={logoutOpen}
+        busy={logoutBusy}
+        onCancel={() => !logoutBusy && setLogoutOpen(false)}
+        onConfirm={handleSignOut}
+      />
       <div>
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600" />
