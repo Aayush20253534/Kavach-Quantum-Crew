@@ -37,6 +37,8 @@ import { ProfilePage } from '../features/profile/pages/ProfilePage';
 
 // Pages - Authority
 import { AuthorityDashboardPage } from '../features/authority/pages/AuthorityDashboardPage';
+import { AuthorityIncidentsPage } from '../features/authority/pages/AuthorityIncidentsPage';
+import { AuthorityIncidentDetailsPage } from '../features/authority/pages/AuthorityIncidentDetailsPage';
 
 export const router = createBrowserRouter([
   {
@@ -70,18 +72,28 @@ export const router = createBrowserRouter([
       },
       {
         path: '/tourist',
-        element: <TouristLayout />,
+        element: <ProtectedRoute />,
         children: [
-          { path: 'dashboard', element: <TouristDashboardPage /> },
-          { path: 'tracking', element: <LiveTrackingPage /> },
-          { path: 'trips/create', element: <CreateTripPage /> },
-          { path: 'trips/current', element: <CurrentTripPage /> },
-          { path: 'trips/history', element: <TripHistoryPage /> },
-          { path: 'groups/create', element: <CreateGroupPage /> },
-          { path: 'groups/join', element: <JoinGroupPage /> },
-          { path: 'incidents/report', element: <ReportIncidentPage /> },
-          { path: 'incidents/history', element: <IncidentHistoryPage /> },
-          { path: 'profile', element: <ProfilePage /> },
+          {
+            element: <RoleRoute allowedRoles={['TOURIST']} />,
+            children: [
+              {
+                element: <TouristLayout />,
+                children: [
+                  { path: 'dashboard', element: <TouristDashboardPage /> },
+                  { path: 'tracking', element: <LiveTrackingPage /> },
+                  { path: 'trips/create', element: <CreateTripPage /> },
+                  { path: 'trips/current', element: <CurrentTripPage /> },
+                  { path: 'trips/history', element: <TripHistoryPage /> },
+                  { path: 'groups/create', element: <CreateGroupPage /> },
+                  { path: 'groups/join', element: <JoinGroupPage /> },
+                  { path: 'incidents/report', element: <ReportIncidentPage /> },
+                  { path: 'incidents/history', element: <IncidentHistoryPage /> },
+                  { path: 'profile', element: <ProfilePage /> },
+                ],
+              },
+            ],
+          },
         ],
       },
       {
@@ -95,6 +107,8 @@ export const router = createBrowserRouter([
                 element: <AuthorityLayout />,
                 children: [
                   { path: 'dashboard', element: <AuthorityDashboardPage /> },
+                  { path: 'incidents', element: <AuthorityIncidentsPage /> },
+                  { path: 'incidents/:id', element: <AuthorityIncidentDetailsPage /> },
                 ],
               },
             ],

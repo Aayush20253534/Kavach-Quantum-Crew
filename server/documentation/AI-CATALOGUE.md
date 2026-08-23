@@ -1,55 +1,64 @@
 # AI Integration Catalogue
 
-## Scope
+## Current status
 
-The backend exposes contracts, not AI implementation. Access is restricted to `DISASTER_MANAGER` and `SYSTEM_ADMIN`. If no provider is injected, calls fail with `501 INTEGRATION_PROVIDER_NOT_CONFIGURED`.
+The backend currently exposes **two AI analysis contracts** plus capability discovery. It does **not** expose a general conversational chatbot endpoint.
+
+All mounted integration routes pass through `authenticate`, and the service further restricts integration access to `DISASTER_MANAGER` and `SYSTEM_ADMIN`. A `TOURIST` cannot call these routes.
+
+The default `aiProvider` has no concrete model implementation injected. Therefore the two AI POST endpoints return `501 INTEGRATION_PROVIDER_NOT_CONFIGURED` until a real provider is connected.
+
+## Endpoint summary
+
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| `GET` | `/api/v1/integrations/capabilities` | DISASTER_MANAGER / SYSTEM_ADMIN | Discover integration contract capabilities |
+| `POST` | `/api/v1/integrations/ai/risk-assessment` | DISASTER_MANAGER / SYSTEM_ADMIN | Submit trip/location context for external risk scoring |
+| `POST` | `/api/v1/integrations/ai/hazard-analysis` | DISASTER_MANAGER / SYSTEM_ADMIN | Submit hazard context for external classification/severity analysis |
+
+These are **not chatbot endpoints**.
+
+## Capability discovery
+
+```http
+GET /api/v1/integrations/capabilities
+Authorization: Bearer <access-token>
+```
+
+Current response data advertises `riskAssessment: true`, `hazardAnalysis: true`, and `providerConfigured: false`.
 
 ## Risk Assessment
 
-### Endpoint
-`POST /api/v1/integrations/ai/risk-assessment`
+```http
+POST /api/v1/integrations/ai/risk-assessment
+Authorization: Bearer <access-token>
+Content-Type: application/json
+```
 
-### Purpose
-Forward trip/location context to an external model for optional risk scoring beyond deterministic backend rules.
-
-### Validated input
+Validated request body:
 
 ```json
 {
   "tripId": "UUID",
   "location": {
-    "latitude": 27.7,
-    "longitude": 85.3
+    "latitude": 25.4358,
+    "longitude": 81.8463
   },
   "context": {}
 }
 ```
 
-### Connect to
-- trip risk classifier
-- contextual danger scoring service
-- environmental risk model
-- route/location risk model
-
-### Suggested provider output
-
-```json
-{
-  "riskScore": 0.82,
-  "riskLevel": "HIGH",
-  "reasons": ["example factor"],
-  "modelVersion": "risk-model-v1"
-}
-```
-
-The backend currently forwards provider output rather than enforcing this response schema.
+Validation: `tripId` is a UUID, latitude is -90..90, longitude is -180..180, and `context` defaults to `{}`.
 
 ## Hazard Analysis
 
-### Endpoint
-`POST /api/v1/integrations/ai/hazard-analysis`
+```http
+POST /api/v1/integrations/ai/hazard-analysis
+Authorization: Bearer <access-token>
+Content-Type: application/json
+```
 
-### Validated input
+Validated request body:
 
 ```json
 {
@@ -57,51 +66,23 @@ The backend currently forwards provider output rather than enforcing this respon
   "type": "LANDSLIDE",
   "description": "Rockfall near the route",
   "location": {
-    "latitude": 27.7,
-    "longitude": 85.3
+    "latitude": 25.4358,
+    "longitude": 81.8463
   },
   "context": {}
 }
 ```
 
-### Connect to
-- hazard classifier
-- severity estimator
-- hazard prioritization model
-- a multimodal pipeline after another component extracts evidence features
+Validation: `hazardId` is optional UUID, `type` is 2..80 chars, `description` is 1..2000 chars, coordinates are range-checked, and `context` defaults to `{}`.
 
-### Suggested provider output
+## Current provider implementation
 
-```json
-{
-  "classification": "LANDSLIDE",
-  "severity": "HIGH",
-  "confidence": 0.91,
-  "modelVersion": "hazard-model-v1"
-}
-```
+`server/src/modules/integrations/ai.provider.js` defines `riskAssessment(payload)` and `hazardAnalysis(payload)`. If an implementation is absent, the provider throws `INTEGRATION_PROVIDER_NOT_CONFIGURED`.
 
-## Capability discovery
+No Gemini, OpenAI, Groq, local LLM, RAG pipeline, or other inference provider is configured in this snapshot.
 
-`GET /api/v1/integrations/capabilities`
+## Chatbot boundary
 
-## Backend responsibility
-- authentication and authorization
-- request validation
-- provider interface
-- stable endpoint
-- safe failure when no provider exists
+The tourist-facing `Rakshak AI` widget is separate. Currently, `frontend/src/components/chatbot/ChatbotWidget.jsx` keeps messages in component state and creates a simulated response with `setTimeout`. There is no `/chatbot`, `/chat`, `/assistant`, or tourist-accessible AI endpoint.
 
-## AI-team responsibility
-- model training
-- inference hosting
-- preprocessing beyond the agreed contract
-- model versioning
-- confidence/calibration
-- stable provider response
-
-Use the minimum personal/location data required for the model.
-
-## Authentication baseline
-
-These staff-only integration endpoints are unaffected by the public tourist signup OTP flow. Tourist accounts cannot call them, and unverified tourists cannot establish normal authenticated sessions in the first place.
+Do not wire the tourist chatbot directly to the staff-only risk/hazard routes. See `CHATBOT-INTEGRATION.md`.

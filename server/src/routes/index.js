@@ -7,6 +7,8 @@ import { createAlertRouter } from "../modules/alert/alert.routes.js";
 import { createAnalyticsRouter } from "../modules/analytics/analytics.routes.js";
 import { createDisasterManagementRouter } from "../modules/disaster-management/disaster-management.routes.js";
 import { createDispatchRouter } from "../modules/dispatch/dispatch.routes.js";
+import { createDashboardRouter } from "../modules/dashboard/dashboard.routes.js";
+import { createDestinationRouter } from "../modules/destination/destination.routes.js";
 import { createIncidentRouter } from "../modules/incident/incident.routes.js";
 import { createIntegrationRouter } from "../modules/integrations/integration.routes.js";
 import { createNotificationRouter } from "../modules/notification/notification.routes.js";
@@ -18,6 +20,7 @@ import { createEvidenceRouter } from "../modules/evidence/evidence.routes.js";
 import { createSosRouter } from "../modules/sos/sos.routes.js";
 import { createSystemAdminRouter } from "../modules/system-admin/system-admin.routes.js";
 import { createAuthRouter } from "../modules/auth/auth.routes.js";
+import { createChatbotRouter } from "../modules/chatbot/chatbot.routes.js";
 import { createGroupRouter } from "../modules/group/group.routes.js";
 import { createHealthRouter } from "../modules/health/health.routes.js";
 import { createHazardRouter } from "../modules/hazard/hazard.routes.js";
@@ -76,6 +79,8 @@ export const createApiRouter = (config = environment) => {
         phase18: { systemAdmin: `${config.API_PREFIX}/admin` },
         phase19: { analytics: `${config.API_PREFIX}/analytics` },
         phase20_21: { integrations: `${config.API_PREFIX}/integrations` },
+        phase26: { chatbot: `${config.API_PREFIX}/chatbot` },
+        dashboard: { tourist: `${config.API_PREFIX}/dashboard/tourist`, destinations: `${config.API_PREFIX}/destinations` },
         phase22: { notificationDeliveries: `${config.API_PREFIX}/notification-deliveries` },
         phase24: { audit: `${config.API_PREFIX}/audit`, observability: `${config.API_PREFIX}/observability` },
       },
@@ -127,6 +132,9 @@ export const createApiRouter = (config = environment) => {
   router.use("/evidence", createEvidenceRouter());
   router.use("/admin", createSystemAdminRouter());
   router.use("/analytics", createAnalyticsRouter());
+  router.use("/chatbot", createChatbotRouter());
+  router.use("/dashboard", createDashboardRouter());
+  router.use("/destinations", createDestinationRouter());
   router.use("/integrations", createIntegrationRouter());
   router.use("/audit", createAuditRouter());
   router.use("/observability", createObservabilityRouter());

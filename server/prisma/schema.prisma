@@ -23,9 +23,16 @@ model User {
   profilePicUrl       String?
   gender              Gender?
   age                 Int?
-  medicalHistory      String?
-  emergencyPhone      String?       @db.VarChar(20)
-  nationality         String?       @db.VarChar(80)
+  medicalHistory            String?
+  emergencyPhone            String?       @db.VarChar(20)
+  nationality               String?       @db.VarChar(80)
+  preferredLanguage         String?       @db.VarChar(40)
+  emergencyContactName      String?       @db.VarChar(120)
+  emergencyContactRelation  String?       @db.VarChar(60)
+  bloodGroup                String?       @db.VarChar(8)
+  governmentIdNumber        String?       @db.VarChar(120)
+  liveTrackingEnabled       Boolean       @default(true)
+  geoAlertsEnabled          Boolean       @default(true)
   groupMemberships    GroupMember[]
   ledGroups           TripGroup[]   @relation("GroupLeader")
   trips               Trip[]
@@ -885,4 +892,25 @@ enum DispatchEventType {
   ON_SCENE
   COMPLETED
   CANCELLED
+}
+
+model Destination {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique @db.VarChar(80)
+  name        String   @unique @db.VarChar(120)
+  state       String   @db.VarChar(120)
+  country     String   @db.VarChar(80) @default("India")
+  latitude    Float
+  longitude   Float
+  description String?  @db.VarChar(500)
+  imageUrl    String?
+  featured    Boolean  @default(true)
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active, featured, sortOrder])
+  @@index([name])
+  @@map("destinations")
 }

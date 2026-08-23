@@ -20,6 +20,21 @@ const accountData = async ({ name, username, email, phone, password }) => ({
 });
 
 try {
+
+  const destinations = [
+    { slug: "prayagraj", name: "Prayagraj", state: "Uttar Pradesh", latitude: 25.4358, longitude: 81.8463, description: "Sangam city and major pilgrimage destination", sortOrder: 1 },
+    { slug: "lucknow", name: "Lucknow", state: "Uttar Pradesh", latitude: 26.8467, longitude: 80.9462, description: "Capital city of Uttar Pradesh", sortOrder: 2 },
+    { slug: "kanpur", name: "Kanpur", state: "Uttar Pradesh", latitude: 26.4499, longitude: 80.3319, description: "Major industrial city on the Ganga", sortOrder: 3 },
+    { slug: "delhi", name: "Delhi", state: "Delhi", latitude: 28.6139, longitude: 77.2090, description: "National Capital Territory of Delhi", sortOrder: 4 },
+  ];
+
+  for (const destination of destinations) {
+    await prisma.destination.upsert({
+      where: { slug: destination.slug },
+      update: destination,
+      create: destination,
+    });
+  }
   if (process.env.SEED_ADMIN_EMAIL && process.env.SEED_ADMIN_PASSWORD) {
     const data = await accountData({
       name: "System Admin",

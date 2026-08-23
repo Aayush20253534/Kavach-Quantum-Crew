@@ -9,8 +9,8 @@ const requestContext = (request) => ({
 
 const refreshCookieOptions = (config = environment) => ({
   httpOnly: true,
-  secure: config.IS_PRODUCTION,
-  sameSite: config.IS_PRODUCTION ? "none" : "lax",
+  secure: config.REFRESH_COOKIE_SECURE,
+  sameSite: config.REFRESH_COOKIE_SAME_SITE,
   path: `${config.API_PREFIX}/auth`,
   maxAge: config.REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000,
 });

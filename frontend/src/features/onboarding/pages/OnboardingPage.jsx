@@ -49,6 +49,7 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [step, setStep] = useState(1);
+  const [onboardingError, setOnboardingError] = useState('');
 
   const {
     register,
@@ -106,7 +107,12 @@ export function OnboardingPage() {
         gender: genderMap[data.gender] ?? 'PREFER_NOT_TO_SAY',
         age: Number(data.age),
         nationality: data.nationality,
+        preferredLanguage: data.language,
+        emergencyContactName: data.emergencyName,
+        emergencyContactRelation: data.emergencyRelation,
         emergencyPhone: data.emergencyPhone,
+        bloodGroup: data.bloodGroup,
+        governmentIdNumber: data.idNumber,
         medicalHistory: data.medicalNotes || null,
       }, { timeout: 3000 }); // 3 second timeout
 
@@ -181,10 +187,10 @@ export function OnboardingPage() {
                 >
                   {/* Icon Node */}
                   <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md border ${isCurrent
-                      ? 'bg-red-50 border-red-100 text-red-600'
-                      : isPast
-                        ? 'bg-slate-100 border-slate-200 text-slate-700'
-                        : 'bg-white border-slate-200 text-slate-400'
+                    ? 'bg-red-50 border-red-100 text-red-600'
+                    : isPast
+                      ? 'bg-slate-100 border-slate-200 text-slate-700'
+                      : 'bg-white border-slate-200 text-slate-400'
                     }`}>
                     {isPast ? <CheckCircle2 size={16} /> : <StepIcon size={16} />}
                   </div>
@@ -427,6 +433,12 @@ export function OnboardingPage() {
                     <span className="text-xs text-slate-500 leading-relaxed block">Transmit automated SMS payloads to emergency contacts on data drop.</span>
                   </label>
                 </div>
+              </div>
+            )}
+
+            {onboardingError && (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {onboardingError}
               </div>
             )}
 

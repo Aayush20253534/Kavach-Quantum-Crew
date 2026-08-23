@@ -236,6 +236,11 @@ This catalogue documents **148 mounted HTTP routes/aliases** in the current back
 
 ## AI & Blockchain Integration Contracts
 
+### Chatbot availability
+
+There is currently **no tourist chatbot REST endpoint**. `ChatbotWidget.jsx` is simulated in the browser. The `/integrations/ai/*` routes below are staff-only analysis contracts for `DISASTER_MANAGER` and `SYSTEM_ADMIN`; they are not conversational chatbot APIs and return `501 INTEGRATION_PROVIDER_NOT_CONFIGURED` until a provider is injected.
+
+
 | Method | Endpoint | Access | Purpose |
 |---|---|---|---|
 | `GET` | `/api/v1/integrations/capabilities` | DISASTER_MANAGER / SYSTEM_ADMIN | Return available AI/blockchain integration contract capabilities. |
@@ -261,3 +266,43 @@ This catalogue documents **148 mounted HTTP routes/aliases** in the current back
 |---|---|---|---|
 | `POST` | `/api/v1/auth/verify-email` | Public verification flow | Verify a newly registered tourist using email + 6-digit OTP; successful verification creates the authenticated session. |
 | `POST` | `/api/v1/auth/resend-verification` | Public verification flow | Generate and email a replacement OTP subject to resend cooldown. |
+
+
+## Tourist chatbot
+
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| `POST` | `/api/v1/chatbot/messages` | `TOURIST` | Validate a tourist chatbot message and forward it through the pluggable chatbot AI provider boundary. |
+
+Request body: `message` (required), optional `conversationId`, optional `location { latitude, longitude }`, and optional `context`. The default provider returns `501 CHATBOT_PROVIDER_NOT_CONFIGURED` until the AI branch supplies the provider implementation.
+
+## Tourist dashboard and destinations
+
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| `GET` | `/api/v1/dashboard/tourist?latitude=&longitude=` | TOURIST | Dashboard summary: total tourist users, the caller's active alerts, binary safe/danger geofence status, current group size and current trip. |
+| `GET` | `/api/v1/destinations?search=&featured=&limit=` | TOURIST | Search/list configured destinations used by the dashboard and trip/group creation UI. |
+
+Dashboard safety status is `DANGER` only when the supplied point falls inside an active `RISK` safety zone. Otherwise it is `SAFE`. Risk-zone mutation endpoints are restricted to `SYSTEM_ADMIN`; tourists and disaster managers retain read/evaluate access.
+
+
+### POST /api/v1/tourists/me/profile-image
+
+Uploads or replaces the authenticated tourist's profile image.
+
+- Authentication: Tourist bearer access token
+- Content-Type: `multipart/form-data`
+- Form field: `image`
+- Allowed types: JPEG, PNG, WebP
+- Maximum size: configured by `PROFILE_IMAGE_MAX_FILE_BYTES` (5 MB default)
+- Storage: Cloudinary
+- The secure URL is stored in `users.profilePicUrl`
+
+Required server environment variables:
+
+```env
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+PROFILE_IMAGE_MAX_FILE_BYTES=5242880
+```
