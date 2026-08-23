@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 const ACCESS_TOKEN_KEY = 'quantum_access_token';
+const EXPLICIT_SIGN_OUT_KEY = 'kavach_explicit_sign_out';
 
 export const getAccessToken = () => localStorage.getItem(ACCESS_TOKEN_KEY);
 
@@ -10,6 +11,7 @@ let authFailureLatched = false;
 export const setAccessToken = (token) => {
   if (token) {
     localStorage.setItem(ACCESS_TOKEN_KEY, token);
+    localStorage.removeItem(EXPLICIT_SIGN_OUT_KEY);
     authFailureLatched = false;
   } else {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
@@ -22,6 +24,20 @@ export const clearAccessToken = () => {
 
 export const resetAuthFailure = () => {
   authFailureLatched = false;
+};
+
+export const isExplicitlySignedOut = () =>
+  localStorage.getItem(EXPLICIT_SIGN_OUT_KEY) === '1';
+
+// Persist an explicit user sign-out across full-page reloads. This prevents
+// AuthInitializer from silently using a stale refresh cookie to sign the user
+// straight back in after they deliberately signed out. A successful login
+// clears this marker through setAccessToken().
+export const markExplicitSignOut = () => {
+  localStorage.setItem(EXPLICIT_SIGN_OUT_KEY, '1');
+  authFailureLatched = true;
+  clearAccessToken();
+  delete apiClient.defaults.headers.common.Authorization;
 };
 
 const apiClient = axios.create({
@@ -53,6 +69,12 @@ const markAuthFailed = () => {
 };
 
 export const refreshSession = async () => {
+  if (isExplicitlySignedOut()) {
+    const error = new Error('User explicitly signed out');
+    error.code = 'EXPLICIT_SIGN_OUT';
+    throw error;
+  }
+
   if (authFailureLatched) {
     const error = new Error('Authentication session is unavailable');
     error.code = 'AUTH_SESSION_UNAVAILABLE';

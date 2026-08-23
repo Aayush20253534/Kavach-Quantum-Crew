@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 
 import { logout, updateUser } from '../../auth/store/authSlice';
+import { authService } from '../../auth/api/authService';
+import { markExplicitSignOut } from '../../../services/apiClient';
 import { ScrollableSelect } from '../../onboarding/components/ScrollableSelect';
 import {
   BLOOD_GROUPS,
@@ -211,9 +213,16 @@ export function ProfilePage() {
     }
   };
 
-  const handleSignOut = () => {
-    dispatch(logout());
-    navigate('/login');
+  const handleSignOut = async () => {
+    markExplicitSignOut();
+    try {
+      await authService.logout();
+    } catch {
+      // Explicit local sign-out still wins if the backend cannot be reached.
+    } finally {
+      dispatch(logout());
+      navigate('/', { replace: true });
+    }
   };
 
   if (loading) {

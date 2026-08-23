@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { logout } from '../../features/auth/store/authSlice';
 import { authService } from '../../features/auth/api/authService';
+import { markExplicitSignOut } from '../../services/apiClient';
 
 export function AuthorityLayout() {
   const { user } = useSelector((state) => state.auth);
@@ -28,6 +29,9 @@ export function AuthorityLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleLogout = async () => {
+    // Record the user's intent before any network request so a reload cannot
+    // resurrect the session while logout is in flight or if it fails.
+    markExplicitSignOut();
     try {
       // Revoke the server-side refresh session and clear the refresh cookie.
       // Without this, a later page refresh can silently authenticate the user again.

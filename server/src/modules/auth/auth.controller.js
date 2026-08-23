@@ -15,6 +15,13 @@ const refreshCookieOptions = (config = environment) => ({
   maxAge: config.REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000,
 });
 
+const clearRefreshCookieOptions = (config = environment, path) => ({
+  httpOnly: true,
+  secure: config.REFRESH_COOKIE_SECURE,
+  sameSite: config.REFRESH_COOKIE_SAME_SITE,
+  path,
+});
+
 const sendAuth = (response, result, { statusCode = 200, message }) => {
   response.cookie(
     environment.REFRESH_COOKIE_NAME,
@@ -78,9 +85,15 @@ export const createAuthController = ({ service = authService } = {}) => ({
       request.cookies?.[environment.REFRESH_COOKIE_NAME] ??
       request.body.refreshToken;
     await service.logout(token);
+    // Do not pass the login cookie's positive maxAge to clearCookie. Clear
+    // both the current auth-scoped cookie and a possible legacy root cookie.
     response.clearCookie(
       environment.REFRESH_COOKIE_NAME,
-      refreshCookieOptions(),
+      clearRefreshCookieOptions(environment, `${environment.API_PREFIX}/auth`),
+    );
+    response.clearCookie(
+      environment.REFRESH_COOKIE_NAME,
+      clearRefreshCookieOptions(environment, "/"),
     );
     return ApiResponse.success(response, { message: "Signed out successfully" });
   },
