@@ -3,6 +3,7 @@ import { CircleF, GoogleMap, InfoWindowF, MarkerF, PolygonF, useJsApiLoader } fr
 
 const GOOGLE_MAP_LIBRARIES = ['places'];
 const containerStyle = { width: '100%', height: '100%', borderRadius: '0.5rem' };
+const EMERGENCY_SEARCH_RADIUS_METERS = 5000;
 
 const SERVICE_TYPES = [
   { type: 'police', label: 'Police', marker: 'P' },
@@ -15,6 +16,8 @@ export function MapComponent({
   groupLocations = [],
   riskZones = [],
   showEmergencyServicesOnly = false,
+  onEmergencyCountsChange,
+  onLocationLabelChange,
   className = 'h-96 w-full rounded-lg shadow-md',
 }) {
   const { isLoaded, loadError } = useJsApiLoader({
@@ -38,8 +41,70 @@ export function MapComponent({
   const onUnmount = useCallback(() => setMap(null), []);
 
   useEffect(() => {
-    if (map && currentLocation) map.panTo(center);
-  }, [center, currentLocation, map]);
+    if (!map || !currentLocation) return;
+
+    if (showEmergencyServicesOnly && window.google?.maps) {
+      const searchCircle = new window.google.maps.Circle({
+        center,
+        radius: EMERGENCY_SEARCH_RADIUS_METERS,
+      });
+      const bounds = searchCircle.getBounds();
+      if (bounds) {
+        map.fitBounds(bounds, 24);
+        return;
+      }
+    }
+
+    map.panTo(center);
+  }, [center, currentLocation, map, showEmergencyServicesOnly]);
+
+  useEffect(() => {
+    if (!currentLocation || !window.google?.maps?.Geocoder || !onLocationLabelChange) return undefined;
+
+    let cancelled = false;
+    const geocoder = new window.google.maps.Geocoder();
+
+    geocoder.geocode(
+      {
+        location: {
+          lat: currentLocation.lat,
+          lng: currentLocation.lng,
+        },
+      },
+      (results, status) => {
+        if (cancelled) return;
+
+        if (status !== 'OK' || !results?.length) {
+          onLocationLabelChange('Current location');
+          return;
+        }
+
+        const components = results[0]?.address_components || [];
+        const findComponent = (...types) =>
+          components.find((component) =>
+            types.some((type) => component.types.includes(type)),
+          )?.long_name;
+
+        const area = findComponent(
+          'sublocality_level_1',
+          'sublocality',
+          'neighborhood',
+        );
+        const city = findComponent('locality', 'administrative_area_level_2');
+
+        if (area && city && area !== city) {
+          onLocationLabelChange(`${area}, ${city}`);
+          return;
+        }
+
+        onLocationLabelChange(city || area || results[0]?.formatted_address || 'Current location');
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentLocation?.lat, currentLocation?.lng, onLocationLabelChange]);
 
   useEffect(() => {
     if (!showEmergencyServicesOnly || !map || !currentLocation || !window.google?.maps?.places) {
@@ -50,19 +115,25 @@ export function MapComponent({
     let cancelled = false;
     const service = new window.google.maps.places.PlacesService(map);
     const collected = [];
+    const counts = {
+      police: 0,
+      hospital: 0,
+      fire_station: 0,
+    };
     let completed = 0;
 
     SERVICE_TYPES.forEach((serviceType) => {
       service.nearbySearch(
         {
           location: { lat: currentLocation.lat, lng: currentLocation.lng },
-          radius: 5000,
+          radius: EMERGENCY_SEARCH_RADIUS_METERS,
           type: serviceType.type,
         },
         (results, status) => {
           completed += 1;
           if (!cancelled && status === window.google.maps.places.PlacesServiceStatus.OK) {
-            results.slice(0, 10).forEach((place) => {
+            counts[serviceType.type] = results.length;
+            results.forEach((place) => {
               const location = place.geometry?.location;
               if (!location) return;
               collected.push({
@@ -78,13 +149,21 @@ export function MapComponent({
               });
             });
           }
-          if (!cancelled && completed === SERVICE_TYPES.length) setEmergencyPlaces(collected);
+          if (!cancelled && completed === SERVICE_TYPES.length) {
+            setEmergencyPlaces(collected);
+            onEmergencyCountsChange?.({
+              police: counts.police,
+              hospitals: counts.hospital,
+              fireStations: counts.fire_station,
+              total: counts.police + counts.hospital + counts.fire_station,
+            });
+          }
         },
       );
     });
 
     return () => { cancelled = true; };
-  }, [showEmergencyServicesOnly, map, currentLocation?.lat, currentLocation?.lng]);
+  }, [showEmergencyServicesOnly, map, currentLocation?.lat, currentLocation?.lng, onEmergencyCountsChange]);
 
   if (loadError) {
     return (
@@ -122,8 +201,17 @@ export function MapComponent({
         {currentLocation && (
           <>
             <MarkerF position={center} title="Your live location" />
-            {currentLocation.accuracy && (
-              <CircleF center={center} radius={currentLocation.accuracy} options={{ fillOpacity: 0.08, strokeWeight: 1 }} />
+            {showEmergencyServicesOnly && (
+              <CircleF
+                center={center}
+                radius={EMERGENCY_SEARCH_RADIUS_METERS}
+                options={{
+                  fillOpacity: 0.03,
+                  strokeOpacity: 0.8,
+                  strokeWeight: 2,
+                  clickable: false,
+                }}
+              />
             )}
           </>
         )}
