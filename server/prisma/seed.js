@@ -78,19 +78,79 @@ try {
     );
   }
 
-  if (process.env.SEED_DM_EMAIL && process.env.SEED_DM_PASSWORD) {
-    const data = await accountData({
-      name: "Disaster Manager",
+  const dmEmail = process.env.SEED_DM_EMAIL || (!isProduction ? "disaster@quantumcrew.local" : null);
+  const dmPassword = process.env.SEED_DM_PASSWORD || (!isProduction ? "QuantumDM@123" : null);
+
+  if (dmEmail && dmPassword) {
+    const dmData = await accountData({
+      name: process.env.SEED_DM_NAME ?? "Prayagraj Disaster Manager",
       username: process.env.SEED_DM_USERNAME ?? "disaster.manager",
-      email: process.env.SEED_DM_EMAIL,
-      phone: process.env.SEED_DM_PHONE ?? "+910000000002",
-      password: process.env.SEED_DM_PASSWORD,
+      email: dmEmail,
+      phone: process.env.SEED_DM_PHONE ?? "9000000002",
+      password: dmPassword,
     });
-    await prisma.disasterManager.upsert({
-      where: { email: data.email },
-      update: { ...data, passwordHash: undefined },
-      create: data,
+    const manager = await prisma.disasterManager.upsert({
+      where: { username: dmData.username },
+      update: { ...dmData, organization: "Prayagraj Integrated Command Centre", department: "Emergency Operations", jurisdiction: "Prayagraj", responderStatus: "AVAILABLE", maxActiveIncidents: 8 },
+      create: { ...dmData, organization: "Prayagraj Integrated Command Centre", department: "Emergency Operations", jurisdiction: "Prayagraj", responderStatus: "AVAILABLE", maxActiveIncidents: 8 },
     });
+
+    const tourist = await prisma.user.upsert({
+      where: { username: "tourist.demo" },
+      update: { status: "ACTIVE", onboardingCompleted: true },
+      create: {
+        name: "Demo Tourist", username: "tourist.demo", email: "tourist.demo@quantumcrew.local",
+        phone: "9000000010", passwordHash: await argon2.hash("TouristDemo@123", { type: argon2.argon2id }),
+        status: "ACTIVE", onboardingCompleted: true, nationality: "Indian", preferredLanguage: "English",
+      },
+    });
+
+    const tripId = "10000000-0000-4000-8000-000000000001";
+    await prisma.trip.upsert({
+      where: { id: tripId },
+      update: { status: "ACTIVE", locationName: "Prayagraj" },
+      create: { id: tripId, touristId: tourist.id, locationName: "Prayagraj", tripType: "SOLO", status: "ACTIVE",
+        plannedStartAt: new Date(Date.now() - 3600000), plannedEndAt: new Date(Date.now() + 28800000), startedAt: new Date(Date.now() - 3600000) },
+    });
+
+    for (const incident of [
+      { id:"20000000-0000-4000-8000-000000000001", severity:"CRITICAL", title:"Medical SOS near Sangam", description:"Tourist requested urgent medical assistance near the Sangam area.", latitude:25.4298, longitude:81.8850 },
+      { id:"20000000-0000-4000-8000-000000000002", severity:"DANGER", title:"Crowd separation alert", description:"Tourist reported separation from their group near Civil Lines.", latitude:25.4549, longitude:81.8347 },
+    ]) {
+      await prisma.incident.upsert({
+        where:{id:incident.id},
+        update:{...incident,status:"OPEN",assignedToId:manager.id,assignedToRole:"DISASTER_MANAGER",assignedAt:new Date()},
+        create:{...incident,tripId,userId:tourist.id,sourceType:"SOS",status:"OPEN",assignedToId:manager.id,assignedToRole:"DISASTER_MANAGER",assignedAt:new Date()},
+      });
+    }
+
+    for (const h of [
+      {id:"30000000-0000-4000-8000-000000000001",type:"CROWD",severity:"HIGH",title:"Heavy crowd near Sangam",description:"High pedestrian density reported near the Sangam approach.",latitude:25.4305,longitude:81.8842,locationName:"Sangam"},
+      {id:"30000000-0000-4000-8000-000000000002",type:"ROAD_BLOCK",severity:"MEDIUM",title:"Temporary road obstruction",description:"A temporary obstruction is slowing emergency access.",latitude:25.4484,longitude:81.8431,locationName:"Civil Lines"},
+    ]) {
+      await prisma.hazardReport.upsert({where:{id:h.id},update:{...h,status:"PENDING"},create:{...h,reporterId:tourist.id,reporterRole:"TOURIST",status:"PENDING",occurredAt:new Date()}});
+    }
+
+    for (const u of [
+      {id:"40000000-0000-4000-8000-000000000001",name:"PCR-21",type:"POLICE",organization:"Prayagraj Police"},
+      {id:"40000000-0000-4000-8000-000000000002",name:"AMB-07",type:"AMBULANCE",organization:"District Emergency Medical Service"},
+      {id:"40000000-0000-4000-8000-000000000003",name:"FIRE-03",type:"FIRE",organization:"Prayagraj Fire Service"},
+      {id:"40000000-0000-4000-8000-000000000004",name:"RESCUE-05",type:"RESCUE",organization:"State Disaster Response Team"},
+    ]) {
+      await prisma.emergencyUnit.upsert({where:{id:u.id},update:{...u,status:"AVAILABLE",jurisdiction:"Prayagraj"},create:{...u,status:"AVAILABLE",jurisdiction:"Prayagraj",contactPhone:"112"}});
+    }
+
+    for (const z of [
+      {id:"50000000-0000-4000-8000-000000000001",name:"Sangam Crowd Risk Zone",description:"Operational risk zone around Sangam.",type:"RISK",severity:"HIGH",geometryType:"CIRCLE",latitude:25.4300,longitude:81.8850,radiusM:650},
+      {id:"50000000-0000-4000-8000-000000000002",name:"Civil Lines Safe Coordination Zone",description:"Safe emergency coordination area.",type:"SAFE",severity:"LOW",geometryType:"CIRCLE",latitude:25.4540,longitude:81.8340,radiusM:450},
+    ]) {
+      await prisma.safetyZone.upsert({where:{id:z.id},update:{...z,active:true,createdById:manager.id,createdByRole:"DISASTER_MANAGER"},create:{...z,active:true,createdById:manager.id,createdByRole:"DISASTER_MANAGER"}});
+    }
+
+    console.info(`[seed] Disaster Manager ready: ${dmData.username} (${dmData.email})`);
+    console.info("[seed] Disaster demo data ready: incidents, hazards, emergency units and safety zones");
+  } else {
+    console.info("[seed] Disaster Manager skipped. Set SEED_DM_EMAIL and SEED_DM_PASSWORD in production.");
   }
 } finally {
   await prisma.$disconnect();

@@ -12,11 +12,11 @@ export const createRiskZoneRouter = ({ controller = riskZoneController } = {}) =
   router.use(authenticate);
   router.get("/", authorize(ROLES.TOURIST, ROLES.DISASTER_MANAGER, ROLES.SYSTEM_ADMIN), validate({ query: riskZoneListQuerySchema }), asyncHandler(controller.list));
   router.post("/evaluate", authorize(ROLES.TOURIST, ROLES.DISASTER_MANAGER, ROLES.SYSTEM_ADMIN), validate({ body: evaluateRiskZoneBodySchema }), asyncHandler(controller.evaluate));
-  router.post("/", authorize(ROLES.SYSTEM_ADMIN), validate({ body: createRiskZoneBodySchema }), asyncHandler(controller.create));
+  router.post("/", authorize(ROLES.DISASTER_MANAGER, ROLES.SYSTEM_ADMIN), validate({ body: createRiskZoneBodySchema }), asyncHandler(controller.create));
   router.get("/:zoneId", authorize(ROLES.TOURIST, ROLES.DISASTER_MANAGER, ROLES.SYSTEM_ADMIN), validate({ params: riskZoneParamsSchema }), asyncHandler(controller.get));
-  router.patch("/:zoneId", authorize(ROLES.SYSTEM_ADMIN), validate({ params: riskZoneParamsSchema, body: updateRiskZoneBodySchema }), asyncHandler(controller.update));
-  router.post("/:zoneId/activate", authorize(ROLES.SYSTEM_ADMIN), validate({ params: riskZoneParamsSchema }), asyncHandler(controller.activate));
-  router.post("/:zoneId/deactivate", authorize(ROLES.SYSTEM_ADMIN), validate({ params: riskZoneParamsSchema }), asyncHandler(controller.deactivate));
+  router.patch("/:zoneId", authorize(ROLES.DISASTER_MANAGER, ROLES.SYSTEM_ADMIN), validate({ params: riskZoneParamsSchema, body: updateRiskZoneBodySchema }), asyncHandler(controller.update));
+  router.post("/:zoneId/activate", authorize(ROLES.DISASTER_MANAGER, ROLES.SYSTEM_ADMIN), validate({ params: riskZoneParamsSchema }), asyncHandler(controller.activate));
+  router.post("/:zoneId/deactivate", authorize(ROLES.DISASTER_MANAGER, ROLES.SYSTEM_ADMIN), validate({ params: riskZoneParamsSchema }), asyncHandler(controller.deactivate));
   return router;
 };
 
