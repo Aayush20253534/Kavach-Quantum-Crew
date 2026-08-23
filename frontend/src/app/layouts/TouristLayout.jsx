@@ -366,13 +366,8 @@ export function TouristLayout() {
               <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
             </div>
             <div className="min-w-0 max-w-[190px] sm:max-w-[320px] lg:max-w-[390px]">
-              <div className="flex items-center gap-1">
-                <span className="text-[9px] sm:text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.12em]">
-                  {liveLocation ? 'Current location' : 'Location pending'}
-                </span>
-              </div>
               <p
-                className="mt-0.5 text-[10px] sm:text-[11px] leading-[1.25rem] font-semibold text-slate-800 line-clamp-2 break-words"
+                className="text-[10px] sm:text-[11px] leading-[1.25rem] font-semibold text-slate-800 line-clamp-2 break-words"
                 title={locationLabel}
               >
                 {locationLabel}
