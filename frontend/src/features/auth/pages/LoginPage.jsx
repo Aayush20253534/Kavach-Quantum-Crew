@@ -124,7 +124,7 @@ export default function LoginPage() {
 
   return (
     <>
-      <div className={`transition-all duration-700 transform ${mounted ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"}`}>
+      <div className={`tourist-font transition-all duration-700 transform ${mounted ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"}`}>
 
         <div className="mb-4 mt-4 text-center">
           <h2 className="mb-1 text-2xl font-bold tracking-tight text-slate-900">
