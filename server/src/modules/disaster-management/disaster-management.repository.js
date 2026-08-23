@@ -130,7 +130,7 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
         ).map((trip) => trip.id)
       : null;
 
-    return db.incident.findMany({
+    const rows = await db.incident.findMany({
       where: {
         ...(status ? { status } : { status: { in: ACTIVE_INCIDENT_STATUSES } }),
         ...(severity ? { severity } : {}),
@@ -140,6 +140,36 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
       orderBy: [{ severity: "desc" }, { createdAt: "asc" }],
       take: limit,
     });
+
+    if (!rows.length) return [];
+    const userIds = [...new Set(rows.map((row) => row.userId))];
+    const tripIds = [...new Set(rows.map((row) => row.tripId))];
+    const [tourists, trips] = await Promise.all([
+      db.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true, name: true, username: true, phone: true, email: true, nationality: true, preferredLanguage: true, bloodGroup: true, emergencyPhone: true },
+      }),
+      db.trip.findMany({ where: { id: { in: tripIds } }, select: { id: true, locationName: true, status: true } }),
+    ]);
+    const touristById = new Map(tourists.map((tourist) => [tourist.id, tourist]));
+    const tripById = new Map(trips.map((trip) => [trip.id, trip]));
+    return rows.map((row) => ({
+      ...row,
+      tourist: touristById.get(row.userId) ?? null,
+      trip: tripById.get(row.tripId) ?? null,
+      location: { latitude: row.latitude, longitude: row.longitude },
+      priority: row.severity,
+    }));
+  },
+
+  async getIncidentContext(id) {
+    const incident = await db.incident.findUnique({ where: { id } });
+    if (!incident) return null;
+    const [tourist, trip] = await Promise.all([
+      db.user.findUnique({ where: { id: incident.userId }, select: { id: true, name: true, username: true, phone: true, email: true, nationality: true, preferredLanguage: true, bloodGroup: true, emergencyPhone: true } }),
+      db.trip.findUnique({ where: { id: incident.tripId }, select: { id: true, locationName: true, status: true } }),
+    ]);
+    return { ...incident, tourist, trip, location: { latitude: incident.latitude, longitude: incident.longitude }, priority: incident.severity };
   },
 
   async dashboard(responderId, jurisdiction = null) {

@@ -132,12 +132,14 @@ try {
     }
 
     for (const u of [
-      {id:"40000000-0000-4000-8000-000000000001",name:"PCR-21",type:"POLICE",organization:"Prayagraj Police"},
-      {id:"40000000-0000-4000-8000-000000000002",name:"AMB-07",type:"AMBULANCE",organization:"District Emergency Medical Service"},
-      {id:"40000000-0000-4000-8000-000000000003",name:"FIRE-03",type:"FIRE",organization:"Prayagraj Fire Service"},
-      {id:"40000000-0000-4000-8000-000000000004",name:"RESCUE-05",type:"RESCUE",organization:"State Disaster Response Team"},
+      {id:"40000000-0000-4000-8000-000000000001",name:"Civil Lines PCR-21",type:"POLICE",organization:"Prayagraj Police",contactPhone:"112"},
+      {id:"40000000-0000-4000-8000-000000000002",name:"Kotwali PCR-12",type:"POLICE",organization:"Prayagraj Police",contactPhone:"112"},
+      {id:"40000000-0000-4000-8000-000000000003",name:"Civil Lines Fire-03",type:"FIRE",organization:"Prayagraj Fire & Emergency Service",contactPhone:"101"},
+      {id:"40000000-0000-4000-8000-000000000004",name:"Naini Fire-06",type:"FIRE",organization:"Prayagraj Fire & Emergency Service",contactPhone:"101"},
+      {id:"40000000-0000-4000-8000-000000000005",name:"District Ambulance-07",type:"AMBULANCE",organization:"Prayagraj Emergency Medical Service",contactPhone:"108"},
+      {id:"40000000-0000-4000-8000-000000000006",name:"Sangam Medical Response-02",type:"AMBULANCE",organization:"Prayagraj Emergency Medical Service",contactPhone:"108"},
     ]) {
-      await prisma.emergencyUnit.upsert({where:{id:u.id},update:{...u,status:"AVAILABLE",jurisdiction:"Prayagraj"},create:{...u,status:"AVAILABLE",jurisdiction:"Prayagraj",contactPhone:"112"}});
+      await prisma.emergencyUnit.upsert({where:{id:u.id},update:{...u,status:"AVAILABLE",jurisdiction:"Prayagraj"},create:{...u,status:"AVAILABLE",jurisdiction:"Prayagraj"}});
     }
 
     for (const z of [

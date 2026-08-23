@@ -92,7 +92,7 @@ export function AuthorityLayout() {
       <div className="min-h-screen bg-slate-50 text-slate-900 antialiased font-sans">
 
       {/* Authority Sidebar */}
-      <aside className={`hidden md:flex flex-col bg-white border-r border-slate-200 fixed top-0 left-0 h-screen z-30 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
+      <aside className={`hidden md:flex flex-col bg-white border-r border-slate-200 fixed top-0 left-0 h-screen z-30 transition-all duration-300 overflow-hidden ${isCollapsed ? 'w-20' : 'w-64'}`}>
 
         {/* Collapse Toggle Button (Desktop Only) */}
         <button
@@ -151,7 +151,7 @@ export function AuthorityLayout() {
         )}
 
         {/* Nav Items */}
-        <nav className={`flex-1 py-5 space-y-1.5 ${isCollapsed ? 'px-3 mt-4' : 'px-4'}`}>
+        <nav className={`flex-1 min-h-0 overflow-y-auto overscroll-contain py-5 space-y-1.5 ${isCollapsed ? 'px-3 mt-4' : 'px-4'}`}>
           <p className={`px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ${isCollapsed ? 'text-center pl-0 text-[8px]' : ''}`}>
             {isCollapsed ? 'CTRL' : 'Authority Controls'}
           </p>
