@@ -120,6 +120,90 @@ export const createCloudinaryAdapter = ({
     }
   },
 
+  async uploadDestinationImage({ destinationId, file }) {
+    if (
+      !config.CLOUDINARY_CLOUD_NAME ||
+      !config.CLOUDINARY_API_KEY ||
+      !config.CLOUDINARY_API_SECRET ||
+      typeof fetchImpl !== "function"
+    ) {
+      throw ApiError.serviceUnavailable("Destination image storage is not configured", {
+        code: "CLOUDINARY_NOT_CONFIGURED",
+      });
+    }
+
+    if (!file?.buffer?.length) {
+      throw ApiError.badRequest("A destination image is required", {
+        code: "DESTINATION_IMAGE_REQUIRED",
+      });
+    }
+
+    if (!ALLOWED_IMAGE_TYPES.has(file.mimetype)) {
+      throw ApiError.badRequest("Destination image must be JPEG, PNG, or WebP", {
+        code: "DESTINATION_IMAGE_TYPE_INVALID",
+      });
+    }
+
+    if (file.size > config.PROFILE_IMAGE_MAX_FILE_BYTES) {
+      throw ApiError.badRequest("Destination image exceeds the upload limit", {
+        code: "DESTINATION_IMAGE_TOO_LARGE",
+      });
+    }
+
+    const timestamp = Math.floor(clock() / 1000);
+    const publicId = `quantum-crew/destinations/${destinationId}`;
+    const signedParams = {
+      invalidate: "true",
+      overwrite: "true",
+      public_id: publicId,
+      timestamp,
+    };
+
+    const signature = signatureFor(signedParams, config.CLOUDINARY_API_SECRET);
+    const form = new FormData();
+    form.append(
+      "file",
+      new Blob([file.buffer], { type: file.mimetype }),
+      file.originalname || "destination-image",
+    );
+    form.append("api_key", config.CLOUDINARY_API_KEY);
+    form.append("timestamp", String(timestamp));
+    form.append("public_id", publicId);
+    form.append("overwrite", "true");
+    form.append("invalidate", "true");
+    form.append("signature", signature);
+
+    try {
+      const response = await fetchImpl(
+        `https://api.cloudinary.com/v1_1/${encodeURIComponent(
+          config.CLOUDINARY_CLOUD_NAME,
+        )}/image/upload`,
+        { method: "POST", body: form },
+      );
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.secure_url) {
+        const cause = new Error(
+          payload?.error?.message ||
+            `Cloudinary returned HTTP ${response.status}`,
+        );
+        cause.status = response.status;
+        throw cause;
+      }
+
+      return {
+        url: payload.secure_url,
+        publicId: payload.public_id ?? publicId,
+      };
+    } catch (cause) {
+      if (cause instanceof ApiError) throw cause;
+      throw ApiError.serviceUnavailable("Destination image could not be uploaded", {
+        code: "DESTINATION_IMAGE_UPLOAD_FAILED",
+        cause,
+      });
+    }
+  },
+
   async uploadTouristProfileImage({ userId, file }) {
     if (
       !config.CLOUDINARY_CLOUD_NAME ||

@@ -11,7 +11,9 @@ import {
   Settings,
   FileText,
   ChevronLeft,
-  Puzzle
+  Puzzle,
+  LayoutDashboard,
+  MapPinned
 } from 'lucide-react';
 import { logout } from '../../features/auth/store/authSlice';
 
@@ -28,6 +30,8 @@ export function AdminLayout() {
   };
 
   const navItems = [
+    { name: 'Overview', path: '/admin/dashboard', icon: LayoutDashboard },
+    { name: 'Destinations', path: '/admin/locations', icon: MapPinned },
     { name: 'Accounts', path: '/admin/accounts', icon: Users },
     { name: 'Audit Logs', path: '/admin/audit', icon: FileText },
     { name: 'Integrations', path: '/admin/integrations', icon: Puzzle },
@@ -53,7 +57,7 @@ export function AdminLayout() {
         {/* Brand Header */}
         <div className={`p-6 border-b border-slate-200 flex items-center bg-white ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}>
           {!isCollapsed ? (
-            <Link to="/admin/accounts" className="flex items-center gap-3">
+            <Link to="/admin/dashboard" className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-md bg-indigo-600 flex items-center justify-center text-white shadow-sm shrink-0">
                 <ShieldCheck className="w-5 h-5" />
               </div>
@@ -65,7 +69,7 @@ export function AdminLayout() {
               </div>
             </Link>
           ) : (
-            <Link to="/admin/accounts" className="w-10 h-10 rounded-md bg-indigo-600 flex items-center justify-center text-white shadow-sm shrink-0">
+            <Link to="/admin/dashboard" className="w-10 h-10 rounded-md bg-indigo-600 flex items-center justify-center text-white shadow-sm shrink-0">
               <ShieldCheck className="w-5 h-5" />
             </Link>
           )}
@@ -106,8 +110,12 @@ export function AdminLayout() {
                 HQ
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-black text-slate-900 truncate uppercase text-[12px] tracking-wide">Root Administrator</p>
-                <p className="text-[10px] text-slate-500 font-bold truncate tracking-wider mt-0.5">Platform Operations</p>
+                <p className="font-black text-slate-900 truncate uppercase text-[12px] tracking-wide">
+                  {user?.name || user?.username || 'System Administrator'}
+                </p>
+                <p className="text-[10px] text-slate-500 font-bold truncate tracking-wider mt-0.5">
+                  {user?.email || 'Platform Operations'}
+                </p>
               </div>
             </div>
           ) : (

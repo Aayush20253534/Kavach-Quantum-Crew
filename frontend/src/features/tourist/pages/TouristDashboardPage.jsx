@@ -272,10 +272,20 @@ export function TouristDashboardPage() {
               type="button"
               onClick={() => createGroupForDestination(destination)}
               disabled={Boolean(creatingLocation)}
-              className="group text-left h-32 rounded-xl border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-700 p-4 relative overflow-hidden hover:-translate-y-0.5 transition-transform disabled:opacity-60"
+              className="group text-left h-32 rounded-xl border border-slate-200 bg-slate-900 relative overflow-hidden hover:-translate-y-0.5 transition-transform disabled:opacity-60"
+              style={
+                destination.imageUrl
+                  ? {
+                      backgroundImage: `url("${destination.imageUrl}")`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }
+                  : undefined
+              }
             >
-              <MapPin className="absolute right-3 top-3 w-8 h-8 text-white/10" />
-              <div className="absolute inset-x-0 bottom-0 p-4">
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-900/55 to-slate-900/15" />
+              <MapPin className="absolute right-3 top-3 w-8 h-8 text-white/25" />
+              <div className="absolute inset-x-0 bottom-0 p-4 z-10">
                 <h3 className="text-white text-[13px] font-black uppercase tracking-wide">{destination.name}</h3>
                 <p className="text-slate-300 text-[10px] font-semibold mt-1">{destination.state}</p>
                 <p className="text-red-300 text-[9px] font-bold uppercase tracking-wider mt-2">Click to create group</p>
