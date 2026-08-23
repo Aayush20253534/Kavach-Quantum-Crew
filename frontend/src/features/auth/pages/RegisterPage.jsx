@@ -32,7 +32,7 @@ const registerSchema = z
     phone: z
       .string()
       .trim()
-      .regex(/^\+?\d{7,15}$/, 'Please enter a valid phone number'),
+      .regex(/^\d{10}$/, 'Mobile number must contain exactly 10 digits'),
     password: z
       .string()
       .min(8, 'Password must be at least 8 characters')
@@ -108,7 +108,7 @@ export function RegisterPage() {
   };
 
   return (
-    <div className={`transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
+    <div className={`tourist-font transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
       <div className="mb-4 text-center">
         <h2 className="mb-1 text-2xl font-bold tracking-tight text-slate-900">
           Create an Account
@@ -214,8 +214,13 @@ export function RegisterPage() {
               />
               <input
                 type="tel"
-                placeholder="+919876543210"
+                placeholder="9876543210"
+                inputMode="numeric"
+                maxLength={10}
                 {...register('phone')}
+                onInput={(event) => {
+                  event.target.value = event.target.value.replace(/\D/g, '').slice(0, 10);
+                }}
                 className={`h-9 w-full rounded-md border bg-white pl-9 pr-3 text-xs text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-red-500 focus:ring-1 focus:ring-red-500 ${
                   errors.phone ? 'border-red-500' : 'border-slate-200'
                 }`}

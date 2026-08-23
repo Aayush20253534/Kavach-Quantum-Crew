@@ -56,7 +56,7 @@ export function TouristDashboardPage() {
 
   useEffect(() => {
     destinationService.list({ featured: true, limit: 8 })
-      .then(setFeaturedDestinations)
+      .then((data) => setFeaturedDestinations(Array.isArray(data) ? data.filter((item) => item?.name) : []))
       .catch(() => setFeaturedDestinations([]));
   }, []);
 
@@ -71,7 +71,7 @@ export function TouristDashboardPage() {
     setSearching(true);
     const timer = setTimeout(() => {
       destinationService.list({ search: query, limit: 8 })
-        .then(setSearchResults)
+        .then((data) => setSearchResults(Array.isArray(data) ? data.filter((item) => item?.name) : []))
         .catch(() => setSearchResults([]))
         .finally(() => setSearching(false));
     }, 250);
@@ -84,18 +84,31 @@ export function TouristDashboardPage() {
     setCreatingLocation(destination.id);
 
     try {
+      const destinationName = String(destination?.name ?? '').trim();
+      if (!destinationName) {
+        throw new Error('The selected destination is missing a valid name.');
+      }
+
       let trip = currentTrip;
 
       if (trip) {
-        const sameDestination = trip.locationName?.toLowerCase() === destination.name.toLowerCase();
-        if (!sameDestination || trip.tripType !== 'GROUP') {
-          throw new Error(`You already have an open ${trip.tripType.toLowerCase()} trip for ${trip.locationName}. Complete or cancel it before creating another group.`);
+        const tripLocation = String(trip?.locationName ?? '').trim();
+        const tripType = String(trip?.tripType ?? 'trip');
+        const sameDestination =
+          tripLocation.toLocaleLowerCase() === destinationName.toLocaleLowerCase();
+
+        if (!sameDestination || tripType !== 'GROUP') {
+          throw new Error(
+            `You already have an open ${tripType.toLocaleLowerCase()} trip${
+              tripLocation ? ` for ${tripLocation}` : ''
+            }. Complete or cancel it before creating or joining another trip.`,
+          );
         }
       } else {
         const plannedStartAt = new Date(Date.now() + 5 * 60 * 1000);
         const plannedEndAt = new Date(plannedStartAt.getTime() + 24 * 60 * 60 * 1000);
         const created = await createTrip.mutateAsync({
-          locationName: destination.name,
+          locationName: destinationName,
           tripType: 'GROUP',
           plannedStartAt: plannedStartAt.toISOString(),
           plannedEndAt: plannedEndAt.toISOString(),
@@ -111,7 +124,7 @@ export function TouristDashboardPage() {
       }
 
       navigate('/tourist/groups/create', {
-        state: { tripId: trip.id, destination: destination.name },
+        state: { tripId: trip.id, destination: destinationName },
       });
     } catch (error) {
       setActionError(
@@ -163,7 +176,7 @@ export function TouristDashboardPage() {
   ], [summary, summaryLoading, location, safetyIsDanger]);
 
   return (
-    <div className="space-y-6 font-sans max-w-[1200px] mx-auto pb-8 overflow-visible">
+    <div className="space-y-6 max-w-[1200px] mx-auto pb-8 overflow-visible">
       <section className={`transition-all duration-500 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'}`}>
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-4">
           <div>

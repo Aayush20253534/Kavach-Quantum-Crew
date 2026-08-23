@@ -1,161 +1,186 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  ShieldCheck, Clock, Plus, Loader2, CheckCircle2, 
-  AlertTriangle, ServerCrash, X
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Loader2,
+  Plus,
+  ServerCrash,
+  ShieldCheck,
+  X,
 } from 'lucide-react';
+
 import { tripService } from '../../trips/api/tripService';
 
+const localDateTimeValue = (date) => {
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+};
+
 export function TouristCheckinsPage() {
+  const [trip, setTrip] = useState(null);
   const [checkIns, setCheckIns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [tripId, setTripId] = useState(null);
-  
   const [showModal, setShowModal] = useState(false);
   const [newTime, setNewTime] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const load = async () => {
+    setLoading(true);
+    setError('');
     try {
-      setLoading(true);
-      setError('');
-      
-      const tripResponse = await tripService.getCurrentTrip();
-      if (!tripResponse?.data) {
-        setLoading(false);
-        return; // No active trip
+      const currentTrip = await tripService.getCurrentTrip();
+      if (!currentTrip || currentTrip.status !== 'ACTIVE') {
+        setTrip(currentTrip || null);
+        setCheckIns([]);
+        return;
       }
-      
-      const tId = tripResponse.data.id;
-      setTripId(tId);
-      
-      const checks = await tripService.getCheckIns(tId);
-      setCheckIns(Array.isArray(checks?.data) ? checks.data : []);
-    } catch (err) {
-      setError(err.message || 'Failed to load safety data.');
+
+      setTrip(currentTrip);
+      const checks = await tripService.getCheckIns(currentTrip.id);
+      setCheckIns(Array.isArray(checks) ? checks : checks?.items || []);
+    } catch (requestError) {
+      setError(
+        requestError?.response?.data?.error?.message ||
+          requestError?.message ||
+          'Failed to load safety check-ins.',
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSchedule = async (e) => {
-    e.preventDefault();
-    if (!tripId || !newTime) return;
+  useEffect(() => {
+    load();
+  }, []);
+
+  const minValue = useMemo(
+    () => localDateTimeValue(new Date(Date.now() + 60_000)),
+    [showModal],
+  );
+
+  const maxValue = useMemo(() => {
+    const max24h = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const tripEnd = trip?.plannedEndAt ? new Date(trip.plannedEndAt) : max24h;
+    return localDateTimeValue(tripEnd < max24h ? tripEnd : max24h);
+  }, [trip?.plannedEndAt, showModal]);
+
+  const openSchedule = () => {
+    setNewTime(minValue);
+    setShowModal(true);
+  };
+
+  const handleSchedule = async (event) => {
+    event.preventDefault();
+    if (!trip?.id || !newTime) return;
+
+    setBusy(true);
     try {
-      // In a real app we'd construct a proper ISO datetime, here just sending a string
-      await tripService.scheduleCheckIn(tripId, new Date(newTime).toISOString());
+      await tripService.scheduleCheckIn(trip.id, new Date(newTime).toISOString());
       setShowModal(false);
       setNewTime('');
-      fetchData();
-    } catch (err) {
-      alert(err.response?.data?.error?.message || 'Failed to schedule');
+      await load();
+    } catch (requestError) {
+      setError(
+        requestError?.response?.data?.error?.message ||
+          'Failed to schedule check-in.',
+      );
+    } finally {
+      setBusy(false);
     }
   };
 
   const handleComplete = async (checkInId) => {
+    setBusy(true);
     try {
       await tripService.completeCheckIn(checkInId);
-      fetchData();
-    } catch (err) {
-      alert(err.response?.data?.error?.message || 'Failed to complete check-in');
+      await load();
+    } catch (requestError) {
+      setError(
+        requestError?.response?.data?.error?.message ||
+          'Failed to complete check-in.',
+      );
+    } finally {
+      setBusy(false);
     }
   };
 
   return (
-    <div className="font-sans max-w-[800px] mx-auto pb-10">
-      
+    <div className="max-w-[800px] mx-auto pb-10">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">Safety Protocols</span>
-          </div>
-          <h1 className="text-[24px] font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6 text-indigo-600" /> Safety Check-ins
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Safety Protocols</p>
+          <h1 className="text-[24px] font-black text-slate-900 flex items-center gap-2 mt-1">
+            <ShieldCheck className="w-6 h-6 text-indigo-600" />
+            Safety Check-ins
           </h1>
-          <p className="text-[13px] text-slate-500 font-medium mt-1">
-            Schedule a "Dead Man's Switch" check-in. If you fail to verify your safety by the deadline, authorities are notified.
+          <p className="text-[13px] text-slate-500 mt-1">
+            Check-ins are available only during an active trip and must be scheduled 1 minute to 24 hours ahead, before the trip ends.
           </p>
         </div>
-        
-        {tripId && (
-          <button 
-            onClick={() => setShowModal(true)}
-            className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-2 transition-colors"
+
+        {trip?.status === 'ACTIVE' && (
+          <button
+            type="button"
+            onClick={openSchedule}
+            className="px-5 py-2.5 bg-slate-900 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider flex items-center gap-2"
           >
             <Plus className="w-4 h-4" /> Schedule New
           </button>
         )}
       </div>
 
-      {error ? (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-10 flex flex-col items-center justify-center text-center">
-          <ServerCrash className="w-8 h-8 text-red-400 mb-3" />
-          <p className="text-red-800 font-bold text-sm mb-1">Connection Error</p>
-          <p className="text-red-600 text-xs">{error}</p>
+      {error && (
+        <div className="mb-4 rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+          {error}
         </div>
-      ) : loading ? (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-20 flex flex-col items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-slate-300 mb-4" />
-          <p className="text-sm font-semibold text-slate-500">Loading safety schedule...</p>
+      )}
+
+      {loading ? (
+        <div className="bg-white rounded-xl border p-20 flex justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-slate-300" />
         </div>
-      ) : !tripId ? (
-        <div className="bg-slate-50 rounded-xl border border-slate-200 shadow-sm p-12 flex flex-col items-center justify-center text-center">
-          <AlertTriangle className="w-10 h-10 text-amber-500 mb-4" />
-          <h3 className="text-[16px] font-black text-slate-900 mb-2">No Active Trip</h3>
-          <p className="text-sm text-slate-500 max-w-sm">
-            Safety check-ins can only be scheduled while you are on an active trip.
+      ) : !trip || trip.status !== 'ACTIVE' ? (
+        <div className="bg-slate-50 rounded-xl border border-slate-200 p-12 text-center">
+          <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-4" />
+          <h3 className="font-black">No Active Trip</h3>
+          <p className="text-sm text-slate-500 mt-2">
+            Start your planned trip before scheduling safety check-ins.
           </p>
         </div>
       ) : checkIns.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-12 flex flex-col items-center justify-center text-center border-dashed">
-          <Clock className="w-10 h-10 text-slate-300 mb-4" />
-          <h3 className="text-[16px] font-black text-slate-900 mb-2">No Check-ins Scheduled</h3>
-          <p className="text-sm text-slate-500 max-w-sm mb-6">
-            You don't have any pending safety checks. Schedule one to ensure someone checks on you if you go offline.
-          </p>
-          <button 
-            onClick={() => setShowModal(true)}
-            className="px-5 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors"
-          >
+        <div className="bg-white rounded-xl border border-dashed border-slate-200 p-12 text-center">
+          <Clock className="w-10 h-10 text-slate-300 mx-auto mb-4" />
+          <h3 className="font-black">No Check-ins Scheduled</h3>
+          <button onClick={openSchedule} className="mt-5 px-5 py-2 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold">
             Create First Check-in
           </button>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
-          {checkIns.map(check => (
-            <div key={check.id} className="p-6 flex flex-col md:flex-row items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
-                  check.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-600' :
-                  check.status === 'MISSED' ? 'bg-red-100 text-red-600' :
-                  'bg-indigo-100 text-indigo-600'
+        <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100 overflow-hidden">
+          {checkIns.map((check) => (
+            <div key={check.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <p className="font-black text-sm">
+                  {new Date(check.dueAt).toLocaleString()}
+                </p>
+                <p className={`text-[10px] font-black uppercase mt-1 ${
+                  check.status === 'COMPLETED'
+                    ? 'text-emerald-600'
+                    : check.status === 'MISSED'
+                      ? 'text-red-600'
+                      : 'text-indigo-600'
                 }`}>
-                  <Clock className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-black text-slate-900">
-                    Scheduled for {new Date(check.dueAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1 text-[11px] font-bold uppercase tracking-widest">
-                    <span className={
-                      check.status === 'COMPLETED' ? 'text-emerald-600' :
-                      check.status === 'MISSED' ? 'text-red-600' :
-                      'text-indigo-600'
-                    }>
-                      {check.status || 'PENDING'}
-                    </span>
-                    {check.status === 'COMPLETED' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
-                  </div>
-                </div>
+                  {check.status}
+                </p>
               </div>
-              
+
               {check.status === 'PENDING' && (
-                <button 
+                <button
+                  disabled={busy}
                   onClick={() => handleComplete(check.id)}
-                  className="w-full md:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider shadow-sm transition-colors"
+                  className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-[11px] font-bold uppercase"
                 >
                   Confirm Safe
                 </button>
@@ -165,47 +190,45 @@ export function TouristCheckinsPage() {
         </div>
       )}
 
-      {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h2 className="text-[13px] font-black text-slate-900 uppercase tracking-widest">Schedule Check-in</h2>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 bg-slate-900/40 p-4 flex items-center justify-center">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="font-black">Schedule Check-in</h2>
+              <button type="button" onClick={() => setShowModal(false)}>
+                <X className="w-5 h-5 text-slate-400" />
               </button>
             </div>
-            
+
             <form onSubmit={handleSchedule} className="p-6">
-              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-widest mb-2">Check-in Time</label>
-              <input 
-                type="datetime-local" 
+              <label className="block text-xs font-bold text-slate-600 mb-2">
+                Check-in time
+              </label>
+              <input
+                type="datetime-local"
+                min={minValue}
+                max={maxValue}
                 required
                 value={newTime}
-                onChange={e => setNewTime(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-[13px] text-slate-900 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+                onChange={(event) => setNewTime(event.target.value)}
+                className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm"
               />
-              
-              <div className="mt-6 flex justify-end gap-3">
-                <button 
-                  type="button" 
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-[11px] font-bold uppercase tracking-wider"
-                >
+              <p className="mt-2 text-[11px] text-slate-500">
+                Latest allowed: {new Date(trip.plannedEndAt).toLocaleString()}
+              </p>
+
+              <div className="mt-6 flex justify-end gap-2">
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded-lg text-xs font-bold">
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
-                  className="px-6 py-2 bg-slate-900 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider"
-                >
-                  Schedule
+                <button disabled={busy} className="px-5 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold">
+                  {busy ? 'Scheduling...' : 'Schedule'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-
     </div>
   );
 }

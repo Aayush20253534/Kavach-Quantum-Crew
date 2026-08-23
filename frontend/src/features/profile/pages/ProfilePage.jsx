@@ -26,6 +26,7 @@ const EMPTY_FORM = {
   medicalHistory: '',
   nationality: '',
   preferredLanguage: '',
+  governmentIdType: 'AADHAAR',
   governmentIdNumber: '',
   liveTrackingEnabled: true,
   geoAlertsEnabled: true,
@@ -73,6 +74,7 @@ export function ProfilePage() {
       medicalHistory: data?.medicalHistory || '',
       nationality: data?.nationality || '',
       preferredLanguage: data?.preferredLanguage || '',
+      governmentIdType: data?.governmentIdType || 'AADHAAR',
       governmentIdNumber: data?.governmentIdNumber || '',
       liveTrackingEnabled: data?.liveTrackingEnabled ?? true,
       geoAlertsEnabled: data?.geoAlertsEnabled ?? true,
@@ -178,6 +180,7 @@ export function ProfilePage() {
         medicalHistory: form.medicalHistory.trim() || null,
         nationality: form.nationality.trim(),
         preferredLanguage: form.preferredLanguage.trim(),
+        governmentIdType: form.governmentIdType,
         governmentIdNumber: form.governmentIdNumber.trim(),
         liveTrackingEnabled: form.liveTrackingEnabled,
         geoAlertsEnabled: form.geoAlertsEnabled,
@@ -329,7 +332,23 @@ export function ProfilePage() {
                 <Field label="Email" type="email" value={form.email} onChange={(value) => setField('email', value)} required />
                 <Field label="Preferred language" value={form.preferredLanguage} onChange={(value) => setField('preferredLanguage', value)} required />
                 <Field label="Nationality" value={form.nationality} onChange={(value) => setField('nationality', value)} required />
-                <Field label="Government ID number" value={form.governmentIdNumber} onChange={(value) => setField('governmentIdNumber', value)} required />
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">ID type</label>
+                  <select
+                    value={form.governmentIdType}
+                    onChange={(event) => setField('governmentIdType', event.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-semibold rounded-lg px-4 py-3 outline-none"
+                  >
+                    <option value="AADHAAR">Aadhaar</option>
+                    <option value="PASSPORT">Passport</option>
+                  </select>
+                </div>
+                <Field
+                  label={form.governmentIdType === 'AADHAAR' ? 'Aadhaar number' : 'Passport number'}
+                  value={form.governmentIdNumber}
+                  onChange={(value) => setField('governmentIdNumber', value)}
+                  required
+                />
               </div>
 
               <SectionTitle icon={ShieldCheck} title="Emergency contact" />

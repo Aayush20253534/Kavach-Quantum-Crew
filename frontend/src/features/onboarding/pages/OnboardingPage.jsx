@@ -1,49 +1,81 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
+  ArrowRight,
+  CheckCircle2,
+  HeartPulse,
+  MapPin,
+  PhoneCall,
   ShieldCheck,
   User,
-  HeartPulse,
-  PhoneCall,
-  CheckCircle2,
-  ArrowRight,
-  MapPin,
 } from 'lucide-react';
+
 import { completeOnboarding } from '../../auth/store/authSlice';
 import apiClient from '../../../services/apiClient';
+import { ScrollableSelect } from '../components/ScrollableSelect';
+import {
+  BLOOD_GROUPS,
+  GOVERNMENT_ID_TYPES,
+  LANGUAGES,
+  NATIONALITIES,
+  RELATIONSHIPS,
+} from '../constants/onboardingOptions';
 
-/* =========================================================================
-   VALIDATION SCHEMA
-========================================================================= */
-const onboardingSchema = z.object({
-  gender: z.string().min(1, 'Please select gender'),
-  age: z.string().min(1, 'Please enter your age'),
-  nationality: z.string().min(1, 'Please select nationality'),
-  language: z.string().min(1, 'Please select preferred language'),
-  emergencyName: z.string().min(2, 'Emergency contact name is required'),
-  emergencyRelation: z.string().min(1, 'Relationship is required'),
-  emergencyPhone: z.string().min(10, 'Valid emergency phone number is required'),
-  bloodGroup: z.string().min(1, 'Blood group is required'),
-  medicalNotes: z.string().optional(),
-  idNumber: z.string().min(4, 'Govt ID or Passport is required for verification'),
-  liveTracking: z.boolean().default(true),
-  geoAlerts: z.boolean().default(true),
-});
+const tenDigitPhone = z
+  .string()
+  .regex(/^\d{10}$/, 'Phone number must contain exactly 10 digits');
+
+const onboardingSchema = z
+  .object({
+    gender: z.string().min(1, 'Please select gender'),
+    age: z.coerce.number().int().min(0, 'Age cannot be negative').max(100, 'Age cannot be above 100'),
+    nationality: z.string().min(1, 'Please select nationality'),
+    language: z.string().min(1, 'Please select preferred language'),
+    emergencyName: z.string().trim().min(2, 'Emergency contact name is required').max(120),
+    emergencyRelation: z.string().min(1, 'Relationship is required'),
+    emergencyPhone: tenDigitPhone,
+    bloodGroup: z.enum(['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-']),
+    medicalNotes: z.string().max(5000).optional(),
+    idType: z.enum(['AADHAAR', 'PASSPORT']),
+    idNumber: z.string().trim().min(1, 'ID number is required'),
+    liveTracking: z.boolean().default(true),
+    geoAlerts: z.boolean().default(true),
+  })
+  .superRefine((data, context) => {
+    if (data.idType === 'AADHAAR' && !/^\d{12}$/.test(data.idNumber)) {
+      context.addIssue({
+        code: 'custom',
+        path: ['idNumber'],
+        message: 'Aadhaar number must contain exactly 12 digits',
+      });
+    }
+
+    if (
+      data.idType === 'PASSPORT' &&
+      !/^[A-Za-z0-9]{6,20}$/.test(data.idNumber)
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['idNumber'],
+        message: 'Passport ID must be 6 to 20 letters or digits',
+      });
+    }
+  });
 
 const stepsInfo = [
   { id: 1, title: 'Your Profile', desc: 'Identity details', icon: User },
-  { id: 2, title: 'Emergency', desc: 'Family Contacts', icon: PhoneCall },
-  { id: 3, title: 'Medical', desc: 'Health details', icon: HeartPulse },
+  { id: 2, title: 'Emergency', desc: 'Family contacts', icon: PhoneCall },
+  { id: 3, title: 'Medical', desc: 'Health and ID', icon: HeartPulse },
   { id: 4, title: 'Safety Settings', desc: 'App permissions', icon: ShieldCheck },
 ];
 
-/* =========================================================================
-   PAGE COMPONENT
-========================================================================= */
+const digitsOnly = (event, maxLength) => {
+  event.target.value = event.target.value.replace(/\D/g, '').slice(0, maxLength);
+};
 
 export function OnboardingPage() {
   const navigate = useNavigate();
@@ -53,8 +85,10 @@ export function OnboardingPage() {
 
   const {
     register,
+    control,
     handleSubmit,
     trigger,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(onboardingSchema),
@@ -66,419 +100,371 @@ export function OnboardingPage() {
       emergencyName: '',
       emergencyRelation: '',
       emergencyPhone: '',
-      bloodGroup: '',
+      bloodGroup: 'O+',
       medicalNotes: '',
+      idType: 'AADHAAR',
       idNumber: '',
       liveTracking: true,
       geoAlerts: true,
     },
   });
 
+  const idType = watch('idType');
+
   const nextStep = async () => {
-    let fieldsToValidate = [];
-    if (step === 1) fieldsToValidate = ['gender', 'age', 'nationality', 'language'];
-    if (step === 2) fieldsToValidate = ['emergencyName', 'emergencyRelation', 'emergencyPhone'];
-    if (step === 3) fieldsToValidate = ['bloodGroup', 'idNumber'];
-
-    const valid = await trigger(fieldsToValidate);
-    if (valid) {
-      setStep((prev) => Math.min(prev + 1, 4));
-    }
-  };
-
-  const prevStep = () => {
-    setStep((prev) => Math.max(prev - 1, 1));
+    let fields = [];
+    if (step === 1) fields = ['gender', 'age', 'nationality', 'language'];
+    if (step === 2) fields = ['emergencyName', 'emergencyRelation', 'emergencyPhone'];
+    if (step === 3) fields = ['bloodGroup', 'idType', 'idNumber'];
+    if (await trigger(fields)) setStep((current) => Math.min(current + 1, 4));
   };
 
   const onSubmit = async (data) => {
-    if (step < 4) {
-      nextStep();
-      return;
-    }
+    if (step < 4) return nextStep();
 
+    setOnboardingError('');
     try {
       const genderMap = {
         Male: 'MALE',
         Female: 'FEMALE',
         Other: 'OTHER',
+        'Prefer not to say': 'PREFER_NOT_TO_SAY',
       };
 
       const response = await apiClient.post('/tourists/me/onboarding', {
         gender: genderMap[data.gender] ?? 'PREFER_NOT_TO_SAY',
-        age: Number(data.age),
+        age: data.age,
         nationality: data.nationality,
         preferredLanguage: data.language,
-        emergencyContactName: data.emergencyName,
+        emergencyContactName: data.emergencyName.trim(),
         emergencyContactRelation: data.emergencyRelation,
         emergencyPhone: data.emergencyPhone,
         bloodGroup: data.bloodGroup,
-        governmentIdNumber: data.idNumber,
-        medicalHistory: data.medicalNotes || null,
-      }, { timeout: 3000 }); // 3 second timeout
+        governmentIdType: data.idType,
+        governmentIdNumber: data.idNumber.trim().toUpperCase(),
+        medicalHistory: data.medicalNotes?.trim() || null,
+        liveTrackingEnabled: data.liveTracking,
+        geoAlertsEnabled: data.geoAlerts,
+      });
 
       const profile = response.data?.data ?? response.data;
-
       dispatch(completeOnboarding(profile));
-      navigate('/tourist/profile', { replace: true });
+      navigate('/tourist/dashboard', { replace: true });
     } catch (error) {
-      console.error('Onboarding failed or timed out:', error);
-      // Fallback for frontend UI testing when backend is down
-      dispatch(completeOnboarding({
-        emergencyContact: { name: data.emergencyName, phone: data.emergencyPhone, relation: data.emergencyRelation },
-        medicalInfo: { bloodGroup: data.bloodGroup, notes: data.medicalNotes }
-      }));
-      navigate('/tourist/profile', { replace: true });
+      setOnboardingError(
+        error?.response?.data?.error?.message ||
+          error?.message ||
+          'Unable to complete onboarding. Please try again.',
+      );
     }
   };
 
   const CurrentIcon = stepsInfo[step - 1].icon;
 
   return (
-    <div className="min-h-screen w-full flex flex-col md:flex-row bg-white font-sans text-slate-900">
-
-      {/* ------------------------------------------------
-          LEFT SIDEBAR (Professional Light Theme)
-      ------------------------------------------------ */}
-      <div className="hidden md:flex md:w-[280px] lg:w-[320px] bg-slate-50 border-r border-slate-200 p-8 flex-col flex-shrink-0">
-
-        {/* Logo / Header */}
-        <div className="flex items-center justify-between mb-12">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#e33636] text-white shadow-sm">
-              <MapPin size={16} />
-            </div>
-            <div>
-              <h1 className="text-sm font-bold tracking-tight text-slate-900 leading-tight">
-                Prayagraj Safety
-              </h1>
-              <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">
-                Setup Wizard
-              </p>
-            </div>
+    <div className="tourist-font min-h-screen w-full flex flex-col md:flex-row bg-white text-slate-900 overflow-hidden">
+      <aside className="hidden md:flex md:w-[280px] lg:w-[320px] bg-slate-50 border-r border-slate-200 p-8 flex-col shrink-0">
+        <div className="flex items-center gap-3 mb-12">
+          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-red-600 text-white">
+            <MapPin size={17} />
           </div>
-
-          <button
-            onClick={() => {
-              localStorage.removeItem('quantum_access_token');
-              window.location.href = '/login';
-            }}
-            className="text-xs font-medium text-slate-500 hover:text-red-600 transition-colors"
-          >
-            Sign Out
-          </button>
-        </div>
-
-        {/* Vertical Stepper */}
-        <div className="relative flex-1">
-          {/* Vertical Track Line */}
-          <div className="absolute left-[19px] top-4 bottom-8 w-px bg-slate-200" />
-
-          <div className="flex flex-col gap-5 relative z-10">
-            {stepsInfo.map((s, idx) => {
-              const isCurrent = step === s.id;
-              const isPast = step > s.id;
-              const StepIcon = s.icon;
-
-              return (
-                <div
-                  key={s.id}
-                  className={`flex items-center gap-3 p-2 rounded-md transition-all ${isCurrent ? 'bg-white shadow-sm border border-slate-200' : ''
-                    }`}
-                >
-                  {/* Icon Node */}
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md border ${isCurrent
-                    ? 'bg-red-50 border-red-100 text-red-600'
-                    : isPast
-                      ? 'bg-slate-100 border-slate-200 text-slate-700'
-                      : 'bg-white border-slate-200 text-slate-400'
-                    }`}>
-                    {isPast ? <CheckCircle2 size={16} /> : <StepIcon size={16} />}
-                  </div>
-
-                  {/* Text Content */}
-                  <div className="flex flex-col">
-                    <p className={`text-[10px] font-semibold uppercase tracking-wider mb-0.5 ${isCurrent ? 'text-red-600' : 'text-slate-400'
-                      }`}>
-                      Step {s.id}
-                    </p>
-                    <h3 className={`text-xs font-bold ${isCurrent ? 'text-slate-900' : 'text-slate-600'
-                      }`}>
-                      {s.title}
-                    </h3>
-                  </div>
-                </div>
-              );
-            })}
+          <div>
+            <h1 className="text-sm font-black">KAVACH Tourist Safety</h1>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider">Profile setup</p>
           </div>
         </div>
 
-        {/* Bottom footer text */}
-        <div className="mt-auto pt-8 text-[10px] text-slate-400 font-medium">
-          © 2026 Prayagraj Tourism Security
-        </div>
-      </div>
-
-      {/* ------------------------------------------------
-          RIGHT CONTENT
-      ------------------------------------------------ */}
-      <div className="flex-1 bg-white p-8 md:p-12 lg:px-24 overflow-y-auto">
-        <div className="max-w-xl mx-auto mt-4">
-
-          {/* Top Progress Bar */}
-          <div className="mb-10">
-            <div className="flex justify-between items-end mb-2">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Step {step} of 4</p>
-              <p className="text-xs font-medium text-slate-400">{Math.round((step / 4) * 100)}% Completed</p>
-            </div>
-            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+        <div className="space-y-3">
+          {stepsInfo.map((item) => {
+            const active = item.id === step;
+            const done = item.id < step;
+            const Icon = item.icon;
+            return (
               <div
-                className="h-full bg-[#e33636] transition-all duration-500 ease-in-out"
-                style={{ width: `${(step / 4) * 100}%` }}
-              />
+                key={item.id}
+                className={`rounded-lg border p-3 flex items-center gap-3 ${
+                  active ? 'bg-white border-red-200 shadow-sm' : 'border-transparent'
+                }`}
+              >
+                <div className={`w-9 h-9 rounded-md flex items-center justify-center ${
+                  active ? 'bg-red-50 text-red-600' : done ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'
+                }`}>
+                  {done ? <CheckCircle2 size={16} /> : <Icon size={16} />}
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400 uppercase">Step {item.id}</p>
+                  <p className="text-xs font-black">{item.title}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </aside>
+
+      <main className="flex-1 min-w-0 h-screen overflow-y-auto">
+        <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 py-7 sm:py-10 md:py-12">
+          <div className="mb-8">
+            <div className="flex justify-between text-xs text-slate-500 mb-2">
+              <span>Step {step} of 4</span>
+              <span>{step * 25}% complete</span>
+            </div>
+            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-red-600 transition-all" style={{ width: `${step * 25}%` }} />
             </div>
           </div>
 
-          {/* Form Header */}
-          <div className="mb-8">
-            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-50 border border-slate-200 text-slate-700 mb-4">
+          <div className="mb-7">
+            <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center mb-4">
               <CurrentIcon size={18} />
             </div>
-            <h2 className="text-2xl font-bold text-slate-900 tracking-tight mb-2">
-              {step === 1 && "Profile Setup"}
-              {step === 2 && "Emergency Contacts"}
-              {step === 3 && "Medical Information"}
-              {step === 4 && "Safety Settings"}
+            <h2 className="text-2xl font-black">
+              {step === 1 && 'Profile Setup'}
+              {step === 2 && 'Emergency Contact'}
+              {step === 3 && 'Medical & Identity'}
+              {step === 4 && 'Safety Settings'}
             </h2>
-            <p className="text-sm text-slate-500 font-medium">
-              {step === 1 && "Provide your identity details for government verification."}
-              {step === 2 && "Configure automated SOS alert recipients."}
-              {step === 3 && "Provide crucial data for emergency responders."}
-              {step === 4 && "Configure tracking and notification permissions."}
+            <p className="text-sm text-slate-500 mt-1">
+              {step === 1 && 'Tell us who you are and your preferred language.'}
+              {step === 2 && 'Choose who should be contacted during an emergency.'}
+              {step === 3 && 'Add health information and a verified identity document.'}
+              {step === 4 && 'Choose the safety features you want enabled.'}
             </p>
           </div>
 
-          {/* Form Content */}
-          <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-
-            {/* STEP 1 */}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             {step === 1 && (
-              <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-1.5 uppercase tracking-wider">Gender</label>
-                    <select
-                      {...register('gender')}
-                      className={`h-9 w-full rounded-md border bg-white px-3 text-xs text-slate-900 outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500 ${errors.gender ? 'border-red-500' : 'border-slate-200'}`}
-                    >
-                      <option value="">Select gender...</option>
-                      <option value="Female">Female</option>
-                      <option value="Male">Male</option>
-                      <option value="Other">Other</option>
+              <>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <Field label="Gender" error={errors.gender?.message}>
+                    <select {...register('gender')} className="onboarding-control">
+                      <option value="">Select gender</option>
+                      <option>Female</option>
+                      <option>Male</option>
+                      <option>Other</option>
+                      <option>Prefer not to say</option>
                     </select>
-                    {errors.gender && <p className="mt-1 text-[10px] text-red-500 font-medium">{errors.gender.message}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-1.5 uppercase tracking-wider">Age</label>
+                  </Field>
+
+                  <Field label="Age" error={errors.age?.message}>
                     <input
                       type="number"
-                      placeholder="e.g. 24"
+                      min="0"
+                      max="100"
+                      step="1"
+                      inputMode="numeric"
+                      placeholder="0 - 100"
                       {...register('age')}
-                      className={`h-9 w-full rounded-md border bg-white px-3 text-xs text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-red-500 focus:ring-1 focus:ring-red-500 ${errors.age ? 'border-red-500' : 'border-slate-200'}`}
+                      className="onboarding-control"
                     />
-                    {errors.age && <p className="mt-1 text-[10px] text-red-500 font-medium">{errors.age.message}</p>}
-                  </div>
+                  </Field>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-1.5 uppercase tracking-wider">Nationality</label>
-                    <select
-                      {...register('nationality')}
-                      className={`h-9 w-full rounded-md border bg-white px-3 text-xs text-slate-900 outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500 ${errors.nationality ? 'border-red-500' : 'border-slate-200'}`}
-                    >
-                      <option value="">Select nationality...</option>
-                      <option value="Indian">Indian</option>
-                      <option value="International - USA">United States</option>
-                      <option value="International - UK">United Kingdom</option>
-                      <option value="International - Other">Other</option>
-                    </select>
-                    {errors.nationality && <p className="mt-1 text-[10px] text-red-500 font-medium">{errors.nationality.message}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-1.5 uppercase tracking-wider">Language</label>
-                    <select
-                      {...register('language')}
-                      className={`h-9 w-full rounded-md border bg-white px-3 text-xs text-slate-900 outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500 ${errors.language ? 'border-red-500' : 'border-slate-200'}`}
-                    >
-                      <option value="">Select preferred language...</option>
-                      <option value="Hindi">Hindi</option>
-                      <option value="English">English</option>
-                      <option value="Bengali">Bengali</option>
-                    </select>
-                    {errors.language && <p className="mt-1 text-[10px] text-red-500 font-medium">{errors.language.message}</p>}
-                  </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <Field label="Nationality" error={errors.nationality?.message}>
+                    <Controller
+                      control={control}
+                      name="nationality"
+                      render={({ field }) => (
+                        <ScrollableSelect
+                          {...field}
+                          options={NATIONALITIES}
+                          placeholder="Select nationality"
+                          error={errors.nationality}
+                        />
+                      )}
+                    />
+                  </Field>
+
+                  <Field label="Preferred Language" error={errors.language?.message}>
+                    <Controller
+                      control={control}
+                      name="language"
+                      render={({ field }) => (
+                        <ScrollableSelect
+                          {...field}
+                          options={LANGUAGES}
+                          placeholder="Select language"
+                          error={errors.language}
+                        />
+                      )}
+                    />
+                  </Field>
                 </div>
-              </div>
+              </>
             )}
 
-            {/* STEP 2 */}
             {step === 2 && (
-              <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-5">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1.5 uppercase tracking-wider">Primary Contact Name</label>
+              <>
+                <Field label="Primary Contact Name" error={errors.emergencyName?.message}>
                   <input
-                    type="text"
-                    placeholder="e.g. Ramesh Maurya"
                     {...register('emergencyName')}
-                    className={`h-9 w-full rounded-md border bg-white px-3 text-xs text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-red-500 focus:ring-1 focus:ring-red-500 ${errors.emergencyName ? 'border-red-500' : 'border-slate-200'}`}
+                    className="onboarding-control"
+                    placeholder="Emergency contact name"
+                    maxLength={120}
                   />
-                  {errors.emergencyName && <p className="mt-1 text-[10px] text-red-500 font-medium">{errors.emergencyName.message}</p>}
-                </div>
+                </Field>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-1.5 uppercase tracking-wider">Relationship</label>
-                    <select
-                      {...register('emergencyRelation')}
-                      className={`h-9 w-full rounded-md border bg-white px-3 text-xs text-slate-900 outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500 ${errors.emergencyRelation ? 'border-red-500' : 'border-slate-200'}`}
-                    >
-                      <option value="">Select relation...</option>
-                      <option value="Father">Father</option>
-                      <option value="Mother">Mother</option>
-                      <option value="Spouse">Spouse</option>
-                      <option value="Friend">Friend</option>
-                    </select>
-                    {errors.emergencyRelation && <p className="mt-1 text-[10px] text-red-500 font-medium">{errors.emergencyRelation.message}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-1.5 uppercase tracking-wider">Phone Number</label>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <Field label="Relationship" error={errors.emergencyRelation?.message}>
+                    <Controller
+                      control={control}
+                      name="emergencyRelation"
+                      render={({ field }) => (
+                        <ScrollableSelect
+                          {...field}
+                          options={RELATIONSHIPS}
+                          placeholder="Select relation"
+                          error={errors.emergencyRelation}
+                        />
+                      )}
+                    />
+                  </Field>
+
+                  <Field label="Phone Number" error={errors.emergencyPhone?.message}>
                     <input
                       type="tel"
-                      placeholder="9876500000"
+                      inputMode="numeric"
+                      maxLength={10}
+                      placeholder="9876543210"
                       {...register('emergencyPhone')}
-                      className={`h-9 w-full rounded-md border bg-white px-3 text-xs text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-red-500 focus:ring-1 focus:ring-red-500 ${errors.emergencyPhone ? 'border-red-500' : 'border-slate-200'}`}
+                      onInput={(event) => digitsOnly(event, 10)}
+                      className="onboarding-control"
                     />
-                    {errors.emergencyPhone && <p className="mt-1 text-[10px] text-red-500 font-medium">{errors.emergencyPhone.message}</p>}
-                  </div>
+                  </Field>
                 </div>
-              </div>
+              </>
             )}
 
-            {/* STEP 3 */}
             {step === 3 && (
-              <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-1.5 uppercase tracking-wider">Blood Group</label>
-                    <select
-                      {...register('bloodGroup')}
-                      className={`h-9 w-full rounded-md border bg-white px-3 text-xs text-slate-900 outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500 ${errors.bloodGroup ? 'border-red-500' : 'border-slate-200'}`}
-                    >
-                      <option value="">Select blood group...</option>
-                      <option value="O+">O+</option>
-                      <option value="O-">O-</option>
-                      <option value="A+">A+</option>
-                      <option value="B+">B+</option>
-                    </select>
-                    {errors.bloodGroup && <p className="mt-1 text-[10px] text-red-500 font-medium">{errors.bloodGroup.message}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-1.5 uppercase tracking-wider">ID / Passport</label>
-                    <input
-                      type="text"
-                      placeholder="AADHAAR / PASSPORT"
-                      {...register('idNumber')}
-                      className={`h-9 w-full rounded-md border bg-white px-3 text-xs text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-red-500 focus:ring-1 focus:ring-red-500 ${errors.idNumber ? 'border-red-500' : 'border-slate-200'}`}
+              <>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <Field label="Blood Group" error={errors.bloodGroup?.message}>
+                    <Controller
+                      control={control}
+                      name="bloodGroup"
+                      render={({ field }) => (
+                        <ScrollableSelect
+                          {...field}
+                          options={BLOOD_GROUPS}
+                          placeholder="Select blood group"
+                          error={errors.bloodGroup}
+                        />
+                      )}
                     />
-                    {errors.idNumber && <p className="mt-1 text-[10px] text-red-500 font-medium">{errors.idNumber.message}</p>}
-                  </div>
+                  </Field>
+
+                  <Field label="ID Type" error={errors.idType?.message}>
+                    <Controller
+                      control={control}
+                      name="idType"
+                      render={({ field }) => (
+                        <ScrollableSelect
+                          {...field}
+                          options={GOVERNMENT_ID_TYPES}
+                          placeholder="Select ID type"
+                          error={errors.idType}
+                        />
+                      )}
+                    />
+                  </Field>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1.5 uppercase tracking-wider">Medical Notes (Optional)</label>
-                  <textarea
-                    rows={3}
-                    placeholder="List drug allergies, conditions..."
-                    {...register('medicalNotes')}
-                    className={`w-full rounded-md border bg-white p-3 text-xs text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-red-500 focus:ring-1 focus:ring-red-500 ${errors.medicalNotes ? 'border-red-500' : 'border-slate-200'}`}
+
+                <Field
+                  label={idType === 'AADHAAR' ? 'Aadhaar Number' : 'Passport Number'}
+                  error={errors.idNumber?.message}
+                >
+                  <input
+                    {...register('idNumber')}
+                    inputMode={idType === 'AADHAAR' ? 'numeric' : 'text'}
+                    maxLength={idType === 'AADHAAR' ? 12 : 20}
+                    onInput={(event) => {
+                      if (idType === 'AADHAAR') digitsOnly(event, 12);
+                      else event.target.value = event.target.value.replace(/[^A-Za-z0-9]/g, '').slice(0, 20).toUpperCase();
+                    }}
+                    placeholder={idType === 'AADHAAR' ? '12-digit Aadhaar number' : 'Passport ID'}
+                    className="onboarding-control uppercase"
                   />
-                </div>
-              </div>
+                </Field>
+
+                <Field label="Medical Notes (Optional)" error={errors.medicalNotes?.message}>
+                  <textarea
+                    rows={4}
+                    maxLength={5000}
+                    {...register('medicalNotes')}
+                    className="onboarding-control h-auto py-3 resize-y"
+                    placeholder="Allergies, conditions, medications, or other emergency information"
+                  />
+                </Field>
+              </>
             )}
 
-            {/* STEP 4 */}
             {step === 4 && (
-              <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-4">
-                <div className="p-4 rounded-md border border-slate-200 hover:border-slate-300 transition-colors bg-white flex items-start gap-4 shadow-sm">
-                  <input
-                    type="checkbox"
-                    id="liveTracking"
-                    {...register('liveTracking')}
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer"
-                  />
-                  <label htmlFor="liveTracking" className="cursor-pointer">
-                    <span className="text-sm font-semibold text-slate-900 block mb-0.5">Real-Time Geofence Alerts</span>
-                    <span className="text-xs text-slate-500 leading-relaxed block">System will monitor boundaries and dispatch alerts upon unverified zone entry.</span>
-                  </label>
-                </div>
-
-                <div className="p-4 rounded-md border border-slate-200 hover:border-slate-300 transition-colors bg-white flex items-start gap-4 shadow-sm">
-                  <input
-                    type="checkbox"
-                    id="geoAlerts"
-                    {...register('geoAlerts')}
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer"
-                  />
-                  <label htmlFor="geoAlerts" className="cursor-pointer">
-                    <span className="text-sm font-semibold text-slate-900 block mb-0.5">Emergency SMS Fallbacks</span>
-                    <span className="text-xs text-slate-500 leading-relaxed block">Transmit automated SMS payloads to emergency contacts on data drop.</span>
-                  </label>
-                </div>
+              <div className="space-y-3">
+                <Toggle register={register('liveTracking')} title="Live Tracking" description="Share location while an active trip is being monitored." />
+                <Toggle register={register('geoAlerts')} title="Geofence Alerts" description="Receive alerts when entering configured risk areas." />
               </div>
             )}
 
             {onboardingError && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                 {onboardingError}
               </div>
             )}
 
-            {/* Actions */}
-            <div className="mt-8 pt-6 border-t border-slate-200 flex items-center justify-between">
-              {step > 1 ? (
-                <button
-                  type="button"
-                  onClick={prevStep}
-                  className="px-4 py-2 rounded-md text-xs font-semibold text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 transition-colors shadow-sm"
-                >
-                  Back
-                </button>
-              ) : <div />}
+            <div className="pt-5 border-t border-slate-200 flex justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setStep((current) => Math.max(1, current - 1))}
+                className={`px-4 py-2.5 rounded-lg border text-xs font-bold ${step === 1 ? 'invisible' : ''}`}
+              >
+                Back
+              </button>
 
               {step < 4 ? (
                 <button
                   type="button"
                   onClick={nextStep}
-                  className="px-5 py-2 rounded-md bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors flex items-center gap-2 shadow-sm"
+                  className="px-5 py-2.5 rounded-lg bg-slate-900 text-white text-xs font-bold flex items-center gap-2"
                 >
-                  Continue
-                  <ArrowRight size={14} />
+                  Continue <ArrowRight size={14} />
                 </button>
               ) : (
                 <button
-                  type="button"
-                  onClick={handleSubmit(onSubmit)}
+                  type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 rounded-md bg-[#e33636] text-white text-xs font-semibold hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-70 shadow-sm"
+                  className="px-5 py-2.5 rounded-lg bg-red-600 text-white text-xs font-bold disabled:opacity-60"
                 >
                   {isSubmitting ? 'Saving...' : 'Finish Setup'}
-                  {!isSubmitting && <CheckCircle2 size={14} />}
                 </button>
               )}
             </div>
-
           </form>
         </div>
-      </div>
+      </main>
     </div>
+  );
+}
+
+function Field({ label, error, children }) {
+  return (
+    <div>
+      <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+        {label}
+      </label>
+      {children}
+      {error && <p className="mt-1 text-[10px] font-semibold text-red-600">{error}</p>}
+    </div>
+  );
+}
+
+function Toggle({ register, title, description }) {
+  return (
+    <label className="flex items-start gap-3 p-4 border border-slate-200 rounded-xl bg-white">
+      <input type="checkbox" {...register} className="mt-0.5 w-4 h-4 accent-red-600" />
+      <span>
+        <span className="block text-sm font-black">{title}</span>
+        <span className="block text-xs text-slate-500 mt-1">{description}</span>
+      </span>
+    </label>
   );
 }

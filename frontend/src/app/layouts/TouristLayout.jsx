@@ -118,7 +118,7 @@ export function TouristLayout() {
     : 'Authenticated tourist';
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] text-slate-900 antialiased font-sans relative">
+    <div className="min-h-screen bg-[#f8f9fa] text-slate-900 antialiased tourist-font relative">
 
       {/* GLOBAL SOS MODAL */}
       {isSosModalOpen && (
