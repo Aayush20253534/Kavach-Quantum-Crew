@@ -278,7 +278,7 @@ export function MapComponent({
             onCloseClick={() => setSelectedPlace(null)}
             options={{ pixelOffset: new window.google.maps.Size(0, -22) }}
           >
-            <div className="emergency-info-window-content w-[210px] sm:w-[250px] pr-1 text-slate-900 font-sans">
+            <div className="emergency-info-window-content w-[210px] sm:w-[250px] py-2 pr-1 text-slate-900 font-sans">
               <h3 className="text-[12px] sm:text-[13px] leading-4 font-extrabold text-slate-900 break-words whitespace-normal">
                 {selectedPlace.name}
               </h3>

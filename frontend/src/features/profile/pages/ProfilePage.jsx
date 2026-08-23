@@ -228,9 +228,6 @@ export function ProfilePage() {
             Safety Profile
           </h1>
         </div>
-        <p className="mt-1 text-xs sm:text-sm leading-5 text-slate-500">
-          Identity, emergency and medical information available to the safety workflow.
-        </p>
       </div>
 
       {(error || success) && (
