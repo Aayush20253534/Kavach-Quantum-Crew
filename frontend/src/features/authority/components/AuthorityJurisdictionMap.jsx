@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { GoogleMap, InfoWindowF, MarkerF, useJsApiLoader } from '@react-google-maps/api';
 import { Building2, Flame, Hospital, MapPin } from 'lucide-react';
 
-const libraries = [];
+const GOOGLE_MAP_LIBRARIES = ['places'];
 const containerStyle = { width: '100%', height: '100%' };
 const defaultCenter = { lat: 25.4358, lng: 81.8463 };
 
@@ -27,9 +27,9 @@ export function AuthorityJurisdictionMap({ jurisdiction, services }) {
   const [selected, setSelected] = useState(null);
 
   const { isLoaded, loadError } = useJsApiLoader({
-    id: 'authority-jurisdiction-map',
+    id: 'google-map-script',
     googleMapsApiKey: apiKey || '',
-    libraries,
+    libraries: GOOGLE_MAP_LIBRARIES,
   });
 
   const markers = useMemo(
