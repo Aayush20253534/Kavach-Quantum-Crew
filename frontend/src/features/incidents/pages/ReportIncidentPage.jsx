@@ -8,6 +8,7 @@ import {
   CheckCircle2, 
   History
 } from 'lucide-react';
+import { EvidenceUploader } from '../components/EvidenceUploader';
 
 export function ReportIncidentPage() {
   const navigate = useNavigate();
@@ -136,16 +137,10 @@ export function ReportIncidentPage() {
                 />
               </div>
 
-              {/* Photo Upload Mockup */}
+              {/* Evidence Upload */}
               <div className="space-y-2">
                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest pl-1">Attach Photo / Evidence (Optional)</label>
-                <div className="p-8 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center text-center space-y-2 cursor-pointer hover:border-red-300 hover:bg-red-50/30 transition-colors">
-                  <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-slate-200 shadow-sm mb-1">
-                    <Camera className="w-5 h-5 text-slate-400" />
-                  </div>
-                  <span className="text-[13px] text-slate-700 font-semibold">Click to upload photo from camera</span>
-                  <span className="text-[11px] text-slate-400 font-medium">PNG, JPG up to 10MB</span>
-                </div>
+                <EvidenceUploader entityId="temp-incident-id" entityType="INCIDENT" onUploadComplete={() => console.log('Evidence uploaded')} />
               </div>
 
               {/* Anonymous Check */}
