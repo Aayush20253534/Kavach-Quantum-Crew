@@ -21,6 +21,72 @@ const metersBetween = (a, b) => {
   return 2 * R * Math.asin(Math.sqrt(h));
 };
 
+const isDangerZone = (zone) =>
+  zone?.active !== false &&
+  (zone?.type === 'RISK' || zone?.severity === 'HIGH' || zone?.severity === 'CRITICAL');
+
+const zonePolygon = (zone) => {
+  const coordinates = zone?.polygon || zone?.coordinates;
+  if (!Array.isArray(coordinates)) return [];
+  return coordinates
+    .map((point) => Array.isArray(point)
+      ? { lat: Number(point[0]), lng: Number(point[1]) }
+      : { lat: Number(point?.latitude ?? point?.lat), lng: Number(point?.longitude ?? point?.lng) })
+    .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
+};
+
+const pointInPolygon = (point, polygon) => {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const a = polygon[i];
+    const b = polygon[j];
+    const crosses = ((a.lng > point.lng) !== (b.lng > point.lng))
+      && point.lat < ((b.lat - a.lat) * (point.lng - a.lng)) / ((b.lng - a.lng) || Number.EPSILON) + a.lat;
+    if (crosses) inside = !inside;
+  }
+  return inside;
+};
+
+const pointToSegmentMeters = (point, a, b) => {
+  const latScale = 111320;
+  const lngScale = 111320 * Math.cos((point.lat * Math.PI) / 180);
+  const ax = (a.lng - point.lng) * lngScale;
+  const ay = (a.lat - point.lat) * latScale;
+  const bx = (b.lng - point.lng) * lngScale;
+  const by = (b.lat - point.lat) * latScale;
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lengthSquared = dx * dx + dy * dy;
+  const t = lengthSquared ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / lengthSquared)) : 0;
+  const x = ax + t * dx;
+  const y = ay + t * dy;
+  return Math.sqrt(x * x + y * y);
+};
+
+const groupBoundaryIntersectsDangerZone = (center, radiusM, zone) => {
+  if (!center || !isDangerZone(zone)) return false;
+
+  const geometryType = zone.geometryType || zone.type;
+  if (geometryType === 'CIRCLE') {
+    const latitude = Number(zone.latitude ?? zone.center?.lat);
+    const longitude = Number(zone.longitude ?? zone.center?.lng);
+    const zoneRadius = Number(zone.radiusM ?? zone.radius);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !Number.isFinite(zoneRadius)) return false;
+    return metersBetween(center, { lat: latitude, lng: longitude }) <= radiusM + zoneRadius;
+  }
+
+  if (geometryType === 'POLYGON') {
+    const polygon = zonePolygon(zone);
+    if (polygon.length < 3) return false;
+    if (pointInPolygon(center, polygon)) return true;
+    return polygon.some((point, index) =>
+      pointToSegmentMeters(center, point, polygon[(index + 1) % polygon.length]) <= radiusM
+    );
+  }
+
+  return false;
+};
+
 const normalizeGroupLocations = (payload) => {
   const members = payload?.members || payload?.items || (Array.isArray(payload) ? payload : []);
   return members
@@ -107,11 +173,16 @@ export function LiveTrackingPage() {
   const currentZone = useMemo(() => {
     if (!location) return null;
     const point = { lat: location.lat, lng: location.lng };
+    const safetyRadius = trip?.tripType === 'GROUP' ? GROUP_GEOFENCE_RADIUS_M : 0;
+
     return zones.find((zone) => {
-      if (zone.geometryType !== 'CIRCLE' || zone.latitude == null || zone.longitude == null || !zone.radiusM) return false;
-      return metersBetween(point, { lat: zone.latitude, lng: zone.longitude }) <= zone.radiusM;
+      if (!isDangerZone(zone)) return false;
+      if (safetyRadius > 0) {
+        return groupBoundaryIntersectsDangerZone(point, safetyRadius, zone);
+      }
+      return groupBoundaryIntersectsDangerZone(point, 0, zone);
     }) || null;
-  }, [zones, location]);
+  }, [zones, location, trip?.tripType]);
 
   const onlineMemberCount = useMemo(
     () => memberLocations.filter((member) => !member.stale).length,
@@ -135,7 +206,12 @@ export function LiveTrackingPage() {
     <div className="space-y-3 sm:space-y-4 pb-8 sm:pb-10">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
         <Metric label="Tracking" value={isTracking && isActive ? 'Active' : isActive ? 'Waiting GPS' : 'Trip not started'} icon={Navigation} />
-        <Metric label="Current zone" value={currentZone ? `${currentZone.name} (${currentZone.type})` : 'Outside danger zones'} icon={ShieldCheck} />
+        <Metric
+          label="Current zone"
+          value={currentZone ? `Danger Zone · ${currentZone.name}` : 'Outside danger zones'}
+          icon={ShieldCheck}
+          danger={Boolean(currentZone)}
+        />
         <Metric
           label="Group members online"
           value={trip.tripType === 'GROUP' ? `${onlineMemberCount}/${totalMemberCount}` : 'Solo trip'}
@@ -154,6 +230,18 @@ export function LiveTrackingPage() {
         <Navigation className="w-3.5 h-3.5 shrink-0" />
         Use two fingers to move the map. Active danger zones are shown in red, and group members are shown inside a 500 m geofence.
       </div>
+
+      {currentZone && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-3.5 py-3 text-red-800 shadow-sm">
+          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+          <div>
+            <p className="text-[11px] sm:text-xs font-black">Danger zone intersects your trip boundary</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] leading-4 text-red-700">
+              {currentZone.name || 'An active danger geofence'} overlaps the group safety area. The danger zone takes visual priority on the map.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="h-[220px] sm:h-[340px] lg:h-[clamp(340px,calc(100dvh-405px),430px)] rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
         {location ? (
@@ -176,12 +264,16 @@ export function LiveTrackingPage() {
   );
 }
 
-function Metric({ label, value, icon: Icon }) {
+function Metric({ label, value, icon: Icon, danger = false }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4">
-      <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />
-      <p className="text-[9px] sm:text-[10px] uppercase tracking-wider font-black text-slate-400 mt-1.5 sm:mt-2">{label}</p>
-      <p className="text-[11px] sm:text-sm font-bold mt-1 leading-snug">{value}</p>
+    <div className={`border rounded-xl p-3 sm:p-4 transition-colors ${
+      danger ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-white'
+    }`}>
+      <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${danger ? 'text-red-600' : 'text-slate-400'}`} />
+      <p className={`text-[9px] sm:text-[10px] uppercase tracking-wider font-black mt-1.5 sm:mt-2 ${
+        danger ? 'text-red-500' : 'text-slate-400'
+      }`}>{label}</p>
+      <p className={`text-[11px] sm:text-sm font-bold mt-1 leading-snug ${danger ? 'text-red-800' : 'text-slate-900'}`}>{value}</p>
     </div>
   );
 }

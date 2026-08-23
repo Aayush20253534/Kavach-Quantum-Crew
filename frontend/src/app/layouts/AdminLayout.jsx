@@ -18,6 +18,7 @@ import {
 import { logout } from '../../features/auth/store/authSlice';
 import { authService } from '../../features/auth/api/authService';
 import { markExplicitSignOut } from '../../services/apiClient';
+import { SignOutConfirmModal } from '../components/SignOutConfirmModal';
 
 export function AdminLayout() {
   const { user } = useSelector((state) => state.auth);
@@ -25,10 +26,11 @@ export function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [logoutBusy, setLogoutBusy] = useState(false);
 
   const handleLogout = async () => {
-    if (!window.confirm('Do you want to sign out?')) return;
-
+    setLogoutBusy(true);
     // Record the user's intent before any network request so a reload cannot
     // resurrect the session while logout is in flight or if it fails.
     markExplicitSignOut();
@@ -40,9 +42,13 @@ export function AdminLayout() {
       // Local sign-out must still complete if the network is unavailable.
     } finally {
       dispatch(logout());
+      setLogoutBusy(false);
+      setLogoutOpen(false);
       navigate('/', { replace: true });
     }
   };
+
+  const requestLogout = () => setLogoutOpen(true);
 
   const navItems = [
     { name: 'Overview', path: '/admin/dashboard', icon: LayoutDashboard },
@@ -57,6 +63,12 @@ export function AdminLayout() {
   ];
 
   return (
+      <SignOutConfirmModal
+        open={logoutOpen}
+        busy={logoutBusy}
+        onCancel={() => !logoutBusy && setLogoutOpen(false)}
+        onConfirm={handleLogout}
+      />
     <div className="min-h-screen bg-slate-50 text-slate-900 antialiased font-sans">
       
       {/* Authority Sidebar */}
@@ -143,7 +155,7 @@ export function AdminLayout() {
           )}
           
           <button
-            onClick={handleLogout}
+            onClick={requestLogout}
             className={`group w-full flex items-center gap-2 py-2.5 rounded-md text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer border border-transparent hover:border-indigo-100 ${isCollapsed ? 'justify-center px-0' : 'justify-center'}`}
             title={isCollapsed ? "Sign Out" : undefined}
           >
@@ -172,7 +184,7 @@ export function AdminLayout() {
             </Link>
             <button
               type="button"
-              onClick={handleLogout}
+              onClick={requestLogout}
               className="inline-flex h-8 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-2.5 text-slate-600 shadow-sm transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 md:h-9 md:px-3"
               aria-label="Sign out"
               title="Sign out"

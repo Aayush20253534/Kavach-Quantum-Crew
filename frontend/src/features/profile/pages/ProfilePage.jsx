@@ -17,6 +17,7 @@ import {
 import { logout, updateUser } from '../../auth/store/authSlice';
 import { authService } from '../../auth/api/authService';
 import { markExplicitSignOut } from '../../../services/apiClient';
+import { SignOutConfirmModal } from '../../../app/components/SignOutConfirmModal';
 import { ScrollableSelect } from '../../onboarding/components/ScrollableSelect';
 import {
   BLOOD_GROUPS,
@@ -53,6 +54,8 @@ export function ProfilePage() {
   const fileInputRef = useRef(null);
 
   const [profile, setProfile] = useState(null);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [logoutBusy, setLogoutBusy] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -214,8 +217,7 @@ export function ProfilePage() {
   };
 
   const handleSignOut = async () => {
-    if (!window.confirm('Do you want to sign out?')) return;
-
+    setLogoutBusy(true);
     markExplicitSignOut();
     try {
       await authService.logout();
@@ -223,13 +225,23 @@ export function ProfilePage() {
       // Explicit local sign-out still wins if the backend cannot be reached.
     } finally {
       dispatch(logout());
+      setLogoutBusy(false);
+      setLogoutOpen(false);
       navigate('/', { replace: true });
     }
   };
 
+  const requestSignOut = () => setLogoutOpen(true);
+
   if (loading) {
     return (
       <div className="min-h-[55vh] flex items-center justify-center">
+      <SignOutConfirmModal
+        open={logoutOpen}
+        busy={logoutBusy}
+        onCancel={() => !logoutBusy && setLogoutOpen(false)}
+        onConfirm={handleSignOut}
+      />
         <div className="flex items-center gap-3 text-slate-600 text-sm font-semibold">
           <Loader2 className="w-5 h-5 animate-spin" />
           Loading safety profile
@@ -340,7 +352,7 @@ export function ProfilePage() {
 
           <button
             type="button"
-            onClick={handleSignOut}
+            onClick={requestSignOut}
             className="mt-3 sm:mt-4 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs sm:text-sm font-bold text-slate-600 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
           >
             <LogOut className="w-4 h-4" />
