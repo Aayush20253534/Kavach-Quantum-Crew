@@ -14,12 +14,54 @@ import {
 } from 'lucide-react';
 
 const PRAYAGRAJ_DESTINATIONS = [
-  { id: 'sangam', name: 'Triveni Sangam & Ghats', category: 'Holy Confluence', riskLevel: 'Safe' },
-  { id: 'fort', name: 'Allahabad Fort', category: 'Historic Monument', riskLevel: 'Safe' },
-  { id: 'bhavan', name: 'Anand Bhavan', category: 'Heritage Site', riskLevel: 'Safe' },
-  { id: 'temple', name: 'Alopi Devi Mandir', category: 'Temple Circuit', riskLevel: 'Safe' },
-  { id: 'kumbh', name: 'Kumbh Mela Camp', category: 'Pilgrim Grounds', riskLevel: 'Safe' },
-  { id: 'bagh', name: 'Khusro Bagh', category: 'Heritage Park', riskLevel: 'Safe' },
+  { 
+    id: 'sangam', 
+    name: 'Triveni Sangam & Ghats', 
+    category: 'Holy Confluence', 
+    riskLevel: 'Safe',
+    image: 'https://images.unsplash.com/photo-1596727147705-61a532a659bd?auto=format&fit=crop&q=80&w=800',
+    description: 'The sacred confluence of the Ganges, Yamuna, and mythical Saraswati rivers.'
+  },
+  { 
+    id: 'fort', 
+    name: 'Allahabad Fort', 
+    category: 'Historic Monument', 
+    riskLevel: 'Safe',
+    image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?auto=format&fit=crop&q=80&w=800',
+    description: 'A massive fort built by Emperor Akbar in 1583 on the banks of the Yamuna.'
+  },
+  { 
+    id: 'bhavan', 
+    name: 'Anand Bhavan', 
+    category: 'Heritage Site', 
+    riskLevel: 'Safe',
+    image: 'https://images.unsplash.com/photo-1582510003544-4d00b7f7415e?auto=format&fit=crop&q=80&w=800',
+    description: 'The historic former residence of the Nehru family, now a museum.'
+  },
+  { 
+    id: 'temple', 
+    name: 'Alopi Devi Mandir', 
+    category: 'Temple Circuit', 
+    riskLevel: 'Safe',
+    image: 'https://images.unsplash.com/photo-1561361513-2d000a50f0dc?auto=format&fit=crop&q=80&w=800',
+    description: 'A unique temple where there is no deity, but a wooden carriage is worshipped.'
+  },
+  { 
+    id: 'kumbh', 
+    name: 'Kumbh Mela Camp', 
+    category: 'Pilgrim Grounds', 
+    riskLevel: 'Safe',
+    image: 'https://images.unsplash.com/photo-1555580168-9c7ee7452d9a?auto=format&fit=crop&q=80&w=800',
+    description: 'The vast grounds that host the largest peaceful gathering in the world.'
+  },
+  { 
+    id: 'bagh', 
+    name: 'Khusro Bagh', 
+    category: 'Heritage Park', 
+    riskLevel: 'Safe',
+    image: 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&q=80&w=800',
+    description: 'A large walled garden housing the tombs of Prince Khusro and his family.'
+  },
 ];
 
 export function CreateTripPage() {
@@ -131,39 +173,73 @@ export function CreateTripPage() {
 
         {/* Destination Selection */}
         <section className="space-y-4">
-          <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">2. Primary Destination</h2>
-          <div className="bg-white border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-5 rounded-lg">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {PRAYAGRAJ_DESTINATIONS.map((dest) => (
-                <label 
-                  key={dest.id}
-                  className={`flex items-center gap-4 p-4 border rounded-md cursor-pointer transition-all duration-200 ${
-                    selectedDestination === dest.id 
-                      ? 'bg-red-50 border-red-200 shadow-sm' 
-                      : 'bg-white border-slate-100 hover:border-red-200 hover:shadow-sm'
-                  }`}
-                >
-                  <input 
-                    type="radio" 
-                    name="destination" 
-                    value={dest.id}
-                    checked={selectedDestination === dest.id}
-                    onChange={() => setSelectedDestination(dest.id)}
-                    className="sr-only"
-                  />
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${selectedDestination === dest.id ? 'border-[#e11d48] bg-[#e11d48]' : 'border-slate-300 bg-white'}`}>
-                    {selectedDestination === dest.id && <div className="w-2 h-2 bg-white rounded-full" />}
-                  </div>
-                  <div>
-                    <h4 className={`text-[13px] font-bold uppercase tracking-wide ${selectedDestination === dest.id ? 'text-red-700' : 'text-slate-900'}`}>
-                      {dest.name}
-                    </h4>
-                    <p className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${selectedDestination === dest.id ? 'text-red-500' : 'text-slate-400'}`}>
-                      {dest.category} • {dest.riskLevel}
-                    </p>
-                  </div>
-                </label>
-              ))}
+          <div className="flex items-center justify-between pl-1">
+            <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">2. Primary Destination</h2>
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+              {selectedDestination ? PRAYAGRAJ_DESTINATIONS.findIndex(d => d.id === selectedDestination) + 1 : 0} / {PRAYAGRAJ_DESTINATIONS.length}
+            </span>
+          </div>
+          
+          <div className="relative w-full overflow-hidden rounded-2xl bg-black/5 p-4 py-8">
+            <div className="flex gap-6 overflow-x-auto snap-x snap-mandatory pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              {PRAYAGRAJ_DESTINATIONS.map((dest) => {
+                const isSelected = selectedDestination === dest.id;
+                return (
+                  <label 
+                    key={dest.id}
+                    className={`relative flex-shrink-0 snap-center cursor-pointer transition-all duration-500 ease-out ${
+                      isSelected ? 'w-72 sm:w-80 h-[400px] scale-100 z-10' : 'w-56 sm:w-64 h-[340px] scale-95 opacity-60 hover:opacity-100 z-0 mt-[30px]'
+                    }`}
+                  >
+                    <input 
+                      type="radio" 
+                      name="destination" 
+                      value={dest.id}
+                      checked={isSelected}
+                      onChange={() => setSelectedDestination(dest.id)}
+                      className="sr-only"
+                    />
+                    
+                    {/* Card Background & Image */}
+                    <div className={`absolute inset-0 rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 ${isSelected ? 'ring-2 ring-white/50 shadow-[0_0_30px_rgba(255,255,255,0.3)]' : 'ring-1 ring-white/10'}`}>
+                      <img 
+                        src={dest.image} 
+                        alt={dest.name}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
+                      {isSelected && <div className="absolute inset-0 ring-1 ring-inset ring-white/20 rounded-3xl" />}
+                    </div>
+
+                    {/* Card Content */}
+                    <div className="absolute bottom-0 left-0 right-0 p-6 text-white transform transition-all duration-500">
+                      <div className={`flex items-center gap-2 mb-3 transition-all duration-500 ${isSelected ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                        <span className="px-2.5 py-1 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-bold tracking-wider uppercase border border-white/10">
+                          {dest.category}
+                        </span>
+                        <span className="px-2.5 py-1 bg-green-500/20 backdrop-blur-md rounded-full text-[10px] font-bold tracking-wider text-green-300 border border-green-500/20">
+                          {dest.riskLevel}
+                        </span>
+                      </div>
+                      
+                      <h3 className={`font-bold tracking-wide transition-all duration-500 ${isSelected ? 'text-2xl mb-2' : 'text-lg mb-0'}`}>
+                        {dest.name}
+                      </h3>
+                      
+                      <p className={`text-sm text-gray-300 leading-relaxed transition-all duration-500 overflow-hidden ${isSelected ? 'opacity-100 max-h-24 mt-2' : 'opacity-0 max-h-0'}`}>
+                        {dest.description}
+                      </p>
+                      
+                      {isSelected && (
+                        <div className="mt-5 flex items-center gap-2 text-xs font-medium text-white/70">
+                           <MapPin className="w-3.5 h-3.5" />
+                           Prayagraj, Uttar Pradesh
+                        </div>
+                      )}
+                    </div>
+                  </label>
+                );
+              })}
             </div>
           </div>
         </section>
