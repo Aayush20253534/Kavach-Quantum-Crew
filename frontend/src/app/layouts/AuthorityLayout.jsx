@@ -9,7 +9,8 @@ import {
   LogOut,
   ExternalLink,
   Menu,
-  ChevronLeft
+  ChevronLeft,
+  AlertTriangle
 } from 'lucide-react';
 import { logout } from '../../features/auth/store/authSlice';
 
@@ -27,6 +28,7 @@ export function AuthorityLayout() {
 
   const navItems = [
     { name: 'Live Command Map', path: '/authority/dashboard', icon: Activity },
+    { name: 'Incident Queue', path: '/authority/incidents', icon: AlertTriangle },
     { name: 'Tourist Dashboard View', path: '/tourist/dashboard', icon: Users },
   ];
 
@@ -99,7 +101,7 @@ export function AuthorityLayout() {
           </p>
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname.startsWith(item.path);
             return (
               <NavLink
                 key={item.name}
@@ -179,7 +181,7 @@ export function AuthorityLayout() {
         <nav className="md:hidden fixed bottom-0 left-0 right-0 w-full h-16 bg-white border-t border-slate-200 z-50 flex items-center justify-around px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname.startsWith(item.path);
             return (
               <Link 
                 key={item.name} 
