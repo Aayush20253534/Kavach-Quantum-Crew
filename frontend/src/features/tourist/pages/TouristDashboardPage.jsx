@@ -44,6 +44,13 @@ export function TouristDashboardPage() {
   const [creatingLocation, setCreatingLocation] = useState(null);
   const [actionError, setActionError] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [locationLabel, setLocationLabel] = useState('Waiting for live location');
+  const [emergencyCounts, setEmergencyCounts] = useState({
+    police: 0,
+    hospitals: 0,
+    fireStations: 0,
+    total: 0,
+  });
 
   useEffect(() => setMounted(true), []);
 
@@ -119,11 +126,14 @@ export function TouristDashboardPage() {
 
   const safety = summary?.safetyStatus?.level ?? (location ? 'SAFE' : 'UNKNOWN');
   const safetyIsDanger = safety === 'DANGER';
-  const locationLabel = location
-    ? `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`
-    : permission === 'denied'
-      ? 'Location permission denied'
-      : 'Waiting for live location';
+
+  useEffect(() => {
+    if (permission === 'denied') {
+      setLocationLabel('Location permission denied');
+    } else if (!location) {
+      setLocationLabel('Waiting for live location');
+    }
+  }, [location, permission]);
 
   const cards = useMemo(() => [
     {
@@ -269,13 +279,28 @@ export function TouristDashboardPage() {
             <p className="text-[10px] text-slate-500 font-medium mt-1">Live Google Maps results within approximately 5 km of your current location.</p>
           </div>
           <div className="flex flex-wrap gap-2 text-[9px] font-bold uppercase tracking-wider">
-            <span className="px-2 py-1 rounded bg-blue-50 text-blue-700">P Police</span>
-            <span className="px-2 py-1 rounded bg-emerald-50 text-emerald-700">H Hospital</span>
-            <span className="px-2 py-1 rounded bg-red-50 text-red-700">F Fire Station</span>
+            <span className="px-2 py-1 rounded bg-blue-50 text-blue-700">
+              P Police · {emergencyCounts.police}
+            </span>
+            <span className="px-2 py-1 rounded bg-emerald-50 text-emerald-700">
+              H Hospital · {emergencyCounts.hospitals}
+            </span>
+            <span className="px-2 py-1 rounded bg-red-50 text-red-700">
+              F Fire Station · {emergencyCounts.fireStations}
+            </span>
+            <span className="px-2 py-1 rounded bg-slate-100 text-slate-700">
+              Total · {emergencyCounts.total}
+            </span>
           </div>
         </div>
         <div className="h-[360px] relative bg-slate-100">
-          <MapComponent currentLocation={location} showEmergencyServicesOnly className="w-full h-full absolute inset-0" />
+          <MapComponent
+            currentLocation={location}
+            showEmergencyServicesOnly
+            onEmergencyCountsChange={setEmergencyCounts}
+            onLocationLabelChange={setLocationLabel}
+            className="w-full h-full absolute inset-0"
+          />
         </div>
       </section>
 
