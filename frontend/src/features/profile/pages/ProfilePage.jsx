@@ -214,6 +214,8 @@ export function ProfilePage() {
   };
 
   const handleSignOut = async () => {
+    if (!window.confirm('Do you want to sign out?')) return;
+
     markExplicitSignOut();
     try {
       await authService.logout();

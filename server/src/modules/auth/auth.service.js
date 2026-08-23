@@ -34,6 +34,17 @@ const getConflictField = (conflict, input) => {
   return "account";
 };
 
+const getPrismaUniqueField = (error) => {
+  if (error?.code !== "P2002") return null;
+  const target = Array.isArray(error?.meta?.target)
+    ? error.meta.target
+    : [error?.meta?.target].filter(Boolean);
+  if (target.includes("phone")) return "phone";
+  if (target.includes("email")) return "email";
+  if (target.includes("username")) return "username";
+  return "account";
+};
+
 const generateOtp = () => String(randomInt(100000, 1000000));
 
 const otpHash = (userId, otp, config) =>
@@ -122,13 +133,28 @@ export const createAuthService = ({
         });
       }
 
-      const user = await repository.createTourist({
-        name: input.name,
-        username: input.username,
-        email: input.email,
-        phone: input.phone,
-        passwordHash: await hashPassword(input.password),
-      });
+      let user;
+      try {
+        user = await repository.createTourist({
+          name: input.name,
+          username: input.username,
+          email: input.email,
+          phone: input.phone,
+          passwordHash: await hashPassword(input.password),
+        });
+      } catch (error) {
+        // The pre-check gives a friendly response, while the database unique
+        // constraint closes the race where two registrations use the same
+        // phone number at nearly the same time.
+        const field = getPrismaUniqueField(error);
+        if (field) {
+          throw ApiError.conflict(`An account with this ${field} already exists`, {
+            code: "ACCOUNT_ALREADY_EXISTS",
+            details: { field },
+          });
+        }
+        throw error;
+      }
 
       try {
         const { expiresAt } = await sendOtp(user);

@@ -70,6 +70,8 @@ export function TouristLayout() {
   const safetyLevel = backgroundSafetySummary?.safetyStatus?.level || 'UNKNOWN';
 
   const handleLogout = async () => {
+    if (!window.confirm('Do you want to sign out?')) return;
+
     // Record the user's intent before any network request so a reload cannot
     // resurrect the session while logout is in flight or if it fails.
     markExplicitSignOut();
@@ -118,7 +120,7 @@ export function TouristLayout() {
   // emergency button below; mobile renders the complete list in one scroller.
   const touristNavItems = [
     { name: 'Home', path: '/tourist/dashboard', icon: LayoutDashboard },
-    { name: 'Radar', path: '/tourist/tracking', icon: Navigation },
+    { name: 'Live Map', path: '/tourist/tracking', icon: Navigation },
     { name: 'SOS', path: '#', icon: Phone, isSos: true },
     { name: 'Trips', path: '/tourist/trips/current', icon: Compass },
     { name: 'Trip History', path: '/tourist/trips/history', icon: History },
