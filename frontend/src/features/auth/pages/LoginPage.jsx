@@ -34,7 +34,12 @@ const roles = [
     subtitle: 'Emergency command',
     icon: Building2,
   },
-  { id: 'SYSTEM_ADMIN', title: 'Admin', subtitle: 'System administration', icon: UserCog },
+  {
+    id: 'SYSTEM_ADMIN',
+    title: 'System Administration',
+    subtitle: 'System control',
+    icon: UserCog,
+  },
 ];
 
 export default function LoginPage() {
@@ -140,7 +145,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="mb-4 grid grid-cols-[0.9fr_1.25fr_0.9fr] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="mb-4 grid grid-cols-[0.78fr_1.12fr_1.12fr] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           {roles.map((role, idx) => {
             const Icon = role.icon;
             const active = selectedRole === role.id;
@@ -168,15 +173,15 @@ export default function LoginPage() {
                 <div className="min-w-0 text-left leading-tight">
                   <span
                     className={`block font-bold ${
-                      role.id === 'DISASTER_MANAGER'
-                        ? 'whitespace-normal text-[9px] leading-[1.15] sm:whitespace-nowrap sm:text-[10px]'
+                      role.id === 'DISASTER_MANAGER' || role.id === 'SYSTEM_ADMIN'
+                        ? 'whitespace-normal text-[8.5px] leading-[1.15] sm:whitespace-nowrap sm:text-[9.5px] lg:text-[10px]'
                         : 'whitespace-nowrap text-[10px] sm:text-[11px]'
                     }`}
                   >
                     {role.title}
                   </span>
                   <span
-                    className={`mt-0.5 hidden whitespace-nowrap text-[8px] font-medium xl:block ${
+                    className={`mt-0.5 hidden whitespace-nowrap text-[8px] font-medium 2xl:block ${
                       active ? 'text-red-400' : 'text-slate-400'
                     }`}
                   >
