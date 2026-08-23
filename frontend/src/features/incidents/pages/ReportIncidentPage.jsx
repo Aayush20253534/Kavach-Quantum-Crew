@@ -57,26 +57,22 @@ export function ReportIncidentPage() {
 
   return (
     <div className="max-w-3xl mx-auto pb-10">
-      <div className="flex justify-between gap-4 items-start mb-6">
-        <div>
-          <h1 className="text-2xl font-black">Report Safety Concern</h1>
-          <p className="text-sm text-slate-500 mt-1">Creates a real hazard report for authority review. Use SOS for immediate emergencies.</p>
-        </div>
-        <Link to="/tourist/incidents/history" className="text-xs font-black text-slate-600">History →</Link>
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-[20px] sm:text-2xl leading-tight font-black">Report Safety Concern</h1>
       </div>
 
       {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{error}</div>}
 
       {!created ? (
-        <form onSubmit={submit} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
-          <div className="p-3 bg-slate-50 rounded-lg text-xs text-slate-600 flex items-center gap-2">
-            <MapPin className="w-4 h-4" />
+        <form onSubmit={submit} className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-5">
+          <div className="p-3 bg-slate-50 rounded-lg text-[11px] sm:text-xs leading-relaxed text-slate-600 flex items-start gap-2">
+            <MapPin className="w-4 h-4 shrink-0 mt-0.5" />
             {location ? `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)} stored securely with the report` : permission === 'denied' ? 'Location permission denied' : 'Detecting live location...'}
           </div>
 
           <label className="block">
             <span className="text-xs font-bold text-slate-500">Category</span>
-            <select value={type} onChange={(e) => setType(e.target.value)} className="mt-1 w-full border rounded-lg px-3 py-3 text-sm">
+            <select value={type} onChange={(e) => setType(e.target.value)} className="mt-1 w-full border rounded-lg px-3 py-2.5 text-[13px] sm:text-sm">
               {TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </label>
@@ -92,11 +88,11 @@ export function ReportIncidentPage() {
             </div>
           </div>
 
-          <input required minLength={3} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Short title" className="w-full border rounded-lg px-4 py-3 text-sm" />
-          <input value={locationName} onChange={(e) => setLocationName(e.target.value)} placeholder="Readable location / landmark (optional)" className="w-full border rounded-lg px-4 py-3 text-sm" />
-          <textarea required minLength={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe what happened" rows={5} className="w-full border rounded-lg px-4 py-3 text-sm" />
+          <input required minLength={3} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Short title" className="w-full border rounded-lg px-3.5 py-2.5 text-[13px] sm:text-sm" />
+          <input value={locationName} onChange={(e) => setLocationName(e.target.value)} placeholder="Readable location / landmark (optional)" className="w-full border rounded-lg px-3.5 py-2.5 text-[13px] sm:text-sm" />
+          <textarea required minLength={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe what happened" rows={5} className="w-full border rounded-lg px-3.5 py-2.5 text-[13px] sm:text-sm" />
 
-          <button disabled={busy || !location} className="w-full bg-rose-600 text-white rounded-lg py-3 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-50">
+          <button disabled={busy || !location} className="w-full bg-rose-600 text-white rounded-lg py-2.5 sm:py-3 text-[11px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-50">
             {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
             Submit Report
           </button>
@@ -109,9 +105,8 @@ export function ReportIncidentPage() {
           <div className="mt-6">
             <EvidenceUploader entityId={created.id} entityType="HAZARD" />
           </div>
-          <div className="mt-6 flex gap-3">
-            <Link to="/tourist/incidents/history" className="px-5 py-2.5 bg-slate-900 text-white rounded-lg text-xs font-black">View History</Link>
-            <Link to="/tourist/dashboard" className="px-5 py-2.5 border border-slate-200 rounded-lg text-xs font-black">Dashboard</Link>
+          <div className="mt-6">
+            <Link to="/tourist/dashboard" className="inline-flex px-5 py-2.5 border border-slate-200 rounded-lg text-xs font-black">Dashboard</Link>
           </div>
         </div>
       )}

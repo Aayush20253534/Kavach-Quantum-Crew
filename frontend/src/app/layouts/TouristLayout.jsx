@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -34,6 +34,7 @@ export function TouristLayout() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const mobileNavRef = useRef(null);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isSosModalOpen, setIsSosModalOpen] = useState(false);
@@ -115,6 +116,27 @@ export function TouristLayout() {
 
   const desktopNavItems = touristNavItems.filter((item) => !item.isSos);
   const mobileNavItems = touristNavItems;
+
+  // Keep exactly five complete navigation items visible on mobile. On route
+  // changes/refresh, shift the scroller to a five-item window containing the
+  // active destination instead of leaving a clipped button at either edge.
+  useEffect(() => {
+    const nav = mobileNavRef.current;
+    if (!nav) return;
+
+    const activeIndex = mobileNavItems.findIndex((item) => {
+      if (item.isSos) return false;
+      return item.path === '/tourist/dashboard'
+        ? location.pathname === item.path
+        : location.pathname.startsWith(item.path);
+    });
+    if (activeIndex < 0) return;
+
+    const visibleCount = 5;
+    const maxStart = Math.max(0, mobileNavItems.length - visibleCount);
+    const startIndex = Math.min(Math.max(activeIndex - 2, 0), maxStart);
+    nav.scrollTo({ left: (nav.clientWidth / visibleCount) * startIndex, behavior: 'auto' });
+  }, [location.pathname]);
 
   const userName = user?.name?.trim() || user?.username || 'Tourist';
   const initial = userName.charAt(0).toUpperCase();
@@ -381,8 +403,8 @@ export function TouristLayout() {
         {/* =========================================================
             MOBILE BOTTOM NAVIGATION BAR
         ========================================================= */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 w-full h-[68px] bg-white border-t border-slate-200 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex items-stretch min-w-max h-full px-2 gap-1">
+        <nav ref={mobileNavRef} className="lg:hidden fixed bottom-0 left-0 right-0 w-full h-[68px] bg-white border-t border-slate-200 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe overflow-x-auto overflow-y-hidden overscroll-x-contain snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex items-stretch h-full w-[160%]">
           {mobileNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = item.path === '/tourist/dashboard'
@@ -394,7 +416,7 @@ export function TouristLayout() {
                 <button
                   key={item.name}
                   onClick={() => setIsSosModalOpen(true)}
-                  className="w-[72px] shrink-0 flex flex-col items-center justify-center gap-1 cursor-pointer text-red-600"
+                  className="w-[12.5%] shrink-0 snap-start flex flex-col items-center justify-center gap-1 cursor-pointer text-red-600"
                 >
                   <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white shadow-sm shadow-red-500/20">
                     <Icon className="w-4 h-4" />
@@ -408,7 +430,7 @@ export function TouristLayout() {
               <Link
                 key={item.name}
                 to={item.path}
-                className={`w-[78px] shrink-0 flex flex-col items-center justify-center gap-1 h-full ${isActive ? 'text-red-600' : 'text-slate-400 hover:text-slate-900'}`}
+                className={`w-[12.5%] shrink-0 snap-start flex flex-col items-center justify-center gap-1 h-full ${isActive ? 'text-red-600' : 'text-slate-400 hover:text-slate-900'}`}
               >
                 <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
                 <span className={`text-[9px] font-bold ${isActive ? 'text-red-600' : 'text-slate-500'}`}>{item.name}</span>
