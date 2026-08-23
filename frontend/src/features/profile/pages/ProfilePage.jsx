@@ -298,10 +298,6 @@ export function ProfilePage() {
                   Upload photo
                 </button>
               )}
-
-              <p className="mt-3 text-[11px] leading-relaxed text-slate-400 text-center">
-                JPEG, PNG or WebP. Maximum 5 MB. The image is stored in Cloudinary.
-              </p>
             </div>
 
             <div className="p-6 space-y-5">
