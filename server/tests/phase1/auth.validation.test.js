@@ -55,8 +55,22 @@ describe("Phase 1 request validation", () => {
         medicalHistory: "None",
         emergencyPhone: "+919876543211",
         nationality: "Indian",
+        preferredLanguage: "English",
+        emergencyContactName: "Emergency Contact",
+        emergencyContactRelation: "Parent",
+        bloodGroup: "O+",
+        governmentIdNumber: "TEST-ID-001",
+        liveTrackingEnabled: true,
+        geoAlertsEnabled: true,
       }),
-    ).toMatchObject({ age: 21, nationality: "Indian" });
+    ).toMatchObject({
+      age: 21,
+      nationality: "Indian",
+      preferredLanguage: "English",
+      bloodGroup: "O+",
+      liveTrackingEnabled: true,
+      geoAlertsEnabled: true,
+    });
   });
 
   test("requires at least one field for profile update", () => {

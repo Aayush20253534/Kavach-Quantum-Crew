@@ -1,4 +1,5 @@
 import { ApiError } from "../../common/errors/ApiError.js";
+import { cloudinaryAdapter } from "../../integrations/cloudinary/cloudinary.adapter.js";
 import { touristRepository } from "./tourist.repository.js";
 
 const toProfile = (user) => ({
@@ -14,10 +15,20 @@ const toProfile = (user) => ({
   nationality: user.nationality ?? null,
   age: user.age ?? null,
   medicalHistory: user.medicalHistory ?? null,
+  preferredLanguage: user.preferredLanguage ?? null,
+  emergencyContactName: user.emergencyContactName ?? null,
+  emergencyContactRelation: user.emergencyContactRelation ?? null,
+  bloodGroup: user.bloodGroup ?? null,
+  governmentIdNumber: user.governmentIdNumber ?? null,
+  liveTrackingEnabled: user.liveTrackingEnabled,
+  geoAlertsEnabled: user.geoAlertsEnabled,
   onboardingCompleted: user.onboardingCompleted,
 });
 
-export const createTouristService = ({ repository = touristRepository } = {}) =>
+export const createTouristService = ({
+  repository = touristRepository,
+  imageStorage = cloudinaryAdapter,
+} = {}) =>
   Object.freeze({
     async getProfile(userId) {
       const user = await repository.findByUserId(userId);
@@ -49,8 +60,45 @@ export const createTouristService = ({ repository = touristRepository } = {}) =>
         medicalHistory: input.medicalHistory || null,
         emergencyPhone: input.emergencyPhone,
         nationality: input.nationality,
+        preferredLanguage: input.preferredLanguage,
+        emergencyContactName: input.emergencyContactName,
+        emergencyContactRelation: input.emergencyContactRelation,
+        bloodGroup: input.bloodGroup,
+        governmentIdNumber: input.governmentIdNumber,
+        liveTrackingEnabled: input.liveTrackingEnabled,
+        geoAlertsEnabled: input.geoAlertsEnabled,
       });
       return toProfile(updated);
+    },
+
+    async updateProfileImage(userId, file) {
+      const existing = await repository.findByUserId(userId);
+      if (!existing) {
+        throw ApiError.notFound("Tourist account not found", {
+          code: "TOURIST_NOT_FOUND",
+        });
+      }
+
+      if (!existing.onboardingCompleted) {
+        throw ApiError.badRequest(
+          "Complete onboarding before uploading a profile image",
+          { code: "ONBOARDING_REQUIRED" },
+        );
+      }
+
+      const uploaded = await imageStorage.uploadTouristProfileImage({
+        userId,
+        file,
+      });
+
+      const updated = await repository.updateProfile(userId, {
+        profilePicUrl: uploaded.url,
+      });
+
+      return {
+        profile: toProfile(updated),
+        image: uploaded,
+      };
     },
 
     async updateProfile(userId, input) {
@@ -108,6 +156,19 @@ export const createTouristService = ({ repository = touristRepository } = {}) =>
         data.medicalHistory = input.medicalHistory || null;
       if (input.emergencyPhone !== undefined) data.emergencyPhone = input.emergencyPhone;
       if (input.nationality !== undefined) data.nationality = input.nationality;
+      if (input.preferredLanguage !== undefined)
+        data.preferredLanguage = input.preferredLanguage;
+      if (input.emergencyContactName !== undefined)
+        data.emergencyContactName = input.emergencyContactName;
+      if (input.emergencyContactRelation !== undefined)
+        data.emergencyContactRelation = input.emergencyContactRelation;
+      if (input.bloodGroup !== undefined) data.bloodGroup = input.bloodGroup;
+      if (input.governmentIdNumber !== undefined)
+        data.governmentIdNumber = input.governmentIdNumber;
+      if (input.liveTrackingEnabled !== undefined)
+        data.liveTrackingEnabled = input.liveTrackingEnabled;
+      if (input.geoAlertsEnabled !== undefined)
+        data.geoAlertsEnabled = input.geoAlertsEnabled;
 
       const updated = await repository.updateProfile(userId, data);
       if (emailChanged) await repository.revokeSessions?.(userId);

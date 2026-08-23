@@ -6,6 +6,25 @@ const formatIssues = (issues) =>
     message: issue.message,
   }));
 
+const applyValidatedValue = (request, key, value) => {
+  if (key === "query") {
+    // Express 5 exposes req.query through a getter. Direct assignment such as
+    // `request.query = parsed.data` can throw in ESM strict mode and turn every
+    // validated GET endpoint into a 500 response.
+    //
+    // Shadow the prototype accessor with this request's validated query object.
+    Object.defineProperty(request, "query", {
+      value,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
+    return;
+  }
+
+  request[key] = value;
+};
+
 export const validate = (schemas = {}) => (request, _response, next) => {
   try {
     for (const key of ["params", "query", "body"]) {
@@ -21,7 +40,8 @@ export const validate = (schemas = {}) => (request, _response, next) => {
           }),
         );
       }
-      request[key] = parsed.data;
+
+      applyValidatedValue(request, key, parsed.data);
     }
 
     return next();

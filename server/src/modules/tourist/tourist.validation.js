@@ -12,6 +12,13 @@ export const onboardingBodySchema = z.object({
   medicalHistory: z.string().trim().max(5000).optional().nullable(),
   emergencyPhone: phone,
   nationality: z.string().trim().min(2).max(80),
+  preferredLanguage: z.string().trim().min(2).max(40),
+  emergencyContactName: z.string().trim().min(2).max(120),
+  emergencyContactRelation: z.string().trim().min(2).max(60),
+  bloodGroup: z.enum(["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"]),
+  governmentIdNumber: z.string().trim().min(4).max(120),
+  liveTrackingEnabled: z.boolean(),
+  geoAlertsEnabled: z.boolean(),
 });
 
 export const updateTouristProfileBodySchema = z
@@ -26,6 +33,13 @@ export const updateTouristProfileBodySchema = z
     medicalHistory: z.string().trim().max(5000).optional().nullable(),
     emergencyPhone: phone.optional(),
     nationality: z.string().trim().min(2).max(80).optional(),
+    preferredLanguage: z.string().trim().min(2).max(40).optional(),
+    emergencyContactName: z.string().trim().min(2).max(120).optional(),
+    emergencyContactRelation: z.string().trim().min(2).max(60).optional(),
+    bloodGroup: z.enum(["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"]).optional(),
+    governmentIdNumber: z.string().trim().min(4).max(120).optional(),
+    liveTrackingEnabled: z.boolean().optional(),
+    geoAlertsEnabled: z.boolean().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: "At least one profile field must be provided",

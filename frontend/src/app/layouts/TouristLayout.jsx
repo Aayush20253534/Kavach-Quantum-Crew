@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -23,16 +23,30 @@ import {
 } from 'lucide-react';
 import { logout } from '../../features/auth/store/authSlice';
 import { NotificationsDropdown } from '../components/NotificationsDropdown';
+import { useGeolocation } from '../../features/tracking/hooks/useGeolocation';
 
 export function TouristLayout() {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isSosModalOpen, setIsSosModalOpen] = useState(false);
   const [sosState, setSosState] = useState('idle'); // 'idle' | 'triggering' | 'active'
+  const [now, setNow] = useState(() => new Date());
+  const { location: liveLocation, permission: locationPermission } = useGeolocation(undefined, false);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const timeLabel = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const dateLabel = now.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric', weekday: 'long' });
+  const coordinateLabel = liveLocation
+    ? `${liveLocation.lat.toFixed(4)}° N, ${liveLocation.lng.toFixed(4)}° E`
+    : locationPermission === 'denied' ? 'Location permission denied' : 'Detecting current location...';
 
   const handleLogout = () => {
     dispatch(logout());
@@ -74,8 +88,12 @@ export function TouristLayout() {
     { name: 'Profile', path: '/tourist/profile', icon: User },
   ];
 
-  const userName = user?.name || 'Aayansh Niranjan';
+  const userName = user?.name?.trim() || user?.username || 'Tourist';
   const initial = userName.charAt(0).toUpperCase();
+  const profileImage = user?.profilePicUrl || user?.profilePic || null;
+  const userIdLabel = user?.id
+    ? `#${String(user.id).slice(0, 8).toUpperCase()}`
+    : 'Authenticated tourist';
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-slate-900 antialiased font-sans relative">
@@ -84,10 +102,10 @@ export function TouristLayout() {
       {isSosModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl relative flex flex-col items-center text-center">
-            
+
             {sosState === 'idle' && (
               <>
-                <button 
+                <button
                   onClick={closeSosModal}
                   className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-slate-500 hover:text-slate-900 cursor-pointer transition-colors"
                 >
@@ -100,13 +118,13 @@ export function TouristLayout() {
                 <p className="text-[13px] text-slate-500 font-medium mb-8 leading-relaxed">
                   This will immediately alert local police, medical teams, and your emergency contacts with your live location.
                 </p>
-                <button 
+                <button
                   onClick={handleTriggerSOS}
                   className="w-full bg-[#e11d48] hover:bg-[#be123c] text-white py-4 rounded-xl font-black text-[14px] uppercase tracking-widest shadow-[0_4px_20px_0_rgba(225,29,72,0.4)] transition-all active:scale-95 cursor-pointer"
                 >
                   PRESS TO TRIGGER SOS
                 </button>
-                <button 
+                <button
                   onClick={closeSosModal}
                   className="w-full mt-3 py-3 text-slate-500 font-bold text-[12px] uppercase tracking-wider hover:text-slate-900 transition-colors cursor-pointer"
                 >
@@ -132,7 +150,7 @@ export function TouristLayout() {
                 <p className="text-[13px] text-slate-600 font-medium mb-6 leading-relaxed">
                   Police Patrol PCR #14 is en route to your location. Stay calm and remain at your current position if safe.
                 </p>
-                <button 
+                <button
                   onClick={closeSosModal}
                   className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl font-bold text-[12px] uppercase tracking-widest shadow-lg transition-colors cursor-pointer"
                 >
@@ -184,13 +202,24 @@ export function TouristLayout() {
         <div className={`px-6 py-4 ${isCollapsed ? 'px-3' : ''}`}>
           <div className={`bg-white border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-2xl flex flex-col gap-4 ${isCollapsed ? 'p-2 items-center' : 'p-4'}`}>
             <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
-              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-700 shrink-0 cursor-pointer" title={isCollapsed ? userName : undefined}>
-                {initial}
+              <div
+                className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center text-sm font-bold text-slate-700 shrink-0 cursor-pointer"
+                title={isCollapsed ? userName : undefined}
+              >
+                {profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt={`${userName} profile`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  initial
+                )}
               </div>
               {!isCollapsed && (
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-bold text-slate-900 truncate uppercase tracking-wide">{userName}</p>
-                  <p className="text-[10px] text-slate-400 font-mono truncate">ID: #DTD-PRY-8924</p>
+                  <p className="text-[10px] text-slate-400 font-mono truncate">ID: {userIdLabel}</p>
                 </div>
               )}
             </div>
@@ -223,11 +252,10 @@ export function TouristLayout() {
                 <Link
                   key={item.name}
                   to={item.path}
-                  className={`flex items-center gap-3 py-3 rounded-xl text-[12px] font-semibold transition-all ${
-                    isCollapsed ? 'justify-center px-0' : 'px-4'
-                  } ${isActive
-                    ? 'bg-red-50 text-red-600 relative after:absolute after:left-0 after:top-2 after:bottom-2 after:w-1 after:bg-red-600 after:rounded-r-full'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  className={`flex items-center gap-3 py-3 rounded-xl text-[12px] font-semibold transition-all ${isCollapsed ? 'justify-center px-0' : 'px-4'
+                    } ${isActive
+                      ? 'bg-red-50 text-red-600 relative after:absolute after:left-0 after:top-2 after:bottom-2 after:w-1 after:bg-red-600 after:rounded-r-full'
+                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                   title={isCollapsed ? item.name : undefined}
                 >
@@ -250,11 +278,10 @@ export function TouristLayout() {
                 <Link
                   key={item.name}
                   to={item.path}
-                  className={`flex items-center gap-3 py-3 rounded-xl text-[12px] font-semibold transition-all ${
-                    isCollapsed ? 'justify-center px-0' : 'px-4'
-                  } ${isActive
-                    ? 'bg-red-50 text-red-600 relative after:absolute after:left-0 after:top-2 after:bottom-2 after:w-1 after:bg-red-600 after:rounded-r-full'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  className={`flex items-center gap-3 py-3 rounded-xl text-[12px] font-semibold transition-all ${isCollapsed ? 'justify-center px-0' : 'px-4'
+                    } ${isActive
+                      ? 'bg-red-50 text-red-600 relative after:absolute after:left-0 after:top-2 after:bottom-2 after:w-1 after:bg-red-600 after:rounded-r-full'
+                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                   title={isCollapsed ? item.name : undefined}
                 >
@@ -268,9 +295,9 @@ export function TouristLayout() {
 
         {/* Bottom Actions */}
         <div className={`pt-4 border-t border-slate-100 bg-white space-y-4 ${isCollapsed ? 'p-3' : 'p-6'}`}>
-          <button 
+          <button
             onClick={() => setIsSosModalOpen(true)}
-            className={`w-full bg-[#e11d48] hover:bg-[#be123c] text-white py-3.5 rounded-xl font-bold text-[13px] tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 cursor-pointer ${isCollapsed ? 'px-0' : 'px-4'}`} 
+            className={`w-full bg-[#e11d48] hover:bg-[#be123c] text-white py-3.5 rounded-xl font-bold text-[13px] tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 cursor-pointer ${isCollapsed ? 'px-0' : 'px-4'}`}
             title={isCollapsed ? "SOS EMERGENCY" : undefined}
           >
             <Phone className="w-4 h-4 shrink-0" />
@@ -303,10 +330,10 @@ export function TouristLayout() {
             <div>
               <div className="flex items-center gap-1 cursor-pointer group">
                 <span className="text-[11px] sm:text-[13px] font-black text-slate-900 uppercase tracking-wide group-hover:text-red-600 transition-colors truncate max-w-[140px] sm:max-w-none">
-                  SANGAM SECTOR 4, PRAYAGRAJ
+                  {liveLocation ? 'CURRENT LIVE LOCATION' : 'LOCATION PENDING'}
                 </span>
               </div>
-              <p className="text-[9px] sm:text-[11px] text-slate-400 font-mono mt-0.5 hidden sm:block">25.4358° N, 81.8463° E</p>
+              <p className="text-[9px] sm:text-[11px] text-slate-400 font-mono mt-0.5 hidden sm:block">{coordinateLabel}</p>
             </div>
           </div>
 
@@ -316,8 +343,8 @@ export function TouristLayout() {
               <Clock className="w-5 h-5 text-slate-500" />
             </div>
             <div>
-              <div className="text-[13px] font-black text-slate-900">10:24 AM</div>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5">23 May 2025, Friday</p>
+              <div className="text-[13px] font-black text-slate-900">{timeLabel}</div>
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5">{dateLabel}</p>
             </div>
           </div>
 
@@ -350,11 +377,11 @@ export function TouristLayout() {
             const isActive = item.path === '/tourist/dashboard'
               ? location.pathname === item.path
               : location.pathname.startsWith(item.path);
-              
+
             if (item.isSos) {
               return (
-                <button 
-                  key={item.name} 
+                <button
+                  key={item.name}
                   onClick={() => setIsSosModalOpen(true)}
                   className="flex flex-col items-center justify-center gap-1 relative -top-4 cursor-pointer"
                 >
@@ -367,9 +394,9 @@ export function TouristLayout() {
             }
 
             return (
-              <Link 
-                key={item.name} 
-                to={item.path} 
+              <Link
+                key={item.name}
+                to={item.path}
                 className={`flex flex-col items-center justify-center gap-1 w-14 h-full ${isActive ? 'text-red-600' : 'text-slate-400 hover:text-slate-900'}`}
               >
                 <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />

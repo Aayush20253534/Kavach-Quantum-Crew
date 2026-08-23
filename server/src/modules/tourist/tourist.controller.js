@@ -19,6 +19,15 @@ export const createTouristController = ({ service = touristService } = {}) => ({
       message: "Tourist profile updated",
       data: await service.updateProfile(request.user.id, request.body),
     }),
+
+  uploadProfileImage: async (request, response) =>
+    ApiResponse.success(response, {
+      message: "Profile image uploaded",
+      data: await service.updateProfileImage(
+        request.user.id,
+        request.file,
+      ),
+    }),
 });
 
 export const touristController = createTouristController();
