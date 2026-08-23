@@ -35,7 +35,7 @@ The service is designed as a **modular Node.js backend**. AI models, blockchain 
 - Realtime Socket.IO events
 - Staff analytics and response-time reporting
 - System-admin account/resource management
-- AI and blockchain integration contracts
+- AI and blockchain integration contracts (staff-only AI risk/hazard contracts; no tourist chatbot API yet)
 - Central audit querying
 - HTTP metrics and safe runtime/database diagnostics
 - Security hardening, rate limiting, privacy headers, request-shape protection, and JWT validation
@@ -196,7 +196,15 @@ System-admin observability:
 ## External integration boundaries
 
 ### AI
-The backend defines validated contracts for trip/location risk assessment and hazard analysis. No inference model is implemented here. See [`documentation/AI-CATALOGUE.md`](documentation/AI-CATALOGUE.md).
+The backend defines validated, **staff-only** contracts for trip/location risk assessment and hazard analysis:
+
+- `GET /api/v1/integrations/capabilities`
+- `POST /api/v1/integrations/ai/risk-assessment`
+- `POST /api/v1/integrations/ai/hazard-analysis`
+
+No inference model is implemented by default, so the AI POST routes return `501 INTEGRATION_PROVIDER_NOT_CONFIGURED` until a provider is injected.
+
+There is currently **no tourist conversational chatbot endpoint**. The frontend Rakshak AI widget is simulated and must not call the staff-only integration routes. See [`documentation/AI-CATALOGUE.md`](documentation/AI-CATALOGUE.md) and [`documentation/CHATBOT-INTEGRATION.md`](documentation/CHATBOT-INTEGRATION.md).
 
 ### Blockchain
 The backend defines contracts for Safety ID proof, incident proof, evidence proof, and proof verification. No wallet, smart contract, private-key handling, chain SDK, or transaction implementation is included. See [`documentation/BLOCKCHAIN-CATALOGUE.md`](documentation/BLOCKCHAIN-CATALOGUE.md).
@@ -246,7 +254,8 @@ Dedicated domain suites remain available for targeted debugging, but `npm test` 
 | [`ERROR-CATALOGUE.md`](documentation/ERROR-CATALOGUE.md) | Error envelope and important error codes |
 | [`ENVIRONMENT.md`](documentation/ENVIRONMENT.md) | Environment-variable reference |
 | [`EMAIL-VERIFICATION.md`](documentation/EMAIL-VERIFICATION.md) | Gmail SMTP OTP signup verification flow and Postman testing |
-| [`AI-CATALOGUE.md`](documentation/AI-CATALOGUE.md) | AI integration inputs and handoff guidance |
+| [`AI-CATALOGUE.md`](documentation/AI-CATALOGUE.md) | Mounted AI analysis endpoints, validation, provider status, and handoff guidance |
+| [`CHATBOT-INTEGRATION.md`](documentation/CHATBOT-INTEGRATION.md) | Current Rakshak AI UI/backend gap and recommended future chatbot contract |
 | [`BLOCKCHAIN-CATALOGUE.md`](documentation/BLOCKCHAIN-CATALOGUE.md) | Blockchain proof boundaries |
 | [`NOTIFICATION-DELIVERY.md`](documentation/NOTIFICATION-DELIVERY.md) | Delivery jobs/providers/retries |
 | [`TESTING.md`](documentation/TESTING.md) | Test strategy and commands |
@@ -272,3 +281,25 @@ Those systems connect through the documented API, Socket.IO, and provider interf
 Tourist email verification is mandatory on first signup and whenever the tourist changes to a new email address. It is not required on every login. Gmail SMTP uses a Google App Password, while the OTP itself is generated and verified entirely by backend code.
 
 See [`documentation/EMAIL-VERIFICATION.md`](documentation/EMAIL-VERIFICATION.md) for configuration, security behavior, API examples, and Postman verification steps.
+
+
+## Upstash Redis caching
+
+Redis is optional and fail-open: if it is unavailable, reads fall back to PostgreSQL.
+
+```env
+REDIS_ENABLED=true
+UPSTASH_REDIS_REST_URL=https://...
+UPSTASH_REDIS_REST_TOKEN=...
+REDIS_KEY_PREFIX=sts
+REDIS_DASHBOARD_TTL_SECONDS=30
+REDIS_DESTINATIONS_TTL_SECONDS=900
+REDIS_RISK_ZONES_TTL_SECONDS=30
+```
+
+The first cache targets are total tourist count, active risk zones, and destination lists.
+Authentication, OTP, SOS/incident writes, and live-location writes remain uncached. Keep
+the Upstash token server-side on Render; never expose it as a `VITE_` variable.
+
+The integration uses Upstash's HTTPS REST API through Node's built-in `fetch`, so it adds
+no Redis npm dependency.
