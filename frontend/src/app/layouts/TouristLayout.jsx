@@ -403,7 +403,7 @@ export function TouristLayout() {
         {/* =========================================================
             MOBILE BOTTOM NAVIGATION BAR
         ========================================================= */}
-        <nav ref={mobileNavRef} className="lg:hidden fixed bottom-0 left-0 right-0 w-full h-[68px] bg-white border-t border-slate-200 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe overflow-x-auto overflow-y-hidden overscroll-x-contain snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <nav ref={mobileNavRef} className="lg:hidden fixed bottom-0 left-0 right-0 w-full h-[76px] bg-white border-t border-slate-200 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe overflow-x-auto overflow-y-hidden overscroll-x-contain snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex items-stretch h-full w-[160%]">
           {mobileNavItems.map((item) => {
             const Icon = item.icon;
@@ -416,12 +416,12 @@ export function TouristLayout() {
                 <button
                   key={item.name}
                   onClick={() => setIsSosModalOpen(true)}
-                  className="w-[12.5%] shrink-0 snap-start flex flex-col items-center justify-center gap-1 cursor-pointer text-red-600"
+                  className="w-[12.5%] min-w-0 shrink-0 snap-start flex flex-col items-center justify-center gap-1 px-1 cursor-pointer text-red-600"
                 >
                   <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white shadow-sm shadow-red-500/20">
                     <Icon className="w-4 h-4" />
                   </div>
-                  <span className="text-[9px] font-bold text-red-600 whitespace-nowrap">{item.name}</span>
+                  <span className="w-full min-h-[20px] flex items-center justify-center text-center text-[8px] leading-[10px] font-bold text-red-600 break-words">{item.name}</span>
                 </button>
               );
             }
@@ -430,10 +430,10 @@ export function TouristLayout() {
               <Link
                 key={item.name}
                 to={item.path}
-                className={`w-[12.5%] shrink-0 snap-start flex flex-col items-center justify-center gap-1 h-full ${isActive ? 'text-red-600' : 'text-slate-400 hover:text-slate-900'}`}
+                className={`w-[12.5%] min-w-0 shrink-0 snap-start flex flex-col items-center justify-center gap-1 px-1 h-full ${isActive ? 'text-red-600' : 'text-slate-400 hover:text-slate-900'}`}
               >
                 <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
-                <span className={`text-[9px] font-bold ${isActive ? 'text-red-600' : 'text-slate-500'}`}>{item.name}</span>
+                <span className={`w-full min-h-[20px] flex items-center justify-center text-center text-[8px] leading-[10px] font-bold break-words ${isActive ? 'text-red-600' : 'text-slate-500'}`}>{item.name}</span>
               </Link>
             );
           })}
