@@ -27,6 +27,8 @@ export function AdminLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleLogout = async () => {
+    if (!window.confirm('Do you want to sign out?')) return;
+
     // Record the user's intent before any network request so a reload cannot
     // resurrect the session while logout is in flight or if it fails.
     markExplicitSignOut();
