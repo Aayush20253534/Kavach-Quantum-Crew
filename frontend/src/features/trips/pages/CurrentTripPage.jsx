@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Calendar, CheckCircle2, Copy, Loader2, MapPin, Play, ShieldCheck, Users, XCircle } from 'lucide-react';
+import { Calendar, CheckCircle2, Copy, Loader2, LogIn, MapPin, Play, ShieldCheck, Users, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { groupService } from '../../groups/api/groupService';
@@ -76,7 +76,12 @@ export function CurrentTripPage() {
         <MapPin className="w-10 h-10 mx-auto text-slate-300" />
         <h2 className="mt-4 text-xl font-black">No current trip</h2>
         <p className="text-sm text-slate-500 mt-2">Plan a trip to enable tracking, groups, check-ins and SOS.</p>
-        <Link to="/tourist/trips/create" className="inline-block mt-6 px-6 py-3 bg-rose-600 text-white rounded-lg text-xs font-black uppercase">Plan Trip</Link>
+        <div className="mt-6 flex flex-wrap justify-center gap-2.5">
+          <Link to="/tourist/trips/create" className="inline-flex items-center px-5 py-2.5 bg-rose-600 text-white rounded-lg text-[11px] sm:text-xs font-black uppercase">Plan Trip</Link>
+          <Link to="/tourist/groups/join" className="inline-flex items-center gap-2 px-5 py-2.5 border border-slate-200 bg-white text-slate-700 rounded-lg text-[11px] sm:text-xs font-black uppercase">
+            <LogIn className="w-4 h-4" /> Join Group
+          </Link>
+        </div>
       </div>
     );
   }
