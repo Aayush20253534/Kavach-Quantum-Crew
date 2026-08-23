@@ -1,4 +1,4 @@
-import { zoneContainsPoint, zoneIsEffective } from "../../common/utils/geofence.js";
+import { zoneContainsPoint, zoneIntersectsCircle, zoneIsEffective } from "../../common/utils/geofence.js";
 import { dashboardRepository } from "./dashboard.repository.js";
 
 const settledValue = (result, fallback) =>
@@ -42,11 +42,15 @@ export const createDashboardService = ({
       };
       const now = clock();
 
-      const dangerZone = zones.find(
-        (zone) =>
-          zoneIsEffective(zone, now) &&
-          zoneContainsPoint(zone, point),
-      );
+      const safetyRadiusM = currentTrip?.tripType === "GROUP" ? 500 : 0;
+
+      const dangerZone = zones.find((zone) => {
+        if (!zoneIsEffective(zone, now)) return false;
+
+        return safetyRadiusM > 0
+          ? zoneIntersectsCircle(zone, point, safetyRadiusM)
+          : zoneContainsPoint(zone, point);
+      });
 
       safetyStatus = dangerZone
         ? {

@@ -44,6 +44,59 @@ export const zoneContainsPoint = (zone, point) => {
   return haversineDistanceM(point, { latitude: zone.latitude, longitude: zone.longitude }) <= zone.radiusM;
 };
 
+const pointToSegmentDistanceM = (point, a, b) => {
+  const latScale = 111320;
+  const lngScale = 111320 * Math.cos((point.latitude * Math.PI) / 180);
+
+  const ax = (a.longitude - point.longitude) * lngScale;
+  const ay = (a.latitude - point.latitude) * latScale;
+  const bx = (b.longitude - point.longitude) * lngScale;
+  const by = (b.latitude - point.latitude) * latScale;
+
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lengthSquared = dx * dx + dy * dy;
+  const t = lengthSquared
+    ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / lengthSquared))
+    : 0;
+
+  const x = ax + t * dx;
+  const y = ay + t * dy;
+  return Math.sqrt(x * x + y * y);
+};
+
+export const zoneIntersectsCircle = (zone, center, radiusM = 0) => {
+  const radius = Math.max(0, Number(radiusM) || 0);
+  const geometryType = zone.geometryType ?? "CIRCLE";
+
+  if (geometryType === "POLYGON") {
+    const polygon = Array.isArray(zone.polygon) ? zone.polygon : [];
+    if (polygon.length < 3) return false;
+    if (pointInPolygon(center, polygon)) return true;
+
+    return polygon.some((point, index) =>
+      pointToSegmentDistanceM(
+        center,
+        point,
+        polygon[(index + 1) % polygon.length],
+      ) <= radius
+    );
+  }
+
+  if (
+    zone.latitude === null || zone.latitude === undefined ||
+    zone.longitude === null || zone.longitude === undefined ||
+    zone.radiusM === null || zone.radiusM === undefined
+  ) {
+    return false;
+  }
+
+  return haversineDistanceM(center, {
+    latitude: zone.latitude,
+    longitude: zone.longitude,
+  }) <= Number(zone.radiusM) + radius;
+};
+
 export const zoneIsEffective = (zone, now = new Date()) => {
   if (zone.active === false) return false;
   if (zone.validFrom && new Date(zone.validFrom) > now) return false;
