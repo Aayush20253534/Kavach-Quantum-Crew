@@ -258,6 +258,20 @@ const environmentSchema = z
       1,
       20,
     ).default(5),
+
+    CLOUDINARY_CLOUD_NAME: optionalString(
+      z.string().trim().min(1),
+    ),
+    CLOUDINARY_API_KEY: optionalString(
+      z.string().trim().min(1),
+    ),
+    CLOUDINARY_API_SECRET: optionalString(
+      z.string().trim().min(1),
+    ),
+    PROFILE_IMAGE_MAX_FILE_BYTES: integerFromEnvironment(
+      1024,
+      10485760,
+    ).default(5242880),
   })
   .superRefine((value, context) => {
     const origins = value.CORS_ORIGINS

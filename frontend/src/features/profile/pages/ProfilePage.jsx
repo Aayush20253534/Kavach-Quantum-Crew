@@ -1,256 +1,480 @@
-import React, { useState, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { 
-  User, ShieldCheck, QrCode, PhoneCall, Save, Check, MapPin, Edit3,
-  Star, Clock, Shield, Lock, Heart, List, MinusCircle, Trash2, Image as ImageIcon
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useDispatch } from 'react-redux';
+import {
+  AlertCircle,
+  Camera,
+  Check,
+  Heart,
+  Loader2,
+  MapPin,
+  Save,
+  ShieldCheck,
+  User,
 } from 'lucide-react';
+
 import { updateUser } from '../../auth/store/authSlice';
+import { profileService } from '../api/profileService';
+
+const EMPTY_FORM = {
+  name: '',
+  email: '',
+  phone: '',
+  emergencyPhone: '',
+  emergencyContactName: '',
+  emergencyContactRelation: '',
+  bloodGroup: 'O+',
+  medicalHistory: '',
+  nationality: '',
+  preferredLanguage: '',
+  governmentIdNumber: '',
+  liveTrackingEnabled: true,
+  geoAlertsEnabled: true,
+};
+
+const apiMessage = (error, fallback) =>
+  error?.response?.data?.error?.message || error?.message || fallback;
 
 export function ProfilePage() {
-  const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
+  const fileInputRef = useRef(null);
 
-  const [name, setName] = useState(user?.name || 'Prachi Maurya');
-  const [email, setEmail] = useState(user?.email || 'prachi@touristsafety.in');
-  const [phone, setPhone] = useState(user?.phone || '+91 98765 43210');
-  const [emergencyName, setEmergencyName] = useState(user?.emergencyContact?.name || 'Ramesh Maurya');
-  const [emergencyPhone, setEmergencyPhone] = useState(user?.emergencyContact?.phone || '+91 98765 00000');
-  const [emergencyRelation, setEmergencyRelation] = useState(user?.emergencyContact?.relation || 'Father');
-  const [bloodGroup, setBloodGroup] = useState(user?.medicalInfo?.bloodGroup || 'O+');
-  const [allergies, setAllergies] = useState(user?.medicalInfo?.notes || 'No known drug allergies');
-  const [savedSuccess, setSavedSuccess] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
 
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const avatarUrl = previewUrl || profile?.profilePic || '';
 
-  const handleSave = (e) => {
-    e.preventDefault();
-    dispatch(
-      updateUser({
-        name,
-        email,
-        phone,
-        emergencyContact: {
-          name: emergencyName,
-          phone: emergencyPhone,
-          relation: emergencyRelation,
-        },
-        medicalInfo: {
-          bloodGroup,
-          notes: allergies,
-        },
-      })
-    );
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 2500);
+  const initials = useMemo(() => {
+    const value = form.name?.trim() || profile?.username || 'T';
+    return value
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase();
+  }, [form.name, profile?.username]);
+
+  const hydrate = (data) => {
+    setProfile(data);
+    setForm({
+      name: data?.name || '',
+      email: data?.email || '',
+      phone: data?.phone || '',
+      emergencyPhone: data?.emergencyContact || '',
+      emergencyContactName: data?.emergencyContactName || '',
+      emergencyContactRelation: data?.emergencyContactRelation || '',
+      bloodGroup: data?.bloodGroup || 'O+',
+      medicalHistory: data?.medicalHistory || '',
+      nationality: data?.nationality || '',
+      preferredLanguage: data?.preferredLanguage || '',
+      governmentIdNumber: data?.governmentIdNumber || '',
+      liveTrackingEnabled: data?.liveTrackingEnabled ?? true,
+      geoAlertsEnabled: data?.geoAlertsEnabled ?? true,
+    });
   };
 
-  return (
-    <div className={`max-w-[1100px] mx-auto space-y-6 pb-10 font-sans transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-      
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-[22px] font-black text-slate-900 tracking-tight">Tourist Safety ID & Profile</h1>
-          </div>
-          <p className="text-[13px] text-slate-500 font-medium mt-1">
-            Blockchain-backed digital identity and emergency first responder records.
-          </p>
+  useEffect(() => {
+    let active = true;
+
+    profileService
+      .getProfile()
+      .then((data) => {
+        if (!active) return;
+        hydrate(data);
+        dispatch(updateUser(data));
+      })
+      .catch((requestError) => {
+        if (active) {
+          setError(apiMessage(requestError, 'Unable to load your safety profile.'));
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [dispatch]);
+
+  useEffect(
+    () => () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    },
+    [previewUrl],
+  );
+
+  const setField = (field, value) =>
+    setForm((current) => ({ ...current, [field]: value }));
+
+  const handleImagePick = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+      setError('Choose a JPEG, PNG, or WebP image.');
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Profile image must be 5 MB or smaller.');
+      event.target.value = '';
+      return;
+    }
+
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setSelectedImage(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    setError('');
+    setSuccess('');
+  };
+
+  const uploadImage = async () => {
+    if (!selectedImage) return;
+
+    setUploadingImage(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const result = await profileService.uploadProfileImage(selectedImage);
+      hydrate(result.profile);
+      dispatch(updateUser(result.profile));
+      setSelectedImage(null);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewUrl('');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      setSuccess('Profile photo uploaded securely.');
+    } catch (requestError) {
+      setError(apiMessage(requestError, 'Unable to upload profile photo.'));
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const saveProfile = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const updated = await profileService.updateProfile({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        emergencyPhone: form.emergencyPhone.trim(),
+        emergencyContactName: form.emergencyContactName.trim(),
+        emergencyContactRelation: form.emergencyContactRelation.trim(),
+        bloodGroup: form.bloodGroup,
+        medicalHistory: form.medicalHistory.trim() || null,
+        nationality: form.nationality.trim(),
+        preferredLanguage: form.preferredLanguage.trim(),
+        governmentIdNumber: form.governmentIdNumber.trim(),
+        liveTrackingEnabled: form.liveTrackingEnabled,
+        geoAlertsEnabled: form.geoAlertsEnabled,
+      });
+
+      hydrate(updated);
+      dispatch(updateUser(updated));
+      setSuccess(
+        updated.emailVerified === false && updated.email !== profile?.email
+          ? 'Profile saved. Verify your new email before your next login.'
+          : 'Safety profile updated.',
+      );
+    } catch (requestError) {
+      setError(apiMessage(requestError, 'Unable to update your safety profile.'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-[55vh] flex items-center justify-center">
+        <div className="flex items-center gap-3 text-slate-600 text-sm font-semibold">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          Loading safety profile
         </div>
       </div>
+    );
+  }
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* ========================================================
-            LEFT COLUMN (4 Cols): Professional ID Card
-        ======================================================== */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-white border border-slate-200 shadow-sm rounded-lg overflow-hidden flex flex-col">
-            
-            {/* Header: Avatar & Name */}
-            <div className="flex flex-col items-center pt-8 pb-6 border-b border-slate-100 px-6 relative bg-slate-50/50">
-              
-              <div className="w-28 h-28 rounded-full overflow-hidden mb-5 bg-slate-100 flex items-center justify-center border-4 border-white shadow-md">
-                 <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150&auto=format&fit=crop" alt="Profile Avatar" className="w-full h-full object-cover" />
-              </div>
-              <h2 className="text-[18px] font-black text-slate-900 mb-0.5 tracking-tight">{name}</h2>
-              <p className="text-slate-500 text-[12px] font-semibold">{phone}</p>
-            </div>
-
-            {/* About / Medical Notes */}
-            <div className="px-6 py-5 border-b border-slate-100">
-              <h3 className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2">Medical Notes</h3>
-              <p className="text-slate-700 text-[13px] font-medium leading-relaxed">{allergies || 'No known allergies.'}</p>
-            </div>
-
-            {/* Media/Docs Section */}
-            <div className="border-b border-slate-100">
-              <div className="px-6 py-4 flex items-center justify-between">
-                 <div className="flex items-center gap-2">
-                   <ImageIcon className="w-4 h-4 text-slate-400" />
-                   <span className="text-slate-700 text-[12px] font-bold">Safety Documents</span>
-                 </div>
-                 <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">4</span>
-              </div>
-              <div className="flex gap-2 overflow-x-auto px-6 pb-5 scrollbar-hide">
-                 <div className="w-16 h-16 flex-shrink-0 rounded-md overflow-hidden border border-slate-200 bg-slate-50">
-                   <img src="https://images.unsplash.com/photo-1517842645767-c639042777db?q=80&w=100&auto=format&fit=crop" alt="Doc" className="w-full h-full object-cover grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all cursor-pointer" />
-                 </div>
-                 <div className="w-16 h-16 flex-shrink-0 rounded-md overflow-hidden border border-slate-200 bg-slate-50">
-                   <img src="https://images.unsplash.com/photo-1517842645767-c639042777db?q=80&w=100&auto=format&fit=crop" alt="Doc" className="w-full h-full object-cover grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all cursor-pointer" />
-                 </div>
-              </div>
-            </div>
-
-            {/* Micro QR */}
-            <div className="p-6 flex items-center justify-between bg-slate-50/50">
-              <div className="flex flex-col gap-1">
-                <span className="text-slate-900 text-[12px] font-bold tracking-wide">Responder Access</span>
-                <span className="font-mono text-[10px] text-slate-500">DID: PRY.TOURIST#8924</span>
-              </div>
-              <div className="p-1.5 bg-white border border-slate-200 rounded-md shadow-sm">
-                <QrCode className="w-8 h-8 text-slate-900" />
-              </div>
-            </div>
-
-          </div>
+  return (
+    <div className="max-w-[1120px] mx-auto space-y-6 pb-10">
+      <div>
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="w-6 h-6 text-rose-600" />
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+            Safety Profile
+          </h1>
         </div>
+        <p className="mt-1 text-sm text-slate-500">
+          Identity, emergency and medical information available to the safety workflow.
+        </p>
+      </div>
 
-        {/* ========================================================
-            RIGHT COLUMN (8 Cols): Professional Form
-        ======================================================== */}
-        <div className="lg:col-span-8 space-y-6">
-          <div className="bg-white border border-slate-200 shadow-sm rounded-lg overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
-              <div className="w-10 h-10 rounded-md bg-[#fef2f2] border border-[#fecaca] flex items-center justify-center">
-                <Edit3 className="w-4 h-4 text-[#e11d48]" />
-              </div>
-              <div>
-                <h3 className="text-[14px] font-black text-slate-900 tracking-wide">Edit Safety Information</h3>
-                <p className="text-[12px] text-slate-500 font-medium mt-0.5">Updates synchronize instantly with responder control rooms.</p>
-              </div>
-            </div>
+      {(error || success) && (
+        <div
+          className={`rounded-xl border px-4 py-3 text-sm font-semibold flex items-start gap-2 ${
+            error
+              ? 'border-red-200 bg-red-50 text-red-700'
+              : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+          }`}
+        >
+          {error ? (
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          ) : (
+            <Check className="w-4 h-4 mt-0.5 shrink-0" />
+          )}
+          {error || success}
+        </div>
+      )}
 
-            <div className="p-6 sm:p-8">
-              <form onSubmit={handleSave} className="space-y-8">
-                
-                {/* Form Group: Personal */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-slate-900 mb-4 pb-2 border-b border-slate-100">
-                    <User className="w-4 h-4 text-slate-400" />
-                    <span className="text-[13px] font-bold tracking-wide">Personal Details</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <StyledInput label="Full Name" value={name} onChange={(e) => setName(e.target.value)} />
-                    <StyledInput label="Mobile Number" value={phone} onChange={(e) => setPhone(e.target.value)} />
-                  </div>
-                  <StyledInput label="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
-                </div>
-
-                {/* Form Group: Emergency Contact */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-slate-900 mb-4 pb-2 border-b border-slate-100 mt-4">
-                    <Star className="w-4 h-4 text-slate-400" />
-                    <span className="text-[13px] font-bold tracking-wide">Starred Contacts (Emergency)</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                    <StyledInput label="Contact Name" value={emergencyName} onChange={(e) => setEmergencyName(e.target.value)} />
-                    <StyledInput label="Relation" value={emergencyRelation} onChange={(e) => setEmergencyRelation(e.target.value)} />
-                    <StyledInput label="Emergency Phone" value={emergencyPhone} onChange={(e) => setEmergencyPhone(e.target.value)} />
-                  </div>
-                </div>
-
-                {/* Form Group: Medical */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-slate-900 mb-4 pb-2 border-b border-slate-100 mt-4">
-                    <Heart className="w-4 h-4 text-slate-400" />
-                    <span className="text-[13px] font-bold tracking-wide">Medical & Health</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                    <div className="sm:col-span-1">
-                      <label className="block text-[11px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest pl-1">Blood Group</label>
-                      <select
-                        value={bloodGroup}
-                        onChange={(e) => setBloodGroup(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-[14px] font-semibold rounded-md px-4 py-3 focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all appearance-none cursor-pointer"
-                      >
-                        <option value="O+">O+</option><option value="O-">O-</option>
-                        <option value="A+">A+</option><option value="A-">A-</option>
-                        <option value="B+">B+</option><option value="B-">B-</option>
-                        <option value="AB+">AB+</option><option value="AB-">AB-</option>
-                      </select>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <StyledInput label="Medical Notes / Allergies" value={allergies} onChange={(e) => setAllergies(e.target.value)} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Additional Settings Blocks */}
-                <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                   <div className="flex items-center gap-4 p-4 rounded-md border border-slate-200 bg-slate-50/50">
-                     <Clock className="w-5 h-5 text-slate-400" />
-                     <div>
-                       <p className="text-[12px] text-slate-900 font-bold">Tour Duration</p>
-                       <p className="text-[10px] text-slate-500 font-mono mt-0.5">STATUS: OFF</p>
-                     </div>
-                   </div>
-                   <div className="flex items-center gap-4 p-4 rounded-md border border-slate-200 bg-slate-50/50">
-                     <List className="w-5 h-5 text-slate-400" />
-                     <div>
-                       <p className="text-[12px] text-slate-900 font-bold">Emergency Protocols</p>
-                       <p className="text-[10px] text-slate-500 font-mono mt-0.5">ACTIVE: 3</p>
-                     </div>
-                   </div>
-                   <div className="flex items-center justify-center gap-2 p-4 rounded-md border border-red-200 bg-white hover:bg-red-50 cursor-pointer transition-colors text-[#e11d48]">
-                     <MinusCircle className="w-4 h-4" />
-                     <p className="text-[12px] font-bold">Clear System Logs</p>
-                   </div>
-                   <div className="flex items-center justify-center gap-2 p-4 rounded-md border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-colors text-slate-700">
-                     <Trash2 className="w-4 h-4" />
-                     <p className="text-[12px] font-bold">Deactivate ID</p>
-                   </div>
-                </div>
-
-                {/* Save Section */}
-                <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100">
-                  {savedSuccess ? (
-                    <div className="w-full sm:w-auto px-4 py-3 rounded-md bg-[#f0fdf4] border border-[#dcfce7] text-[12px] text-[#16a34a] font-bold uppercase tracking-widest flex items-center justify-center gap-2">
-                      <Check className="w-4 h-4" />
-                      Sync Complete
-                    </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <aside className="lg:col-span-4">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <div className="p-7 flex flex-col items-center bg-slate-50/70 border-b border-slate-100">
+              <div className="relative">
+                <div className="w-32 h-32 rounded-full overflow-hidden bg-slate-200 border-4 border-white shadow-md flex items-center justify-center">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={`${form.name || 'Tourist'} profile`}
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
-                    <div className="w-full sm:w-auto" />
+                    <span className="text-3xl font-black text-slate-500">
+                      {initials}
+                    </span>
                   )}
-                  <button
-                    type="submit"
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-10 py-3.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-[12px] font-bold uppercase tracking-widest transition-all shadow-md active:scale-95 cursor-pointer"
-                  >
-                    <Save className="w-4 h-4" />
-                    Save & Sync
-                  </button>
                 </div>
-              </form>
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute right-0 bottom-1 w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center border-4 border-white shadow-md hover:bg-slate-800"
+                  aria-label="Choose profile photo"
+                >
+                  <Camera className="w-4 h-4" />
+                </button>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleImagePick}
+                className="hidden"
+              />
+
+              <h2 className="mt-5 text-lg font-black text-slate-900 text-center">
+                {form.name || profile?.username}
+              </h2>
+              <p className="text-xs font-semibold text-slate-500">
+                @{profile?.username}
+              </p>
+
+              {selectedImage && (
+                <button
+                  type="button"
+                  onClick={uploadImage}
+                  disabled={uploadingImage}
+                  className="mt-4 w-full rounded-lg bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white text-xs font-black uppercase tracking-wider px-4 py-3 flex items-center justify-center gap-2"
+                >
+                  {uploadingImage ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Camera className="w-4 h-4" />
+                  )}
+                  Upload photo
+                </button>
+              )}
+
+              <p className="mt-3 text-[11px] leading-relaxed text-slate-400 text-center">
+                JPEG, PNG or WebP. Maximum 5 MB. The image is stored in Cloudinary.
+              </p>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <ProfileFact icon={Heart} label="Blood group" value={form.bloodGroup || 'Not set'} />
+              <ProfileFact icon={MapPin} label="Nationality" value={form.nationality || 'Not set'} />
+              <ProfileFact
+                icon={ShieldCheck}
+                label="Safety status"
+                value={profile?.onboardingCompleted ? 'Profile active' : 'Onboarding incomplete'}
+              />
             </div>
           </div>
-        </div>
+        </aside>
+
+        <main className="lg:col-span-8">
+          <form
+            onSubmit={saveProfile}
+            className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden"
+          >
+            <SectionHeader
+              icon={User}
+              title="Personal information"
+              description="Keep contact and identity details current."
+            />
+            <div className="p-6 sm:p-8 space-y-8">
+              <div className="grid sm:grid-cols-2 gap-5">
+                <Field label="Full name" value={form.name} onChange={(value) => setField('name', value)} required />
+                <Field label="Phone" value={form.phone} onChange={(value) => setField('phone', value)} required />
+                <Field label="Email" type="email" value={form.email} onChange={(value) => setField('email', value)} required />
+                <Field label="Preferred language" value={form.preferredLanguage} onChange={(value) => setField('preferredLanguage', value)} required />
+                <Field label="Nationality" value={form.nationality} onChange={(value) => setField('nationality', value)} required />
+                <Field label="Government ID number" value={form.governmentIdNumber} onChange={(value) => setField('governmentIdNumber', value)} required />
+              </div>
+
+              <SectionTitle icon={ShieldCheck} title="Emergency contact" />
+              <div className="grid sm:grid-cols-3 gap-5">
+                <Field label="Contact name" value={form.emergencyContactName} onChange={(value) => setField('emergencyContactName', value)} required />
+                <Field label="Relation" value={form.emergencyContactRelation} onChange={(value) => setField('emergencyContactRelation', value)} required />
+                <Field label="Emergency phone" value={form.emergencyPhone} onChange={(value) => setField('emergencyPhone', value)} required />
+              </div>
+
+              <SectionTitle icon={Heart} title="Medical information" />
+              <div className="grid sm:grid-cols-3 gap-5">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                    Blood group
+                  </label>
+                  <select
+                    value={form.bloodGroup}
+                    onChange={(event) => setField('bloodGroup', event.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-semibold rounded-lg px-4 py-3 outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
+                  >
+                    {['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map((group) => (
+                      <option key={group} value={group}>{group}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                    Medical notes / allergies
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={form.medicalHistory}
+                    onChange={(event) => setField('medicalHistory', event.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-semibold rounded-lg px-4 py-3 outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 resize-y"
+                    placeholder="Allergies, conditions, medicines or other emergency information"
+                  />
+                </div>
+              </div>
+
+              <SectionTitle icon={MapPin} title="Safety permissions" />
+              <div className="grid sm:grid-cols-2 gap-4">
+                <ToggleCard
+                  title="Live tracking"
+                  description="Allow trip safety features to use live location."
+                  checked={form.liveTrackingEnabled}
+                  onChange={(value) => setField('liveTrackingEnabled', value)}
+                />
+                <ToggleCard
+                  title="Geo alerts"
+                  description="Receive alerts when entering configured risk zones."
+                  checked={form.geoAlertsEnabled}
+                  onChange={(value) => setField('geoAlertsEnabled', value)}
+                />
+              </div>
+
+              <div className="pt-6 border-t border-slate-100 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="w-full sm:w-auto rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white px-7 py-3 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Save safety profile
+                </button>
+              </div>
+            </div>
+          </form>
+        </main>
       </div>
     </div>
   );
 }
 
-function StyledInput({ label, value, onChange, type = "text" }) {
+function SectionHeader({ icon: Icon, title, description }) {
   return (
-    <div className="flex flex-col space-y-1.5">
-      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest pl-1">{label}</label>
+    <div className="px-6 sm:px-8 py-5 border-b border-slate-100 bg-slate-50/60 flex items-center gap-3">
+      <div className="w-10 h-10 rounded-lg bg-rose-50 border border-rose-100 flex items-center justify-center">
+        <Icon className="w-4 h-4 text-rose-600" />
+      </div>
+      <div>
+        <h3 className="text-sm font-black text-slate-900">{title}</h3>
+        <p className="text-xs text-slate-500 mt-0.5">{description}</p>
+      </div>
+    </div>
+  );
+}
+
+function SectionTitle({ icon: Icon, title }) {
+  return (
+    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+      <Icon className="w-4 h-4 text-slate-400" />
+      <h3 className="text-sm font-black text-slate-900">{title}</h3>
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, type = 'text', required = false }) {
+  return (
+    <div>
+      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+        {label}
+      </label>
       <input
         type={type}
         value={value}
-        onChange={onChange}
-        className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-[14px] font-semibold rounded-md px-4 py-3 focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all"
+        required={required}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-semibold rounded-lg px-4 py-3 outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
       />
+    </div>
+  );
+}
+
+function ToggleCard({ title, description, checked, onChange }) {
+  return (
+    <label className="flex items-center justify-between gap-4 p-4 border border-slate-200 rounded-xl bg-slate-50/60 cursor-pointer">
+      <div>
+        <p className="text-sm font-bold text-slate-900">{title}</p>
+        <p className="text-xs text-slate-500 mt-1">{description}</p>
+      </div>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="w-5 h-5 accent-rose-600"
+      />
+    </label>
+  );
+}
+
+function ProfileFact({ icon: Icon, label, value }) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+        <Icon className="w-4 h-4 text-slate-500" />
+      </div>
+      <div>
+        <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">{label}</p>
+        <p className="text-sm font-bold text-slate-800 mt-0.5">{value}</p>
+      </div>
     </div>
   );
 }
