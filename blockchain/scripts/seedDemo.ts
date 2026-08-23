@@ -17,6 +17,8 @@
  *   npx ts-node scripts/seedDemo.ts [--network hardhat]
  */
 
+import "dotenv/config";
+
 import { hashIdPayload } from "../adapter/hasher";
 import { parseArgs, loadDeployment, connectContract, nowSeconds, printResult } from "./_shared";
 
