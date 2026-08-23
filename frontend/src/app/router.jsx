@@ -60,10 +60,15 @@ export const router = createBrowserRouter([
     element: <GlobalLayout />,
     children: [
       {
-        path: '/',
-        element: <PublicLayout />,
+        element: <PublicRoute />,
         children: [
-          { index: true, element: <HomePage /> },
+          {
+            path: '/',
+            element: <PublicLayout />,
+            children: [
+              { index: true, element: <HomePage /> },
+            ],
+          },
         ],
       },
       {

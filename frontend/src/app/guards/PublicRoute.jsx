@@ -13,10 +13,10 @@ export function PublicRoute() {
       return <Navigate to="/authority/dashboard" replace />;
     }
     if (user?.role === 'SYSTEM_ADMIN') {
-      return <Navigate to="/" replace />;
+      return <Navigate to="/admin/dashboard" replace />;
     }
-    // Fallback if role is unknown
-    return <Navigate to="/" replace />;
+    // Authenticated users should never fall back to the public landing page.
+    return <Navigate to="/login" replace />;
   }
 
   return <Outlet />;
