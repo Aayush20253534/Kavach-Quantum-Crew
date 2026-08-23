@@ -11,3 +11,12 @@ export const profileImageUpload = multer({
 }).single("image");
 
 export default profileImageUpload;
+
+
+export const medicalDocumentUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    files: 1,
+    fileSize: environment.MEDICAL_DOCUMENT_MAX_FILE_BYTES,
+  },
+}).single("document");

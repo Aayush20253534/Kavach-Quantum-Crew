@@ -6,9 +6,9 @@ const containerStyle = { width: '100%', height: '100%', borderRadius: '0.5rem' }
 const EMERGENCY_SEARCH_RADIUS_METERS = 5000;
 
 const SERVICE_TYPES = [
-  { type: 'police', label: 'Police', marker: 'P' },
-  { type: 'hospital', label: 'Hospital', marker: 'H' },
-  { type: 'fire_station', label: 'Fire Station', marker: 'F' },
+  { type: 'police', label: 'Police', marker: 'P', color: '#2563eb' },
+  { type: 'hospital', label: 'Hospital', marker: 'H', color: '#16a34a' },
+  { type: 'fire_station', label: 'Fire Station', marker: 'F', color: '#dc2626' },
 ];
 
 export function MapComponent({
@@ -39,6 +39,19 @@ export function MapComponent({
 
   const onLoad = useCallback((mapInstance) => setMap(mapInstance), []);
   const onUnmount = useCallback(() => setMap(null), []);
+  const emergencyMarkerIcon = useCallback((place) => {
+    if (!window.google?.maps) return undefined;
+    return {
+      path: window.google.maps.SymbolPath.CIRCLE,
+      scale: 16,
+      fillColor: place.color,
+      fillOpacity: 1,
+      strokeColor: '#ffffff',
+      strokeOpacity: 1,
+      strokeWeight: 2,
+    };
+  }, []);
+
 
   useEffect(() => {
     if (!map || !currentLocation) return;
@@ -143,6 +156,7 @@ export function MapComponent({
                 type: serviceType.type,
                 typeLabel: serviceType.label,
                 marker: serviceType.marker,
+                color: serviceType.color,
                 lat: location.lat(),
                 lng: location.lng(),
                 vicinity: place.vicinity,
@@ -192,6 +206,9 @@ export function MapComponent({
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: false,
+          gestureHandling: 'greedy',
+          scrollwheel: true,
+          draggable: true,
           styles: [
             { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
             { featureType: 'transit', elementType: 'labels', stylers: [{ visibility: 'off' }] },
@@ -221,7 +238,13 @@ export function MapComponent({
             <MarkerF
               key={place.id}
               position={{ lat: place.lat, lng: place.lng }}
-              label={{ text: place.marker, color: 'white', fontWeight: '700' }}
+              icon={emergencyMarkerIcon(place)}
+              label={{
+                text: place.marker,
+                color: 'white',
+                fontWeight: '800',
+                fontSize: '11px',
+              }}
               title={`${place.typeLabel}: ${place.name}`}
               onClick={() => setSelectedPlace(place)}
             />

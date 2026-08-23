@@ -9,6 +9,13 @@ const ALLOWED_IMAGE_TYPES = new Set([
   "image/webp",
 ]);
 
+const ALLOWED_MEDICAL_DOCUMENT_TYPES = new Set([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
 const signatureFor = (params, secret) => {
   const payload = Object.entries(params)
     .sort(([left], [right]) => left.localeCompare(right))
@@ -25,6 +32,94 @@ export const createCloudinaryAdapter = ({
   fetchImpl = globalThis.fetch,
   clock = () => Date.now(),
 } = {}) => ({
+  async uploadTouristMedicalDocument({ userId, file }) {
+    if (
+      !config.CLOUDINARY_CLOUD_NAME ||
+      !config.CLOUDINARY_API_KEY ||
+      !config.CLOUDINARY_API_SECRET ||
+      typeof fetchImpl !== "function"
+    ) {
+      throw ApiError.serviceUnavailable("Medical document storage is not configured", {
+        code: "CLOUDINARY_NOT_CONFIGURED",
+      });
+    }
+
+    if (!file?.buffer?.length) {
+      throw ApiError.badRequest("A medical document is required", {
+        code: "MEDICAL_DOCUMENT_REQUIRED",
+      });
+    }
+
+    if (!ALLOWED_MEDICAL_DOCUMENT_TYPES.has(file.mimetype)) {
+      throw ApiError.badRequest(
+        "Medical document must be PDF, JPEG, PNG, or WebP",
+        { code: "MEDICAL_DOCUMENT_TYPE_INVALID" },
+      );
+    }
+
+    if (file.size > config.MEDICAL_DOCUMENT_MAX_FILE_BYTES) {
+      throw ApiError.badRequest("Medical document exceeds the upload limit", {
+        code: "MEDICAL_DOCUMENT_TOO_LARGE",
+      });
+    }
+
+    const timestamp = Math.floor(clock() / 1000);
+    const publicId = `quantum-crew/tourist-medical/${userId}`;
+    const signedParams = {
+      invalidate: "true",
+      overwrite: "true",
+      public_id: publicId,
+      timestamp,
+    };
+
+    const signature = signatureFor(signedParams, config.CLOUDINARY_API_SECRET);
+    const form = new FormData();
+    form.append(
+      "file",
+      new Blob([file.buffer], { type: file.mimetype }),
+      file.originalname || "medical-document",
+    );
+    form.append("api_key", config.CLOUDINARY_API_KEY);
+    form.append("timestamp", String(timestamp));
+    form.append("public_id", publicId);
+    form.append("overwrite", "true");
+    form.append("invalidate", "true");
+    form.append("signature", signature);
+
+    try {
+      const response = await fetchImpl(
+        `https://api.cloudinary.com/v1_1/${encodeURIComponent(
+          config.CLOUDINARY_CLOUD_NAME,
+        )}/auto/upload`,
+        { method: "POST", body: form },
+      );
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.secure_url) {
+        const cause = new Error(
+          payload?.error?.message ||
+            `Cloudinary returned HTTP ${response.status}`,
+        );
+        cause.status = response.status;
+        throw cause;
+      }
+
+      return {
+        url: payload.secure_url,
+        publicId: payload.public_id ?? publicId,
+        resourceType: payload.resource_type ?? null,
+        format: payload.format ?? null,
+        name: file.originalname || "medical-document",
+      };
+    } catch (cause) {
+      if (cause instanceof ApiError) throw cause;
+      throw ApiError.serviceUnavailable("Medical document could not be uploaded", {
+        code: "MEDICAL_DOCUMENT_UPLOAD_FAILED",
+        cause,
+      });
+    }
+  },
+
   async uploadTouristProfileImage({ userId, file }) {
     if (
       !config.CLOUDINARY_CLOUD_NAME ||

@@ -29,6 +29,12 @@ const sendAuth = (response, result, { statusCode = 200, message }) => {
 };
 
 export const createAuthController = ({ service = authService } = {}) => ({
+  usernameAvailability: async (request, response) =>
+    ApiResponse.success(response, {
+      message: "Username availability",
+      data: await service.checkUsernameAvailability(request.query.username),
+    }),
+
   register: async (request, response) => {
     const result = await service.register(request.body);
     return ApiResponse.success(response, {

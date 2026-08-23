@@ -24,6 +24,8 @@ model User {
   gender              Gender?
   age                 Int?
   medicalHistory            String?
+  medicalDocumentUrl        String?
+  medicalDocumentName       String?       @db.VarChar(255)
   emergencyPhone            String?       @db.VarChar(20)
   nationality               String?       @db.VarChar(80)
   preferredLanguage         String?       @db.VarChar(40)

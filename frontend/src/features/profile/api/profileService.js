@@ -15,6 +15,18 @@ export const profileService = {
     return unwrap(await apiClient.patch('/tourists/me', data));
   },
 
+
+  async uploadMedicalDocument(file) {
+    const form = new FormData();
+    form.append('document', file);
+
+    return unwrap(
+      await apiClient.post('/tourists/me/medical-document', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }),
+    );
+  },
+
   async uploadProfileImage(file) {
     const form = new FormData();
     form.append('image', file);

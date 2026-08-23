@@ -38,6 +38,16 @@ const selectForRole = (role) =>
   role === ROLES.TOURIST ? touristPublicSelect : publicAccountSelect;
 
 export const createAuthRepository = ({ db = prisma } = {}) => ({
+  async usernameExists(username) {
+    const normalized = username.trim().toLowerCase();
+    const [tourist, disasterManager, systemAdmin] = await Promise.all([
+      db.user.findUnique({ where: { username: normalized }, select: { id: true } }),
+      db.disasterManager.findUnique({ where: { username: normalized }, select: { id: true } }),
+      db.systemAdmin.findUnique({ where: { username: normalized }, select: { id: true } }),
+    ]);
+    return Boolean(tourist || disasterManager || systemAdmin);
+  },
+
   async findRegistrationConflict({ username, email, phone }) {
     const where = { OR: [{ username }, { email }, { phone }] };
     const [tourist, disasterManager, systemAdmin] = await Promise.all([
