@@ -1,114 +1,128 @@
 import apiClient from '../../../services/apiClient';
 
+const unwrap = (response) => {
+  const payload = response?.data;
+  return payload && Object.prototype.hasOwnProperty.call(payload, 'data') ? payload.data : payload;
+};
+
 export const authorityService = {
+  getDashboard: async () => unwrap(await apiClient.get('/disaster-management/dashboard')),
+  getAllIncidents: async () => unwrap(await apiClient.get('/disaster-management/incidents')),
+  getAllAlerts: async () => unwrap(await apiClient.get('/hazards')),
+  getMe: async () => unwrap(await apiClient.get('/disaster-management/responders/me')),
   // Phase 1: Incident Loop
   getIncidentQueue: async () => {
     const response = await apiClient.get('/disaster-management/incidents');
-    return response.data;
+    return unwrap(response);
   },
 
   getIncidentDetails: async (incidentId) => {
     const response = await apiClient.get(`/disaster-management/incidents/${incidentId}`);
-    return response.data;
+    return unwrap(response);
   },
 
   acknowledgeIncident: async (incidentId) => {
     const response = await apiClient.post(`/disaster-management/incidents/${incidentId}/acknowledge`);
-    return response.data;
+    return unwrap(response);
   },
 
   startIncident: async (incidentId) => {
     const response = await apiClient.post(`/disaster-management/incidents/${incidentId}/start`);
-    return response.data;
+    return unwrap(response);
   },
 
   resolveIncident: async (incidentId, data) => {
-    const response = await apiClient.post(`/disaster-management/incidents/${incidentId}/resolve`, data);
-    return response.data;
+    const note = data?.note || data?.resolutionNotes || 'Resolved by disaster management';
+    const response = await apiClient.post(`/disaster-management/incidents/${incidentId}/resolve`, { note });
+    return unwrap(response);
   },
 
   getIncidentMessages: async (incidentId) => {
     const response = await apiClient.get(`/incidents/${incidentId}/messages`);
-    return response.data;
+    return unwrap(response);
   },
 
   sendIncidentMessage: async (incidentId, data) => {
     const response = await apiClient.post(`/incidents/${incidentId}/messages`, data);
-    return response.data;
+    return unwrap(response);
   },
 
   getIncidentEvidence: async () => {
     const response = await apiClient.get('/evidence');
-    return response.data;
+    return unwrap(response);
   },
 
   // Phase 2: Dispatch & Zones
   getUnits: async () => {
     const response = await apiClient.get('/dispatch/units');
-    return response.data;
+    return unwrap(response);
   },
   assignUnit: async (dispatchId, data) => {
     const response = await apiClient.post(`/dispatch/${dispatchId}/assign`, data);
-    return response.data;
+    return unwrap(response);
   },
   
   getRiskZones: async () => {
     const response = await apiClient.get('/risk-zones');
-    return response.data;
+    return unwrap(response);
   },
   createRiskZone: async (data) => {
     const response = await apiClient.post('/risk-zones', data);
-    return response.data;
+    return unwrap(response);
   },
   activateRiskZone: async (zoneId) => {
     const response = await apiClient.post(`/risk-zones/${zoneId}/activate`);
-    return response.data;
+    return unwrap(response);
   },
   deactivateRiskZone: async (zoneId) => {
     const response = await apiClient.post(`/risk-zones/${zoneId}/deactivate`);
-    return response.data;
+    return unwrap(response);
   },
   
   // Phase 1 Extensions: Hazards
   getHazards: async () => {
     const response = await apiClient.get('/hazards');
-    return response.data;
+    return unwrap(response);
   },
   verifyHazard: async (hazardId) => {
     const response = await apiClient.patch(`/hazards/${hazardId}/verify`);
-    return response.data;
+    return unwrap(response);
   },
   rejectHazard: async (hazardId) => {
     const response = await apiClient.patch(`/hazards/${hazardId}/reject`);
-    return response.data;
+    return unwrap(response);
   },
   resolveHazard: async (hazardId) => {
     const response = await apiClient.patch(`/hazards/${hazardId}/resolve`);
-    return response.data;
+    return unwrap(response);
   },
 
   // Phase 1 Extensions: Responders
   getResponders: async () => {
     const response = await apiClient.get('/disaster-management/responders');
-    return response.data;
+    return unwrap(response);
   },
   updateResponderStatus: async (statusData) => {
     // Assuming updating own status for now
     const response = await apiClient.patch('/disaster-management/responders/me/status', statusData);
-    return response.data;
+    return unwrap(response);
   },
 
   // Phase 1 Extensions: Analytics
   getAnalyticsOverview: async () => {
     const response = await apiClient.get('/analytics/overview');
-    return response.data;
+    return unwrap(response);
   },
   getIncidentAnalytics: async () => {
     const response = await apiClient.get('/analytics/incidents');
-    return response.data;
+    return unwrap(response);
+  },
+  getResponderAnalytics: async () => {
+    const response = await apiClient.get('/analytics/responders');
+    return unwrap(response);
   },
   getResponseTimeAnalytics: async () => {
     const response = await apiClient.get('/analytics/response-times');
-    return response.data;
+    return unwrap(response);
   }
 };

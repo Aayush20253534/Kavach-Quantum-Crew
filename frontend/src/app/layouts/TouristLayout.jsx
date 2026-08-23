@@ -305,9 +305,38 @@ export function TouristLayout() {
             {!isCollapsed && (
               <div className="flex items-center justify-between pt-3 border-t border-slate-50">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Risk Status</span>
-                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#f0fdf4] text-[#16a34a] border border-[#dcfce7] rounded-full">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#16a34a]"></div>
-                  <span className="text-[9px] font-bold uppercase tracking-wider">Safe Zone</span>
+                <div
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${
+                    safetyLevel === 'DANGER'
+                      ? 'bg-red-50 text-red-600 border-red-200'
+                      : safetyLevel === 'SAFE'
+                        ? 'bg-[#f0fdf4] text-[#16a34a] border-[#dcfce7]'
+                        : 'bg-slate-50 text-slate-500 border-slate-200'
+                  }`}
+                  title={
+                    safetyLevel === 'DANGER'
+                      ? backgroundSafetySummary?.safetyStatus?.zone?.name || 'Inside an active danger zone'
+                      : safetyLevel === 'SAFE'
+                        ? 'Outside all active danger zones'
+                        : 'Checking live safety status'
+                  }
+                >
+                  <div
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      safetyLevel === 'DANGER'
+                        ? 'bg-red-600'
+                        : safetyLevel === 'SAFE'
+                          ? 'bg-[#16a34a]'
+                          : 'bg-slate-400'
+                    }`}
+                  />
+                  <span className="text-[9px] font-bold uppercase tracking-wider">
+                    {safetyLevel === 'DANGER'
+                      ? 'Danger Zone'
+                      : safetyLevel === 'SAFE'
+                        ? 'Safe Zone'
+                        : 'Checking...'}
+                  </span>
                 </div>
               </div>
             )}

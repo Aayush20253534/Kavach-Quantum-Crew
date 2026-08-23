@@ -20,7 +20,7 @@ export function AuthorityHazardsPage() {
       setLoading(true);
       setError('');
       const response = await authorityService.getHazards();
-      const data = response?.data || response || [];
+      const data = response || [];
       setHazards(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.response?.data?.error?.message || err.message || 'Failed to fetch hazards');

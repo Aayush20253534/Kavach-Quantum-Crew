@@ -43,7 +43,7 @@ export function AuthorityIncidentDetailsPage() {
   const fetchMessages = async () => {
     try {
       const response = await authorityService.getIncidentMessages(id);
-      const data = response?.data || response || [];
+      const data = response || [];
       setMessages(Array.isArray(data) ? data : data.items || []);
     } catch (err) {
       console.error('Failed to load messages', err);

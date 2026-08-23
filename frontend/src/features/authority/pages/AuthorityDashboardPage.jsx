@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Building2, 
   Radio, 
@@ -13,12 +13,32 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useAllIncidents, useResolveIncident } from '../api/authorityQueries';
+import { authorityService } from '../api/authorityService';
 
 export function AuthorityDashboardPage() {
   const [broadcastModalOpen, setBroadcastModalOpen] = useState(false);
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [broadcastTarget, setBroadcastTarget] = useState('All Sectors (Sangam + Kumbh + City)');
   const [broadcastSent, setBroadcastSent] = useState(false);
+  const [commandStats, setCommandStats] = useState(null);
+  const [fleet, setFleet] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      authorityService.getDashboard(),
+      authorityService.getUnits(),
+      authorityService.getAnalyticsOverview(),
+    ]).then(([dashboard, units, overview]) => {
+      if (!cancelled) {
+        setCommandStats({ ...(overview || {}), ...(dashboard || {}) });
+        setFleet(Array.isArray(units) ? units : []);
+      }
+    }).catch(() => {
+      if (!cancelled) { setCommandStats(null); setFleet([]); }
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   // Real API hooks
   const { data: incidentsResponse, isLoading: incidentsLoading } = useAllIncidents();
@@ -85,8 +105,8 @@ export function AuthorityDashboardPage() {
             <span>Active Pilgrims</span>
             <Users className="w-4 h-4 text-slate-400" />
           </div>
-          <p className="text-[28px] font-black text-slate-900">12,480</p>
-          <span className="text-[11px] text-[#16a34a] font-bold">+840 in last hour</span>
+          <p className="text-[28px] font-black text-slate-900">{commandStats?.tourists ?? 0}</p>
+          <span className="text-[11px] text-[#16a34a] font-bold">{commandStats?.activeTrips ?? 0} active trips</span>
         </div>
 
         <div className="bg-[#fff1f2] p-6 rounded-lg border border-[#ffe4e6] shadow-sm space-y-2">
@@ -95,7 +115,7 @@ export function AuthorityDashboardPage() {
             <Radio className="w-4 h-4 text-[#e11d48] animate-pulse" />
           </div>
           <p className="text-[28px] font-black text-[#e11d48]">{activeIncidents.length} Active</p>
-          <span className="text-[11px] text-[#991b1b] font-bold">Avg Response: 1.8 mins</span>
+          <span className="text-[11px] text-[#991b1b] font-bold">{commandStats?.criticalIncidents ?? 0} critical incidents</span>
         </div>
 
         <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-2">
@@ -103,8 +123,8 @@ export function AuthorityDashboardPage() {
             <span>Active Patrol Units</span>
             <ShieldCheck className="w-4 h-4 text-[#16a34a]" />
           </div>
-          <p className="text-[28px] font-black text-[#16a34a]">64 PCRs</p>
-          <span className="text-[11px] text-slate-500 font-bold">100% Radio Signal</span>
+          <p className="text-[28px] font-black text-[#16a34a]">{fleet.filter((unit) => unit.status !== "OUT_OF_SERVICE").length} Units</p>
+          <span className="text-[11px] text-slate-500 font-bold">{fleet.filter((unit) => unit.status === "AVAILABLE").length} available</span>
         </div>
 
         <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-2">
@@ -112,8 +132,8 @@ export function AuthorityDashboardPage() {
             <span>Safe Havens Online</span>
             <MapPin className="w-4 h-4 text-sky-500" />
           </div>
-          <p className="text-[28px] font-black text-sky-600">32 Booths</p>
-          <span className="text-[11px] text-slate-500 font-bold">Paramedics on duty</span>
+          <p className="text-[28px] font-black text-sky-600">{commandStats?.availableResponders ?? 0} Staff</p>
+          <span className="text-[11px] text-slate-500 font-bold">available responders</span>
         </div>
       </div>
 
