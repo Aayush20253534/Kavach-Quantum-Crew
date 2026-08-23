@@ -191,8 +191,7 @@ export function TouristDashboardPage() {
       <section className={`relative z-30 overflow-visible rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm transition-all duration-500 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'}`}>
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 mb-5">
           <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600">Tourist safety</p>
-            <h2 className="mt-1 text-[19px] sm:text-[25px] font-black text-slate-950 tracking-tight">Welcome back, {userName}</h2>
+            <h2 className="text-[19px] sm:text-[25px] font-black text-slate-950 tracking-tight">Welcome back, {userName}</h2>
             <p className="text-[11px] sm:text-[13px] text-slate-500 font-medium mt-1.5">Search a destination to create a group trip.</p>
           </div>
         </div>
@@ -253,13 +252,13 @@ export function TouristDashboardPage() {
           const Icon = card.icon;
           const dangerCard = card.label === 'Safety Status' && safetyIsDanger;
           return (
-            <div key={card.label} className={`group bg-white rounded-2xl p-5 shadow-sm border ${dangerCard ? 'border-red-200 bg-red-50/40' : 'border-slate-200'} transition-all hover:-translate-y-0.5 hover:shadow-md`}>
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{card.label}</p>
-                <Icon className={`w-5 h-5 ${dangerCard ? 'text-red-600' : 'text-slate-500'}`} />
+            <div key={card.label} className={`group bg-white rounded-2xl p-4 sm:p-5 shadow-sm border ${dangerCard ? 'border-red-200 bg-red-50/40' : 'border-slate-200'} transition-all hover:-translate-y-0.5 hover:shadow-md`}>
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <p className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-widest">{card.label}</p>
+                <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${dangerCard ? 'text-red-600' : 'text-slate-500'}`} />
               </div>
-              <h3 className={`text-[24px] font-black tracking-tight leading-none ${dangerCard ? 'text-red-700' : 'text-slate-950'}`}>{card.value}</h3>
-              <p className="text-[10px] font-semibold text-slate-500 mt-2.5 leading-relaxed line-clamp-2">{card.sub}</p>
+              <h3 className={`text-[20px] sm:text-[24px] font-black tracking-tight leading-none ${dangerCard ? 'text-red-700' : 'text-slate-950'}`}>{card.value}</h3>
+              <p className="text-[9px] sm:text-[10px] font-semibold text-slate-500 mt-2 sm:mt-2.5 leading-relaxed line-clamp-2">{card.sub}</p>
             </div>
           );
         })}
