@@ -18,6 +18,8 @@ import { useTouristDashboardSummary } from '../../dashboard/api/dashboardQueries
 import { destinationService } from '../../destinations/api/destinationService';
 import { groupService } from '../../groups/api/groupService';
 import { MapComponent } from '../../tracking/components/MapComponent';
+import { trackingService } from '../../tracking/api/trackingService';
+import { findDangerZoneForTrip } from '../../tracking/utils/geofenceSafety';
 import { useCreateTrip, useCurrentTrip } from '../../trips/api/tripQueries';
 import { tripService } from '../../trips/api/tripService';
 
@@ -58,8 +60,26 @@ export function TouristDashboardPage() {
     total: 0,
   });
   const [dashboardSnapshot, setDashboardSnapshot] = useState(null);
+  const [riskZones, setRiskZones] = useState([]);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    trackingService.getRiskZones()
+      .then((data) => {
+        if (cancelled) return;
+        setRiskZones(data?.items || data || []);
+      })
+      .catch(() => {
+        if (!cancelled) setRiskZones([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     destinationService.list({ featured: true, limit: 8 })
@@ -149,15 +169,25 @@ export function TouristDashboardPage() {
 
   useEffect(() => {
     if (dashboardSnapshot || summaryLoading || !summary || !location) return;
-    setDashboardSnapshot({
-      summary,
-      safety: summary?.safetyStatus?.level ?? 'SAFE',
-    });
+    setDashboardSnapshot({ summary });
   }, [dashboardSnapshot, summaryLoading, summary, location]);
 
   const frozenSummary = dashboardSnapshot?.summary;
-  const safety = dashboardSnapshot?.safety ?? 'UNKNOWN';
-  const safetyIsDanger = safety === 'DANGER';
+
+  // Use the same geofence rule as the Trips / Live Map page. For a GROUP trip,
+  // an overlapping danger geofence makes the whole group boundary dangerous,
+  // even when the tourist marker itself is just outside that geofence.
+  const liveDangerZone = useMemo(
+    () =>
+      findDangerZoneForTrip({
+        location,
+        zones: riskZones,
+        trip: currentTrip,
+      }),
+    [location, riskZones, currentTrip],
+  );
+  const safetyIsDanger = Boolean(liveDangerZone);
+  const safetyResolved = Boolean(location);
 
   const cards = useMemo(() => [
     {
@@ -174,8 +204,10 @@ export function TouristDashboardPage() {
     },
     {
       label: 'Safety Status',
-      value: dashboardSnapshot ? (safetyIsDanger ? 'Danger Zone' : 'Safe Zone') : 'Locating...',
-      sub: safetyIsDanger ? frozenSummary?.safetyStatus?.zone?.name || 'Inside admin-defined risk geofence' : 'Outside all danger geofences',
+      value: safetyResolved ? (safetyIsDanger ? 'Danger Zone' : 'Safe Zone') : 'Locating...',
+      sub: safetyIsDanger
+        ? liveDangerZone?.name || 'Danger geofence overlaps your trip safety area'
+        : 'Outside all danger geofences',
       icon: safetyIsDanger ? AlertTriangle : ShieldCheck,
     },
     {
@@ -184,7 +216,7 @@ export function TouristDashboardPage() {
       sub: frozenSummary?.currentTrip?.locationName ? `Current trip: ${frozenSummary.currentTrip.locationName}` : 'No open group trip',
       icon: Users,
     },
-  ], [dashboardSnapshot, frozenSummary, safetyIsDanger]);
+  ], [dashboardSnapshot, frozenSummary, safetyIsDanger, safetyResolved, liveDangerZone]);
 
   return (
     <div className="space-y-5 sm:space-y-7 max-w-[1240px] mx-auto pb-8 sm:pb-10 overflow-visible">

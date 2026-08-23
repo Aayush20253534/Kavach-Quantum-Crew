@@ -317,13 +317,44 @@ export function MapComponent({
                   if (Array.isArray(coord)) return { lat: coord[0], lng: coord[1] };
                   return { lat: coord.latitude ?? coord.lat, lng: coord.longitude ?? coord.lng };
                 });
+                if (isDanger) {
+                  return (
+                    <React.Fragment key={zone.id}>
+                      <PolygonF
+                        paths={paths}
+                        options={{
+                          fillColor: color,
+                          fillOpacity: 0.10,
+                          strokeColor: color,
+                          strokeOpacity: 0.10,
+                          strokeWeight: 7,
+                          clickable: false,
+                          zIndex: 29,
+                        }}
+                      />
+                      <PolygonF
+                        paths={paths}
+                        options={{
+                          fillColor: color,
+                          fillOpacity: 0.24,
+                          strokeColor: color,
+                          strokeOpacity: 0.34,
+                          strokeWeight: 1,
+                          clickable: false,
+                          zIndex: 30,
+                        }}
+                      />
+                    </React.Fragment>
+                  );
+                }
+
                 return <PolygonF key={zone.id} paths={paths} options={{
                   fillColor: color,
-                  fillOpacity: isDanger ? 0.34 : 0.22,
+                  fillOpacity: 0.22,
                   strokeColor: color,
-                  strokeOpacity: isDanger ? 0.9 : 0.65,
-                  strokeWeight: isDanger ? 1.5 : 1,
-                  zIndex: isDanger ? 30 : 10,
+                  strokeOpacity: 0.55,
+                  strokeWeight: 1,
+                  zIndex: 10,
                 }} />;
               }
 
@@ -331,13 +362,55 @@ export function MapComponent({
               const longitude = zone.longitude ?? zone.center?.lng;
               const radius = zone.radiusM ?? zone.radius;
               if (geometryType === 'CIRCLE' && Number.isFinite(latitude) && Number.isFinite(longitude) && Number.isFinite(radius)) {
+                if (isDanger) {
+                  return (
+                    <React.Fragment key={zone.id}>
+                      <CircleF
+                        center={{ lat: latitude, lng: longitude }}
+                        radius={radius + 32}
+                        options={{
+                          fillColor: color,
+                          fillOpacity: 0.035,
+                          strokeOpacity: 0,
+                          clickable: false,
+                          zIndex: 28,
+                        }}
+                      />
+                      <CircleF
+                        center={{ lat: latitude, lng: longitude }}
+                        radius={radius}
+                        options={{
+                          fillColor: color,
+                          fillOpacity: 0.20,
+                          strokeColor: color,
+                          strokeOpacity: 0.32,
+                          strokeWeight: 1,
+                          clickable: false,
+                          zIndex: 30,
+                        }}
+                      />
+                      <CircleF
+                        center={{ lat: latitude, lng: longitude }}
+                        radius={Math.max(0, radius - 24)}
+                        options={{
+                          fillColor: color,
+                          fillOpacity: 0.055,
+                          strokeOpacity: 0,
+                          clickable: false,
+                          zIndex: 29,
+                        }}
+                      />
+                    </React.Fragment>
+                  );
+                }
+
                 return <CircleF key={zone.id} center={{ lat: latitude, lng: longitude }} radius={radius} options={{
                   fillColor: color,
-                  fillOpacity: isDanger ? 0.34 : 0.22,
+                  fillOpacity: 0.22,
                   strokeColor: color,
-                  strokeOpacity: isDanger ? 0.9 : 0.65,
-                  strokeWeight: isDanger ? 1.5 : 1,
-                  zIndex: isDanger ? 30 : 10,
+                  strokeOpacity: 0.55,
+                  strokeWeight: 1,
+                  zIndex: 10,
                 }} />;
               }
               return null;
