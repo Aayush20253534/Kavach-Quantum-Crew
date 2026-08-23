@@ -1,17 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   AlertTriangle, 
   MapPin, 
   Clock, 
-  CheckCircle2, 
-  ShieldAlert, 
-  ArrowRight,
   FileText
 } from 'lucide-react';
-import { Button } from '../../../components/ui/Button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/Card';
-import { Badge } from '../../../components/ui/Badge';
 
 export function IncidentHistoryPage() {
   const incidents = [
@@ -43,62 +37,71 @@ export function IncidentHistoryPage() {
       policeNote: 'Child safely reunited with family via Khoya-Paya booth sync.',
     },
   ];
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
-    <div className="space-y-6 text-left max-w-4xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+    <div className={`space-y-6 max-w-[800px] mx-auto pb-10 font-sans transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-amber-400" />
-            <h1 className="text-2xl font-black text-white tracking-tight">Reported Incidents & Status</h1>
+            <h1 className="text-[22px] font-black text-slate-900 tracking-tight">Reported Incidents & Status</h1>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-[13px] text-slate-500 font-medium mt-1">
             Real-time status tracking and police investigation logs.
           </p>
         </div>
 
         <Link to="/tourist/incidents/report">
-          <Button variant="danger" size="md" leftIcon={AlertTriangle}>
-            Report New Incident
-          </Button>
+          <button className="bg-[#e11d48] hover:bg-[#be123c] text-white px-6 py-3 text-[12px] font-bold uppercase tracking-widest rounded-md shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
+            <AlertTriangle className="w-4 h-4" /> Report New
+          </button>
         </Link>
       </div>
 
-      <div className="space-y-4">
-        {incidents.map((inc) => (
-          <Card key={inc.id} variant="elevated" className="hover:border-slate-700 transition">
-            <CardContent className="p-6 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-sky-400">{inc.id}</span>
-                  <Badge
-                    variant={inc.status === 'Resolved' ? 'safe' : inc.status === 'Dispatched' ? 'warning' : 'critical'}
-                    className="text-[10px]"
-                  >
-                    {inc.status}
-                  </Badge>
-                </div>
-                <span className="text-xs text-slate-400 flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" />
-                  {inc.date}
-                </span>
+      <div className="space-y-5">
+        {incidents.map((inc, index) => {
+           const isResolved = inc.status === 'Resolved';
+           const isDispatched = inc.status === 'Dispatched';
+           
+           return (
+              <div 
+                key={inc.id} 
+                className={`bg-white rounded-lg p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 hover:border-slate-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
+                style={{ transitionDelay: `${150 + (index * 75)}ms` }}
+              >
+                 <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-50 pb-4 mb-4">
+                    <div className="flex items-center gap-3">
+                       <span className="font-mono text-[11px] font-bold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-100">ID: {inc.id}</span>
+                       <span className={`text-[10px] font-bold px-2.5 py-1 uppercase tracking-widest rounded-lg flex items-center gap-1.5 shadow-sm ${
+                          isResolved ? 'bg-[#f0fdf4] text-[#16a34a] border border-[#dcfce7]' : 
+                          isDispatched ? 'bg-amber-50 text-amber-600 border border-amber-200' : 'bg-red-50 text-red-600 border border-red-200'
+                       }`}>
+                          {isDispatched && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>}
+                          {inc.status}
+                       </span>
+                    </div>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                       <Clock className="w-3.5 h-3.5" /> {inc.date}
+                    </span>
+                 </div>
+                 
+                 <div className="space-y-1.5 mb-5">
+                    <h3 className="text-[16px] font-black text-slate-900 tracking-wide">{inc.category}</h3>
+                    <p className="text-[12px] font-semibold text-slate-500 flex items-center gap-1.5">
+                       <MapPin className="w-3.5 h-3.5 text-red-500" /> {inc.location}
+                    </p>
+                 </div>
+                 
+                 <div className="p-4 rounded-md bg-slate-50 border border-slate-100">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Authority Response Note</span>
+                    <p className="text-[13px] font-medium text-slate-700 leading-relaxed">{inc.policeNote}</p>
+                 </div>
               </div>
-
-              <div className="space-y-1">
-                <h3 className="text-base font-bold text-white">{inc.category}</h3>
-                <p className="text-xs text-slate-400 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                  {inc.location}
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-[#080d18] border border-slate-800 text-xs">
-                <span className="text-slate-400 font-semibold block text-[11px] mb-0.5">Authority Response Note:</span>
-                <p className="text-slate-200">{inc.policeNote}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+           );
+        })}
       </div>
     </div>
   );

@@ -1,150 +1,288 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { 
-  ShieldCheck, 
-  LayoutDashboard, 
-  MapPin, 
-  Compass, 
-  Users, 
-  AlertTriangle, 
-  User, 
-  LogOut, 
-  Bell, 
-  Menu, 
-  X,
-  Radio,
-  QrCode,
+import {
+  ShieldCheck,
+  LayoutDashboard,
+  MapPin,
+  Compass,
+  Users,
+  AlertTriangle,
+  User,
+  LogOut,
+  Bell,
+  Clock,
+  Phone,
+  ChevronDown,
+  Navigation,
   FileText,
-  Activity
+  PlusCircle,
+  History,
+  Menu,
+  ChevronLeft
 } from 'lucide-react';
-import { SOSButton } from '../../components/ui/SOSButton';
-import { Badge } from '../../components/ui/Badge';
 import { logout } from '../../features/auth/store/authSlice';
+import { NotificationsDropdown } from '../components/NotificationsDropdown';
 
 export function TouristLayout() {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isSosModalOpen, setIsSosModalOpen] = useState(false);
+  const [sosState, setSosState] = useState('idle'); // 'idle' | 'triggering' | 'active'
 
   const handleLogout = () => {
     dispatch(logout());
     navigate('/login');
   };
 
+  const handleTriggerSOS = () => {
+    setSosState('triggering');
+    // Simulate API call to POST /api/v1/sos
+    setTimeout(() => {
+      setSosState('active');
+    }, 1500);
+  };
+
+  const closeSosModal = () => {
+    setIsSosModalOpen(false);
+    setTimeout(() => setSosState('idle'), 300); // reset after animation
+  };
+
   const navItems = [
     { name: 'Dashboard', path: '/tourist/dashboard', icon: LayoutDashboard },
+    { name: 'Live Tracking', path: '/tourist/tracking', icon: Navigation },
     { name: 'My Trips', path: '/tourist/trips/current', icon: Compass },
     { name: 'Groups & QR', path: '/tourist/groups/create', icon: Users },
     { name: 'Report Incident', path: '/tourist/incidents/report', icon: AlertTriangle },
     { name: 'Safety ID Profile', path: '/tourist/profile', icon: User },
   ];
 
-  const bottomNavItems = [
+  const tripTools = [
+    { name: 'Plan New Trip', path: '/tourist/trips/create', icon: PlusCircle },
+    { name: 'Trip History', path: '/tourist/trips/history', icon: History },
+  ];
+
+  const mobileNavItems = [
     { name: 'Home', path: '/tourist/dashboard', icon: LayoutDashboard },
+    { name: 'Radar', path: '/tourist/tracking', icon: Navigation },
+    { name: 'SOS', path: '#', icon: Phone, isSos: true },
     { name: 'Trips', path: '/tourist/trips/current', icon: Compass },
-    { name: 'SOS', isSOS: true },
-    { name: 'Groups', path: '/tourist/groups/create', icon: Users },
     { name: 'Profile', path: '/tourist/profile', icon: User },
   ];
 
+  const userName = user?.name || 'Aayansh Niranjan';
+  const initial = userName.charAt(0).toUpperCase();
+
   return (
-    <div className="min-h-screen flex bg-slate-50 text-slate-900 antialiased pb-20 md:pb-0 font-sans selection:bg-slate-900 selection:text-white">
+    <div className="min-h-screen bg-[#f8f9fa] text-slate-900 antialiased font-sans relative">
+
+      {/* GLOBAL SOS MODAL */}
+      {isSosModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl relative flex flex-col items-center text-center">
+            
+            {sosState === 'idle' && (
+              <>
+                <button 
+                  onClick={closeSosModal}
+                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-slate-500 hover:text-slate-900 cursor-pointer transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
+                  <Phone className="w-10 h-10 animate-pulse" />
+                </div>
+                <h2 className="text-[20px] font-black text-slate-900 uppercase tracking-tight mb-2">Emergency SOS</h2>
+                <p className="text-[13px] text-slate-500 font-medium mb-8 leading-relaxed">
+                  This will immediately alert local police, medical teams, and your emergency contacts with your live location.
+                </p>
+                <button 
+                  onClick={handleTriggerSOS}
+                  className="w-full bg-[#e11d48] hover:bg-[#be123c] text-white py-4 rounded-xl font-black text-[14px] uppercase tracking-widest shadow-[0_4px_20px_0_rgba(225,29,72,0.4)] transition-all active:scale-95 cursor-pointer"
+                >
+                  PRESS TO TRIGGER SOS
+                </button>
+                <button 
+                  onClick={closeSosModal}
+                  className="w-full mt-3 py-3 text-slate-500 font-bold text-[12px] uppercase tracking-wider hover:text-slate-900 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+
+            {sosState === 'triggering' && (
+              <div className="py-8">
+                <div className="w-20 h-20 border-4 border-red-100 border-t-red-600 rounded-full animate-spin mx-auto mb-6"></div>
+                <h2 className="text-[18px] font-black text-slate-900 uppercase tracking-tight">Transmitting...</h2>
+                <p className="text-[12px] text-slate-500 font-medium mt-2">Connecting to Prayagraj Command Center</p>
+              </div>
+            )}
+
+            {sosState === 'active' && (
+              <div className="py-4">
+                <div className="w-24 h-24 bg-red-600 text-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_rgba(225,29,72,0.6)] animate-pulse">
+                  <ShieldCheck className="w-12 h-12" />
+                </div>
+                <h2 className="text-[22px] font-black text-slate-900 uppercase tracking-tight mb-2">SOS ACTIVE</h2>
+                <p className="text-[13px] text-slate-600 font-medium mb-6 leading-relaxed">
+                  Police Patrol PCR #14 is en route to your location. Stay calm and remain at your current position if safe.
+                </p>
+                <button 
+                  onClick={closeSosModal}
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl font-bold text-[12px] uppercase tracking-widest shadow-lg transition-colors cursor-pointer"
+                >
+                  I Understand
+                </button>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
+
       {/* =========================================================
           DESKTOP SIDEBAR
       ========================================================= */}
-      <aside className="hidden lg:flex w-72 flex-col bg-white border-r border-slate-200 sticky top-0 h-screen z-30 rounded-none">
+      <aside className={`hidden lg:flex flex-col bg-white border-r border-slate-200 fixed top-0 left-0 h-screen z-30 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[280px]'}`}>
+
+        {/* Collapse Toggle Button (Desktop Only) */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="absolute -right-3 top-8 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 shadow-sm z-40 cursor-pointer transition-transform hover:scale-110"
+        >
+          <ChevronLeft className={`w-3.5 h-3.5 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
+        </button>
+
         {/* Brand Header */}
-        <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-white rounded-none">
-          <Link to="/tourist/dashboard" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-none bg-slate-900 flex items-center justify-center text-white shadow-none">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-base font-black tracking-tight text-slate-900 flex items-center gap-1.5 uppercase">
-                KAVACH <span className="text-[9px] px-1.5 py-0.5 rounded-none bg-slate-100 text-slate-600 font-bold border border-slate-200 uppercase">Tourist</span>
-              </h1>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Safety Network</p>
-            </div>
-          </Link>
+        <div className={`p-6 pb-2 flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}>
+          {!isCollapsed ? (
+            <Link to="/tourist/dashboard" className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#1a1f2c] flex items-center justify-center text-white shadow-sm shrink-0">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-[15px] font-black tracking-tight text-[#1a1f2c] flex items-center gap-2">
+                  KAVACH
+                  <span className="text-[9px] px-1.5 py-0.5 rounded text-red-600 font-bold bg-red-50 uppercase tracking-wider">Tourist</span>
+                </h1>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Safety Network</p>
+              </div>
+            </Link>
+          ) : (
+            <Link to="/tourist/dashboard" className="w-10 h-10 rounded-xl bg-[#1a1f2c] flex items-center justify-center text-white shadow-sm shrink-0">
+              <ShieldCheck className="w-6 h-6" />
+            </Link>
+          )}
         </div>
 
-        {/* User Card Mini Preview */}
-        <div className="p-4 mx-4 mt-4 rounded-none bg-slate-50 border border-slate-200 space-y-2">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-none bg-slate-200 flex items-center justify-center text-sm font-bold text-slate-900 shadow-none border border-slate-300">
-              {user?.name ? user.name.charAt(0).toUpperCase() : 'T'}
+        {/* User Card */}
+        <div className={`px-6 py-4 ${isCollapsed ? 'px-3' : ''}`}>
+          <div className={`bg-white border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-2xl flex flex-col gap-4 ${isCollapsed ? 'p-2 items-center' : 'p-4'}`}>
+            <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
+              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-700 shrink-0 cursor-pointer" title={isCollapsed ? userName : undefined}>
+                {initial}
+              </div>
+              {!isCollapsed && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-bold text-slate-900 truncate uppercase tracking-wide">{userName}</p>
+                  <p className="text-[10px] text-slate-400 font-mono truncate">ID: #DTD-PRY-8924</p>
+                </div>
+              )}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-slate-900 truncate uppercase">{user?.name || 'Tourist User'}</p>
-              <p className="text-[10px] text-slate-500 font-mono truncate">ID: #DID-PRY-8924</p>
-            </div>
-          </div>
-          <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-200 text-[10px] font-bold uppercase tracking-wider">
-            <span className="text-slate-500">Risk Status:</span>
-            <span className="text-[9px] py-0.5 px-2 bg-green-100 text-green-700 border border-green-200 rounded-none">SAFE ZONE</span>
+
+            {!isCollapsed && (
+              <div className="flex items-center justify-between pt-3 border-t border-slate-50">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Risk Status</span>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#f0fdf4] text-[#16a34a] border border-[#dcfce7] rounded-full">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#16a34a]"></div>
+                  <span className="text-[9px] font-bold uppercase tracking-wider">Safe Zone</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Desktop Navigation Links */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto mt-2">
-          <p className="px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Navigation</p>
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname.startsWith(item.path);
-            return (
-              <NavLink
-                key={item.name}
-                to={item.path}
-                className={`group flex items-center gap-3 px-4 py-3 rounded-none text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${
-                  isActive
-                    ? 'bg-red-50 text-red-700 border-l-4 border-red-600'
-                    : 'text-slate-500 border-l-4 border-transparent hover:text-red-600 hover:bg-red-50 hover:border-red-600'
-                }`}
-              >
-                <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-red-600' : 'text-slate-400 group-hover:text-red-600'}`} />
-                <span>{item.name}</span>
-              </NavLink>
-            );
-          })}
+        {/* Navigation Links */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+          <div className={`space-y-1 mb-6 ${isCollapsed ? 'px-3' : 'px-6'}`}>
+            <p className={`text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ${isCollapsed ? 'text-center pl-0 text-[8px]' : 'pl-2'}`}>
+              {isCollapsed ? 'MAIN' : 'Main Menu'}
+            </p>
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = item.path === '/tourist/dashboard'
+                ? location.pathname === item.path
+                : location.pathname.startsWith(item.path);
 
-          <div className="pt-4 mt-4 border-t border-slate-200">
-            <p className="px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Trip Tools</p>
-            <Link
-              to="/tourist/trips/create"
-              className="group flex items-center gap-3 px-4 py-3 rounded-none text-[11px] font-bold uppercase tracking-wider text-slate-500 border-l-4 border-transparent hover:text-red-600 hover:bg-red-50 hover:border-red-600 transition-all"
-            >
-              <Compass className="w-4 h-4 transition-colors text-slate-400 group-hover:text-red-600" />
-              <span>Plan New Trip</span>
-            </Link>
-            <Link
-              to="/tourist/groups/join"
-              className="group flex items-center gap-3 px-4 py-3 rounded-none text-[11px] font-bold uppercase tracking-wider text-slate-500 border-l-4 border-transparent hover:text-red-600 hover:bg-red-50 hover:border-red-600 transition-all"
-            >
-              <QrCode className="w-4 h-4 transition-colors text-slate-400 group-hover:text-red-600" />
-              <span>Scan Group QR</span>
-            </Link>
-            <Link
-              to="/tourist/incidents/history"
-              className="group flex items-center gap-3 px-4 py-3 rounded-none text-[11px] font-bold uppercase tracking-wider text-slate-500 border-l-4 border-transparent hover:text-red-600 hover:bg-red-50 hover:border-red-600 transition-all"
-            >
-              <FileText className="w-4 h-4 transition-colors text-slate-400 group-hover:text-red-600" />
-              <span>Incident Reports</span>
-            </Link>
+              return (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  className={`flex items-center gap-3 py-3 rounded-xl text-[12px] font-semibold transition-all ${
+                    isCollapsed ? 'justify-center px-0' : 'px-4'
+                  } ${isActive
+                    ? 'bg-red-50 text-red-600 relative after:absolute after:left-0 after:top-2 after:bottom-2 after:w-1 after:bg-red-600 after:rounded-r-full'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  title={isCollapsed ? item.name : undefined}
+                >
+                  <Icon className="w-4 h-4 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
+                  {!isCollapsed && <span>{item.name}</span>}
+                </Link>
+              );
+            })}
           </div>
-        </nav>
 
-        {/* SOS Button Widget in Desktop Sidebar */}
-        <div className="p-4 border-t border-slate-200 bg-white space-y-3">
-          <SOSButton size="md" className="w-full justify-center rounded-none" />
+          <div className={`space-y-1 mb-6 ${isCollapsed ? 'px-3' : 'px-6'}`}>
+            <p className={`text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ${isCollapsed ? 'text-center pl-0 text-[8px]' : 'pl-2'}`}>
+              {isCollapsed ? 'TRIP' : 'Trip Tools'}
+            </p>
+            {tripTools.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname.startsWith(item.path);
+
+              return (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  className={`flex items-center gap-3 py-3 rounded-xl text-[12px] font-semibold transition-all ${
+                    isCollapsed ? 'justify-center px-0' : 'px-4'
+                  } ${isActive
+                    ? 'bg-red-50 text-red-600 relative after:absolute after:left-0 after:top-2 after:bottom-2 after:w-1 after:bg-red-600 after:rounded-r-full'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  title={isCollapsed ? item.name : undefined}
+                >
+                  <Icon className="w-4 h-4 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
+                  {!isCollapsed && <span>{item.name}</span>}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Bottom Actions */}
+        <div className={`pt-4 border-t border-slate-100 bg-white space-y-4 ${isCollapsed ? 'p-3' : 'p-6'}`}>
+          <button 
+            onClick={() => setIsSosModalOpen(true)}
+            className={`w-full bg-[#e11d48] hover:bg-[#be123c] text-white py-3.5 rounded-xl font-bold text-[13px] tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_14px_0_rgba(225,29,72,0.39)] transition-all active:scale-95 cursor-pointer ${isCollapsed ? 'px-0' : 'px-4'}`} 
+            title={isCollapsed ? "SOS EMERGENCY" : undefined}
+          >
+            <Phone className="w-4 h-4 shrink-0" />
+            {!isCollapsed && "SOS EMERGENCY"}
+          </button>
           <button
             onClick={handleLogout}
-            className="group w-full flex items-center justify-center gap-2 py-2 rounded-none text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-red-600 hover:bg-red-50 transition cursor-pointer border border-transparent hover:border-red-200"
+            className={`w-full flex items-center gap-2 py-2 text-[12px] font-semibold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer ${isCollapsed ? 'justify-center px-0' : 'px-4'}`}
+            title={isCollapsed ? "Sign Out" : undefined}
           >
-            <LogOut className="w-4 h-4 transition-colors text-slate-500 group-hover:text-red-600" />
-            <span>Sign Out</span>
+            <LogOut className="w-4 h-4 shrink-0" />
+            {!isCollapsed && <span>Sign Out</span>}
           </button>
         </div>
       </aside>
@@ -152,89 +290,97 @@ export function TouristLayout() {
       {/* =========================================================
           MAIN APPLICATION AREA
       ========================================================= */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Navbar Context Header */}
-        <header className="sticky top-0 z-20 h-16 bg-white/95 backdrop-blur-xl border-b border-slate-200 px-4 sm:px-6 lg:px-8 flex items-center justify-between shadow-sm">
-          <div className="flex items-center gap-3">
-            <Link to="/tourist/dashboard" className="lg:hidden flex items-center gap-2">
-              <div className="w-8 h-8 rounded-none bg-slate-900 flex items-center justify-center text-white">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <span className="font-bold text-sm text-slate-900 uppercase">KAVACH</span>
-            </Link>
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 pl-0 ${isCollapsed ? 'lg:pl-20' : 'lg:pl-[280px]'}`}>
 
-            {/* Current Geo Location Pill */}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-none bg-slate-50 border border-slate-200 text-xs">
-              <span className="w-2 h-2 rounded-none bg-green-500 animate-pulse"></span>
-              <MapPin className="w-3.5 h-3.5 text-slate-500" />
-              <span className="text-slate-700 font-bold uppercase tracking-wider text-[10px]">Sangam Sector 4</span>
-              <span className="text-[10px] text-slate-400 font-mono ml-2 border-l border-slate-300 pl-2">25.4358° N</span>
+        {/* Top Navbar */}
+        <header className={`fixed top-0 right-0 z-20 h-16 bg-white border-b border-slate-200 px-4 lg:px-8 flex items-center justify-between transition-all duration-300 w-full ${isCollapsed ? 'lg:w-[calc(100%-5rem)]' : 'lg:w-[calc(100%-280px)]'}`}>
+
+          {/* Left: Location */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+              <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1 cursor-pointer group">
+                <span className="text-[11px] sm:text-[13px] font-black text-slate-900 uppercase tracking-wide group-hover:text-red-600 transition-colors truncate max-w-[140px] sm:max-w-none">
+                  SANGAM SECTOR 4, PRAYAGRAJ
+                </span>
+              </div>
+              <p className="text-[9px] sm:text-[11px] text-slate-400 font-mono mt-0.5 hidden sm:block">25.4358° N, 81.8463° E</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Quick SOS in Top Bar */}
-            <div className="hidden sm:flex">
-                <SOSButton size="sm" label="SOS" className="rounded-none" />
+          {/* Middle: Time & Date */}
+          <div className="hidden md:flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5 text-slate-500" />
             </div>
+            <div>
+              <div className="text-[13px] font-black text-slate-900">10:24 AM</div>
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5">23 May 2025, Friday</p>
+            </div>
+          </div>
 
-            {/* Notifications */}
-            <button className="group relative p-2 rounded-none bg-white border border-slate-200 text-slate-500 hover:text-red-600 hover:bg-red-50 hover:border-red-300 transition cursor-pointer">
-              <Bell className="w-4 h-4 transition-colors text-slate-500 group-hover:text-red-600" />
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-none bg-red-500"></span>
-            </button>
+          {/* Right: Actions & Profile */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            <NotificationsDropdown />
 
-            {/* Profile Avatar Pill */}
-            <Link
-              to="/tourist/profile"
-              className="group flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-none bg-slate-50 border border-slate-200 hover:bg-red-50 hover:border-red-200 transition"
-            >
-              <div className="w-6 h-6 rounded-none bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-900 border border-slate-300 group-hover:bg-red-100 group-hover:border-red-300 group-hover:text-red-700 transition-colors">
-                {user?.name ? user.name.charAt(0).toUpperCase() : 'T'}
+            <Link to="/tourist/profile" className="hidden sm:flex items-center gap-3 pl-4 border-l border-slate-200 cursor-pointer group hover:opacity-80 transition-opacity">
+              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-700 border border-slate-200 group-hover:border-slate-300 transition-colors">
+                {initial}
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700 hidden md:inline group-hover:text-red-700 transition-colors">{user?.name?.split(' ')[0] || 'Profile'}</span>
+              <div className="flex items-center gap-1">
+                <span className="text-[12px] font-bold uppercase tracking-wider text-slate-700">{userName}</span>
+              </div>
             </Link>
           </div>
         </header>
 
         {/* Page Main Content Area */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 lg:p-8 mt-16 pb-24 lg:pb-8 max-w-[1400px] w-full mx-auto">
           <Outlet />
         </main>
+
+        {/* =========================================================
+            MOBILE BOTTOM NAVIGATION BAR
+        ========================================================= */}
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 w-full h-16 bg-white border-t border-slate-200 z-50 flex items-center justify-around px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe">
+          {mobileNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = item.path === '/tourist/dashboard'
+              ? location.pathname === item.path
+              : location.pathname.startsWith(item.path);
+              
+            if (item.isSos) {
+              return (
+                <button 
+                  key={item.name} 
+                  onClick={() => setIsSosModalOpen(true)}
+                  className="flex flex-col items-center justify-center gap-1 relative -top-4 cursor-pointer"
+                >
+                  <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-white shadow-lg border-4 border-[#f8f9fa] shadow-red-500/30">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-900 mt-1">{item.name}</span>
+                </button>
+              );
+            }
+
+            return (
+              <Link 
+                key={item.name} 
+                to={item.path} 
+                className={`flex flex-col items-center justify-center gap-1 w-14 h-full ${isActive ? 'text-red-600' : 'text-slate-400 hover:text-slate-900'}`}
+              >
+                <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
+                <span className={`text-[9px] font-bold ${isActive ? 'text-red-600' : 'text-slate-500'}`}>{item.name}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
       </div>
 
-      {/* =========================================================
-          MOBILE BOTTOM NAVIGATION (For tourists on mobile devices)
-      ========================================================= */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200 px-2 py-2 flex items-center justify-around shadow-lg">
-        {bottomNavItems.map((item, idx) => {
-          if (item.isSOS) {
-            return (
-              <div key="sos" className="-mt-6">
-                <SOSButton size="floating" className="rounded-none" />
-              </div>
-            );
-          }
-
-          const Icon = item.icon;
-          const isActive = location.pathname.startsWith(item.path);
-
-          return (
-            <NavLink
-              key={item.name}
-              to={item.path}
-              className={`group flex flex-col items-center justify-center w-14 py-1 rounded-none text-[9px] uppercase tracking-wider font-bold transition-colors ${
-                isActive
-                  ? 'text-red-600'
-                  : 'text-slate-400 hover:bg-red-50 hover:text-red-600'
-              }`}
-            >
-              <Icon className={`w-5 h-5 mb-0.5 transition-colors ${isActive ? 'text-red-600 stroke-[2.5]' : 'text-slate-400 group-hover:text-red-600'}`} />
-              <span>{item.name}</span>
-            </NavLink>
-          );
-        })}
-      </nav>
     </div>
   );
 }

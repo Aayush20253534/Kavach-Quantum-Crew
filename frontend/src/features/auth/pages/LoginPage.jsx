@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
@@ -39,6 +39,11 @@ export default function LoginPage() {
   const [selectedRole, setSelectedRole] = useState('TOURIST');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const {
     register,
@@ -109,31 +114,33 @@ export default function LoginPage() {
 
       setLoginError(
         error.response?.data?.error?.message ||
-          error.response?.data?.message ||
-          error.message ||
-          'Unable to login. Please check your credentials.'
+        error.response?.data?.message ||
+        error.message ||
+        'Unable to login. Please check your credentials.'
       );
     }
   };
 
   return (
     <>
-      <div className="mb-4 mt-4 text-center">
-        <h2 className="mb-1 text-2xl font-bold tracking-tight text-slate-900">
-          Welcome Back!
-        </h2>
-        <p className="text-xs text-slate-500">
-          Login to your account to continue
-        </p>
-      </div>
+      <div className={`transition-all duration-700 transform ${mounted ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"}`}>
 
-      <div className="mb-4 grid grid-cols-3 gap-0 overflow-hidden rounded-md border border-slate-200">
-        {roles.map((role, idx) => {
-          const Icon = role.icon;
-          const active = selectedRole === role.id;
+        <div className="mb-4 mt-4 text-center">
+          <h2 className="mb-1 text-2xl font-bold tracking-tight text-slate-900">
+            Welcome Back!
+          </h2>
+          <p className="text-xs text-slate-500">
+            Login to your account to continue
+          </p>
+        </div>
 
-          return (
-            <button
+        <div className="mb-4 grid grid-cols-3 gap-0 overflow-hidden rounded-md border border-slate-200">
+          {roles.map((role, idx) => {
+            const Icon = role.icon;
+            const active = selectedRole === role.id;
+
+            return (
+              <button
               key={role.id}
               type="button"
               onClick={() => handleRoleChange(role.id)}
@@ -328,6 +335,7 @@ export default function LoginPage() {
           Register Now →
         </Link>
       </p>
+      </div>
     </>
   );
 }
