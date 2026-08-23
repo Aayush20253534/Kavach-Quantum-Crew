@@ -47,15 +47,18 @@ describe("Phase 14 advanced trip monitoring", () => {
     expect(result.findings).toEqual(expect.arrayContaining([expect.objectContaining({ type: "TRIP_OVERTIME" })]));
   });
 
-  test("detects prolonged inactivity within the configured radius", async () => {
-    const { service } = setup({
+  test("does not create incidents for a tourist remaining in one area", async () => {
+    const { service, repository, incidentReporter } = setup({
       listRecentLocations: jest.fn().mockResolvedValue([
         { latitude: 27.7, longitude: 85.3, capturedAt: new Date("2026-08-21T17:45:00Z") },
         { latitude: 27.70005, longitude: 85.30005, capturedAt: new Date("2026-08-21T18:00:00Z") },
       ]),
     });
     const result = await service.evaluateParticipant(tourist, baseTrip.id);
-    expect(result.findings).toEqual(expect.arrayContaining([expect.objectContaining({ type: "INACTIVITY" })]));
+    expect(result.findings).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "INACTIVITY" })]));
+    expect(repository.createAlert).not.toHaveBeenCalledWith(expect.objectContaining({ type: "INACTIVITY" }));
+    expect(incidentReporter.ingestSafetyAlert).not.toHaveBeenCalledWith(expect.objectContaining({ type: "INACTIVITY" }));
+    expect(repository.resolveOpenAlert).toHaveBeenCalledWith(baseTrip.id, tourist.id, "INACTIVITY", "inactivity", now);
   });
 
   test("allows the trip owner to configure monitoring thresholds", async () => {

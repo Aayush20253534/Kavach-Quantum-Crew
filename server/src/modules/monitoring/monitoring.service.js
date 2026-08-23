@@ -67,15 +67,11 @@ export const createMonitoringService = ({
     }
 
     if (latest) {
-      const since = new Date(now.getTime() - minutes(policy.inactivityAfterMinutes));
-      const recent = await repository.listRecentLocations(trip.id, userId, since);
-      const inactive = recent.length >= 2 && recent.every((point) => haversineDistanceM(recent[0], point) <= policy.inactivityRadiusM);
-      if (inactive) {
-        await ensureAlert({ tripId: trip.id, userId, type: "INACTIVITY", sourceId: "inactivity", message: "Tourist has remained in the same area for an extended period", details: { thresholdMinutes: policy.inactivityAfterMinutes, radiusM: policy.inactivityRadiusM } });
-        add("INACTIVITY", "WARNING");
-      } else {
-        await resolveAlert(trip.id, userId, "INACTIVITY", "inactivity", now);
-      }
+      // Staying in one place can be completely normal (hotel, restaurant,
+      // attraction, waiting area). Do not turn inactivity into an emergency
+      // incident/notification. Resolve any legacy open inactivity alert so it
+      // cannot continue surfacing after this behavior is disabled.
+      await resolveAlert(trip.id, userId, "INACTIVITY", "inactivity", now);
 
       const route = Array.isArray(policy.plannedRoute) ? policy.plannedRoute : [];
       const routeDistance = distanceToRouteM(latest, route);
