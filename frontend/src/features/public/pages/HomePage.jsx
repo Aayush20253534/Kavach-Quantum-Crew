@@ -68,7 +68,7 @@ export function HomePage() {
       {/* =========================================================
           CINEMATIC HERO SECTION
       ========================================================= */}
-      <section className="relative w-full h-screen min-h-[800px] flex items-center pt-20 overflow-hidden bg-[#050505]">
+      <section className="relative w-full h-screen min-h-[600px] md:min-h-[800px] flex items-center pt-20 overflow-hidden bg-[#050505]">
 
         {/* Background Image Wrapper */}
         <div className={`absolute inset-0 transition-opacity duration-1000 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
@@ -99,7 +99,7 @@ export function HomePage() {
             </div>
 
             {/* Main Headline */}
-            <h1 className="text-[56px] sm:text-[72px] lg:text-[84px] leading-[1.05] tracking-[-0.03em] font-black text-white mb-6">
+            <h1 className="text-[42px] sm:text-[60px] md:text-[72px] lg:text-[84px] leading-[1.05] tracking-[-0.03em] font-black text-white mb-4 sm:mb-6">
               <div className={`overflow-hidden transition-all duration-1000 delay-500 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
                 EXPLORE
               </div>
@@ -109,19 +109,19 @@ export function HomePage() {
             </h1>
 
             {/* Description */}
-            <p className={`text-[16px] sm:text-[18px] leading-relaxed text-white/70 max-w-lg mb-10 font-medium transition-all duration-1000 delay-1000 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+            <p className={`text-[15px] sm:text-[18px] leading-relaxed text-white/70 max-w-lg mb-8 sm:mb-10 font-medium transition-all duration-1000 delay-1000 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
               A smarter safety network for pilgrims and tourists exploring Prayagraj. Stay connected, stay aware, and get help when you need it.
             </p>
 
             {/* CTAs */}
-            <div className={`flex flex-wrap items-center gap-5 transition-all duration-1000 delay-1200 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-              <Link to="/register" className="group relative overflow-hidden bg-gradient-to-r from-rose-600 to-orange-500 px-8 py-4 text-[13px] font-bold uppercase tracking-[0.1em] text-white shadow-[0_10px_30px_rgba(225,29,72,0.3)] transition-all duration-300 hover:shadow-[0_15px_40px_rgba(225,29,72,0.5)] hover:-translate-y-1 active:scale-95 flex items-center gap-2">
+            <div className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-5 w-full sm:w-auto transition-all duration-1000 delay-1200 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+              <Link to="/register" className="group w-full sm:w-auto justify-center relative overflow-hidden rounded-full bg-gradient-to-r from-rose-600 to-orange-500 px-6 py-3.5 sm:px-8 sm:py-4 text-[12px] sm:text-[13px] font-bold uppercase tracking-[0.1em] text-white shadow-[0_10px_30px_rgba(225,29,72,0.3)] transition-all duration-300 hover:shadow-[0_15px_40px_rgba(225,29,72,0.5)] hover:-translate-y-1 active:scale-95 flex items-center gap-2">
                 <span className="pointer-events-none absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-[150%] skew-x-[-20deg] group-hover:animate-[shine_0.8s_ease-in-out]" />
                 <span>Create Safety ID</span>
                 <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
 
-              <Link to="/tourist/dashboard" className="group flex items-center gap-3 border border-white/20 bg-white/5 backdrop-blur-md px-8 py-4 text-[13px] font-bold uppercase tracking-[0.1em] text-white transition-all duration-300 hover:bg-white/10 hover:border-white/30 hover:-translate-y-1 active:scale-95">
+              <Link to="/tourist/dashboard" className="group w-full sm:w-auto justify-center flex items-center gap-3 rounded-full border border-white/20 bg-white/5 backdrop-blur-md px-6 py-3.5 sm:px-8 sm:py-4 text-[12px] sm:text-[13px] font-bold uppercase tracking-[0.1em] text-white transition-all duration-300 hover:bg-white/10 hover:border-white/30 hover:-translate-y-1 active:scale-95">
                 <span>View Live Map</span>
               </Link>
             </div>
@@ -173,21 +173,21 @@ export function HomePage() {
       {/* =========================================================
           SAFE ZONES SECTION (Premium & Clean)
       ========================================================= */}
-      <section id="safe-zones" className="bg-[#050505] py-32 border-t border-white/5 relative z-20">
+      <section id="safe-zones" className="bg-[#050505] py-20 md:py-32 border-t border-white/5 relative z-20">
         <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
 
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between mb-16 gap-8">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between mb-10 md:mb-16 gap-6 md:gap-8">
             <div className="max-w-2xl">
-              <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center gap-4 mb-4 sm:mb-6">
                 <div className="h-px w-12 bg-rose-500/50" />
                 <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-rose-400">Verified Network</span>
               </div>
-              <h2 className="text-[40px] sm:text-[48px] font-black tracking-tight leading-tight">
+              <h2 className="text-[32px] sm:text-[40px] md:text-[48px] font-black tracking-tight leading-tight">
                 Help is always <br className="hidden sm:block" />
                 <span className="text-white/40">closer than you think.</span>
               </h2>
             </div>
-            <Link to="/tourist/dashboard" className="group inline-flex items-center gap-3 border border-white/10 bg-white/5 px-6 py-3 text-[12px] font-bold uppercase tracking-widest transition-colors hover:bg-white/10">
+            <Link to="/tourist/dashboard" className="group inline-flex justify-center w-full sm:w-auto items-center gap-3 rounded-full border border-white/10 bg-white/5 px-6 py-3.5 sm:py-3 text-[12px] font-bold uppercase tracking-widest transition-colors hover:bg-white/10">
               Explore Live Map <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
@@ -215,16 +215,16 @@ export function HomePage() {
       {/* =========================================================
           FEATURES BENTO GRID
       ========================================================= */}
-      <section id="features" className="bg-[#050505] py-32 border-t border-white/5 relative z-20">
+      <section id="features" className="bg-[#050505] py-20 md:py-32 border-t border-white/5 relative z-20">
         <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
 
-          <div className="max-w-3xl mx-auto text-center mb-20">
-            <div className="flex items-center justify-center gap-4 mb-6">
+          <div className="max-w-3xl mx-auto text-center mb-12 md:mb-20">
+            <div className="flex items-center justify-center gap-4 mb-4 sm:mb-6">
               <div className="h-px w-12 bg-white/20" />
               <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/50">Core Capabilities</span>
               <div className="h-px w-12 bg-white/20" />
             </div>
-            <h2 className="text-[40px] sm:text-[48px] font-black tracking-tight leading-tight">
+            <h2 className="text-[32px] sm:text-[40px] md:text-[48px] font-black tracking-tight leading-tight">
               A unified safety layer <br />
               <span className="text-white/40">for every journey.</span>
             </h2>
@@ -258,17 +258,17 @@ export function HomePage() {
       {/* =========================================================
           FINAL CTA
       ========================================================= */}
-      <section className="relative py-40 border-t border-white/5 bg-[#050505] overflow-hidden">
+      <section className="relative py-24 md:py-40 border-t border-white/5 bg-[#050505] overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.03)_0%,transparent_70%)] pointer-events-none" />
         <div className="relative max-w-4xl mx-auto px-6 text-center z-10">
-          <h2 className="text-[48px] sm:text-[64px] font-black tracking-tight mb-8">
+          <h2 className="text-[36px] sm:text-[48px] md:text-[64px] font-black tracking-tight mb-6 md:mb-8">
             Ready to explore?
           </h2>
-          <p className="text-[18px] text-white/50 font-medium leading-relaxed max-w-2xl mx-auto mb-12">
+          <p className="text-[15px] sm:text-[18px] text-white/50 font-medium leading-relaxed max-w-2xl mx-auto mb-10 md:mb-12">
             Create your digital Tourist Safety ID in under 60 seconds and gain instant access to live tracking, family sync, and 24/7 assistance.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
-            <Link to="/register" className="group relative overflow-hidden bg-white px-10 py-5 text-[13px] font-bold uppercase tracking-[0.1em] text-black transition-all hover:scale-105 active:scale-95 flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-5 w-full">
+            <Link to="/register" className="group w-full sm:w-auto justify-center relative overflow-hidden rounded-full bg-white px-6 py-4 sm:px-10 sm:py-5 text-[13px] font-bold uppercase tracking-[0.1em] text-black transition-all hover:scale-105 active:scale-95 flex items-center gap-3">
               <span>Create Safety ID</span>
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
