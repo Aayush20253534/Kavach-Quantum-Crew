@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CircleF, GoogleMap, InfoWindowF, MarkerF, PolygonF, useJsApiLoader } from '@react-google-maps/api';
 
 const GOOGLE_MAP_LIBRARIES = ['places'];
@@ -29,6 +29,8 @@ export function MapComponent({
   const [map, setMap] = useState(null);
   const [emergencyPlaces, setEmergencyPlaces] = useState([]);
   const [selectedPlace, setSelectedPlace] = useState(null);
+  const hasPositionedCamera = useRef(false);
+  const [cameraCenter, setCameraCenter] = useState({ lat: 25.4358, lng: 81.8463 });
 
   const center = useMemo(
     () => currentLocation
@@ -54,7 +56,12 @@ export function MapComponent({
 
 
   useEffect(() => {
-    if (!map || !currentLocation) return;
+    if (!map || !currentLocation || hasPositionedCamera.current) return;
+
+    // Position the camera once. After that, GPS updates move only the live marker.
+    // This prevents background location/query rerenders from stealing manual zoom/pan.
+    hasPositionedCamera.current = true;
+    setCameraCenter(center);
 
     if (showEmergencyServicesOnly && window.google?.maps) {
       const searchCircle = new window.google.maps.Circle({
@@ -196,7 +203,7 @@ export function MapComponent({
     <div className={className}>
       <GoogleMap
         mapContainerStyle={containerStyle}
-        center={center}
+        center={cameraCenter}
         zoom={14}
         onLoad={onLoad}
         onUnmount={onUnmount}

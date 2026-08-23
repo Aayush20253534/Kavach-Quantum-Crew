@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import {
   AlertTriangle,
@@ -19,9 +19,9 @@ import {
 import { useTouristDashboardSummary } from '../../dashboard/api/dashboardQueries';
 import { destinationService } from '../../destinations/api/destinationService';
 import { groupService } from '../../groups/api/groupService';
-import { useGeolocation } from '../../tracking/hooks/useGeolocation';
 import { MapComponent } from '../../tracking/components/MapComponent';
 import { useCreateTrip, useCurrentTrip } from '../../trips/api/tripQueries';
+import { tripService } from '../../trips/api/tripService';
 
 const unwrap = (value) => value?.data ?? value;
 
@@ -32,8 +32,12 @@ export function TouristDashboardPage() {
 
   const { data: currentTripResponse } = useCurrentTrip();
   const currentTrip = unwrap(currentTripResponse);
-  const isTripActive = currentTrip?.status === 'ACTIVE';
-  const { location, error: locationError, permission } = useGeolocation(currentTrip?.id, isTripActive);
+  const {
+    liveLocation: location,
+    locationPermission: permission,
+    setLocationLabel,
+  } = useOutletContext();
+  const locationError = permission === 'denied' ? 'Location permission denied' : '';
   const { data: summary, isLoading: summaryLoading } = useTouristDashboardSummary(location);
   const createTrip = useCreateTrip();
 
@@ -44,7 +48,6 @@ export function TouristDashboardPage() {
   const [creatingLocation, setCreatingLocation] = useState(null);
   const [actionError, setActionError] = useState('');
   const [mounted, setMounted] = useState(false);
-  const [locationLabel, setLocationLabel] = useState('Waiting for live location');
   const [emergencyCounts, setEmergencyCounts] = useState({
     police: 0,
     hospitals: 0,
@@ -89,7 +92,10 @@ export function TouristDashboardPage() {
         throw new Error('The selected destination is missing a valid name.');
       }
 
-      let trip = currentTrip;
+      // Never decide from a possibly stale React Query snapshot. The backend/database
+      // is authoritative for whether this tourist currently has an open trip.
+      const refreshedTrip = await tripService.getCurrentTrip();
+      let trip = refreshedTrip || null;
 
       if (trip) {
         const tripLocation = String(trip?.locationName ?? '').trim();
@@ -140,14 +146,6 @@ export function TouristDashboardPage() {
   const safety = summary?.safetyStatus?.level ?? (location ? 'SAFE' : 'UNKNOWN');
   const safetyIsDanger = safety === 'DANGER';
 
-  useEffect(() => {
-    if (permission === 'denied') {
-      setLocationLabel('Location permission denied');
-    } else if (!location) {
-      setLocationLabel('Waiting for live location');
-    }
-  }, [location, permission]);
-
   const cards = useMemo(() => [
     {
       label: 'Total Tourists',
@@ -182,10 +180,6 @@ export function TouristDashboardPage() {
           <div>
             <h2 className="text-[18px] font-black text-slate-900 uppercase tracking-wide">Tourist Safety Dashboard</h2>
             <p className="text-[12px] text-slate-500 font-medium mt-1">Welcome back, {userName}. Search a destination to start a group trip.</p>
-          </div>
-          <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500">
-            <MapPin className="w-4 h-4 text-red-500" />
-            <span>{locationLabel}</span>
           </div>
         </div>
 
