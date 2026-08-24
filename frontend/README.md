@@ -36,3 +36,6 @@ Install frontend dependencies after applying this patch:
 ```bash
 npm install
 ```
+
+### Group QR scanner
+The group QR renders the blockchain group credential `idHash` at high resolution and the Join Trip scanner submits that hash to the backend for validation.

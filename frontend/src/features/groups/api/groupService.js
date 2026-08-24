@@ -21,6 +21,12 @@ export const groupService = {
   async joinGroup(inviteToken) {
     return unwrap(await apiClient.post('/groups/join', { inviteToken }));
   },
+  async previewJoinGroupByQr(groupIdHash) {
+    return unwrap(await apiClient.post('/groups/join/qr/preview', { groupIdHash }));
+  },
+  async joinGroupByQr(groupIdHash) {
+    return unwrap(await apiClient.post('/groups/join/qr', { groupIdHash }));
+  },
   async leaveGroup(groupId) {
     return unwrap(await apiClient.post(`/groups/${groupId}/leave`));
   },

@@ -40,6 +40,7 @@ const decorate = async (credential, type) => {
     active: isActive,
     blockchainStatus: credential.chainStatus,
     blockchainTxHash: credential.chainTxHash,
+    idHash: credential.chainHash,
     verificationUrl,
     qrDataUrl: verificationUrl ? await QRCode.toDataURL(verificationUrl, { width: 320, margin: 1 }) : null,
   };

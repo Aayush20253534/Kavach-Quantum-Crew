@@ -9,13 +9,8 @@ const READER_ID = 'kavach-group-qr-reader';
 const normalizePayload = (raw) => {
   const value = String(raw || '').trim();
   if (!value) return '';
-  if (value.startsWith('KAVACH_JOIN:')) return value.slice('KAVACH_JOIN:'.length).trim();
-  try {
-    const url = new URL(value);
-    return url.searchParams.get('invite') || url.searchParams.get('token') || '';
-  } catch {
-    return value;
-  }
+  if (value.startsWith('KAVACH_GROUP:')) return value.slice('KAVACH_GROUP:'.length).trim();
+  return /^0x[a-fA-F0-9]{64}$/.test(value) ? value : '';
 };
 
 export function JoinGroupPage() {
@@ -25,7 +20,7 @@ export function JoinGroupPage() {
   const [busy, setBusy] = useState(false);
   const [starting, setStarting] = useState(false);
   const [preview, setPreview] = useState(null);
-  const [inviteToken, setInviteToken] = useState('');
+  const [groupIdHash, setGroupIdHash] = useState('');
   const [error, setError] = useState('');
   const [cameraOpen, setCameraOpen] = useState(false);
 
@@ -43,17 +38,17 @@ export function JoinGroupPage() {
   useEffect(() => () => { stopScanner(); }, []);
 
   const handleDecoded = async (decodedText) => {
-    const token = normalizePayload(decodedText);
-    if (!token || token.length < 32) {
+    const hash = normalizePayload(decodedText);
+    if (!hash) {
       setError('This is not a valid Kavach group QR code.');
       return;
     }
     await stopScanner();
-    setInviteToken(token);
+    setGroupIdHash(hash);
     setBusy(true);
     setError('');
     try {
-      const data = await groupService.previewJoinGroup(token);
+      const data = await groupService.previewJoinGroupByQr(hash);
       setPreview(data);
     } catch (e) {
       setPreview(null);
@@ -107,11 +102,11 @@ export function JoinGroupPage() {
   };
 
   const confirmJoin = async () => {
-    if (!inviteToken) return;
+    if (!groupIdHash) return;
     setBusy(true);
     setError('');
     try {
-      await groupService.joinGroup(inviteToken);
+      await groupService.joinGroupByQr(groupIdHash);
       navigate('/tourist/trips/current', { replace: true });
     } catch (e) {
       setError(e?.response?.data?.error?.message || e.message || 'Could not join this group.');
@@ -148,7 +143,7 @@ export function JoinGroupPage() {
               <ImageUp className="w-4 h-4" /> Upload QR Image
               <input type="file" accept="image/*" className="hidden" onChange={uploadQr} disabled={busy} />
             </label>
-            <p className="text-center text-[11px] leading-5 text-slate-400">The QR only contains a secure invitation token. Personal details are never stored inside the QR code.</p>
+            <p className="text-center text-[11px] leading-5 text-slate-400">The QR contains only the group blockchain ID hash. Personal details are never stored inside the QR code.</p>
           </div>
         )}
 
@@ -160,8 +155,8 @@ export function JoinGroupPage() {
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
                 <div className="min-w-0">
-                  <p className="font-black text-emerald-950">Verified Group Invitation</p>
-                  <p className="mt-1 text-xs text-emerald-700">This invitation is valid. Review the trip before joining.</p>
+                  <p className="font-black text-emerald-950">Verified Group ID</p>
+                  <p className="mt-1 text-xs text-emerald-700">This group ID hash is valid for an active planned trip. Review the trip before joining.</p>
                 </div>
               </div>
               <div className="mt-4 rounded-xl bg-white border border-emerald-100 p-3.5 space-y-2">
@@ -170,12 +165,12 @@ export function JoinGroupPage() {
                   <div><p className="text-slate-400">Members</p><p className="font-bold mt-0.5">{preview.memberCount}</p></div>
                   <div><p className="text-slate-400">Leader</p><p className="font-bold mt-0.5 truncate">{preview.leader?.name || preview.leader?.username || 'Trip Leader'}</p></div>
                   <div className="col-span-2"><p className="text-slate-400">Trip ends</p><p className="font-bold mt-0.5">{preview.trip?.plannedEndAt ? new Date(preview.trip.plannedEndAt).toLocaleString() : '—'}</p></div>
-                  <div className="col-span-2"><p className="text-slate-400">Invitation expires</p><p className="font-bold mt-0.5">{new Date(preview.inviteExpiresAt).toLocaleString()}</p></div>
+                  <div className="col-span-2"><p className="text-slate-400">Group QR expires</p><p className="font-bold mt-0.5">{new Date(preview.qrExpiresAt).toLocaleString()}</p></div>
                 </div>
               </div>
             </div>
             <div className="mt-4 flex gap-3">
-              <button type="button" onClick={() => { setPreview(null); setInviteToken(''); }} disabled={busy} className="flex-1 py-3 rounded-lg border border-slate-200 bg-white text-slate-700 font-black text-xs uppercase tracking-wider">Scan Again</button>
+              <button type="button" onClick={() => { setPreview(null); setGroupIdHash(''); }} disabled={busy} className="flex-1 py-3 rounded-lg border border-slate-200 bg-white text-slate-700 font-black text-xs uppercase tracking-wider">Scan Again</button>
               <button type="button" onClick={confirmJoin} disabled={busy} className="flex-1 py-3 rounded-lg bg-indigo-600 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-60">
                 {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />} Join Trip
               </button>

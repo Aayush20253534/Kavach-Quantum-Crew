@@ -65,6 +65,27 @@ const validateJoinableInvitation = async (repository, userId, inviteToken, now) 
   return { invitation, group };
 };
 
+const validateJoinableGroupHash = async (repository, userId, groupIdHash, now) => {
+  const credential = await repository.findGroupByCredentialHash(groupIdHash);
+  if (!credential) throw ApiError.notFound("Group QR not found", { code: "GROUP_QR_NOT_FOUND" });
+  if (credential.revokedAt) throw ApiError.badRequest("Group QR has been revoked", { code: "GROUP_QR_REVOKED" });
+  if (new Date(credential.expiresAt) <= now) throw ApiError.badRequest("Group QR has expired", { code: "GROUP_QR_EXPIRED" });
+
+  const group = credential.group;
+  requireMembershipOpen(group);
+
+  const existing = await repository.findActiveMembership(group.id, userId);
+  if (existing) throw ApiError.conflict("You are already a member of this group", { code: "GROUP_MEMBER_EXISTS" });
+  const tripMembership = await repository.findMembershipInTrip(group.tripId, userId);
+  if (tripMembership) throw ApiError.conflict("You already belong to a group for this trip", { code: "TRIP_GROUP_MEMBERSHIP_EXISTS" });
+  const currentTrip = await repository.findOpenTripForUser(userId);
+  if (currentTrip && currentTrip.id !== group.tripId) {
+    throw ApiError.conflict("Complete or cancel your current trip before joining another group", { code: "CURRENT_TRIP_EXISTS", details: { tripId: currentTrip.id, status: currentTrip.status, locationName: currentTrip.locationName } });
+  }
+
+  return { credential, group };
+};
+
 export const createGroupService = ({ repository = groupRepository, clock = () => new Date(), tokenFactory = makeToken, codeFactory = makeCode } = {}) => Object.freeze({
   async createGroup(userId, tripId) {
     const trip = await repository.findTrip(tripId);
@@ -121,6 +142,33 @@ export const createGroupService = ({ repository = groupRepository, clock = () =>
       leader: group.members?.find((member) => member.role === "LEADER")?.user ?? null,
       memberCount: group.members?.filter((member) => !member.leftAt).length ?? 0,
     };
+  },
+  async previewJoinGroupByHash(userId, groupIdHash) {
+    const now = clock();
+    const { credential, group } = await validateJoinableGroupHash(repository, userId, groupIdHash, now);
+    return {
+      groupId: group.id,
+      tripId: group.tripId,
+      groupIdHash: credential.chainHash,
+      qrExpiresAt: credential.expiresAt,
+      blockchainStatus: credential.chainStatus,
+      trip: {
+        locationName: group.trip.locationName,
+        plannedStartAt: group.trip.plannedStartAt,
+        plannedEndAt: group.trip.plannedEndAt,
+        status: group.trip.status,
+      },
+      leader: group.members?.find((member) => member.role === "LEADER")?.user ?? null,
+      memberCount: group.members?.filter((member) => !member.leftAt).length ?? 0,
+    };
+  },
+  async joinGroupByHash(userId, groupIdHash) {
+    const now = clock();
+    const { group } = await validateJoinableGroupHash(repository, userId, groupIdHash, now);
+    await repository.joinGroup(group.id, userId, now);
+    await credentialService.ensureIndividual(group.tripId, userId);
+    await repository.createAudit({ actorId: userId, action: "GROUP_JOINED_BY_QR", entityId: group.id, metadata: { groupIdHash } });
+    return serializeGroup(await repository.findGroup(group.id));
   },
   async joinGroup(userId, inviteToken) {
     const now = clock();
