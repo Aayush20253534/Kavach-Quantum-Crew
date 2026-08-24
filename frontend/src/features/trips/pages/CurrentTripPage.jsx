@@ -4,6 +4,7 @@ import { Calendar, CheckCircle2, Clock3, Copy, Loader2, LogIn, MapPin, Play, Shi
 import { Link } from 'react-router-dom';
 
 import { groupService } from '../../groups/api/groupService';
+import { credentialService } from '../../credentials/api/credentialService';
 import { tripService } from '../api/tripService';
 
 const dateText = (value) => value ? new Date(value).toLocaleString() : '—';
@@ -14,6 +15,8 @@ export function CurrentTripPage() {
   const [trip, setTrip] = useState(null);
   const [group, setGroup] = useState(null);
   const [invite, setInvite] = useState(null);
+  const [individualCredential, setIndividualCredential] = useState(null);
+  const [groupCredential, setGroupCredential] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -25,10 +28,20 @@ export function CurrentTripPage() {
       setError('');
       const current = await tripService.getCurrentTrip();
       setTrip(current || null);
+      if (current) {
+        try { setIndividualCredential(await credentialService.getMyCredential(current.id)); } catch { setIndividualCredential(null); }
+      } else {
+        setIndividualCredential(null);
+      }
       if (current?.tripType === 'GROUP') {
-        try { setGroup(await groupService.getGroupForTrip(current.id)); } catch { setGroup(null); }
+        try {
+          const loadedGroup = await groupService.getGroupForTrip(current.id);
+          setGroup(loadedGroup);
+          try { setGroupCredential(await credentialService.getGroupCredential(loadedGroup.id)); } catch { setGroupCredential(null); }
+        } catch { setGroup(null); setGroupCredential(null); }
       } else {
         setGroup(null);
+        setGroupCredential(null);
       }
     } catch (e) {
       if (e?.response?.status === 404) setTrip(null);
@@ -59,7 +72,6 @@ export function CurrentTripPage() {
     }
     await tripService.grantConsent(trip.id, 'LOCATION_TRACKING');
     await tripService.grantConsent(trip.id, 'EMERGENCY_SHARING');
-    if (!trip.safetyId?.active) await tripService.issueSafetyId(trip.id);
     await tripService.startTrip(trip.id);
   });
 
@@ -209,11 +221,7 @@ export function CurrentTripPage() {
         )}
 
         <div className="grid sm:grid-cols-2 gap-3 sm:gap-4 mt-5 sm:mt-7">
-          <div className="p-3.5 sm:p-4 bg-slate-50 rounded-xl">
-            <p className="text-[10px] uppercase tracking-wider font-black text-slate-400">Safety ID</p>
-            <p className="mt-1 font-mono text-sm text-slate-800">{trip.safetyId?.publicId || 'Issued automatically before start'}</p>
-            <p className="text-[10px] text-indigo-600 mt-2">Blockchain proof: mock / not connected</p>
-          </div>
+          <CredentialCard title="Individual ID" credential={individualCredential} />
           <Link to="/tourist/checkins" className="p-3.5 sm:p-4 bg-slate-50 rounded-xl">
             <p className="text-[10px] uppercase tracking-wider font-black text-slate-400">Safety Check-ins</p>
             <p className="mt-1 font-bold text-sm">Open check-in schedule →</p>
@@ -234,6 +242,12 @@ export function CurrentTripPage() {
               </button>
             )}
           </div>
+
+          {groupCredential && (
+            <div className="mt-4">
+              <CredentialCard title="Group ID" credential={groupCredential} compact />
+            </div>
+          )}
 
           {group?.members?.length > 0 && (
             <div className="mt-4 grid sm:grid-cols-2 gap-2">
@@ -257,6 +271,24 @@ export function CurrentTripPage() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+
+function CredentialCard({ title, credential, compact = false }) {
+  if (!credential) return <div className="p-3.5 sm:p-4 bg-slate-50 rounded-xl text-xs text-slate-500">Loading {title.toLowerCase()}…</div>;
+  return (
+    <div className={`rounded-xl border border-slate-200 bg-slate-50 ${compact ? 'p-4' : 'p-3.5 sm:p-4'}`}>
+      <div className="flex items-start gap-4">
+        {credential.qrDataUrl && <img src={credential.qrDataUrl} alt={`${title} QR code`} className="h-24 w-24 rounded-lg border border-white bg-white p-1 shadow-sm" />}
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] uppercase tracking-wider font-black text-slate-400">{title}</p>
+          <p className="mt-1 break-all font-mono text-xs font-bold text-slate-800">{credential.publicId}</p>
+          <p className={`mt-2 text-[10px] font-bold ${credential.blockchainStatus === 'CONFIRMED' ? 'text-emerald-600' : 'text-amber-600'}`}>Blockchain: {credential.blockchainStatus}</p>
+          <p className="mt-1 text-[10px] text-slate-500">Expires {new Date(credential.expiresAt).toLocaleString()}</p>
+        </div>
+      </div>
     </div>
   );
 }

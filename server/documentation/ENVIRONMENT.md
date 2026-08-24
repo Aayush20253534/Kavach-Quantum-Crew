@@ -101,3 +101,18 @@ seeding requires explicit `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` values.
 Re-running the seed updates the seeded admin password hash from the currently
 configured `SEED_ADMIN_PASSWORD`, which makes credential rotation predictable
 instead of preserving an old seed password forever.
+
+## Blockchain credential environment
+
+```env
+BLOCKCHAIN_ENABLED=false
+BLOCKCHAIN_GATEWAY_URL=http://127.0.0.1:4100
+BLOCKCHAIN_GATEWAY_KEY=dev-chain-gateway-key-change-me
+BLOCKCHAIN_CONTRACT_VERSION=1
+BLOCKCHAIN_WORKER_INTERVAL_MS=5000
+BLOCKCHAIN_MAX_ATTEMPTS=5
+QR_TOKEN_SECRET=dev-qr-token-secret-change-me
+PUBLIC_APP_URL=http://localhost:5173
+```
+
+`BLOCKCHAIN_GATEWAY_KEY` must match `GATEWAY_API_KEY` in `blockchain/.env`. The EVM private key is deliberately absent from `server/.env`.

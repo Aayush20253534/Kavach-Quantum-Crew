@@ -39,6 +39,7 @@ model User {
   groupMemberships    GroupMember[]
   ledGroups           TripGroup[]   @relation("GroupLeader")
   trips               Trip[]
+  touristCredentials  TouristTripCredential[]
   emailVerificationOtp EmailVerificationOtp?
 
   @@index([status])
@@ -155,6 +156,8 @@ model Trip {
   safetyId       TripSafetyId?
   tourist        User          @relation(fields: [touristId], references: [id], onDelete: Cascade)
   monitoringPolicy TripMonitoringPolicy?
+  touristCredentials TouristTripCredential[]
+  groupCredential GroupTripCredential?
 
   @@index([touristId, status, createdAt])
   @@index([plannedStartAt, plannedEndAt])
@@ -224,6 +227,7 @@ model TripGroup {
   members     GroupMember[]
   leader      User              @relation("GroupLeader", fields: [leaderId], references: [id], onDelete: Cascade)
   trip        Trip              @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  credential  GroupTripCredential?
 
   @@index([leaderId, status])
   @@map("trip_groups")
@@ -258,6 +262,73 @@ model GroupInvitation {
 
   @@index([groupId, expiresAt, revokedAt])
   @@map("group_invitations")
+}
+
+model TouristTripCredential {
+  id              String   @id @default(uuid()) @db.Uuid
+  tripId          String   @db.Uuid
+  userId          String   @db.Uuid
+  publicId        String   @unique @db.VarChar(80)
+  tokenId         String   @unique @db.VarChar(64)
+  chainHash       String   @unique @db.VarChar(66)
+  chainStatus     String   @default("PENDING") @db.VarChar(20)
+  chainTxHash     String?  @db.VarChar(80)
+  chainError      String?
+  issuedAt        DateTime @default(now())
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  trip            Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, userId])
+  @@index([userId, expiresAt, revokedAt])
+  @@index([chainStatus, updatedAt])
+  @@map("tourist_trip_credentials")
+}
+
+model GroupTripCredential {
+  id              String    @id @default(uuid()) @db.Uuid
+  tripId          String    @unique @db.Uuid
+  groupId         String    @unique @db.Uuid
+  publicId        String    @unique @db.VarChar(80)
+  tokenId         String    @unique @db.VarChar(64)
+  chainHash       String    @unique @db.VarChar(66)
+  chainStatus     String    @default("PENDING") @db.VarChar(20)
+  chainTxHash     String?   @db.VarChar(80)
+  chainError      String?
+  issuedAt        DateTime  @default(now())
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  trip            Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  group           TripGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt, revokedAt])
+  @@index([chainStatus, updatedAt])
+  @@map("group_trip_credentials")
+}
+
+model BlockchainAnchorJob {
+  id          String   @id @default(uuid()) @db.Uuid
+  operation   String   @db.VarChar(32)
+  entityType  String   @db.VarChar(32)
+  entityId    String   @db.Uuid
+  payloadHash String   @db.VarChar(66)
+  extraArgs   Json
+  state       String   @default("PENDING") @db.VarChar(20)
+  txHash      String?  @db.VarChar(80)
+  attempts    Int      @default(0)
+  lastError   String?
+  availableAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([state, availableAt, createdAt])
+  @@index([entityType, entityId])
+  @@map("blockchain_anchor_jobs")
 }
 
 enum Role {

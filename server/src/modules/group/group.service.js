@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { ApiError } from "../../common/errors/ApiError.js";
 import { groupRepository } from "./group.repository.js";
+import { credentialService } from "../credential/credential.service.js";
 
 const hashToken = (value) => crypto.createHash("sha256").update(value).digest("hex");
 const makeToken = () => crypto.randomBytes(32).toString("base64url");
@@ -54,6 +55,8 @@ export const createGroupService = ({ repository = groupRepository, clock = () =>
     if (trip.status !== "PLANNED") throw ApiError.conflict("Group must be created before the trip starts", { code: "TRIP_NOT_PLANNED" });
     if (trip.group) throw ApiError.conflict("This trip already has a group", { code: "GROUP_ALREADY_EXISTS" });
     const group = await repository.createGroup(tripId, userId, clock());
+    await credentialService.createGroupCredential({ groupId: group.id, tripId, expiresAt: trip.plannedEndAt });
+    await credentialService.ensureIndividual(tripId, userId);
     await repository.createAudit({ actorId: userId, action: "GROUP_CREATED", entityId: group.id, metadata: { tripId } });
     return serializeGroup(group);
   },
@@ -112,6 +115,7 @@ export const createGroupService = ({ repository = groupRepository, clock = () =>
     }
 
     await repository.joinGroup(group.id, userId, now);
+    await credentialService.ensureIndividual(group.tripId, userId);
     await repository.createAudit({ actorId: userId, action: "GROUP_JOINED", entityId: group.id, metadata: { invitationId: invitation.id } });
     return serializeGroup(await repository.findGroup(group.id));
   },
@@ -120,6 +124,7 @@ export const createGroupService = ({ repository = groupRepository, clock = () =>
     if (group.leaderId === userId) throw ApiError.conflict("Group leader cannot leave without transferring leadership", { code: "LEADER_CANNOT_LEAVE" });
     const member = await requireMember(repository, groupId, userId);
     await repository.leaveGroup(member.id, clock());
+    await credentialService.revokeIndividual(group.tripId, userId, 2);
     await repository.createAudit({ actorId: userId, action: "GROUP_LEFT", entityId: groupId, metadata: { memberId: member.id } });
     return { left: true };
   },
@@ -129,6 +134,7 @@ export const createGroupService = ({ repository = groupRepository, clock = () =>
     if (!member) throw ApiError.notFound("Group member not found", { code: "GROUP_MEMBER_NOT_FOUND" });
     if (member.userId === group.leaderId) throw ApiError.badRequest("Group leader cannot be removed", { code: "LEADER_CANNOT_BE_REMOVED" });
     await repository.leaveGroup(member.id, clock());
+    await credentialService.revokeIndividual(group.tripId, member.userId, 2);
     await repository.createAudit({ actorId: userId, action: "GROUP_MEMBER_REMOVED", entityId: groupId, metadata: { memberId, removedUserId: member.userId } });
     return { removed: true };
   },

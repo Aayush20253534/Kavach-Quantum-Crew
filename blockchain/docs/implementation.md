@@ -485,3 +485,6 @@ Onboarding doc for the rest of the team (and for Prateek's own future reference)
 ---
 
 **Everything a contributor needs to start writing code is now specified above.** No file in `blockchain/` should be implemented with logic that isn't traceable to a section in this document; if a need arises that isn't covered here, this document should be updated first.
+## Server integration
+
+The Express backend no longer needs to import this TypeScript adapter directly. The supported cross-directory boundary is `gateway/server.ts`, authenticated with `GATEWAY_API_KEY`. The gateway owns `ethers`, the RPC connection, contract ABI calls, and issuer key. The Express backend owns retries and persistence in `BlockchainAnchorJob`.

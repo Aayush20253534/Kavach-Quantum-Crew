@@ -251,3 +251,23 @@ describe("TrustAnchor — Digital ID: issue / verify / revoke", () => {
 // Local alias kept separate from the shared ONE_HOUR export to avoid an
 // accidental name collision if this file is later merged with others.
 const ONE_HOUR_LOCAL = 60 * 60;
+
+// Trip extensions must preserve the same credential hash while moving expiry forward.
+describe("TrustAnchor trip credential extension", () => {
+  it("extends an active ID and reports the new expiry", async () => {
+    const [issuer] = await ethers.getSigners();
+    const factory = await ethers.getContractFactory("TrustAnchor", issuer);
+    const contract = await factory.deploy();
+    await contract.waitForDeployment();
+    const idHash = ethers.keccak256(ethers.toUtf8Bytes("extendable-id"));
+    const tripHash = ethers.keccak256(ethers.toUtf8Bytes("extendable-trip"));
+    const block = await ethers.provider.getBlock("latest");
+    const issuedAt = Number(block!.timestamp);
+    const initialExpiry = issuedAt + 3600;
+    const extendedExpiry = issuedAt + 7200;
+    await contract.issueId(idHash, tripHash, issuedAt, initialExpiry, 1);
+    await expect(contract.extendId(idHash, extendedExpiry)).to.emit(contract, "IdExtended");
+    const verification = await contract.verifyId(idHash);
+    expect(Number(verification.expiresAt)).to.equal(extendedExpiry);
+  });
+});

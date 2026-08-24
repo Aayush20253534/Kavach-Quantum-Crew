@@ -31,3 +31,7 @@ Read `NOTIFICATION-DELIVERY.md`. Implement EMAIL/SMS/PUSH/WHATSAPP handlers with
 Read `ENVIRONMENT.md`, `DEPLOYMENT.md`, `TESTING.md`, and `FINAL-QA-CHECKLIST.md`.
 
 Any contract-shape change should update validation, provider interface, tests, OpenAPI, and documentation together.
+
+## Blockchain directory handoff
+
+The API and blockchain project are separate runtimes. Start `blockchain/gateway/server.ts` from the blockchain directory and point `server/` to it using `BLOCKCHAIN_GATEWAY_URL`. Authentication is via `x-kavach-chain-key`; use the same secret on both sides and restrict the gateway to a private interface/network in deployment.

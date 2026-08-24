@@ -174,3 +174,21 @@ Optional contracts exist for Safety ID proof, incident proof, evidence proof, an
 ## Administration and operations
 
 System Admins can manage accounts/resources, inspect audit history/metrics/diagnostics, and process delivery jobs. Disaster Managers focus on emergency operations, hazards, risk zones, dispatch, and analytics.
+
+## QR + blockchain credential lifecycle
+
+```text
+Trip create/join
+  -> PostgreSQL credential created
+  -> signed QR can be rendered immediately
+  -> BlockchainAnchorJob(PENDING)
+  -> worker calls blockchain gateway
+  -> TrustAnchor issueId/extendId/revokeId
+  -> job + credential marked CONFIRMED
+
+QR scan
+  -> frontend /verify/:token
+  -> API verifies JWT + tokenId + DB expiry/revocation + trip state
+  -> if anchor is confirmed, API reads TrustAnchor verifyId
+  -> result shown as VALID / INVALID with blockchain status
+```

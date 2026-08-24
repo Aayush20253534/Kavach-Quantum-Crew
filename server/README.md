@@ -303,3 +303,16 @@ the Upstash token server-side on Render; never expose it as a `VITE_` variable.
 
 The integration uses Upstash's HTTPS REST API through Node's built-in `fetch`, so it adds
 no Redis npm dependency.
+
+## Blockchain QR integration
+
+The API now owns QR issuance and verification while delegating signing transactions to the isolated `blockchain/` gateway. This avoids importing TypeScript/Hardhat code into the Express runtime and, more importantly, keeps the issuer private key out of the general API process.
+
+New runtime pieces:
+
+- `src/modules/credential/` creates and verifies individual/group trip credentials.
+- `src/integrations/blockchain/` hashes privacy-safe identifiers, talks to the gateway, and queues chain work.
+- `src/jobs/blockchainAnchor.job.js` retries `ISSUE`, `EXTEND`, and `REVOKE` jobs without blocking ordinary trip/SOS requests.
+- Prisma stores both credential state and the asynchronous blockchain job ledger.
+
+Set `BLOCKCHAIN_ENABLED=true` only after the gateway is reachable and the contract has been deployed. When disabled, credentials still work as signed QR credentials but clearly report `blockchainStatus=DISABLED` rather than pretending verification succeeded.

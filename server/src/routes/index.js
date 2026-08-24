@@ -21,6 +21,7 @@ import { createSosRouter } from "../modules/sos/sos.routes.js";
 import { createSystemAdminRouter } from "../modules/system-admin/system-admin.routes.js";
 import { createAuthRouter } from "../modules/auth/auth.routes.js";
 import { createChatbotRouter } from "../modules/chatbot/chatbot.routes.js";
+import { createCredentialRouter } from "../modules/credential/credential.routes.js";
 import { createGroupRouter } from "../modules/group/group.routes.js";
 import { createHealthRouter } from "../modules/health/health.routes.js";
 import { createHazardRouter } from "../modules/hazard/hazard.routes.js";
@@ -111,6 +112,8 @@ export const createApiRouter = (config = environment) => {
     "/groups",
     createGroupRouter(),
   );
+
+  router.use("/credentials", createCredentialRouter());
 
   router.use(
     "/tracking",
