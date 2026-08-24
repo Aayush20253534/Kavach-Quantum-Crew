@@ -240,6 +240,16 @@ export function CurrentTripPage() {
             <p className="mt-1 font-bold text-sm">Open check-in schedule →</p>
           </Link>
         </div>
+
+        {individualCredential?.verificationUrl && (
+          <CredentialQrPanel
+            title="Scan Individual ID to verify"
+            description="This QR verifies your trip-scoped individual credential. It remains valid only while the credential and trip are active."
+            value={individualCredential.verificationUrl}
+            copyValue={individualCredential.publicId}
+            copyLabel="Copy individual ID"
+          />
+        )}
       </div>
 
       {trip.tripType === 'GROUP' && (
@@ -258,7 +268,7 @@ export function CurrentTripPage() {
 
           {groupCredential && (
             <div className="mt-4">
-              <CredentialCard title="Group ID" credential={groupCredential} compact />
+              <CredentialCard title="Group ID" credential={groupCredential} />
             </div>
           )}
 
@@ -314,28 +324,14 @@ export function CurrentTripPage() {
           )}
 
           {groupCredential?.idHash && (
-            <div className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50 p-4 sm:p-5">
-              <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
-                <div className="shrink-0 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                  <QRCodeSVG
-                    value={`KAVACH_GROUP:${groupCredential.idHash}`}
-                    size={260}
-                    level="L"
-                    marginSize={4}
-                    bgColor="#FFFFFF"
-                    fgColor="#000000"
-                  />
-                </div>
-                <div className="min-w-0 flex-1 text-center sm:text-left">
-                  <p className="text-sm font-black text-indigo-950">Scan Group ID to join</p>
-                  <p className="mt-1 text-xs leading-5 text-indigo-700">This QR is generated directly from the group blockchain ID hash. It stays valid only while the group credential and planned trip are active.</p>
-                  <p className="mt-3 rounded-lg border border-indigo-100 bg-white/70 px-3 py-2 font-mono text-[10px] break-all text-indigo-950">{groupCredential.idHash}</p>
-                  <button onClick={() => navigator.clipboard?.writeText(groupCredential.idHash)} className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-indigo-700">
-                    <Copy className="w-3.5 h-3.5" /> Copy group ID hash
-                  </button>
-                </div>
-              </div>
-            </div>
+            <CredentialQrPanel
+              title="Scan Group ID to join"
+              description="This QR is generated directly from the group blockchain ID hash. It stays valid only while the group credential and planned trip are active."
+              value={`KAVACH_GROUP:${groupCredential.idHash}`}
+              copyValue={groupCredential.idHash}
+              copyLabel="Copy group ID hash"
+              rawValue={groupCredential.idHash}
+            />
           )}
         </div>
       )}
@@ -344,19 +340,50 @@ export function CurrentTripPage() {
 }
 
 
-function CredentialCard({ title, credential, compact = false }) {
-  if (!credential) return <div className="p-3.5 sm:p-4 bg-slate-50 rounded-xl text-xs text-slate-500">Loading {title.toLowerCase()}…</div>;
+function CredentialQrPanel({ title, description, value, copyValue, copyLabel, rawValue }) {
   return (
-    <div className={`rounded-xl border border-slate-200 bg-slate-50 ${compact ? 'p-4' : 'p-3.5 sm:p-4'}`}>
-      <div className="flex items-start gap-4">
-        {credential.qrDataUrl && <img src={credential.qrDataUrl} alt={`${title} QR code`} className="h-24 w-24 rounded-lg border border-white bg-white p-1 shadow-sm" />}
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] uppercase tracking-wider font-black text-slate-400">{title}</p>
-          <p className="mt-1 break-all font-mono text-xs font-bold text-slate-800">{credential.publicId}</p>
-          <p className={`mt-2 text-[10px] font-bold ${credential.blockchainStatus === 'CONFIRMED' ? 'text-emerald-600' : 'text-amber-600'}`}>Blockchain: {credential.blockchainStatus}</p>
-          <p className="mt-1 text-[10px] text-slate-500">Expires {new Date(credential.expiresAt).toLocaleString()}</p>
+    <div className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50 p-4 sm:p-5">
+      <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
+        <div className="shrink-0 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+          <QRCodeSVG
+            value={value}
+            size={260}
+            level="L"
+            marginSize={4}
+            bgColor="#FFFFFF"
+            fgColor="#000000"
+          />
+        </div>
+        <div className="min-w-0 flex-1 text-center sm:text-left">
+          <p className="text-sm font-black text-indigo-950">{title}</p>
+          <p className="mt-1 text-xs leading-5 text-indigo-700">{description}</p>
+          {rawValue && (
+            <p className="mt-3 rounded-lg border border-indigo-100 bg-white/70 px-3 py-2 font-mono text-[10px] break-all text-indigo-950">{rawValue}</p>
+          )}
+          <button onClick={() => navigator.clipboard?.writeText(copyValue)} className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-indigo-700">
+            <Copy className="w-3.5 h-3.5" /> {copyLabel}
+          </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function CredentialCard({ title, credential }) {
+  if (!credential) return <div className="p-3.5 sm:p-4 bg-slate-50 rounded-xl text-xs text-slate-500">Loading {title.toLowerCase()}…</div>;
+  const blockchainStatus = credential.blockchainStatus;
+  const statusClass = blockchainStatus === 'CONFIRMED'
+    ? 'text-emerald-600'
+    : blockchainStatus === 'DISABLED'
+      ? 'text-slate-500'
+      : 'text-amber-600';
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 sm:p-4">
+      <p className="text-[10px] uppercase tracking-wider font-black text-slate-400">{title}</p>
+      <p className="mt-1 break-all font-mono text-xs font-bold text-slate-800">{credential.publicId}</p>
+      <p className={`mt-2 text-[10px] font-bold ${statusClass}`}>Blockchain: {blockchainStatus}</p>
+      <p className="mt-1 text-[10px] text-slate-500">Expires {new Date(credential.expiresAt).toLocaleString()}</p>
     </div>
   );
 }
