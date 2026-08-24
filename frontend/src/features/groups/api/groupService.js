@@ -15,6 +15,9 @@ export const groupService = {
   async createInvitation(groupId, expiresInMinutes = 60) {
     return unwrap(await apiClient.post(`/groups/${groupId}/invitations`, { expiresInMinutes }));
   },
+  async previewJoinGroup(inviteToken) {
+    return unwrap(await apiClient.post('/groups/join/preview', { inviteToken }));
+  },
   async joinGroup(inviteToken) {
     return unwrap(await apiClient.post('/groups/join', { inviteToken }));
   },

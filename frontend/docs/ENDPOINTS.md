@@ -293,3 +293,29 @@ The tourist application now uses real backend endpoints for all core workflows:
 | GET | `/credentials/trips/:tripId/me` | Tourist | Current user's trip-scoped individual QR credential |
 | GET | `/credentials/groups/:groupId` | Tourist/group member | Group QR credential |
 | GET | `/credentials/verify/:token` | Public | Validate signed QR, trip state, expiry, and on-chain proof |
+
+## Group QR join
+
+### Preview scanned group invitation
+
+`POST /groups/join/preview`
+
+Body:
+
+```json
+{ "inviteToken": "opaque-token-from-group-qr" }
+```
+
+Returns a non-mutating preview containing the group, leader, member count, trip location, planned end time and invitation expiry. The frontend must display this preview before calling the join endpoint.
+
+### Confirm join
+
+`POST /groups/join`
+
+Body:
+
+```json
+{ "inviteToken": "opaque-token-from-group-qr" }
+```
+
+This creates the membership and triggers the existing individual digital credential issuance flow.

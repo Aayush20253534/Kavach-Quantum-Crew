@@ -1,23 +1,120 @@
-import React, { useState } from 'react';
-import { Loader2, Users } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Camera, CheckCircle2, ImageUp, Loader2, ShieldCheck, Users, X, AlertTriangle } from 'lucide-react';
+import { Html5Qrcode } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
 import { groupService } from '../api/groupService';
 
+const READER_ID = 'kavach-group-qr-reader';
+
+const normalizePayload = (raw) => {
+  const value = String(raw || '').trim();
+  if (!value) return '';
+  if (value.startsWith('KAVACH_JOIN:')) return value.slice('KAVACH_JOIN:'.length).trim();
+  try {
+    const url = new URL(value);
+    return url.searchParams.get('invite') || url.searchParams.get('token') || '';
+  } catch {
+    return value;
+  }
+};
+
 export function JoinGroupPage() {
   const navigate = useNavigate();
-  const [token, setToken] = useState('');
+  const scannerRef = useRef(null);
+  const runningRef = useRef(false);
   const [busy, setBusy] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [preview, setPreview] = useState(null);
+  const [inviteToken, setInviteToken] = useState('');
   const [error, setError] = useState('');
+  const [cameraOpen, setCameraOpen] = useState(false);
 
-  const submit = async (event) => {
-    event.preventDefault();
+  const stopScanner = async () => {
+    if (!scannerRef.current) return;
+    try {
+      if (runningRef.current) await scannerRef.current.stop();
+    } catch {}
+    try { await scannerRef.current.clear(); } catch {}
+    scannerRef.current = null;
+    runningRef.current = false;
+    setCameraOpen(false);
+  };
+
+  useEffect(() => () => { stopScanner(); }, []);
+
+  const handleDecoded = async (decodedText) => {
+    const token = normalizePayload(decodedText);
+    if (!token || token.length < 32) {
+      setError('This is not a valid Kavach group QR code.');
+      return;
+    }
+    await stopScanner();
+    setInviteToken(token);
     setBusy(true);
     setError('');
     try {
-      await groupService.joinGroup(token.trim());
+      const data = await groupService.previewJoinGroup(token);
+      setPreview(data);
+    } catch (e) {
+      setPreview(null);
+      setError(e?.response?.data?.error?.message || e.message || 'Unable to validate this group QR.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const openCamera = async () => {
+    setError('');
+    setPreview(null);
+    setStarting(true);
+    try {
+      const scanner = new Html5Qrcode(READER_ID, { verbose: false });
+      scannerRef.current = scanner;
+      setCameraOpen(true);
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await scanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 260, height: 260 } },
+        async (text) => { await handleDecoded(text); },
+        () => {}
+      );
+      runningRef.current = true;
+    } catch (e) {
+      await stopScanner();
+      setError('Unable to access the camera. Check browser permission or use Upload QR Image.');
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  const uploadQr = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setError('');
+    setPreview(null);
+    setBusy(true);
+    try {
+      const scanner = new Html5Qrcode('kavach-hidden-reader', { verbose: false });
+      const text = await scanner.scanFile(file, true);
+      await scanner.clear().catch(() => {});
+      await handleDecoded(text);
+    } catch {
+      setError('Could not read a QR code from that image.');
+    } finally {
+      event.target.value = '';
+      setBusy(false);
+    }
+  };
+
+  const confirmJoin = async () => {
+    if (!inviteToken) return;
+    setBusy(true);
+    setError('');
+    try {
+      await groupService.joinGroup(inviteToken);
       navigate('/tourist/trips/current', { replace: true });
     } catch (e) {
-      setError(e?.response?.data?.error?.message || e.message || 'Could not join group');
+      setError(e?.response?.data?.error?.message || e.message || 'Could not join this group.');
     } finally {
       setBusy(false);
     }
@@ -25,23 +122,66 @@ export function JoinGroupPage() {
 
   return (
     <div className="max-w-xl mx-auto py-10">
-      <div className="bg-white border border-slate-200 rounded-2xl p-7 shadow-sm">
-        <Users className="w-9 h-9 text-indigo-600" />
-        <h1 className="text-2xl font-black mt-4">Join Trip Group</h1>
-        <p className="text-sm text-slate-500 mt-2">Paste the secure invite token shared by the group leader.</p>
-        {error && <div className="mt-5 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{error}</div>}
-        <form onSubmit={submit} className="mt-6 space-y-4">
-          <textarea
-            required
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="Paste invitation token"
-            className="w-full min-h-28 border border-slate-200 rounded-xl p-4 text-sm font-mono"
-          />
-          <button disabled={busy} className="w-full py-3 rounded-lg bg-slate-900 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2">
-            {busy && <Loader2 className="w-4 h-4 animate-spin" />} Join Group
-          </button>
-        </form>
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-7 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="h-11 w-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><Camera className="w-5 h-5" /></div>
+          <div>
+            <h1 className="text-2xl font-black">Join Trip</h1>
+            <p className="text-sm text-slate-500 mt-1">Scan the group QR shared by your trip leader.</p>
+          </div>
+        </div>
+
+        {error && <div className="mt-5 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex gap-2"><AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />{error}</div>}
+
+        {!preview && (
+          <div className="mt-6 space-y-3">
+            <div id={READER_ID} className={`overflow-hidden rounded-xl border ${cameraOpen ? 'border-indigo-300 bg-black min-h-[320px]' : 'hidden'}`} />
+            <div id="kavach-hidden-reader" className="hidden" />
+            {!cameraOpen ? (
+              <button type="button" onClick={openCamera} disabled={starting || busy} className="w-full py-3 rounded-lg bg-slate-900 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-60">
+                {starting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />} Scan Group QR
+              </button>
+            ) : (
+              <button type="button" onClick={stopScanner} className="w-full py-3 rounded-lg border border-slate-200 bg-white text-slate-700 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2"><X className="w-4 h-4" /> Close Camera</button>
+            )}
+            <label className="w-full py-3 rounded-lg border border-slate-200 bg-white text-slate-700 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer">
+              <ImageUp className="w-4 h-4" /> Upload QR Image
+              <input type="file" accept="image/*" className="hidden" onChange={uploadQr} disabled={busy} />
+            </label>
+            <p className="text-center text-[11px] leading-5 text-slate-400">The QR only contains a secure invitation token. Personal details are never stored inside the QR code.</p>
+          </div>
+        )}
+
+        {busy && !preview && <div className="mt-6 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-indigo-600" /></div>}
+
+        {preview && (
+          <div className="mt-6">
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
+                <div className="min-w-0">
+                  <p className="font-black text-emerald-950">Verified Group Invitation</p>
+                  <p className="mt-1 text-xs text-emerald-700">This invitation is valid. Review the trip before joining.</p>
+                </div>
+              </div>
+              <div className="mt-4 rounded-xl bg-white border border-emerald-100 p-3.5 space-y-2">
+                <div className="flex items-center gap-2"><Users className="w-4 h-4 text-slate-400" /><p className="font-bold text-sm text-slate-900">{preview.trip?.locationName || 'Trip Group'}</p></div>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div><p className="text-slate-400">Members</p><p className="font-bold mt-0.5">{preview.memberCount}</p></div>
+                  <div><p className="text-slate-400">Leader</p><p className="font-bold mt-0.5 truncate">{preview.leader?.name || preview.leader?.username || 'Trip Leader'}</p></div>
+                  <div className="col-span-2"><p className="text-slate-400">Trip ends</p><p className="font-bold mt-0.5">{preview.trip?.plannedEndAt ? new Date(preview.trip.plannedEndAt).toLocaleString() : '—'}</p></div>
+                  <div className="col-span-2"><p className="text-slate-400">Invitation expires</p><p className="font-bold mt-0.5">{new Date(preview.inviteExpiresAt).toLocaleString()}</p></div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 flex gap-3">
+              <button type="button" onClick={() => { setPreview(null); setInviteToken(''); }} disabled={busy} className="flex-1 py-3 rounded-lg border border-slate-200 bg-white text-slate-700 font-black text-xs uppercase tracking-wider">Scan Again</button>
+              <button type="button" onClick={confirmJoin} disabled={busy} className="flex-1 py-3 rounded-lg bg-indigo-600 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-60">
+                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />} Join Trip
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

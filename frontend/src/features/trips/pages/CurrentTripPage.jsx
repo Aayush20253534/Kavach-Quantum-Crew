@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Calendar, CheckCircle2, Clock3, Copy, Loader2, LogIn, MapPin, Play, ShieldCheck, TimerReset, Users, XCircle } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { Link } from 'react-router-dom';
 
 import { groupService } from '../../groups/api/groupService';
@@ -261,12 +262,20 @@ export function CurrentTripPage() {
           )}
 
           {invite && (
-            <div className="mt-4 p-4 rounded-xl bg-indigo-50 border border-indigo-100">
-              <p className="text-xs font-black text-indigo-900">Invite token</p>
-              <p className="mt-2 font-mono text-xs break-all">{invite.inviteToken}</p>
-              <button onClick={() => navigator.clipboard?.writeText(invite.inviteToken)} className="mt-3 text-xs font-bold text-indigo-700 flex items-center gap-1">
-                <Copy className="w-3.5 h-3.5" /> Copy
-              </button>
+            <div className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50 p-4 sm:p-5">
+              <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+                <div className="rounded-xl bg-white p-3 shadow-sm">
+                  <QRCodeSVG value={`KAVACH_JOIN:${invite.inviteToken}`} size={176} level="M" includeMargin />
+                </div>
+                <div className="flex-1 text-center sm:text-left">
+                  <p className="text-sm font-black text-indigo-950">Scan to join this trip</p>
+                  <p className="mt-1 text-xs leading-5 text-indigo-700">Members can scan this QR from the Join Trip page. The invitation expires automatically at {new Date(invite.expiresAt).toLocaleString()}.</p>
+                  <p className="mt-3 rounded-lg border border-indigo-100 bg-white/70 px-3 py-2 font-mono text-[10px] break-all text-indigo-950">{invite.inviteToken}</p>
+                  <button onClick={() => navigator.clipboard?.writeText(invite.inviteToken)} className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-indigo-700">
+                    <Copy className="w-3.5 h-3.5" /> Copy invitation as fallback
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
