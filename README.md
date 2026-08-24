@@ -20,3 +20,8 @@ Setup order:
 4. Start `server/`, then `frontend/`.
 5. Create a trip. The individual QR is issued automatically. Creating a group also issues a group QR; joining a group issues that member's own individual QR.
 6. Completing, cancelling, leaving, being removed, or automatically expiring a trip revokes/invalidates the applicable credential. Extending a trip extends its on-chain expiry and causes fresh QR JWTs to be generated with the new expiry.
+
+
+### Hosted blockchain runtime
+
+When hosted on Render, `blockchain/` runs as a separate Web Service (`npm install && npm run build`, then `npm start`) that connects to the public RPC endpoint. The main API talks to that service through `BLOCKCHAIN_GATEWAY_URL` + `BLOCKCHAIN_GATEWAY_KEY`; the issuer private key never belongs in `server/` or `frontend/`.

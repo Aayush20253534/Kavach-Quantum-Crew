@@ -207,4 +207,26 @@ If you ever need to redeploy a new version of the contract (e.g. a bug found clo
 **Everything else about the trust layer — contract logic, adapter functions, the four catalogue HTTP routes — is unchanged by hosting.** This document only covers the environment/infrastructure delta between "runs on my laptop" and "runs on Render against a public testnet."
 ## Gateway deployment
 
-Keep the gateway private. Bind to `127.0.0.1` for a single-host deployment or a private service address inside your container/VPC network. Set a long random `GATEWAY_API_KEY`, and configure the same value as `BLOCKCHAIN_GATEWAY_KEY` in the API. Never expose `ISSUER_PRIVATE_KEY` to the frontend or general Express environment.
+For the current multi-directory deployment, run `blockchain/` as a separate Render Web Service and let it connect to the already-deployed public testnet through `CHAIN_RPC_URL`. Do **not** run `npx hardhat node` on Render; an ephemeral local chain would lose state on restart and would not be reachable as the intended public trust anchor.
+
+Render settings:
+
+```text
+Root Directory: blockchain
+Build Command:  npm install && npm run build
+Start Command:  npm start
+Health Check:   /health
+```
+
+Keep the blockchain team's existing `CHAIN_RPC_URL`, `CHAIN_ID`, `CONTRACT_ADDRESS`, `CONTRACT_VERSION`, and `ISSUER_PRIVATE_KEY` values. The runtime also accepts the existing lowercase aliases `address` and `privateKey`. Add a new long random `GATEWAY_API_KEY`. Render supplies `PORT` automatically and the gateway binds to `0.0.0.0` there.
+
+The main API service gets only the gateway URL/key, never the issuer private key:
+
+```env
+BLOCKCHAIN_ENABLED=true
+BLOCKCHAIN_GATEWAY_URL=https://<your-blockchain-service>.onrender.com
+BLOCKCHAIN_GATEWAY_KEY=<same value as GATEWAY_API_KEY>
+BLOCKCHAIN_CONTRACT_VERSION=1
+```
+
+`BLOCKCHAIN_CONTRACT_VERSION=1` is the numeric `uint8` written into `TrustAnchor.issueId`; it is separate from the blockchain team's string tag `CONTRACT_VERSION=trust-anchor-v1`.

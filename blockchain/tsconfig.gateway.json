@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": ".",
+    "noEmit": false
+  },
+  "include": [
+    "gateway/**/*.ts"
+  ],
+  "exclude": [
+    "test",
+    "scripts",
+    "adapter",
+    "hardhat.config.ts"
+  ]
+}

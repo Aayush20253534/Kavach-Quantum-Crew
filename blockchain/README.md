@@ -314,7 +314,7 @@ Full manual checklist: `docs/on-chain-inspection-checklist.md`.
 | What if the chain is down? | Async queue, visible `PENDING` status — SOS and dispatch are never blocked. |
 | Is government integration live? | No — documented adapters and mocks only. |
 | Can a tourist's identity be reconstructed from the chain? | No — only salted hashes and validity windows are anchored, never the underlying document or PII. |
-| Why TypeScript, not a separate service? | The adapter runs in-process inside the same Node backend — one language, one deploy target, no extra network hop. |
+| Why a separate gateway? | The signer/private key stays isolated in `blockchain/`, while the main API only calls a small authenticated HTTP surface. This keeps blockchain failures and secrets away from normal tourist/SOS traffic. |
 
 ---
 
@@ -323,8 +323,8 @@ Full manual checklist: `docs/on-chain-inspection-checklist.md`.
 | Variable | Set by | Used by |
 |---|---|---|
 | `CHAIN_RPC_URL` | you, in `.env` | `chainClient.ts`, all `scripts/*.ts` |
-| `CONTRACT_ADDRESS` | `scripts/deploy.ts` output | `chainClient.ts` |
-| `ISSUER_PRIVATE_KEY` | you, in `.env` (Hardhat test key only) | `chainClient.ts`, `scripts/*.ts` |
+| `CONTRACT_ADDRESS` | `scripts/deploy.ts` output | `chainClient.ts`, gateway (`address` is accepted as a legacy alias) |
+| `ISSUER_PRIVATE_KEY` | you, in `.env` | `chainClient.ts`, gateway, `scripts/*.ts` (`privateKey` is accepted as a legacy alias) |
 | `CHAIN_ID` | you, in `.env` | `hardhat.config.ts`, `chainClient.ts` |
 | `CONTRACT_VERSION` | you, in `.env` | `chainClient.ts`, `hasher.ts` callers |
 
@@ -346,3 +346,17 @@ npm run gateway
 ```
 
 The server sends `ISSUE`, `EXTEND`, and `REVOKE` jobs to the gateway. `GET /v1/credentials/:idHash` performs read-only verification. `TrustAnchor.extendId` was added so extending a trip preserves the same credential hash while moving its expiry forward.
+
+
+## Render deployment for the blockchain gateway
+
+Deploy `blockchain/` as its own Render **Web Service**. Do not run a Hardhat node on Render for production/demo hosting; the service should connect to the public RPC URL already supplied in `CHAIN_RPC_URL`.
+
+- Root Directory: `blockchain`
+- Build Command: `npm install && npm run build`
+- Start Command: `npm start`
+- Health Check Path: `/health`
+
+Set the existing blockchain-team values unchanged: `CHAIN_RPC_URL`, `CHAIN_ID`, `CONTRACT_ADDRESS` (or legacy `address`), `CONTRACT_VERSION`, and `ISSUER_PRIVATE_KEY` (or legacy `privateKey`). Add only `GATEWAY_API_KEY` for the HTTP boundary. Render injects `PORT`; do not hard-code a production port.
+
+The main `server/` Render service then receives `BLOCKCHAIN_GATEWAY_URL=https://<blockchain-service>.onrender.com` and the matching `BLOCKCHAIN_GATEWAY_KEY`. The private key remains only in the blockchain service.
