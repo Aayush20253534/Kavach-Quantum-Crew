@@ -21,11 +21,11 @@ export const groupService = {
   async joinGroup(inviteToken) {
     return unwrap(await apiClient.post('/groups/join', { inviteToken }));
   },
-  async previewJoinGroupByQr(groupIdHash) {
-    return unwrap(await apiClient.post('/groups/join/qr/preview', { groupIdHash }));
+  async previewJoinGroupByQr(qrToken) {
+    return unwrap(await apiClient.post('/groups/join/qr/preview', { qrToken }));
   },
-  async joinGroupByQr(groupIdHash) {
-    return unwrap(await apiClient.post('/groups/join/qr', { groupIdHash }));
+  async joinGroupByQr(qrToken) {
+    return unwrap(await apiClient.post('/groups/join/qr', { qrToken }));
   },
   async getJoinRequestStatus(requestId) {
     return unwrap(await apiClient.get(`/groups/join/requests/${requestId}`));

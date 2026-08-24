@@ -37,31 +37,57 @@ const readBody = (req: http.IncomingMessage) => new Promise<any>((resolve, rejec
   req.on("error", reject);
 });
 const bytes32 = (value: unknown, name: string) => {
-  if (typeof value !== "string" || !isHexString(value, 32)) throw new Error(`${name} must be bytes32`);
+  if (typeof value !== "string" || !isHexString(value, 32)) {
+    const error = new Error(`${name} must be a 32-byte hex value`);
+    (error as any).code = "INVALID_BYTES32";
+    throw error;
+  }
   return value;
+};
+
+const gatewayError = (error: any) => {
+  const raw = String(error?.shortMessage || error?.reason || error?.message || error || "Unknown blockchain error");
+  const lower = raw.toLowerCase();
+  if (error?.code === "BODY_TOO_LARGE") return { status: 413, code: "BODY_TOO_LARGE", message: "Request body is too large" };
+  if (error?.code === "INVALID_JSON") return { status: 400, code: "INVALID_JSON", message: "Request body must be valid JSON" };
+  if (error?.code === "INVALID_BYTES32") return { status: 422, code: "INVALID_BLOCKCHAIN_HASH", message: raw };
+  if (lower.includes("insufficient funds")) return { status: 503, code: "ISSUER_INSUFFICIENT_FUNDS", message: "Blockchain issuer wallet has insufficient funds for gas" };
+  if (lower.includes("nonce")) return { status: 503, code: "CHAIN_NONCE_ERROR", message: "Blockchain transaction nonce could not be accepted" };
+  if (lower.includes("network") || lower.includes("connect") || lower.includes("econnrefused") || lower.includes("timeout") || lower.includes("failed to fetch")) {
+    return { status: 503, code: "CHAIN_RPC_UNAVAILABLE", message: "Blockchain RPC is unavailable or unreachable" };
+  }
+  if (lower.includes("execution reverted") || lower.includes("revert")) return { status: 409, code: "CONTRACT_REVERTED", message: raw.slice(0, 300) };
+  return { status: 500, code: "BLOCKCHAIN_GATEWAY_ERROR", message: raw.slice(0, 300) };
+};
+
+const healthSnapshot = async () => {
+  const network = await provider.getNetwork();
+  const actualChainId = Number(network.chainId);
+  const code = await provider.getCode(contractAddress);
+  const chainMatches = expectedChainId === undefined || expectedChainId === actualChainId;
+  const contractDeployed = code !== "0x";
+  return {
+    ok: chainMatches && contractDeployed,
+    service: "kavach-blockchain-gateway",
+    message: chainMatches && contractDeployed ? "Blockchain gateway is working" : "Blockchain gateway is not ready",
+    chainId: actualChainId,
+    expectedChainId: expectedChainId ?? null,
+    chainMatches,
+    contractAddress,
+    contractDeployed,
+  };
 };
 
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
-    // Kept public so Render can use it as a health check. It exposes only public chain metadata.
-    if (req.method === "GET" && url.pathname === "/health") {
-      const network = await provider.getNetwork();
-      const actualChainId = Number(network.chainId);
-      const code = await provider.getCode(contractAddress);
-      const chainMatches = expectedChainId === undefined || expectedChainId === actualChainId;
-      const contractDeployed = code !== "0x";
-      return json(res, chainMatches && contractDeployed ? 200 : 503, {
-        ok: chainMatches && contractDeployed,
-        chainId: actualChainId,
-        expectedChainId: expectedChainId ?? null,
-        chainMatches,
-        contractAddress,
-        contractDeployed,
-      });
+    // Public readiness endpoints for hosting health checks and quick diagnostics.
+    if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/health")) {
+      const health = await healthSnapshot();
+      return json(res, health.ok ? 200 : 503, health);
     }
     if (req.headers["x-kavach-chain-key"] !== apiKey) {
-      return json(res, 401, { error: "UNAUTHORIZED" });
+      return json(res, 401, { error: { code: "UNAUTHORIZED", message: "Missing or invalid blockchain gateway API key" } });
     }
     if (req.method === "POST" && url.pathname === "/v1/credentials/issue") {
       const body = await readBody(req);
@@ -109,9 +135,10 @@ const server = http.createServer(async (req, res) => {
       const names = ["ACTIVE", "REVOKED", "EXPIRED"];
       return json(res, 200, { status: names[Number(status)] || "UNKNOWN", issuer, issuedAt: Number(issuedAt), expiresAt: Number(expiresAt), version: Number(version) });
     }
-    return json(res, 404, { error: "NOT_FOUND" });
+    return json(res, 404, { error: { code: "NOT_FOUND", message: "Blockchain gateway route not found" } });
   } catch (error: any) {
-    return json(res, 500, { error: String(error?.shortMessage || error?.message || error).slice(0, 500) });
+    const normalized = gatewayError(error);
+    return json(res, normalized.status, { error: { code: normalized.code, message: normalized.message } });
   }
 });
 server.listen(port, host, () => console.log(`[blockchain-gateway] listening on http://${host}:${port}`));

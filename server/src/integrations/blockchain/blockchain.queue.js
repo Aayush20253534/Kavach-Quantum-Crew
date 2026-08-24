@@ -1,6 +1,6 @@
 import { prisma } from "../../config/database.js";
 import { environment } from "../../config/environment.js";
-import { blockchainService } from "./blockchain.service.js";
+import { blockchainFailure, blockchainService } from "./blockchain.service.js";
 
 const credentialModel = (db, entityType) =>
   entityType === "GROUP" ? db.groupTripCredential : db.touristTripCredential;
@@ -74,15 +74,24 @@ export const blockchainQueue = Object.freeze({
       const attempts = job.attempts + 1;
       const failed = attempts >= environment.BLOCKCHAIN_MAX_ATTEMPTS;
       const retryAt = new Date(Date.now() + Math.min(60_000, 2 ** attempts * 1000));
-      const message = String(error?.shortMessage || error?.message || error).slice(0, 2000);
+      const failure = blockchainFailure(error);
+      const failureText = JSON.stringify({
+        code: failure.code,
+        message: failure.message,
+        retryable: failure.retryable,
+        httpStatus: failure.status,
+        attempts,
+        maxAttempts: environment.BLOCKCHAIN_MAX_ATTEMPTS,
+        lastAttemptAt: new Date().toISOString(),
+      });
       await prisma.$transaction([
         prisma.blockchainAnchorJob.update({
           where: { id: job.id },
-          data: { state: failed ? "FAILED" : "PENDING", lastError: message, availableAt: retryAt },
+          data: { state: failed ? "FAILED" : "PENDING", lastError: failureText, availableAt: retryAt },
         }),
         credentialModel(prisma, job.entityType).update({
           where: { id: job.entityId },
-          data: { chainStatus: failed ? "FAILED" : "PENDING", chainError: message },
+          data: { chainStatus: failed ? "FAILED" : "PENDING", chainError: failureText },
         }),
       ]);
     }

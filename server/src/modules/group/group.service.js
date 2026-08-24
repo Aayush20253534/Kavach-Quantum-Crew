@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
+import jwt from "jsonwebtoken";
 import { ApiError } from "../../common/errors/ApiError.js";
+import { environment } from "../../config/environment.js";
 import { groupRepository } from "./group.repository.js";
 import { credentialService } from "../credential/credential.service.js";
 
@@ -65,8 +67,7 @@ const validateJoinableInvitation = async (repository, userId, inviteToken, now) 
   return { invitation, group };
 };
 
-const validateJoinableGroupHash = async (repository, userId, groupIdHash, now) => {
-  const credential = await repository.findGroupByCredentialHash(groupIdHash);
+const validateJoinableCredential = async (repository, userId, credential, now) => {
   if (!credential) throw ApiError.notFound("Group QR not found", { code: "GROUP_QR_NOT_FOUND" });
   if (credential.revokedAt) throw ApiError.badRequest("Group QR has been revoked", { code: "GROUP_QR_REVOKED" });
   if (new Date(credential.expiresAt) <= now) throw ApiError.badRequest("Group QR has expired", { code: "GROUP_QR_EXPIRED" });
@@ -84,6 +85,29 @@ const validateJoinableGroupHash = async (repository, userId, groupIdHash, now) =
   }
 
   return { credential, group };
+};
+
+const validateJoinableGroupHash = async (repository, userId, groupIdHash, now) =>
+  validateJoinableCredential(repository, userId, await repository.findGroupByCredentialHash(groupIdHash), now);
+
+const validateJoinableGroupQrToken = async (repository, userId, qrToken, now) => {
+  let payload;
+  try {
+    payload = jwt.verify(qrToken, environment.QR_TOKEN_SECRET, {
+      issuer: environment.JWT_ISSUER,
+      audience: "kavach-group-join",
+    });
+  } catch {
+    throw ApiError.badRequest("Group QR is invalid or expired", { code: "GROUP_QR_TOKEN_INVALID" });
+  }
+  if (payload?.typ !== "KAVACH_GROUP_JOIN" || typeof payload?.cid !== "string" || typeof payload?.jti !== "string") {
+    throw ApiError.badRequest("Unsupported group QR", { code: "GROUP_QR_TOKEN_INVALID" });
+  }
+  const credential = await repository.findGroupByCredentialId(payload.cid);
+  if (!credential || credential.tokenId !== payload.jti) {
+    throw ApiError.badRequest("Group QR has been replaced", { code: "GROUP_QR_REPLACED" });
+  }
+  return validateJoinableCredential(repository, userId, credential, now);
 };
 
 export const createGroupService = ({ repository = groupRepository, clock = () => new Date(), tokenFactory = makeToken, codeFactory = makeCode } = {}) => Object.freeze({
@@ -143,13 +167,12 @@ export const createGroupService = ({ repository = groupRepository, clock = () =>
       memberCount: group.members?.filter((member) => !member.leftAt).length ?? 0,
     };
   },
-  async previewJoinGroupByHash(userId, groupIdHash) {
+  async previewJoinGroupByQrToken(userId, qrToken) {
     const now = clock();
-    const { credential, group } = await validateJoinableGroupHash(repository, userId, groupIdHash, now);
+    const { credential, group } = await validateJoinableGroupQrToken(repository, userId, qrToken, now);
     return {
       groupId: group.id,
       tripId: group.tripId,
-      groupIdHash: credential.chainHash,
       qrExpiresAt: credential.expiresAt,
       blockchainStatus: credential.chainStatus,
       trip: {
@@ -162,14 +185,14 @@ export const createGroupService = ({ repository = groupRepository, clock = () =>
       memberCount: group.members?.filter((member) => !member.leftAt).length ?? 0,
     };
   },
-  async joinGroupByHash(userId, groupIdHash) {
+  async joinGroupByQrToken(userId, qrToken) {
     const now = clock();
-    const { group } = await validateJoinableGroupHash(repository, userId, groupIdHash, now);
+    const { credential, group } = await validateJoinableGroupQrToken(repository, userId, qrToken, now);
     if (group.leaderId === userId) {
       throw ApiError.conflict("You are already the leader of this group", { code: "GROUP_LEADER_EXISTS" });
     }
-    const request = await repository.createJoinRequest(group.id, userId, groupIdHash, now);
-    await repository.createAudit({ actorId: userId, action: "GROUP_JOIN_REQUESTED_BY_QR", entityId: group.id, metadata: { requestId: request.id, groupIdHash } });
+    const request = await repository.createJoinRequest(group.id, userId, credential.chainHash, now);
+    await repository.createAudit({ actorId: userId, action: "GROUP_JOIN_REQUESTED_BY_QR", entityId: group.id, metadata: { requestId: request.id } });
     return {
       requestId: request.id,
       status: request.status,
@@ -200,7 +223,8 @@ export const createGroupService = ({ repository = groupRepository, clock = () =>
     const group = await requireGroup(repository, groupId);
     requireLeader(group, userId);
     requireMembershipOpen(group);
-    return repository.listPendingJoinRequests(groupId);
+    const requests = await repository.listPendingJoinRequests(groupId);
+    return requests.map(({ groupIdHash: _internalGroupIdHash, ...request }) => request);
   },
   async approveJoinRequest(userId, groupId, requestId) {
     const group = await requireGroup(repository, groupId);

@@ -59,6 +59,23 @@ export const createGroupRepository = ({ db = prisma } = {}) => ({
   createInvitation(groupId, data) {
     return db.groupInvitation.create({ data: { groupId, ...data } });
   },
+  findGroupByCredentialId(id) {
+    return db.groupTripCredential.findUnique({
+      where: { id },
+      include: {
+        group: {
+          include: {
+            trip: true,
+            members: {
+              where: { leftAt: null },
+              include: { user: { select: { id: true, name: true, username: true, profilePicUrl: true } } },
+              orderBy: { joinedAt: "asc" },
+            },
+          },
+        },
+      },
+    });
+  },
   findGroupByCredentialHash(chainHash) {
     return db.groupTripCredential.findUnique({
       where: { chainHash },

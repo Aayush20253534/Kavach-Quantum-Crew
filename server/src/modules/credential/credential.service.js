@@ -15,15 +15,36 @@ const active = (credential, now = new Date()) => Boolean(
 );
 const memberOf = (trip, userId) => trip?.touristId === userId || Boolean(trip?.group?.members?.some((m) => m.userId === userId));
 
+const tokenLifetimeSeconds = (credential) => Math.max(1, Math.floor((new Date(credential.expiresAt).getTime() - Date.now()) / 1000));
+
 const signToken = (credential, type) => jwt.sign(
   { typ: `KAVACH_${type}`, cid: credential.id, jti: credential.tokenId },
   environment.QR_TOKEN_SECRET,
   {
     issuer: environment.JWT_ISSUER,
     audience: "kavach-credential-verifier",
-    expiresIn: Math.max(1, Math.floor((new Date(credential.expiresAt).getTime() - Date.now()) / 1000)),
+    expiresIn: tokenLifetimeSeconds(credential),
   },
 );
+
+const signGroupJoinToken = (credential) => jwt.sign(
+  { typ: "KAVACH_GROUP_JOIN", cid: credential.id, jti: credential.tokenId },
+  environment.QR_TOKEN_SECRET,
+  {
+    issuer: environment.JWT_ISSUER,
+    audience: "kavach-group-join",
+    expiresIn: tokenLifetimeSeconds(credential),
+  },
+);
+
+const parseChainError = (value) => {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value);
+    if (parsed && typeof parsed === "object") return parsed;
+  } catch {}
+  return { code: "BLOCKCHAIN_ERROR", message: String(value).slice(0, 500), retryable: true };
+};
 
 const decorate = async (credential, type) => {
   if (!credential) return null;
@@ -40,8 +61,9 @@ const decorate = async (credential, type) => {
     active: isActive,
     blockchainStatus: credential.chainStatus,
     blockchainTxHash: credential.chainTxHash,
-    idHash: credential.chainHash,
+    blockchainError: parseChainError(credential.chainError),
     verificationUrl,
+    groupJoinQrPayload: type === "GROUP" && isActive ? `KAVACH_GROUP_JOIN:${signGroupJoinToken(credential)}` : null,
     qrDataUrl: verificationUrl ? await QRCode.toDataURL(verificationUrl, { width: 320, margin: 1 }) : null,
   };
 };
