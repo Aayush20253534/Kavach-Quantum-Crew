@@ -316,3 +316,21 @@ New runtime pieces:
 - Prisma stores both credential state and the asynchronous blockchain job ledger.
 
 Set `BLOCKCHAIN_ENABLED=true` only after the gateway is reachable and the contract has been deployed. When disabled, credentials still work as signed QR credentials but clearly report `blockchainStatus=DISABLED` rather than pretending verification succeeded.
+
+
+### Render connection to blockchain gateway
+
+The blockchain runtime is a separate Render Web Service. The API does not need `CHAIN_RPC_URL`, `CONTRACT_ADDRESS`, `ISSUER_PRIVATE_KEY`, `address`, or `privateKey`. Configure only:
+
+```env
+BLOCKCHAIN_ENABLED=true
+BLOCKCHAIN_GATEWAY_URL=https://<your-blockchain-service>.onrender.com
+BLOCKCHAIN_GATEWAY_KEY=<same secret as blockchain GATEWAY_API_KEY>
+BLOCKCHAIN_CONTRACT_VERSION=1
+BLOCKCHAIN_WORKER_INTERVAL_MS=5000
+BLOCKCHAIN_MAX_ATTEMPTS=5
+QR_TOKEN_SECRET=<long independent random secret>
+PUBLIC_APP_URL=https://<your-frontend-domain>
+```
+
+Keep `QR_TOKEN_SECRET` different from the gateway key. Human beings do occasionally reuse secrets everywhere, apparently as a hobby; don't do that here.

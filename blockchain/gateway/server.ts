@@ -10,12 +10,18 @@ const ABI = [
 ];
 
 const rpcUrl = process.env.CHAIN_RPC_URL || "http://127.0.0.1:8545";
-const contractAddress = process.env.CONTRACT_ADDRESS;
-const privateKey = process.env.ISSUER_PRIVATE_KEY;
+const contractAddress = process.env.CONTRACT_ADDRESS || process.env.address;
+const privateKey = process.env.ISSUER_PRIVATE_KEY || process.env.privateKey;
 const apiKey = process.env.GATEWAY_API_KEY;
-const host = process.env.GATEWAY_HOST || "127.0.0.1";
-const port = Number(process.env.GATEWAY_PORT || 4100);
-if (!contractAddress || !privateKey || !apiKey) throw new Error("CONTRACT_ADDRESS, ISSUER_PRIVATE_KEY and GATEWAY_API_KEY are required");
+// Render injects PORT and requires binding to 0.0.0.0. Local development can still override both.
+const host = process.env.GATEWAY_HOST || "0.0.0.0";
+const port = Number(process.env.PORT || process.env.GATEWAY_PORT || 4100);
+const expectedChainId = process.env.CHAIN_ID ? Number(process.env.CHAIN_ID) : undefined;
+if (!contractAddress || !privateKey || !apiKey) {
+  throw new Error(
+    "CONTRACT_ADDRESS/address, ISSUER_PRIVATE_KEY/privateKey and GATEWAY_API_KEY are required"
+  );
+}
 
 const provider = new JsonRpcProvider(rpcUrl);
 const signer = new Wallet(privateKey, provider);
@@ -37,11 +43,25 @@ const bytes32 = (value: unknown, name: string) => {
 
 const server = http.createServer(async (req, res) => {
   try {
-    if (req.headers["x-kavach-chain-key"] !== apiKey) return json(res, 401, { error: "UNAUTHORIZED" });
     const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+    // Kept public so Render can use it as a health check. It exposes only public chain metadata.
     if (req.method === "GET" && url.pathname === "/health") {
       const network = await provider.getNetwork();
-      return json(res, 200, { ok: true, chainId: Number(network.chainId), contractAddress });
+      const actualChainId = Number(network.chainId);
+      const code = await provider.getCode(contractAddress);
+      const chainMatches = expectedChainId === undefined || expectedChainId === actualChainId;
+      const contractDeployed = code !== "0x";
+      return json(res, chainMatches && contractDeployed ? 200 : 503, {
+        ok: chainMatches && contractDeployed,
+        chainId: actualChainId,
+        expectedChainId: expectedChainId ?? null,
+        chainMatches,
+        contractAddress,
+        contractDeployed,
+      });
+    }
+    if (req.headers["x-kavach-chain-key"] !== apiKey) {
+      return json(res, 401, { error: "UNAUTHORIZED" });
     }
     if (req.method === "POST" && url.pathname === "/v1/credentials/issue") {
       const body = await readBody(req);

@@ -5,7 +5,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 const CHAIN_RPC_URL = process.env.CHAIN_RPC_URL || "";
-const ISSUER_PRIVATE_KEY = process.env.ISSUER_PRIVATE_KEY || "";
+const ISSUER_PRIVATE_KEY = process.env.ISSUER_PRIVATE_KEY || process.env.privateKey || "";
 const CHAIN_ID = process.env.CHAIN_ID ? parseInt(process.env.CHAIN_ID, 10) : undefined;
 
 const config: HardhatUserConfig = {
@@ -38,8 +38,8 @@ const config: HardhatUserConfig = {
       chainId: 31337,
     },
     sepolia: {
-      url: process.env.CHAIN_RPC_URL!,
-      accounts: [process.env.ISSUER_PRIVATE_KEY!],
+      url: CHAIN_RPC_URL,
+      accounts: ISSUER_PRIVATE_KEY ? [ISSUER_PRIVATE_KEY] : [],
       chainId: 11155111,
     },
     // Optional / secondary path (Invariant 7): a public testnet deployment

@@ -110,13 +110,13 @@ export function connectContract(record: DeploymentRecord): {
   contract: ethers.Contract;
 } {
   const rpcUrl = process.env.CHAIN_RPC_URL;
-  const privateKey = process.env.ISSUER_PRIVATE_KEY;
+  const privateKey = process.env.ISSUER_PRIVATE_KEY || process.env.privateKey;
 
   if (!rpcUrl) {
     throw new Error("CHAIN_RPC_URL is not set in the environment.");
   }
   if (!privateKey) {
-    throw new Error("ISSUER_PRIVATE_KEY is not set in the environment.");
+    throw new Error("ISSUER_PRIVATE_KEY (or legacy privateKey) is not set in the environment.");
   }
 
   const provider = new ethers.JsonRpcProvider(rpcUrl);

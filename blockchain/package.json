@@ -14,6 +14,9 @@
     "gateway": "ts-node gateway/server.ts",
     "node": "hardhat node",
     "deploy:localhost": "hardhat run scripts/deploy.ts --network localhost",
-    "test": "hardhat test"
+    "test": "hardhat test",
+    "build": "tsc -p tsconfig.gateway.json",
+    "start": "node dist/gateway/server.js",
+    "deploy:testnet": "hardhat run scripts/deploy.ts --network testnet"
   }
 }
