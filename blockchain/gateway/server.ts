@@ -78,14 +78,30 @@ const healthSnapshot = async () => {
   };
 };
 
+const PUBLIC_HEALTH_PATHS = new Set(["/", "/health", "/healthz"]);
+
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
-    // Public readiness endpoints for hosting health checks and quick diagnostics.
-    if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/health")) {
+
+    // Health checks must remain outside gateway authentication. Uptime providers and
+    // hosting platforms may probe with either GET or HEAD and do not know the private
+    // x-kavach-chain-key used by the Express backend.
+    if ((req.method === "GET" || req.method === "HEAD") && PUBLIC_HEALTH_PATHS.has(url.pathname)) {
       const health = await healthSnapshot();
-      return json(res, health.ok ? 200 : 503, health);
+      const status = health.ok ? 200 : 503;
+
+      if (req.method === "HEAD") {
+        res.writeHead(status, {
+          "content-type": "application/json",
+          "cache-control": "no-store",
+        });
+        return res.end();
+      }
+
+      return json(res, status, health);
     }
+
     if (req.headers["x-kavach-chain-key"] !== apiKey) {
       return json(res, 401, { error: { code: "UNAUTHORIZED", message: "Missing or invalid blockchain gateway API key" } });
     }

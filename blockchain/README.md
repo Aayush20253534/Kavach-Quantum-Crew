@@ -34,11 +34,18 @@ The Express backend does not need `CHAIN_RPC_URL`, `CONTRACT_ADDRESS`, or `ISSUE
 
 ## Gateway API
 
-Public health endpoint:
+Public health endpoints (no gateway API key required):
 
 ```text
-GET /health
+GET  /
+GET  /health
+GET  /healthz
+HEAD /
+HEAD /health
+HEAD /healthz
 ```
+
+Use `/healthz` for external uptime monitors so monitoring is clearly separated from authenticated gateway API routes.
 
 Authenticated with `x-kavach-chain-key`:
 
