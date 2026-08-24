@@ -4,6 +4,10 @@ The `blockchain/` workspace contains the EVM trust anchor used by KAVACH for pri
 
 > **Verified:** 24 August 2026. The production integration boundary is the authenticated HTTP gateway in `gateway/server.ts`. Older documents that describe importing the adapter directly into the Express service are historical design notes and are not the current deployment architecture.
 
+## Workflow and architecture
+
+Start with [`docs/workflow.md`](docs/workflow.md) for the current end-to-end flow from QR credential creation in Express, through the database-backed queue and gateway, to `TrustAnchor.sol`, including failure handling, security boundaries, verification, and plain-language blockchain terms.
+
 ## What is on-chain
 
 `contracts/TrustAnchor.sol` supports:

@@ -1,5 +1,10 @@
 # API Endpoint Catalogue
 
+## Documentation navigation
+
+For the complete request-to-database/integration execution model, JavaScript-oriented terminology, and module map, start with [`TECHNICAL-FLOW.md`](TECHNICAL-FLOW.md). For the product journey without as much implementation detail, use [`SYSTEM-FLOW.md`](SYSTEM-FLOW.md).
+
+
 > **Documentation status (24 Aug 2026):** This document is maintained against the current repository. Runtime source, `server/.env.example`, `server/prisma/schema.prisma`, and `server/openapi.yaml` are authoritative if a historical phase note differs.
 
 
@@ -241,7 +246,7 @@ This catalogue documents **148 mounted HTTP routes/aliases** in the current back
 
 ### Chatbot availability
 
-There is currently **no tourist chatbot REST endpoint**. `ChatbotWidget.jsx` is simulated in the browser. The `/integrations/ai/*` routes below are staff-only analysis contracts for `DISASTER_MANAGER` and `SYSTEM_ADMIN`; they are not conversational chatbot APIs and return `501 INTEGRATION_PROVIDER_NOT_CONFIGURED` until a provider is injected.
+The tourist chatbot REST endpoint is `POST /api/v1/chatbot/messages` and requires an authenticated `TOURIST`. Its provider boundary is separate from the staff-only `/integrations/ai/*` risk/hazard analysis contracts. A frontend may still simulate responses until connected to the chatbot endpoint, and an unconfigured provider can still prevent real model inference.
 
 
 | Method | Endpoint | Access | Purpose |
