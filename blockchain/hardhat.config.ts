@@ -19,6 +19,7 @@ const config: HardhatUserConfig = {
     },
   },
 
+
   // Default network used when no --network flag is passed.
   // In-memory, resets on every run — fastest for local dev + `npx hardhat test`.
   defaultNetwork: "hardhat",
@@ -36,7 +37,11 @@ const config: HardhatUserConfig = {
       url: "http://127.0.0.1:8545",
       chainId: 31337,
     },
-
+    sepolia: {
+      url: process.env.CHAIN_RPC_URL!,
+      accounts: [process.env.ISSUER_PRIVATE_KEY!],
+      chainId: 11155111,
+    },
     // Optional / secondary path (Invariant 7): a public testnet deployment
     // is never required for tests or judging to pass. Only enabled if the
     // required env vars are actually present, so an empty .env never

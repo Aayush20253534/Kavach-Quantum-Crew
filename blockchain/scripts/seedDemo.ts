@@ -37,8 +37,32 @@ async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   const networkName = args["network"];
 
+  console.log("=== ENV DEBUG ===");
+console.log("CHAIN_RPC_URL:", process.env.CHAIN_RPC_URL);
+console.log("CHAIN_ID:", process.env.CHAIN_ID);
+console.log("CONTRACT_ADDRESS:", process.env.CONTRACT_ADDRESS);
+console.log("CONTRACT_VERSION:", process.env.CONTRACT_VERSION);
+console.log("=================");
+
   const deployment = loadDeployment(networkName);
   const { contract } = connectContract(deployment);
+
+  console.log("Deployment:", deployment);
+console.log("Contract target:", await contract.getAddress());
+
+const provider = contract.runner?.provider;
+
+if (!provider) {
+  throw new Error("No provider attached to contract");
+}
+
+console.log("Network:", await provider.getNetwork());
+
+const contractAddress = await contract.getAddress();
+const code = await provider.getCode(contractAddress);
+
+console.log("Contract code:", code);
+console.log("Code exists:", code !== "0x");
 
   // Deterministically derive idHash from fixed demo seed data.
   const idHash = hashIdPayload(
