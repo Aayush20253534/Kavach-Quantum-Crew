@@ -41,6 +41,44 @@ const serializeTrip = (trip, now = new Date()) => ({
     grantedAt: consent.grantedAt,
     revokedAt: consent.revokedAt,
   })),
+  groupMemberCount: trip.group?.members?.length ?? (trip.tripType === "SOLO" ? 1 : 0),
+  incidentCount: trip.incidentCount ?? 0,
+  actualDurationMinutes:
+    trip.startedAt && (trip.endedAt || trip.cancelledAt)
+      ? Math.max(
+          0,
+          Math.round(
+            (new Date(trip.endedAt || trip.cancelledAt).getTime() -
+              new Date(trip.startedAt).getTime()) /
+              60_000,
+          ),
+        )
+      : null,
+  plannedDurationMinutes: Math.max(
+    0,
+    Math.round(
+      (new Date(trip.plannedEndAt).getTime() -
+        new Date(trip.plannedStartAt).getTime()) /
+        60_000,
+    ),
+  ),
+  completedEarly:
+    trip.status === "COMPLETED" &&
+    trip.endedAt &&
+    new Date(trip.endedAt) < new Date(trip.plannedEndAt),
+  earlyByMinutes:
+    trip.status === "COMPLETED" &&
+    trip.endedAt &&
+    new Date(trip.endedAt) < new Date(trip.plannedEndAt)
+      ? Math.max(
+          0,
+          Math.round(
+            (new Date(trip.plannedEndAt).getTime() -
+              new Date(trip.endedAt).getTime()) /
+              60_000,
+          ),
+        )
+      : 0,
 });
 
 const requireTrip = async (repository, tripId, userId) => {
@@ -126,8 +164,20 @@ export const createTripService = ({
 
     async getHistory(userId, query) {
       const trips = await repository.listHistory(userId, query);
+      const incidentCounts = await repository.historyIncidentCounts(
+        trips.map((trip) => trip.id),
+      );
+
       return {
-        items: trips.map((trip) => serializeTrip(trip, clock())),
+        items: trips.map((trip) =>
+          serializeTrip(
+            {
+              ...trip,
+              incidentCount: incidentCounts.get(trip.id) ?? 0,
+            },
+            clock(),
+          ),
+        ),
         nextCursor: trips.length === query.limit ? trips.at(-1)?.id ?? null : null,
       };
     },
@@ -251,6 +301,51 @@ export const createTripService = ({
         entityId: trip.id,
         metadata: { startedAt: now.toISOString() },
       });
+      return serializeTrip(updated, now);
+    },
+
+    async extendTrip(userId, tripId, plannedEndAtInput) {
+      const trip = await requireTrip(repository, tripId, userId);
+      if (trip.status !== "ACTIVE") {
+        throw ApiError.conflict("Only an active trip can be extended", {
+          code: "TRIP_NOT_ACTIVE",
+        });
+      }
+
+      const now = clock();
+      const plannedEndAt = new Date(plannedEndAtInput);
+      const currentEnd = new Date(trip.plannedEndAt);
+
+      if (plannedEndAt <= now) {
+        throw ApiError.badRequest("The extended end time must be in the future", {
+          code: "TRIP_EXTENSION_IN_PAST",
+        });
+      }
+
+      if (plannedEndAt <= currentEnd) {
+        throw ApiError.badRequest("The new end time must be later than the current trip end time", {
+          code: "TRIP_EXTENSION_NOT_LATER",
+        });
+      }
+
+      const maximumEnd = new Date(currentEnd.getTime() + 24 * 60 * 60 * 1000);
+      if (plannedEndAt > maximumEnd) {
+        throw ApiError.badRequest("A trip can be extended by at most 24 hours at a time", {
+          code: "TRIP_EXTENSION_TOO_LONG",
+        });
+      }
+
+      const updated = await repository.extendTrip(trip.id, plannedEndAt);
+      await repository.createAudit({
+        actorId: userId,
+        action: "TRIP_EXTENDED",
+        entityId: trip.id,
+        metadata: {
+          previousPlannedEndAt: currentEnd.toISOString(),
+          plannedEndAt: plannedEndAt.toISOString(),
+        },
+      });
+
       return serializeTrip(updated, now);
     },
 

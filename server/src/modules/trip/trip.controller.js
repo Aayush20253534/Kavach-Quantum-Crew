@@ -60,6 +60,16 @@ export const createTripController = ({ service = tripService } = {}) => ({
       data: await service.startTrip(request.user.id, request.params.tripId),
     }),
 
+  extend: async (request, response) =>
+    ApiResponse.success(response, {
+      message: "Trip extended",
+      data: await service.extendTrip(
+        request.user.id,
+        request.params.tripId,
+        request.body.plannedEndAt,
+      ),
+    }),
+
   complete: async (request, response) =>
     ApiResponse.success(response, {
       message: "Trip completed",

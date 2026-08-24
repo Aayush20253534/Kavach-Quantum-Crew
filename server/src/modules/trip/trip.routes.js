@@ -10,6 +10,7 @@ import {
   consentIdParamsSchema,
   createTripBodySchema,
   grantConsentBodySchema,
+  extendTripBodySchema,
   tripHistoryQuerySchema,
   tripIdParamsSchema,
 } from "./trip.validation.js";
@@ -52,6 +53,11 @@ export const createTripRouter = ({ controller = tripController } = {}) => {
     "/:tripId/start",
     validate({ params: tripIdParamsSchema }),
     asyncHandler(controller.start),
+  );
+  router.post(
+    "/:tripId/extend",
+    validate({ params: tripIdParamsSchema, body: extendTripBodySchema }),
+    asyncHandler(controller.extend),
   );
   router.post(
     "/:tripId/complete",
