@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Calendar, CheckCircle2, Copy, Loader2, LogIn, MapPin, Play, ShieldCheck, Users, XCircle } from 'lucide-react';
+import { Calendar, CheckCircle2, Clock3, Copy, Loader2, LogIn, MapPin, Play, ShieldCheck, TimerReset, Users, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { groupService } from '../../groups/api/groupService';
@@ -17,6 +17,7 @@ export function CurrentTripPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
+  const [now, setNow] = useState(() => Date.now());
 
   const load = async () => {
     try {
@@ -39,6 +40,11 @@ export function CurrentTripPage() {
 
   useEffect(() => { load(); }, []);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const run = async (name, action) => {
     setBusy(name);
     setError('');
@@ -57,6 +63,13 @@ export function CurrentTripPage() {
     await tripService.startTrip(trip.id);
   });
 
+  const extendBy = (minutes) =>
+    run('extend', async () => {
+      const currentEnd = new Date(trip.plannedEndAt).getTime();
+      const plannedEndAt = new Date(currentEnd + minutes * 60_000).toISOString();
+      await tripService.extendTrip(trip.id, plannedEndAt);
+    });
+
   const createInvite = async () => {
     setBusy('invite');
     try { setInvite(await groupService.createInvitation(group.id, 60)); }
@@ -69,6 +82,14 @@ export function CurrentTripPage() {
   const isOwner = trip?.touristId === user?.id;
   const groupMemberCount = group?.members?.length || 0;
   const groupTooSmallToStart = trip?.tripType === 'GROUP' && groupMemberCount < MIN_GROUP_MEMBERS_TO_START;
+  const remainingMs =
+    trip?.status === 'ACTIVE'
+      ? new Date(trip.plannedEndAt).getTime() - now
+      : null;
+  const endingSoon =
+    remainingMs != null && remainingMs > 0 && remainingMs <= 30 * 60_000;
+  const remainingMinutes =
+    remainingMs == null ? null : Math.max(0, Math.ceil(remainingMs / 60_000));
 
   if (!trip) {
     return (
@@ -90,6 +111,48 @@ export function CurrentTripPage() {
     <div className="max-w-4xl mx-auto pb-8 sm:pb-10 space-y-4 sm:space-y-6">
       {error && <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{error}</div>}
 
+      {endingSoon && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                <Clock3 className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-[12px] font-black text-amber-950">
+                  Your trip ends in about {remainingMinutes} minute{remainingMinutes === 1 ? '' : 's'}
+                </p>
+                <p className="mt-1 text-[10px] leading-4 text-amber-800 sm:text-[11px]">
+                  We also send an email reminder roughly 30 minutes before the scheduled end.
+                  Extend the trip now if you are still travelling.
+                </p>
+              </div>
+            </div>
+
+            {isOwner && (
+              <div className="flex flex-wrap gap-2">
+                {[30, 60, 120].map((minutes) => (
+                  <button
+                    key={minutes}
+                    type="button"
+                    onClick={() => extendBy(minutes)}
+                    disabled={Boolean(busy)}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 text-[10px] font-black text-amber-900 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-amber-400 hover:shadow disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {busy === 'extend' ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <TimerReset className="h-3.5 w-3.5" />
+                    )}
+                    +{minutes < 60 ? `${minutes}m` : `${minutes / 60}h`}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-7 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-5">
           <div>
@@ -104,8 +167,18 @@ export function CurrentTripPage() {
           <div className="flex flex-wrap gap-2">
             {isOwner && trip.status === 'PLANNED' && (
               <>
-                <button onClick={start} disabled={Boolean(busy) || groupTooSmallToStart} title={groupTooSmallToStart ? 'Add at least one more member before starting this group trip.' : undefined} className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-emerald-600 text-white text-[11px] sm:text-xs font-black flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                  <Play className="w-4 h-4" /> Start Trip
+                <button
+                  onClick={start}
+                  disabled={Boolean(busy) || groupTooSmallToStart}
+                  title={groupTooSmallToStart ? 'Add at least one more member before starting this group trip.' : undefined}
+                  className="inline-flex min-w-[116px] items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-[11px] font-black text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 sm:text-xs"
+                >
+                  {busy === 'start' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Play className="h-4 w-4" />
+                  )}
+                  {busy === 'start' ? 'Starting…' : 'Start Trip'}
                 </button>
                 <button onClick={() => run('cancel', () => tripService.cancelTrip(trip.id))} disabled={busy} className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-lg border border-red-200 text-red-600 text-[11px] sm:text-xs font-black">
                   Cancel
@@ -113,8 +186,17 @@ export function CurrentTripPage() {
               </>
             )}
             {isOwner && trip.status === 'ACTIVE' && (
-              <button onClick={() => run('complete', () => tripService.completeTrip(trip.id))} disabled={busy} className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-slate-900 text-white text-[11px] sm:text-xs font-black flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" /> Complete
+              <button
+                onClick={() => run('complete', () => tripService.completeTrip(trip.id))}
+                disabled={Boolean(busy)}
+                className="inline-flex min-w-[118px] items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-[11px] font-black text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 sm:text-xs"
+              >
+                {busy === 'complete' ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4" />
+                )}
+                {busy === 'complete' ? 'Completing…' : 'Complete Trip'}
               </button>
             )}
           </div>

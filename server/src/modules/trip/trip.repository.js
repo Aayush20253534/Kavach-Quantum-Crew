@@ -67,14 +67,37 @@ export const createTripRepository = ({ db = prisma } = {}) => ({
   listHistory(userId, { limit, cursor }) {
     return db.trip.findMany({
       where: {
-        touristId: userId,
         status: { in: ["COMPLETED", "CANCELLED"] },
+        OR: [
+          { touristId: userId },
+          {
+            group: {
+              is: {
+                members: {
+                  some: { userId },
+                },
+              },
+            },
+          },
+        ],
       },
       include: tripInclude,
-      orderBy: [{ endedAt: "desc" }, { createdAt: "desc" }],
+      orderBy: [{ endedAt: "desc" }, { cancelledAt: "desc" }, { createdAt: "desc" }],
       take: limit,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
+  },
+
+  async historyIncidentCounts(tripIds) {
+    if (!tripIds.length) return new Map();
+
+    const rows = await db.incident.groupBy({
+      by: ["tripId"],
+      where: { tripId: { in: tripIds } },
+      _count: { _all: true },
+    });
+
+    return new Map(rows.map((row) => [row.tripId, row._count._all]));
   },
 
   upsertConsent(tripId, type, now) {
@@ -109,6 +132,21 @@ export const createTripRepository = ({ db = prisma } = {}) => ({
       where: { id: tripId },
       data: { status: "ACTIVE", startedAt: now },
       include: tripInclude,
+    });
+  },
+
+  async extendTrip(tripId, plannedEndAt) {
+    return db.$transaction(async (transaction) => {
+      await transaction.tripSafetyId.updateMany({
+        where: { tripId, revokedAt: null },
+        data: { expiresAt: plannedEndAt },
+      });
+
+      return transaction.trip.update({
+        where: { id: tripId },
+        data: { plannedEndAt },
+        include: tripInclude,
+      });
     });
   },
 
@@ -153,6 +191,64 @@ export const createTripRepository = ({ db = prisma } = {}) => ({
         data: { status: "CANCELLED", cancelledAt: now, endedAt: now },
         include: tripInclude,
       });
+    });
+  },
+
+  findEndingSoonTrips(windowStart, windowEnd) {
+    return db.trip.findMany({
+      where: {
+        status: "ACTIVE",
+        plannedEndAt: { gte: windowStart, lte: windowEnd },
+      },
+      include: {
+        tourist: { select: { id: true, name: true, email: true } },
+        group: {
+          include: {
+            members: {
+              where: { leftAt: null },
+              include: {
+                user: { select: { id: true, name: true, email: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+  },
+
+  findExpiredActiveTrips(now, limit = 50) {
+    return db.trip.findMany({
+      where: {
+        status: "ACTIVE",
+        plannedEndAt: { lte: now },
+      },
+      select: { id: true, touristId: true, plannedEndAt: true },
+      orderBy: { plannedEndAt: "asc" },
+      take: limit,
+    });
+  },
+
+  hasReminderAudit(tripId, userId) {
+    return db.auditLog.findFirst({
+      where: {
+        action: "TRIP_ENDING_REMINDER_SENT",
+        entityType: "Trip",
+        entityId: `${tripId}:${userId}`,
+      },
+      select: { id: true },
+    });
+  },
+
+  createReminderAudit(tripId, userId, plannedEndAt) {
+    return db.auditLog.create({
+      data: {
+        actorId: userId,
+        actorRole: "TOURIST",
+        action: "TRIP_ENDING_REMINDER_SENT",
+        entityType: "Trip",
+        entityId: `${tripId}:${userId}`,
+        metadata: { tripId, plannedEndAt },
+      },
     });
   },
 

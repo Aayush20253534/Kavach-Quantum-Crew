@@ -24,6 +24,9 @@ export const tripService = {
   async startTrip(tripId) {
     return unwrap(await apiClient.post(`/trips/${tripId}/start`));
   },
+  async extendTrip(tripId, plannedEndAt) {
+    return unwrap(await apiClient.post(`/trips/${tripId}/extend`, { plannedEndAt }));
+  },
   async completeTrip(tripId) {
     return unwrap(await apiClient.post(`/trips/${tripId}/complete`));
   },

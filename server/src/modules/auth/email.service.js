@@ -16,6 +16,84 @@ export const createEmailService = ({
   config = environment,
   fetchImpl = globalThis.fetch,
 } = {}) => ({
+  async sendTripEndingReminder({
+    to,
+    name,
+    locationName,
+    plannedEndAt,
+  }) {
+    if (
+      !config.BREVO_API_KEY ||
+      !config.BREVO_SENDER_EMAIL ||
+      typeof fetchImpl !== "function"
+    ) {
+      throw ApiError.serviceUnavailable("Email delivery is not configured", {
+        code: "EMAIL_PROVIDER_NOT_CONFIGURED",
+      });
+    }
+
+    const safeName = typeof name === "string" && name.trim() ? name.trim() : "Tourist";
+    const safeLocation = locationName || "your current trip";
+    const endText = new Date(plannedEndAt).toLocaleString("en-IN", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "Asia/Kolkata",
+    });
+
+    const subject = `Your KAVACH trip ends in about 30 minutes`;
+    const textContent =
+      `Hello ${safeName}, your trip to ${safeLocation} is scheduled to end at ${endText}. ` +
+      `Open KAVACH before the end time if you need to extend the trip.`;
+
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto; padding: 24px; color: #0f172a;">
+        <h2 style="margin-bottom: 8px;">Your trip is ending soon</h2>
+        <p>Hello ${escapeHtml(safeName)},</p>
+        <p>
+          Your KAVACH trip to <strong>${escapeHtml(safeLocation)}</strong>
+          is scheduled to end at <strong>${escapeHtml(endText)}</strong>.
+        </p>
+        <p>
+          Routine live tracking and trip safety sharing will stop when the trip ends.
+          If you are still travelling, open KAVACH and use <strong>Extend Trip</strong>
+          before the scheduled end time.
+        </p>
+        <p style="color: #64748b; font-size: 13px;">
+          This reminder is sent roughly 30 minutes before the planned trip end.
+        </p>
+      </div>
+    `;
+
+    const response = await fetchImpl(BREVO_EMAIL_ENDPOINT, {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "api-key": config.BREVO_API_KEY,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: {
+          name: config.BREVO_SENDER_NAME || "QuantumCrew",
+          email: config.BREVO_SENDER_EMAIL,
+        },
+        to: [{ email: to, name: safeName }],
+        subject,
+        textContent,
+        htmlContent,
+      }),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw ApiError.serviceUnavailable("Trip reminder email could not be sent", {
+        code: "TRIP_REMINDER_EMAIL_FAILED",
+        cause: new Error(payload?.message || `Brevo returned HTTP ${response.status}`),
+      });
+    }
+
+    return { messageId: payload?.messageId ?? null };
+  },
+
   async sendVerificationOtp({
     to,
     name,
