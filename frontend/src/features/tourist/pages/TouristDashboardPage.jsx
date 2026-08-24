@@ -154,12 +154,14 @@ export function TouristDashboardPage() {
 
   const frozenSummary = dashboardSnapshot?.summary;
 
-  // Safety status is authoritative from /dashboard/tourist.
-  // TouristLayout uses this same endpoint for the sidebar badge, so both surfaces
-  // always agree, including GROUP-trip boundary intersections.
-  const liveSafetyStatus = summary?.safetyStatus;
-  const safetyIsDanger = liveSafetyStatus?.level === 'DANGER';
-  const safetyResolved = liveSafetyStatus?.level === 'SAFE' || safetyIsDanger;
+  // Do not expose a Safe/Danger classification until the tourist is actually
+  // participating in an ACTIVE trip. Before that, the location has no active
+  // trip-safety context, so the UI deliberately reports it as unrecognizable.
+  const tripIsActive = currentTrip?.status === 'ACTIVE';
+  const liveSafetyStatus = tripIsActive ? summary?.safetyStatus : null;
+  const safetyIsDanger = tripIsActive && liveSafetyStatus?.level === 'DANGER';
+  const safetyResolved =
+    tripIsActive && (liveSafetyStatus?.level === 'SAFE' || safetyIsDanger);
 
   const cards = useMemo(() => [
     {
@@ -176,10 +178,16 @@ export function TouristDashboardPage() {
     },
     {
       label: 'Safety Status',
-      value: safetyResolved ? (safetyIsDanger ? 'Danger Zone' : 'Safe Zone') : 'Locating...',
-      sub: safetyIsDanger
-        ? liveSafetyStatus?.zone?.name || 'Danger geofence overlaps your trip safety area'
-        : 'Outside all danger geofences',
+      value: !tripIsActive
+        ? 'Unrecognizable'
+        : safetyResolved
+          ? (safetyIsDanger ? 'Danger Zone' : 'Safe Zone')
+          : 'Locating...',
+      sub: !tripIsActive
+        ? 'Start or join an active trip to enable safety-zone recognition'
+        : safetyIsDanger
+          ? liveSafetyStatus?.zone?.name || 'Danger geofence overlaps your trip safety area'
+          : 'Outside all danger geofences',
       icon: safetyIsDanger ? AlertTriangle : ShieldCheck,
     },
     {
@@ -188,7 +196,7 @@ export function TouristDashboardPage() {
       sub: frozenSummary?.currentTrip?.locationName ? `Current trip: ${frozenSummary.currentTrip.locationName}` : 'No open group trip',
       icon: Users,
     },
-  ], [dashboardSnapshot, frozenSummary, safetyIsDanger, safetyResolved, liveSafetyStatus]);
+  ], [dashboardSnapshot, frozenSummary, tripIsActive, safetyIsDanger, safetyResolved, liveSafetyStatus]);
 
   return (
     <div className="space-y-5 sm:space-y-7 max-w-[1240px] mx-auto pb-8 sm:pb-10 overflow-visible">
@@ -337,9 +345,17 @@ export function TouristDashboardPage() {
         </div>
       </section>
 
-      <div className="flex items-start gap-2 rounded-xl border border-emerald-100 bg-emerald-50/60 px-4 py-3 text-[10px] text-emerald-800 font-semibold">
-        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-        Safety status is SAFE everywhere except active risk geofences configured by a system administrator.
+      <div className={`flex items-start gap-2 rounded-xl border px-4 py-3 text-[10px] font-semibold ${
+        tripIsActive
+          ? 'border-emerald-100 bg-emerald-50/60 text-emerald-800'
+          : 'border-slate-200 bg-slate-50 text-slate-600'
+      }`}>
+        {tripIsActive
+          ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
+          : <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-slate-400" />}
+        {tripIsActive
+          ? 'Safety status is SAFE everywhere except active risk geofences configured by a system administrator.'
+          : 'Safety-zone recognition becomes available after you start or join an active trip.'}
       </div>
     </div>
   );

@@ -70,7 +70,9 @@ export function TouristLayout() {
     }
   }, [liveLocation, locationPermission]);
 
-  const safetyLevel = backgroundSafetySummary?.safetyStatus?.level || 'UNKNOWN';
+  const safetyLevel = !isTripActive
+    ? 'UNRECOGNIZABLE'
+    : backgroundSafetySummary?.safetyStatus?.level || 'UNKNOWN';
 
   const handleLogout = async () => {
     setLogoutBusy(true);
@@ -318,7 +320,9 @@ export function TouristLayout() {
                       ? backgroundSafetySummary?.safetyStatus?.zone?.name || 'Inside an active danger zone'
                       : safetyLevel === 'SAFE'
                         ? 'Outside all active danger zones'
-                        : 'Checking live safety status'
+                        : safetyLevel === 'UNRECOGNIZABLE'
+                          ? 'Start or join an active trip to enable safety-zone recognition'
+                          : 'Checking live safety status'
                   }
                 >
                   <div
@@ -335,7 +339,9 @@ export function TouristLayout() {
                       ? 'Danger Zone'
                       : safetyLevel === 'SAFE'
                         ? 'Safe Zone'
-                        : 'Checking...'}
+                        : safetyLevel === 'UNRECOGNIZABLE'
+                          ? 'Unrecognizable'
+                          : 'Checking...'}
                   </span>
                 </div>
               </div>

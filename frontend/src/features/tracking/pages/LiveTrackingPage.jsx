@@ -106,12 +106,26 @@ export function LiveTrackingPage() {
 
   if (isLoading) return <div className="py-24 flex justify-center"><Loader2 className="animate-spin" /></div>;
 
-  if (!trip) {
+  if (!trip || trip.status !== 'ACTIVE') {
     return (
-      <div className="max-w-xl mx-auto py-12 sm:py-16 px-5 text-center bg-white border rounded-2xl">
-        <h2 className="font-black text-lg sm:text-xl">No current trip</h2>
-        <p className="text-xs sm:text-sm text-slate-500 mt-2">Create a trip before using live trip tracking.</p>
-        <Link to="/tourist/trips/create" className="inline-block mt-5 px-5 py-2.5 bg-rose-600 text-white rounded-lg text-[11px] font-black">Create Trip</Link>
+      <div className="mx-auto max-w-xl px-4 py-10 sm:py-14">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-8">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
+            <Navigation className="h-5 w-5" />
+          </div>
+          <h2 className="mt-4 text-lg font-black text-slate-950">Start a trip to use Live Map</h2>
+          <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-slate-500">
+            Live Map, location sharing and safety-zone monitoring are available only after you start a trip as team leader or join an active trip.
+          </p>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <Link to="/tourist/trips/create" className="rounded-xl bg-rose-600 px-4 py-3 text-[11px] font-black text-white">
+              Create a Trip
+            </Link>
+            <Link to="/tourist/groups/join" className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-[11px] font-black text-slate-800">
+              Join a Trip
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
