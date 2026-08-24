@@ -144,8 +144,42 @@ export function AuthorityDashboardPage() {
       {/* Main Grid: Active SOS Triage Feed & Sector Telemetry */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         
+        {/* Jurisdiction Emergency Services Map */}
+        <div className="lg:col-span-7">
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-100 bg-slate-50/70 px-4 py-3.5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-[13px] font-black text-slate-900">Jurisdiction Emergency Services</h2>
+                  <p className="mt-0.5 text-[10px] font-semibold text-slate-500">{jurisdiction}</p>
+                </div>
+                <div className="flex flex-wrap justify-end gap-1.5 text-[9px] font-bold">
+                  <span className="rounded-md bg-blue-50 px-2 py-1 text-blue-700">Police {policeCount}</span>
+                  <span className="rounded-md bg-red-50 px-2 py-1 text-red-700">Fire {fireCount}</span>
+                  <span className="rounded-md bg-green-50 px-2 py-1 text-green-700">
+                    Hospitals {nearbyServices.hospitals?.length || 0}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="h-[420px]">
+              <AuthorityJurisdictionMap
+                jurisdiction={jurisdiction}
+                services={nearbyServices}
+              />
+            </div>
+
+            {!nearbyServices.configured && (
+              <div className="border-t border-amber-100 bg-amber-50 px-4 py-2.5 text-[10px] font-semibold text-amber-800">
+                Server-side Places lookup is not configured. Add GOOGLE_MAPS_API_KEY on the backend.
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Active SOS Triage List */}
-        <div className="lg:col-span-7 space-y-4">
+        <div className="lg:col-span-5 space-y-4">
           <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
             <div className="flex flex-row items-center justify-between p-5 border-b border-slate-100 bg-slate-50/50">
               <div className="flex items-center gap-2.5">
@@ -228,40 +262,6 @@ export function AuthorityDashboardPage() {
                 ))
               )}
             </div>
-          </div>
-        </div>
-
-        {/* Jurisdiction Emergency Services Map */}
-        <div className="lg:col-span-5">
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 bg-slate-50/70 px-4 py-3.5">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-[13px] font-black text-slate-900">Jurisdiction Emergency Services</h2>
-                  <p className="mt-0.5 text-[10px] font-semibold text-slate-500">{jurisdiction}</p>
-                </div>
-                <div className="flex flex-wrap justify-end gap-1.5 text-[9px] font-bold">
-                  <span className="rounded-md bg-blue-50 px-2 py-1 text-blue-700">Police {policeCount}</span>
-                  <span className="rounded-md bg-red-50 px-2 py-1 text-red-700">Fire {fireCount}</span>
-                  <span className="rounded-md bg-green-50 px-2 py-1 text-green-700">
-                    Hospitals {nearbyServices.hospitals?.length || 0}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="h-[420px]">
-              <AuthorityJurisdictionMap
-                jurisdiction={jurisdiction}
-                services={nearbyServices}
-              />
-            </div>
-
-            {!nearbyServices.configured && (
-              <div className="border-t border-amber-100 bg-amber-50 px-4 py-2.5 text-[10px] font-semibold text-amber-800">
-                Server-side Places lookup is not configured. Add GOOGLE_MAPS_API_KEY on the backend.
-              </div>
-            )}
           </div>
         </div>
       </div>

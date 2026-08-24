@@ -7,7 +7,6 @@ import {
   Radio,
   Activity,
   LogOut,
-  ExternalLink,
   Menu,
   ChevronLeft,
   AlertTriangle,
@@ -215,15 +214,6 @@ export function AuthorityLayout() {
               <span className="hidden sm:inline">{jurisdiction.toUpperCase()} LIVE MAP</span>
               <span className="sm:hidden">LIVE MAP</span>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link to="/tourist/dashboard">
-              <button className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-slate-900 text-white text-[10px] md:text-[11px] font-bold uppercase tracking-wider hover:bg-slate-800 transition-colors rounded-md shadow-sm cursor-pointer">
-                <span className="hidden sm:inline">Switch to Tourist App</span>
-                <span className="sm:hidden">Tourist App</span>
-                <ExternalLink className="w-3.5 h-3.5 hidden sm:block" />
-              </button>
-            </Link>
           </div>
         </header>
 
