@@ -99,6 +99,58 @@ export const createGroupRepository = ({ db = prisma } = {}) => ({
   findInvitation(groupId, invitationId) {
     return db.groupInvitation.findFirst({ where: { id: invitationId, groupId } });
   },
+  async createJoinRequest(groupId, userId, groupIdHash, now) {
+    return db.groupJoinRequest.upsert({
+      where: { groupId_userId: { groupId, userId } },
+      update: { groupIdHash, status: "PENDING", requestedAt: now, decidedAt: null },
+      create: { groupId, userId, groupIdHash, status: "PENDING", requestedAt: now },
+      include: {
+        user: { select: { id: true, name: true, username: true, profilePicUrl: true } },
+        group: { include: { trip: true } },
+      },
+    });
+  },
+  findJoinRequestForUser(requestId, userId) {
+    return db.groupJoinRequest.findFirst({
+      where: { id: requestId, userId },
+      include: { group: { include: { trip: true } } },
+    });
+  },
+  listPendingJoinRequests(groupId) {
+    return db.groupJoinRequest.findMany({
+      where: { groupId, status: "PENDING" },
+      include: { user: { select: { id: true, name: true, username: true, profilePicUrl: true } } },
+      orderBy: { requestedAt: "asc" },
+    });
+  },
+  findJoinRequest(groupId, requestId) {
+    return db.groupJoinRequest.findFirst({
+      where: { id: requestId, groupId },
+      include: {
+        user: { select: { id: true, name: true, username: true, profilePicUrl: true } },
+        group: { include: { trip: true, credential: true } },
+      },
+    });
+  },
+  rejectJoinRequest(requestId, now) {
+    return db.groupJoinRequest.update({
+      where: { id: requestId },
+      data: { status: "REJECTED", decidedAt: now },
+    });
+  },
+  async approveJoinRequest(requestId, groupId, userId, now) {
+    return db.$transaction(async (tx) => {
+      await tx.groupMember.upsert({
+        where: { groupId_userId: { groupId, userId } },
+        update: { role: "MEMBER", joinedAt: now, leftAt: null },
+        create: { groupId, userId, role: "MEMBER", joinedAt: now },
+      });
+      return tx.groupJoinRequest.update({
+        where: { id: requestId },
+        data: { status: "APPROVED", decidedAt: now },
+      });
+    });
+  },
   async joinGroup(groupId, userId, now) {
     return db.groupMember.upsert({
       where: { groupId_userId: { groupId, userId } },

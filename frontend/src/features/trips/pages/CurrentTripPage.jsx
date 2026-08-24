@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Calendar, CheckCircle2, Clock3, Copy, Loader2, LogIn, MapPin, Play, ShieldCheck, TimerReset, Users, XCircle } from 'lucide-react';
+import { Calendar, CheckCircle2, Clock3, Copy, Loader2, LogIn, MapPin, Play, ShieldCheck, TimerReset, UserCheck, UserX, Users, XCircle } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Link } from 'react-router-dom';
 
@@ -17,6 +17,7 @@ export function CurrentTripPage() {
   const [group, setGroup] = useState(null);
   const [individualCredential, setIndividualCredential] = useState(null);
   const [groupCredential, setGroupCredential] = useState(null);
+  const [joinRequests, setJoinRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -38,10 +39,16 @@ export function CurrentTripPage() {
           const loadedGroup = await groupService.getGroupForTrip(current.id);
           setGroup(loadedGroup);
           try { setGroupCredential(await credentialService.getGroupCredential(loadedGroup.id)); } catch { setGroupCredential(null); }
-        } catch { setGroup(null); setGroupCredential(null); }
+          if (loadedGroup.leaderId === user?.id && current.status === 'PLANNED') {
+            try { setJoinRequests(await groupService.getPendingJoinRequests(loadedGroup.id)); } catch { setJoinRequests([]); }
+          } else {
+            setJoinRequests([]);
+          }
+        } catch { setGroup(null); setGroupCredential(null); setJoinRequests([]); }
       } else {
         setGroup(null);
         setGroupCredential(null);
+        setJoinRequests([]);
       }
     } catch (e) {
       if (e?.response?.status === 404) setTrip(null);
@@ -57,6 +64,19 @@ export function CurrentTripPage() {
     const timer = window.setInterval(() => setNow(Date.now()), 30_000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!group?.id || group.leaderId !== user?.id || trip?.status !== 'PLANNED') return undefined;
+    let cancelled = false;
+    const refresh = async () => {
+      try {
+        const pending = await groupService.getPendingJoinRequests(group.id);
+        if (!cancelled) setJoinRequests(pending);
+      } catch {}
+    };
+    const timer = window.setInterval(refresh, 6000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [group?.id, group?.leaderId, trip?.status, user?.id]);
 
   const run = async (name, action) => {
     setBusy(name);
@@ -239,6 +259,46 @@ export function CurrentTripPage() {
           {groupCredential && (
             <div className="mt-4">
               <CredentialCard title="Group ID" credential={groupCredential} compact />
+            </div>
+          )}
+
+          {isOwner && trip.status === 'PLANNED' && joinRequests.length > 0 && (
+            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-black text-amber-950">Pending join requests</p>
+                  <p className="mt-1 text-[11px] text-amber-700">Scanning proves the group QR is valid. Membership is created only after you approve the tourist.</p>
+                </div>
+                <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-black text-amber-800 ring-1 ring-amber-200">{joinRequests.length}</span>
+              </div>
+              <div className="mt-3 space-y-2">
+                {joinRequests.map((request) => (
+                  <div key={request.id} className="flex flex-col gap-3 rounded-lg border border-amber-100 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-slate-900">{request.user?.name || request.user?.username || 'Tourist'}</p>
+                      <p className="mt-0.5 text-[10px] text-slate-400">Requested {dateText(request.requestedAt)}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={Boolean(busy)}
+                        onClick={() => run(`reject-${request.id}`, () => groupService.rejectJoinRequest(group.id, request.id))}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-[10px] font-black text-red-600 disabled:opacity-50"
+                      >
+                        {busy === `reject-${request.id}` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserX className="h-3.5 w-3.5" />} Reject
+                      </button>
+                      <button
+                        type="button"
+                        disabled={Boolean(busy)}
+                        onClick={() => run(`approve-${request.id}`, () => groupService.approveJoinRequest(group.id, request.id))}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-[10px] font-black text-white disabled:opacity-50"
+                      >
+                        {busy === `approve-${request.id}` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserCheck className="h-3.5 w-3.5" />} Approve
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

@@ -5,7 +5,7 @@ import { authenticate } from "../../middleware/authenticate.middleware.js";
 import { authorize } from "../../middleware/authorize.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
 import { groupController } from "./group.controller.js";
-import { createInvitationBodySchema, groupIdParamsSchema, invitationParamsSchema, joinGroupBodySchema, previewJoinGroupBodySchema, groupQrBodySchema, memberParamsSchema, tripIdParamsSchema } from "./group.validation.js";
+import { createInvitationBodySchema, groupIdParamsSchema, invitationParamsSchema, joinGroupBodySchema, previewJoinGroupBodySchema, groupQrBodySchema, memberParamsSchema, tripIdParamsSchema, joinRequestParamsSchema, groupJoinRequestParamsSchema } from "./group.validation.js";
 export const createGroupRouter = ({ controller = groupController } = {}) => {
   const router=Router(); router.use(authenticate,authorize(ROLES.TOURIST));
   router.post("/trips/:tripId",validate({params:tripIdParamsSchema}),asyncHandler(controller.create));
@@ -14,6 +14,10 @@ export const createGroupRouter = ({ controller = groupController } = {}) => {
   router.post("/join/qr/preview",validate({body:groupQrBodySchema}),asyncHandler(controller.previewJoinByQr));
   router.post("/join",validate({body:joinGroupBodySchema}),asyncHandler(controller.join));
   router.post("/join/qr",validate({body:groupQrBodySchema}),asyncHandler(controller.joinByQr));
+  router.get("/join/requests/:requestId",validate({params:joinRequestParamsSchema}),asyncHandler(controller.joinRequestStatus));
+  router.get("/:groupId/join-requests",validate({params:groupIdParamsSchema}),asyncHandler(controller.listJoinRequests));
+  router.post("/:groupId/join-requests/:requestId/approve",validate({params:groupJoinRequestParamsSchema}),asyncHandler(controller.approveJoinRequest));
+  router.post("/:groupId/join-requests/:requestId/reject",validate({params:groupJoinRequestParamsSchema}),asyncHandler(controller.rejectJoinRequest));
   router.get("/:groupId",validate({params:groupIdParamsSchema}),asyncHandler(controller.getById));
   router.post("/:groupId/invitations",validate({params:groupIdParamsSchema,body:createInvitationBodySchema}),asyncHandler(controller.invite));
   router.delete("/:groupId/invitations/:invitationId",validate({params:invitationParamsSchema}),asyncHandler(controller.revokeInvite));

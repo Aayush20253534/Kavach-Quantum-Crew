@@ -27,6 +27,18 @@ export const groupService = {
   async joinGroupByQr(groupIdHash) {
     return unwrap(await apiClient.post('/groups/join/qr', { groupIdHash }));
   },
+  async getJoinRequestStatus(requestId) {
+    return unwrap(await apiClient.get(`/groups/join/requests/${requestId}`));
+  },
+  async getPendingJoinRequests(groupId) {
+    return unwrap(await apiClient.get(`/groups/${groupId}/join-requests`));
+  },
+  async approveJoinRequest(groupId, requestId) {
+    return unwrap(await apiClient.post(`/groups/${groupId}/join-requests/${requestId}/approve`));
+  },
+  async rejectJoinRequest(groupId, requestId) {
+    return unwrap(await apiClient.post(`/groups/${groupId}/join-requests/${requestId}/reject`));
+  },
   async leaveGroup(groupId) {
     return unwrap(await apiClient.post(`/groups/${groupId}/leave`));
   },
