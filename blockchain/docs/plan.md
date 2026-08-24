@@ -1,4 +1,7 @@
 # Blockchain Trust Layer — Implementation Blueprint
+
+> **Documentation status (24 Aug 2026):** Retained as design/deployment history. The current server integration uses the isolated authenticated HTTP gateway (`blockchain/gateway/server.ts`), not an in-process adapter import into `server/`.
+
 ### Smart Tourist Safety Monitoring & Incident Response System — SIH25002
 
 > **Scope:** the blockchain trust layer only (digital ID anchoring, evidence/incident integrity, consent receipts, inter-agency verification). PostgreSQL, the tourist/authority frontends, and the AI service are referenced **only where the trust layer must integrate with them**.

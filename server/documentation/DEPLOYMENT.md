@@ -1,5 +1,8 @@
 # Deployment Guide
 
+> **Documentation status (24 Aug 2026):** This document is maintained against the current repository. Runtime source, `server/.env.example`, `server/prisma/schema.prisma`, and `server/openapi.yaml` are authoritative if a historical phase note differs.
+
+
 ## Pre-deployment
 1. Node.js 20.19+ and npm 10+.
 2. PostgreSQL/Neon provisioned.

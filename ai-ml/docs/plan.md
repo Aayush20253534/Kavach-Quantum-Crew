@@ -1,4 +1,7 @@
 # AI/ML Implementation Blueprint
+
+> **Implementation status (24 Aug 2026):** This is a planning/design document. The repository currently contains no standalone `ai-ml` runtime or FastAPI service. The Express backend has provider contracts for staff AI analysis and a tourist chatbot endpoint, but concrete AI providers are not configured in this snapshot.
+
 ### Smart Tourist Safety Monitoring & Incident Response System — SIH25002
 
 > **Scope:** AI/ML service only (rules engine + Isolation Forest + safety score + alert classification + search/dispatch assistance). Blockchain, frontend, and the core Node/Express backend are referenced **only where the AI service must integrate with them**.

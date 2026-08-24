@@ -1,5 +1,8 @@
 # Project Requirements Document (PRD)
 
+> **Documentation status (24 Aug 2026):** Retained as project documentation and design history. Current `frontend/src/` behavior is authoritative where older phase language, placeholders, or proposed structure differs.
+
+
 ## 1. Project Overview
 
 ### 1.1 Project Name

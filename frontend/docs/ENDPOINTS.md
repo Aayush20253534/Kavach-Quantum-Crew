@@ -1,5 +1,8 @@
 # API Endpoint Catalogue
 
+> **Documentation status (24 Aug 2026):** Retained as project documentation and design history. Current `frontend/src/` behavior is authoritative where older phase language, placeholders, or proposed structure differs.
+
+
 > Base prefix: `/api/v1` unless explicitly shown otherwise.
 
 This catalogue documents **148 mounted HTTP routes/aliases** in the current backend. Authorization shown here is the effective high-level rule; individual services also enforce ownership, membership, lifecycle, consent, and resource-visibility checks.

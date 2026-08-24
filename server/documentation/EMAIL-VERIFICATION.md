@@ -1,5 +1,8 @@
 # Tourist Email Verification
 
+> **Documentation status (24 Aug 2026):** This document is maintained against the current repository. Runtime source, `server/.env.example`, `server/prisma/schema.prisma`, and `server/openapi.yaml` are authoritative if a historical phase note differs.
+
+
 ## Purpose
 
 New tourist accounts must prove access to their email address before normal authenticated use. The OTP is required for first-time signup verification and again if the tourist later changes email. It is **not** required on every login.

@@ -1,5 +1,8 @@
 # Prachi's UI/UX Handoff & Tracking
 
+> **Documentation status (24 Aug 2026):** Retained as project documentation and design history. Current `frontend/src/` behavior is authoritative where older phase language, placeholders, or proposed structure differs.
+
+
 ## 1. Purpose
 This document is the bridge between Frontend Architecture (Aayansh) and UI/UX Design (Prachi). 
 Aayansh has successfully wired up the complete functional logic of the React application to the Backend. The components are functional but are currently using very basic, placeholder Tailwind styling.

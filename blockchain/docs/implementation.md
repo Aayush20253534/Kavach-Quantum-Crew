@@ -1,4 +1,7 @@
 # `blockchain/` Folder — Full By-Code Implementation Blueprint
+
+> **Documentation status (24 Aug 2026):** Retained as design/deployment history. The current server integration uses the isolated authenticated HTTP gateway (`blockchain/gateway/server.ts`), not an in-process adapter import into `server/`.
+
 ### SIH25002 — Smart Tourist Safety Monitoring & Incident Response System
 ### Single Source of Truth for the Blockchain Trust Layer
 

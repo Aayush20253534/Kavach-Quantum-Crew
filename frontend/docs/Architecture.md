@@ -1,5 +1,8 @@
 # Frontend Architecture Document
 
+> **Documentation status (24 Aug 2026):** Retained as project documentation and design history. Current `frontend/src/` behavior is authoritative where older phase language, placeholders, or proposed structure differs.
+
+
 ## 1. Purpose
 
 This document defines the architecture of the **SIH Tourist Safety Platform frontend**.

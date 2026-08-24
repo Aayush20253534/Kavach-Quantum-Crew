@@ -1,5 +1,8 @@
 # `blockchain/test/` — Setup Notes
 
+> **Documentation status (24 Aug 2026):** Retained as design/deployment history. The current server integration uses the isolated authenticated HTTP gateway (`blockchain/gateway/server.ts`), not an in-process adapter import into `server/`.
+
+
 This folder implements every test file specified in blueprint §8:
 
 - `issueRevoke.test.ts` — digital ID issue/verify/revoke state machine

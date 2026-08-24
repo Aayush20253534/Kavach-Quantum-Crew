@@ -1,5 +1,8 @@
 # Docker Guide for Backend
 
+> **Documentation status (24 Aug 2026):** This document is maintained against the current repository. Runtime source, `server/.env.example`, `server/prisma/schema.prisma`, and `server/openapi.yaml` are authoritative if a historical phase note differs.
+
+
 This file is the project-specific Docker reference for the backend. It explains what Docker is, how this repository uses it, how to install Docker on Windows and macOS, how to build and run the project, how the normal and test databases differ, how to inspect and troubleshoot containers, and what the important Docker commands mean.
 
 ---
