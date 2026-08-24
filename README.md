@@ -25,3 +25,7 @@ Setup order:
 ### Hosted blockchain runtime
 
 When hosted on Render, `blockchain/` runs as a separate Web Service (`npm install && npm run build`, then `npm start`) that connects to the public RPC endpoint. The main API talks to that service through `BLOCKCHAIN_GATEWAY_URL` + `BLOCKCHAIN_GATEWAY_KEY`; the issuer private key never belongs in `server/` or `frontend/`.
+
+## Group QR Join
+
+Group invitations are now shared as expiring QR codes. The tourist app scans the QR, validates it with a preview API, shows the trip details for confirmation, and only then joins the group. The opaque QR token expires with the invitation and does not expose group internals or tourist data.
