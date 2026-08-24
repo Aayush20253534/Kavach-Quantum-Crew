@@ -11,3 +11,5 @@ export const createInvitationBodySchema = z.object({
 export const joinGroupBodySchema = z.object({
   inviteToken: z.string().min(32).max(256),
 });
+
+export const previewJoinGroupBodySchema = joinGroupBodySchema;

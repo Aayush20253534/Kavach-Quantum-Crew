@@ -1,7 +1,7 @@
 import { prisma } from "../../config/database.js";
 
 const groupInclude = {
-  trip: { select: { id: true, touristId: true, tripType: true, status: true, locationName: true } },
+  trip: { select: { id: true, touristId: true, tripType: true, status: true, locationName: true, plannedStartAt: true, plannedEndAt: true } },
   members: {
     where: { leftAt: null },
     include: { user: { select: { id: true, name: true, username: true, profilePicUrl: true } } },
@@ -62,7 +62,18 @@ export const createGroupRepository = ({ db = prisma } = {}) => ({
   findInvitationByTokenHash(tokenHash) {
     return db.groupInvitation.findUnique({
       where: { tokenHash },
-      include: { group: { include: { trip: true } } },
+      include: {
+        group: {
+          include: {
+            trip: true,
+            members: {
+              where: { leftAt: null },
+              include: { user: { select: { id: true, name: true, username: true, profilePicUrl: true } } },
+              orderBy: { joinedAt: "asc" },
+            },
+          },
+        },
+      },
     });
   },
   revokeInvitation(invitationId, now) {

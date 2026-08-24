@@ -47,6 +47,24 @@ const requireMembershipOpen = (group) => {
   }
 };
 
+const validateJoinableInvitation = async (repository, userId, inviteToken, now) => {
+  const invitation = await repository.findInvitationByTokenHash(hashToken(inviteToken));
+  if (!invitation) throw ApiError.notFound("Invitation not found", { code: "INVITATION_NOT_FOUND" });
+  const group = invitation.group;
+  requireMembershipOpen(group);
+  if (invitation.revokedAt) throw ApiError.badRequest("Invitation has been revoked", { code: "INVITATION_REVOKED" });
+  if (new Date(invitation.expiresAt) <= now) throw ApiError.badRequest("Invitation has expired", { code: "INVITATION_EXPIRED" });
+  const existing = await repository.findActiveMembership(group.id, userId);
+  if (existing) throw ApiError.conflict("You are already a member of this group", { code: "GROUP_MEMBER_EXISTS" });
+  const tripMembership = await repository.findMembershipInTrip(group.tripId, userId);
+  if (tripMembership) throw ApiError.conflict("You already belong to a group for this trip", { code: "TRIP_GROUP_MEMBERSHIP_EXISTS" });
+  const currentTrip = await repository.findOpenTripForUser(userId);
+  if (currentTrip && currentTrip.id !== group.tripId) {
+    throw ApiError.conflict("Complete or cancel your current trip before joining another group", { code: "CURRENT_TRIP_EXISTS", details: { tripId: currentTrip.id, status: currentTrip.status, locationName: currentTrip.locationName } });
+  }
+  return { invitation, group };
+};
+
 export const createGroupService = ({ repository = groupRepository, clock = () => new Date(), tokenFactory = makeToken, codeFactory = makeCode } = {}) => Object.freeze({
   async createGroup(userId, tripId) {
     const trip = await repository.findTrip(tripId);
@@ -87,33 +105,26 @@ export const createGroupService = ({ repository = groupRepository, clock = () =>
     await repository.createAudit({ actorId: userId, action: "GROUP_INVITATION_REVOKED", entityId: groupId, metadata: { invitationId } });
     return revoked;
   },
+  async previewJoinGroup(userId, inviteToken) {
+    const now = clock();
+    const { invitation, group } = await validateJoinableInvitation(repository, userId, inviteToken, now);
+    return {
+      groupId: group.id,
+      tripId: group.tripId,
+      inviteExpiresAt: invitation.expiresAt,
+      trip: {
+        locationName: group.trip.locationName,
+        plannedStartAt: group.trip.plannedStartAt,
+        plannedEndAt: group.trip.plannedEndAt,
+        status: group.trip.status,
+      },
+      leader: group.members?.find((member) => member.role === "LEADER")?.user ?? null,
+      memberCount: group.members?.filter((member) => !member.leftAt).length ?? 0,
+    };
+  },
   async joinGroup(userId, inviteToken) {
-    const invitation = await repository.findInvitationByTokenHash(hashToken(inviteToken));
-    if (!invitation) throw ApiError.notFound("Invitation not found", { code: "INVITATION_NOT_FOUND" });
-    const now = clock(); const group = invitation.group;
-    requireMembershipOpen(group);
-    if (invitation.revokedAt) throw ApiError.badRequest("Invitation has been revoked", { code: "INVITATION_REVOKED" });
-    if (new Date(invitation.expiresAt) <= now) throw ApiError.badRequest("Invitation has expired", { code: "INVITATION_EXPIRED" });
-    const existing = await repository.findActiveMembership(group.id, userId);
-    if (existing) throw ApiError.conflict("You are already a member of this group", { code: "GROUP_MEMBER_EXISTS" });
-    const tripMembership = await repository.findMembershipInTrip(group.tripId, userId);
-    if (tripMembership) throw ApiError.conflict("You already belong to a group for this trip", { code: "TRIP_GROUP_MEMBERSHIP_EXISTS" });
-
-    const currentTrip = await repository.findOpenTripForUser(userId);
-    if (currentTrip && currentTrip.id !== group.tripId) {
-      throw ApiError.conflict(
-        "Complete or cancel your current trip before joining another group",
-        {
-          code: "CURRENT_TRIP_EXISTS",
-          details: {
-            tripId: currentTrip.id,
-            status: currentTrip.status,
-            locationName: currentTrip.locationName,
-          },
-        },
-      );
-    }
-
+    const now = clock();
+    const { invitation, group } = await validateJoinableInvitation(repository, userId, inviteToken, now);
     await repository.joinGroup(group.id, userId, now);
     await credentialService.ensureIndividual(group.tripId, userId);
     await repository.createAudit({ actorId: userId, action: "GROUP_JOINED", entityId: group.id, metadata: { invitationId: invitation.id } });
