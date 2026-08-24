@@ -7,6 +7,7 @@ import { environment } from "./config/environment.js";
 import { logger } from "./config/logger.js";
 import { createSocketServer } from "./realtime/socketServer.js";
 import { tripLifecycleJob } from "./jobs/tripLifecycle.job.js";
+import { blockchainAnchorJob } from "./jobs/blockchainAnchor.job.js";
 
 let activeRuntime = null;
 let shutdownPromise = null;
@@ -73,6 +74,7 @@ export const startServer = async ({
 
     await listen(httpServer, { host, port });
     tripLifecycleJob.start();
+    blockchainAnchorJob.start();
   } catch (error) {
     await Promise.allSettled([
       closeSocketServer(io),
@@ -119,6 +121,7 @@ export const stopServer = async ({ reason = "manual", log = logger } = {}) => {
     log.info({ reason }, "Graceful shutdown started");
 
     tripLifecycleJob.stop();
+    blockchainAnchorJob.stop();
 
     const shutdownWork = Promise.allSettled([
       closeSocketServer(runtime.io),

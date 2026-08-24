@@ -331,3 +331,18 @@ Full manual checklist: `docs/on-chain-inspection-checklist.md`.
 ---
 
 **If something isn't covered here, check the full implementation blueprint document first — every function in this folder is traceable back to a specific section there. Don't improvise new on-chain fields; update the blueprint first.**
+## Internal gateway used by `server/`
+
+The production-style integration now uses `gateway/server.ts`. This is a deliberately small authenticated HTTP boundary around the signer. It lets `server/` and `blockchain/` remain independently installable/deployable while keeping `ISSUER_PRIVATE_KEY` inside the blockchain runtime.
+
+Run locally after deploying the contract:
+
+```bash
+cp .env.example .env
+npm run node
+npm run deploy:localhost
+# copy the deployed address into CONTRACT_ADDRESS, then:
+npm run gateway
+```
+
+The server sends `ISSUE`, `EXTEND`, and `REVOKE` jobs to the gateway. `GET /v1/credentials/:idHash` performs read-only verification. `TrustAnchor.extendId` was added so extending a trip preserves the same credential hash while moving its expiry forward.

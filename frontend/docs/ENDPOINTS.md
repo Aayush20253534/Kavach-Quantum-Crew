@@ -285,3 +285,11 @@ The tourist application now uses real backend endpoints for all core workflows:
 - Profile: `/tourists/me` and profile-image upload.
 - AI: intentionally mocked in the tourist UI.
 - Blockchain: intentionally mocked in the tourist UI. Real evidence storage and Safety ID lifecycle still use the backend, but no blockchain provider is required.
+
+## Blockchain QR credentials
+
+| Method | Endpoint | Auth | Purpose |
+|---|---|---|---|
+| GET | `/credentials/trips/:tripId/me` | Tourist | Current user's trip-scoped individual QR credential |
+| GET | `/credentials/groups/:groupId` | Tourist/group member | Group QR credential |
+| GET | `/credentials/verify/:token` | Public | Validate signed QR, trip state, expiry, and on-chain proof |

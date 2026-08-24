@@ -169,6 +169,15 @@ const environmentSchema = z
       z.string().trim().min(1),
     ),
 
+    BLOCKCHAIN_ENABLED: booleanFromEnvironment.default(false),
+    BLOCKCHAIN_GATEWAY_URL: z.string().trim().url().default("http://127.0.0.1:4100"),
+    BLOCKCHAIN_GATEWAY_KEY: z.string().min(16).default("dev-chain-gateway-key-change-me"),
+    BLOCKCHAIN_CONTRACT_VERSION: integerFromEnvironment(1, 255).default(1),
+    BLOCKCHAIN_WORKER_INTERVAL_MS: integerFromEnvironment(1000, 60000).default(5000),
+    BLOCKCHAIN_MAX_ATTEMPTS: integerFromEnvironment(1, 20).default(5),
+    QR_TOKEN_SECRET: z.string().min(16).default("dev-qr-token-secret-change-me"),
+    PUBLIC_APP_URL: z.string().trim().url().default("http://localhost:5173"),
+
     ACCESS_TOKEN_SECRET: z
       .string()
       .min(16)
@@ -338,6 +347,8 @@ const environmentSchema = z
         "ACCESS_TOKEN_SECRET",
         "REFRESH_TOKEN_SECRET",
         "EMAIL_OTP_SECRET",
+        "QR_TOKEN_SECRET",
+        "BLOCKCHAIN_GATEWAY_KEY",
       ]) {
         if (
           value[key].length < 32 ||

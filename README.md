@@ -1,1 +1,22 @@
 # Quantum-Crew
+## Blockchain-backed QR trip credentials
+
+Kavach now issues two trip-scoped QR credentials: an **individual credential** for every active trip participant and a **group credential** for group trips. PostgreSQL stores the application record and signed QR token metadata; the blockchain stores only a salted/hash-derived proof and expiry window. No name, phone number, GPS coordinate, medical data, or government ID is written on-chain.
+
+The three directories communicate as follows:
+
+```text
+frontend/  --HTTPS-->  server/  --internal HTTP-->  blockchain gateway  --JSON-RPC--> EVM chain
+   QR UI                 DB + jobs                    issuer private key                 TrustAnchor
+```
+
+The browser never receives a blockchain private key. The backend never imports the Solidity project directly. Instead, `blockchain/gateway/server.ts` exposes a tiny authenticated internal API used by the server's asynchronous blockchain worker.
+
+Setup order:
+
+1. Apply Prisma migrations in `server/`.
+2. Start/deploy `blockchain/TrustAnchor.sol` and run the blockchain gateway.
+3. Configure the matching gateway key in `blockchain/.env` and `server/.env`.
+4. Start `server/`, then `frontend/`.
+5. Create a trip. The individual QR is issued automatically. Creating a group also issues a group QR; joining a group issues that member's own individual QR.
+6. Completing, cancelling, leaving, being removed, or automatically expiring a trip revokes/invalidates the applicable credential. Extending a trip extends its on-chain expiry and causes fresh QR JWTs to be generated with the new expiry.

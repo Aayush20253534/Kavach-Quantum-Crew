@@ -78,6 +78,13 @@ contract TrustAnchor {
         uint64 revokedAt
     );
 
+    event IdExtended(
+        bytes32 indexed idHash,
+        uint64 previousExpiresAt,
+        uint64 expiresAt,
+        address indexed actor
+    );
+
     event EvidenceAnchored(
         bytes32 indexed evidenceHash,
         address indexed actor,
@@ -172,6 +179,22 @@ contract TrustAnchor {
         emit IdIssued(idHash, tripHash, msg.sender, issuedAt, expiresAt, version);
     }
 
+    /// @notice Extend the validity window of an active trip credential.
+    /// @dev    Used when the backend extends a trip. The identifier/hash never changes.
+    function extendId(bytes32 idHash, uint64 expiresAt)
+        external
+        onlyAuthorizedIssuer
+    {
+        DigitalId storage record = ids[idHash];
+        require(record.issuer != address(0), "ID_NOT_FOUND");
+        require(record.status == IdStatus.ACTIVE, "ID_NOT_ACTIVE");
+        require(expiresAt > record.expiresAt, "EXPIRY_NOT_EXTENDED");
+
+        uint64 previousExpiresAt = record.expiresAt;
+        record.expiresAt = expiresAt;
+        emit IdExtended(idHash, previousExpiresAt, expiresAt, msg.sender);
+    }
+
     /// @notice Revoke an active digital ID. Reason TEXT stays off-chain —
     ///         only a numeric reasonCode is ever anchored.
     function revokeId(bytes32 idHash, uint8 reasonCode)
@@ -207,7 +230,7 @@ contract TrustAnchor {
         IdStatus effectiveStatus = record.status;
         if (
             effectiveStatus == IdStatus.ACTIVE &&
-            block.timestamp > record.expiresAt &&
+            block.timestamp >= record.expiresAt &&
             record.issuer != address(0)
         ) {
             effectiveStatus = IdStatus.EXPIRED;

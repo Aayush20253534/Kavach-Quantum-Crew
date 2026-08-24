@@ -101,8 +101,9 @@ async function main(): Promise<void> {
   fs.writeFileSync(outPath, JSON.stringify(record, null, 2) + "\n", "utf-8");
   console.log(`[deploy] Wrote deployment metadata to: ${outPath}`);
 
-  // 7. Print a copy-pasteable line for the backend .env
-  console.log("\n[deploy] Add this to your backend .env:");
+  // 7. Print copy-pasteable values for the blockchain gateway .env.
+  // The Express server talks to the gateway and never receives the issuer key.
+  console.log("\n[deploy] Add these to blockchain/.env:");
   console.log(`CONTRACT_ADDRESS=${contractAddress}`);
   console.log(`CHAIN_ID=${chainId}`);
   console.log(`CONTRACT_VERSION=${CONTRACT_VERSION}\n`);

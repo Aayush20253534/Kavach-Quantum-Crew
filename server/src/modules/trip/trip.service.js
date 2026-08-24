@@ -1,7 +1,6 @@
-import crypto from "node:crypto";
-
 import { ApiError } from "../../common/errors/ApiError.js";
 import { tripRepository } from "./trip.repository.js";
+import { credentialService } from "../credential/credential.service.js";
 
 const REQUIRED_CONSENTS = ["LOCATION_TRACKING", "EMERGENCY_SHARING"];
 
@@ -111,12 +110,9 @@ const allRequiredConsentsGranted = (trip) => {
   return REQUIRED_CONSENTS.every((type) => granted.has(type));
 };
 
-const generateSafetyId = () => `STS-${crypto.randomBytes(18).toString("base64url")}`;
-
 export const createTripService = ({
   repository = tripRepository,
   clock = () => new Date(),
-  safetyIdFactory = generateSafetyId,
 } = {}) =>
   Object.freeze({
     async createTrip(userId, input) {
@@ -150,6 +146,7 @@ export const createTripService = ({
         entityId: trip.id,
         metadata: { tripType: trip.tripType, locationName: trip.locationName },
       });
+      await credentialService.ensureIndividual(trip.id, userId);
       return serializeTrip(trip, now);
     },
 
@@ -228,43 +225,13 @@ export const createTripService = ({
 
     async issueSafetyId(userId, tripId) {
       const trip = await requireTrip(repository, tripId, userId);
-      if (trip.status !== "PLANNED") {
-        throw ApiError.conflict("Safety ID can only be issued for a planned trip", {
-          code: "TRIP_NOT_PLANNED",
-        });
-      }
       if (!allRequiredConsentsGranted(trip)) {
         throw ApiError.badRequest("Required trip consents must be granted first", {
           code: "TRIP_CONSENT_REQUIRED",
           details: { required: REQUIRED_CONSENTS },
         });
       }
-
-      const now = clock();
-      if (trip.plannedEndAt <= now) {
-        throw ApiError.badRequest("Cannot issue a Safety ID for an expired trip window", {
-          code: "TRIP_WINDOW_EXPIRED",
-        });
-      }
-      if (isSafetyIdActive(trip.safetyId, now)) {
-        return serializeSafetyId(trip.safetyId, now);
-      }
-
-      const safetyId = await repository.upsertSafetyId(trip.id, {
-        publicId: safetyIdFactory(),
-        expiresAt: trip.plannedEndAt,
-        now,
-      });
-      await repository.createAudit({
-        actorId: userId,
-        action: "TRIP_SAFETY_ID_ISSUED",
-        entityId: trip.id,
-        metadata: {
-          safetyIdRecordId: safetyId.id,
-          expiresAt: new Date(safetyId.expiresAt).toISOString(),
-        },
-      });
-      return serializeSafetyId(safetyId, now);
+      return credentialService.ensureIndividual(tripId, userId);
     },
 
     async startTrip(userId, tripId) {
@@ -288,8 +255,9 @@ export const createTripService = ({
       }
 
       const now = clock();
-      if (!isSafetyIdActive(trip.safetyId, now)) {
-        throw ApiError.badRequest("An active, unexpired Safety ID is required before start", {
+      const credential = await credentialService.ensureIndividual(trip.id, userId);
+      if (!credential.active) {
+        throw ApiError.badRequest("An active, unexpired digital credential is required before start", {
           code: "SAFETY_ID_REQUIRED",
         });
       }
@@ -336,6 +304,7 @@ export const createTripService = ({
       }
 
       const updated = await repository.extendTrip(trip.id, plannedEndAt);
+      await credentialService.extendTrip(trip.id, plannedEndAt);
       await repository.createAudit({
         actorId: userId,
         action: "TRIP_EXTENDED",
@@ -358,6 +327,7 @@ export const createTripService = ({
       }
       const now = clock();
       const updated = await repository.completeTrip(trip.id, now);
+      await credentialService.revokeTrip(trip.id, 1);
       await repository.createAudit({
         actorId: userId,
         action: "TRIP_COMPLETED",
@@ -376,6 +346,7 @@ export const createTripService = ({
       }
       const now = clock();
       const updated = await repository.cancelTrip(trip.id, now);
+      await credentialService.revokeTrip(trip.id, 3);
       await repository.createAudit({
         actorId: userId,
         action: "TRIP_CANCELLED",

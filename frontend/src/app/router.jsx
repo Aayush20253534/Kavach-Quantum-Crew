@@ -15,6 +15,7 @@ import { OnboardingRoute } from './guards/OnboardingRoute';
 // Pages - Public
 import { HomePage } from '../features/public/pages/HomePage';
 import { NotFoundPage } from '../features/public/pages/NotFoundPage';
+import { CredentialVerifyPage } from '../features/credentials/pages/CredentialVerifyPage';
 
 // Pages - Auth
 import LoginPage from '../features/auth/pages/LoginPage';
@@ -68,6 +69,7 @@ export const router = createBrowserRouter([
           },
         ],
       },
+      { path: '/verify/:token', element: <CredentialVerifyPage /> },
       {
         element: <AuthLayout />,
         children: [

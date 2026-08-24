@@ -315,3 +315,11 @@ PROFILE_IMAGE_MAX_FILE_BYTES=5242880
   - Uses the responder's backend `jurisdiction`.
   - Returns jurisdiction-scoped active tourists, trips, incidents, emergency units, and Google Places police/fire/hospital locations.
   - Server-side Google lookup requires `GOOGLE_MAPS_API_KEY`.
+
+## QR credential endpoints
+
+- `GET /api/v1/credentials/trips/:tripId/me` - authenticated tourist's individual credential and QR.
+- `GET /api/v1/credentials/groups/:groupId` - group credential for an active member.
+- `GET /api/v1/credentials/verify/:token` - public verification used by QR scanners.
+
+Verification checks the signed token, database revocation/expiry, trip state, and, once confirmed, the TrustAnchor contract state.

@@ -12,6 +12,7 @@
   "include": [
     "hardhat.config.ts",
     "scripts/**/*.ts",
+    "gateway/**/*.ts",
     "test/**/*.ts"
   ]
 }

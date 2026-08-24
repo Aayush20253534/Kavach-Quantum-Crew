@@ -1425,3 +1425,7 @@ When authenticated gateways are enabled, the frontend architecture for real-time
 
 ## 43.2 Server-State Synchronization
 Socket.IO events MUST NOT duplicate backend data into Redux. Instead, events will trigger `queryClient.setQueryData` or `queryClient.invalidateQueries` to immediately reflect live alerts, incident updates, and notifications on the UI.
+
+## Blockchain credential flow
+
+Trip credentials are intentionally API-driven. `CurrentTripPage` calls `credentialService`, which reads signed QR payloads from the backend. The browser does not connect to an RPC node or wallet. Scans land on `/verify/:token`, and that page calls the public verification API. This keeps chain access, retries, and signer isolation outside React.

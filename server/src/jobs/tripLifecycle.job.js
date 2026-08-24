@@ -3,6 +3,7 @@ import cron from "node-cron";
 import { logger } from "../config/logger.js";
 import { emailService } from "../modules/auth/email.service.js";
 import { tripRepository } from "../modules/trip/trip.repository.js";
+import { credentialService } from "../modules/credential/credential.service.js";
 
 const uniqueRecipients = (trip) => {
   const users = [
@@ -61,6 +62,7 @@ export const createTripLifecycleJob = ({
     for (const trip of trips) {
       try {
         await repository.completeTrip(trip.id, now);
+        await credentialService.revokeTrip(trip.id, 4);
         await repository.createAudit({
           actorId: trip.touristId,
           action: "TRIP_AUTO_COMPLETED",

@@ -205,3 +205,6 @@ If you ever need to redeploy a new version of the contract (e.g. a bug found clo
 ---
 
 **Everything else about the trust layer — contract logic, adapter functions, the four catalogue HTTP routes — is unchanged by hosting.** This document only covers the environment/infrastructure delta between "runs on my laptop" and "runs on Render against a public testnet."
+## Gateway deployment
+
+Keep the gateway private. Bind to `127.0.0.1` for a single-host deployment or a private service address inside your container/VPC network. Set a long random `GATEWAY_API_KEY`, and configure the same value as `BLOCKCHAIN_GATEWAY_KEY` in the API. Never expose `ISSUER_PRIVATE_KEY` to the frontend or general Express environment.

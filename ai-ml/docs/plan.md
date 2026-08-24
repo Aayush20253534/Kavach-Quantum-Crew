@@ -720,3 +720,6 @@ Recommended Action
 
     AI recommends. Humans decide.
 ```
+## Blockchain/QR integration boundary
+
+AI/ML services must not consume QR JWTs, gateway API keys, issuer private keys, or raw blockchain credentials. If a future risk model needs identity context, the backend should pass only the minimum internal trip/user identifiers required for inference. Blockchain verification remains an API/backend responsibility.
