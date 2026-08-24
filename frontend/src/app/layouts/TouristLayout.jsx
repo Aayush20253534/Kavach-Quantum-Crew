@@ -260,8 +260,12 @@ export function TouristLayout() {
         <div className={`p-6 pb-2 flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}>
           {!isCollapsed ? (
             <Link to="/tourist/dashboard" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#1a1f2c] flex items-center justify-center text-white shadow-sm shrink-0">
-                <ShieldCheck className="w-6 h-6" />
+              <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                <img
+                  src="/Logo/kavach-logo.png"
+                  alt="KAVACH"
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div>
                 <h1 className="text-[15px] font-black tracking-tight text-[#1a1f2c] flex items-center gap-2">
@@ -272,8 +276,12 @@ export function TouristLayout() {
               </div>
             </Link>
           ) : (
-            <Link to="/tourist/dashboard" className="w-10 h-10 rounded-xl bg-[#1a1f2c] flex items-center justify-center text-white shadow-sm shrink-0">
-              <ShieldCheck className="w-6 h-6" />
+            <Link to="/tourist/dashboard" className="w-10 h-10 flex items-center justify-center shrink-0">
+              <img
+                src="/Logo/kavach-logo.png"
+                alt="KAVACH"
+                className="w-full h-full object-contain"
+              />
             </Link>
           )}
         </div>
