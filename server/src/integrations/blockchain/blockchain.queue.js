@@ -18,6 +18,28 @@ export const blockchainQueue = Object.freeze({
     });
   },
 
+  async retryFailed(entityType, entityId) {
+    if (!environment.BLOCKCHAIN_ENABLED) return false;
+
+    const job = await prisma.blockchainAnchorJob.findFirst({
+      where: { entityType, entityId, state: "FAILED" },
+      orderBy: { updatedAt: "desc" },
+    });
+    if (!job) return false;
+
+    await prisma.$transaction([
+      prisma.blockchainAnchorJob.update({
+        where: { id: job.id },
+        data: { state: "PENDING", attempts: 0, lastError: null, availableAt: new Date() },
+      }),
+      credentialModel(prisma, entityType).update({
+        where: { id: entityId },
+        data: { chainStatus: "PENDING", chainError: null },
+      }),
+    ]);
+    return true;
+  },
+
   async processNext() {
     const job = await prisma.blockchainAnchorJob.findFirst({
       where: { state: "PENDING", availableAt: { lte: new Date() } },

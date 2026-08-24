@@ -54,6 +54,12 @@ const enqueueIssue = async (credential, type, tripId) => blockchainQueue.enqueue
   extraArgs: { tripId, issuedAt: credential.issuedAt, expiresAt: credential.expiresAt },
 });
 
+const retryFailedAnchor = async (credential, type, reload) => {
+  if (!credential || credential.chainStatus !== "FAILED" || !environment.BLOCKCHAIN_ENABLED) return credential;
+  const requeued = await blockchainQueue.retryFailed(type, credential.id);
+  return requeued ? reload() : credential;
+};
+
 export const credentialService = Object.freeze({
   async ensureIndividual(tripId, userId) {
     const trip = await credentialRepository.findTrip(tripId);
@@ -73,9 +79,10 @@ export const credentialService = Object.freeze({
   },
 
   async ensureGroup(groupId, requestingUserId) {
-    const existing = await credentialRepository.findGroupCredential(groupId);
+    let existing = await credentialRepository.findGroupCredential(groupId);
     if (!existing) throw ApiError.notFound("Group credential is not initialized", { code: "GROUP_CREDENTIAL_NOT_FOUND" });
     if (!existing.group.members.some((m) => m.userId === requestingUserId)) throw ApiError.forbidden("Group membership required", { code: "GROUP_MEMBERSHIP_REQUIRED" });
+    existing = await retryFailedAnchor(existing, "GROUP", () => credentialRepository.findGroupCredential(groupId));
     return decorate(existing, "GROUP");
   },
 
@@ -92,8 +99,9 @@ export const credentialService = Object.freeze({
   },
 
   async getMyIndividual(tripId, userId) {
-    const credential = await credentialRepository.findIndividual(tripId, userId);
+    let credential = await credentialRepository.findIndividual(tripId, userId);
     if (!credential) return this.ensureIndividual(tripId, userId);
+    credential = await retryFailedAnchor(credential, "INDIVIDUAL", () => credentialRepository.findIndividual(tripId, userId));
     return decorate(credential, "INDIVIDUAL");
   },
 
