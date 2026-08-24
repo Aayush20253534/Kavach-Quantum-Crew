@@ -29,3 +29,6 @@ When hosted on Render, `blockchain/` runs as a separate Web Service (`npm instal
 ## Group QR Join
 
 Group invitations are now shared as expiring QR codes. The tourist app scans the QR, validates it with a preview API, shows the trip details for confirmation, and only then joins the group. The opaque QR token expires with the invitation and does not expose group internals or tourist data.
+
+### Group QR join
+Group join QR codes are generated from the active group credential `idHash` (`chainHash`) using `KAVACH_GROUP:<idHash>`. The backend resolves and validates the hash before allowing membership.

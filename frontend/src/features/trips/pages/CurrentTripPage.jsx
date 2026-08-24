@@ -15,7 +15,6 @@ export function CurrentTripPage() {
   const { user } = useSelector((state) => state.auth);
   const [trip, setTrip] = useState(null);
   const [group, setGroup] = useState(null);
-  const [invite, setInvite] = useState(null);
   const [individualCredential, setIndividualCredential] = useState(null);
   const [groupCredential, setGroupCredential] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -82,13 +81,6 @@ export function CurrentTripPage() {
       const plannedEndAt = new Date(currentEnd + minutes * 60_000).toISOString();
       await tripService.extendTrip(trip.id, plannedEndAt);
     });
-
-  const createInvite = async () => {
-    setBusy('invite');
-    try { setInvite(await groupService.createInvitation(group.id, 60)); }
-    catch (e) { setError(e?.response?.data?.error?.message || 'Could not create invitation'); }
-    finally { setBusy(''); }
-  };
 
   if (loading) return <div className="py-24 flex justify-center"><Loader2 className="animate-spin" /></div>;
 
@@ -237,10 +229,10 @@ export function CurrentTripPage() {
               <h2 className="text-sm sm:text-base font-black">Trip Group</h2>
               <p className="text-[11px] sm:text-xs text-slate-500 mt-1">{groupMemberCount} active member(s)</p>
             </div>
-            {group && (
-              <button onClick={createInvite} disabled={busy === 'invite'} className="px-3.5 sm:px-4 py-2 rounded-lg bg-slate-900 text-white text-[11px] sm:text-xs font-bold">
-                Create Invite
-              </button>
+            {groupCredential?.idHash && (
+              <span className="rounded-lg bg-emerald-50 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-emerald-700">
+                QR ready to scan
+              </span>
             )}
           </div>
 
@@ -261,18 +253,25 @@ export function CurrentTripPage() {
             </div>
           )}
 
-          {invite && (
+          {groupCredential?.idHash && (
             <div className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50 p-4 sm:p-5">
-              <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-                <div className="rounded-xl bg-white p-3 shadow-sm">
-                  <QRCodeSVG value={`KAVACH_JOIN:${invite.inviteToken}`} size={176} level="M" includeMargin />
+              <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
+                <div className="shrink-0 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+                  <QRCodeSVG
+                    value={`KAVACH_GROUP:${groupCredential.idHash}`}
+                    size={260}
+                    level="L"
+                    marginSize={4}
+                    bgColor="#FFFFFF"
+                    fgColor="#000000"
+                  />
                 </div>
-                <div className="flex-1 text-center sm:text-left">
-                  <p className="text-sm font-black text-indigo-950">Scan to join this trip</p>
-                  <p className="mt-1 text-xs leading-5 text-indigo-700">Members can scan this QR from the Join Trip page. The invitation expires automatically at {new Date(invite.expiresAt).toLocaleString()}.</p>
-                  <p className="mt-3 rounded-lg border border-indigo-100 bg-white/70 px-3 py-2 font-mono text-[10px] break-all text-indigo-950">{invite.inviteToken}</p>
-                  <button onClick={() => navigator.clipboard?.writeText(invite.inviteToken)} className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-indigo-700">
-                    <Copy className="w-3.5 h-3.5" /> Copy invitation as fallback
+                <div className="min-w-0 flex-1 text-center sm:text-left">
+                  <p className="text-sm font-black text-indigo-950">Scan Group ID to join</p>
+                  <p className="mt-1 text-xs leading-5 text-indigo-700">This QR is generated directly from the group blockchain ID hash. It stays valid only while the group credential and planned trip are active.</p>
+                  <p className="mt-3 rounded-lg border border-indigo-100 bg-white/70 px-3 py-2 font-mono text-[10px] break-all text-indigo-950">{groupCredential.idHash}</p>
+                  <button onClick={() => navigator.clipboard?.writeText(groupCredential.idHash)} className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-indigo-700">
+                    <Copy className="w-3.5 h-3.5" /> Copy group ID hash
                   </button>
                 </div>
               </div>

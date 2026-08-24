@@ -338,3 +338,6 @@ Keep `QR_TOKEN_SECRET` different from the gateway key. Human beings do occasiona
 ### Group QR join flow
 
 Group leaders create an expiring invitation. The frontend renders that invitation as a QR payload in the form `KAVACH_JOIN:<opaque-token>`. Tourists scan it from the Join Trip page, call `POST /api/v1/groups/join/preview` to validate the invitation and review trip details, then call `POST /api/v1/groups/join` only after confirmation. The join endpoint still issues the tourist's individual blockchain-backed credential through the existing credential service.
+
+### Group join by blockchain ID hash
+`POST /api/v1/groups/join/qr/preview` and `POST /api/v1/groups/join/qr` accept `{ "groupIdHash": "0x..." }`. The hash must match an active group credential and a planned trip.
