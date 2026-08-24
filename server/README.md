@@ -341,3 +341,9 @@ Group leaders create an expiring invitation. The frontend renders that invitatio
 
 ### Group join by blockchain ID hash
 `POST /api/v1/groups/join/qr/preview` and `POST /api/v1/groups/join/qr` accept `{ "groupIdHash": "0x..." }`. The hash must match an active group credential and a planned trip.
+
+### Group QR leader approval
+
+QR joining uses two-step membership approval. `POST /api/v1/groups/join/qr` no longer creates a `GroupMember` immediately; it creates or refreshes a `PENDING` `GroupJoinRequest`. The authenticated group leader reviews requests with `GET /api/v1/groups/:groupId/join-requests` and explicitly approves or rejects them. Only approval creates membership and issues the tourist's individual trip credential.
+
+Requester status can be checked with `GET /api/v1/groups/join/requests/:requestId`. This keeps the blockchain group `idHash` useful as a compact scannable identifier without treating possession of the QR as authorization to enter the group.

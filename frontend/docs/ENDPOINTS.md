@@ -319,3 +319,11 @@ Body:
 ```
 
 This creates the membership and triggers the existing individual digital credential issuance flow.
+
+### Group QR approval
+
+- `POST /groups/join/qr` - submit a pending join request from a scanned group `idHash`.
+- `GET /groups/join/requests/:requestId` - requester polls approval status.
+- `GET /groups/:groupId/join-requests` - leader lists pending requests.
+- `POST /groups/:groupId/join-requests/:requestId/approve` - leader approves and creates membership.
+- `POST /groups/:groupId/join-requests/:requestId/reject` - leader rejects the request.

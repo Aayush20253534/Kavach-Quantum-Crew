@@ -9,7 +9,11 @@ export const createGroupController = ({ service = groupService } = {}) => ({
   previewJoin: async (req,res) => ApiResponse.success(res,{message:"Group join preview",data:await service.previewJoinGroup(req.user.id,req.body.inviteToken)}),
   previewJoinByQr: async (req,res) => ApiResponse.success(res,{message:"Group QR join preview",data:await service.previewJoinGroupByHash(req.user.id,req.body.groupIdHash)}),
   join: async (req,res) => ApiResponse.success(res,{message:"Group joined",data:await service.joinGroup(req.user.id,req.body.inviteToken)}),
-  joinByQr: async (req,res) => ApiResponse.success(res,{message:"Group joined",data:await service.joinGroupByHash(req.user.id,req.body.groupIdHash)}),
+  joinByQr: async (req,res) => ApiResponse.success(res,{statusCode:202,message:"Join request sent to group leader",data:await service.joinGroupByHash(req.user.id,req.body.groupIdHash)}),
+  joinRequestStatus: async (req,res) => ApiResponse.success(res,{message:"Join request status",data:await service.getJoinRequestStatus(req.user.id,req.params.requestId)}),
+  listJoinRequests: async (req,res) => ApiResponse.success(res,{message:"Pending join requests",data:await service.listJoinRequests(req.user.id,req.params.groupId)}),
+  approveJoinRequest: async (req,res) => ApiResponse.success(res,{message:"Join request approved",data:await service.approveJoinRequest(req.user.id,req.params.groupId,req.params.requestId)}),
+  rejectJoinRequest: async (req,res) => ApiResponse.success(res,{message:"Join request rejected",data:await service.rejectJoinRequest(req.user.id,req.params.groupId,req.params.requestId)}),
   leave: async (req,res) => ApiResponse.success(res,{message:"Group left",data:await service.leaveGroup(req.user.id,req.params.groupId)}),
   removeMember: async (req,res) => ApiResponse.success(res,{message:"Group member removed",data:await service.removeMember(req.user.id,req.params.groupId,req.params.memberId)}),
 });

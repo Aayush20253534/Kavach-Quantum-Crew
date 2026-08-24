@@ -165,10 +165,70 @@ export const createGroupService = ({ repository = groupRepository, clock = () =>
   async joinGroupByHash(userId, groupIdHash) {
     const now = clock();
     const { group } = await validateJoinableGroupHash(repository, userId, groupIdHash, now);
-    await repository.joinGroup(group.id, userId, now);
-    await credentialService.ensureIndividual(group.tripId, userId);
-    await repository.createAudit({ actorId: userId, action: "GROUP_JOINED_BY_QR", entityId: group.id, metadata: { groupIdHash } });
-    return serializeGroup(await repository.findGroup(group.id));
+    if (group.leaderId === userId) {
+      throw ApiError.conflict("You are already the leader of this group", { code: "GROUP_LEADER_EXISTS" });
+    }
+    const request = await repository.createJoinRequest(group.id, userId, groupIdHash, now);
+    await repository.createAudit({ actorId: userId, action: "GROUP_JOIN_REQUESTED_BY_QR", entityId: group.id, metadata: { requestId: request.id, groupIdHash } });
+    return {
+      requestId: request.id,
+      status: request.status,
+      requestedAt: request.requestedAt,
+      groupId: group.id,
+      tripId: group.tripId,
+    };
+  },
+  async getJoinRequestStatus(userId, requestId) {
+    const request = await repository.findJoinRequestForUser(requestId, userId);
+    if (!request) throw ApiError.notFound("Join request not found", { code: "GROUP_JOIN_REQUEST_NOT_FOUND" });
+    return {
+      requestId: request.id,
+      status: request.status,
+      requestedAt: request.requestedAt,
+      decidedAt: request.decidedAt,
+      groupId: request.groupId,
+      tripId: request.group.tripId,
+      trip: {
+        locationName: request.group.trip.locationName,
+        plannedStartAt: request.group.trip.plannedStartAt,
+        plannedEndAt: request.group.trip.plannedEndAt,
+        status: request.group.trip.status,
+      },
+    };
+  },
+  async listJoinRequests(userId, groupId) {
+    const group = await requireGroup(repository, groupId);
+    requireLeader(group, userId);
+    requireMembershipOpen(group);
+    return repository.listPendingJoinRequests(groupId);
+  },
+  async approveJoinRequest(userId, groupId, requestId) {
+    const group = await requireGroup(repository, groupId);
+    requireLeader(group, userId);
+    requireMembershipOpen(group);
+    const request = await repository.findJoinRequest(groupId, requestId);
+    if (!request) throw ApiError.notFound("Join request not found", { code: "GROUP_JOIN_REQUEST_NOT_FOUND" });
+    if (request.status !== "PENDING") throw ApiError.conflict("Join request has already been decided", { code: "GROUP_JOIN_REQUEST_DECIDED" });
+
+    const now = clock();
+    const validated = await validateJoinableGroupHash(repository, request.userId, request.groupIdHash, now);
+    if (validated.group.id !== groupId) throw ApiError.badRequest("Join request does not belong to this group", { code: "GROUP_JOIN_REQUEST_MISMATCH" });
+
+    await repository.approveJoinRequest(request.id, groupId, request.userId, now);
+    await credentialService.ensureIndividual(group.tripId, request.userId);
+    await repository.createAudit({ actorId: userId, action: "GROUP_JOIN_REQUEST_APPROVED", entityId: groupId, metadata: { requestId, approvedUserId: request.userId } });
+    return serializeGroup(await repository.findGroup(groupId));
+  },
+  async rejectJoinRequest(userId, groupId, requestId) {
+    const group = await requireGroup(repository, groupId);
+    requireLeader(group, userId);
+    requireMembershipOpen(group);
+    const request = await repository.findJoinRequest(groupId, requestId);
+    if (!request) throw ApiError.notFound("Join request not found", { code: "GROUP_JOIN_REQUEST_NOT_FOUND" });
+    if (request.status !== "PENDING") throw ApiError.conflict("Join request has already been decided", { code: "GROUP_JOIN_REQUEST_DECIDED" });
+    const rejected = await repository.rejectJoinRequest(request.id, clock());
+    await repository.createAudit({ actorId: userId, action: "GROUP_JOIN_REQUEST_REJECTED", entityId: groupId, metadata: { requestId, rejectedUserId: request.userId } });
+    return { requestId: rejected.id, status: rejected.status, decidedAt: rejected.decidedAt };
   },
   async joinGroup(userId, inviteToken) {
     const now = clock();

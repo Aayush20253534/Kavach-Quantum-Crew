@@ -39,3 +39,7 @@ npm install
 
 ### Group QR scanner
 The group QR renders the blockchain group credential `idHash` at high resolution and the Join Trip scanner submits that hash to the backend for validation.
+
+## QR join approval flow
+
+Scanning a group blockchain QR now submits a join request rather than joining immediately. The tourist sees a waiting state while the page polls the request status. On the trip leader's Current Trip screen, pending tourists appear with Approve and Reject actions. Approval creates membership and the tourist is redirected into the current trip flow.

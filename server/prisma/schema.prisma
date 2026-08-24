@@ -40,6 +40,7 @@ model User {
   ledGroups           TripGroup[]   @relation("GroupLeader")
   trips               Trip[]
   touristCredentials  TouristTripCredential[]
+  groupJoinRequests    GroupJoinRequest[]
   emailVerificationOtp EmailVerificationOtp?
 
   @@index([status])
@@ -228,6 +229,7 @@ model TripGroup {
   leader      User              @relation("GroupLeader", fields: [leaderId], references: [id], onDelete: Cascade)
   trip        Trip              @relation(fields: [tripId], references: [id], onDelete: Cascade)
   credential  GroupTripCredential?
+  joinRequests GroupJoinRequest[]
 
   @@index([leaderId, status])
   @@map("trip_groups")
@@ -262,6 +264,25 @@ model GroupInvitation {
 
   @@index([groupId, expiresAt, revokedAt])
   @@map("group_invitations")
+}
+
+model GroupJoinRequest {
+  id          String                 @id @default(uuid()) @db.Uuid
+  groupId     String                 @db.Uuid
+  userId      String                 @db.Uuid
+  groupIdHash String                 @db.VarChar(66)
+  status      GroupJoinRequestStatus @default(PENDING)
+  requestedAt DateTime               @default(now())
+  decidedAt   DateTime?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  group       TripGroup              @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user        User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId, status, requestedAt])
+  @@index([userId, status, requestedAt])
+  @@map("group_join_requests")
 }
 
 model TouristTripCredential {
@@ -386,6 +407,12 @@ enum GroupStatus {
 enum GroupMemberRole {
   LEADER
   MEMBER
+}
+
+enum GroupJoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 

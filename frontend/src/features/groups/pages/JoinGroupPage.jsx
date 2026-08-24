@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Camera, CheckCircle2, ImageUp, Loader2, ShieldCheck, Users, X, AlertTriangle } from 'lucide-react';
+import { Camera, CheckCircle2, Clock3, ImageUp, Loader2, ShieldCheck, Users, X, AlertTriangle, XCircle } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
 import { groupService } from '../api/groupService';
@@ -23,6 +23,7 @@ export function JoinGroupPage() {
   const [groupIdHash, setGroupIdHash] = useState('');
   const [error, setError] = useState('');
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [joinRequest, setJoinRequest] = useState(null);
 
   const stopScanner = async () => {
     if (!scannerRef.current) return;
@@ -36,6 +37,24 @@ export function JoinGroupPage() {
   };
 
   useEffect(() => () => { stopScanner(); }, []);
+
+  useEffect(() => {
+    if (!joinRequest?.requestId || joinRequest.status !== 'PENDING') return undefined;
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const next = await groupService.getJoinRequestStatus(joinRequest.requestId);
+        if (cancelled) return;
+        setJoinRequest(next);
+        if (next.status === 'APPROVED') {
+          window.setTimeout(() => navigate('/tourist/trips/current', { replace: true }), 700);
+        }
+      } catch {}
+    };
+    const timer = window.setInterval(check, 4000);
+    check();
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [joinRequest?.requestId, joinRequest?.status, navigate]);
 
   const handleDecoded = async (decodedText) => {
     const hash = normalizePayload(decodedText);
@@ -106,10 +125,11 @@ export function JoinGroupPage() {
     setBusy(true);
     setError('');
     try {
-      await groupService.joinGroupByQr(groupIdHash);
-      navigate('/tourist/trips/current', { replace: true });
+      const request = await groupService.joinGroupByQr(groupIdHash);
+      setJoinRequest(request);
+      setPreview(null);
     } catch (e) {
-      setError(e?.response?.data?.error?.message || e.message || 'Could not join this group.');
+      setError(e?.response?.data?.error?.message || e.message || 'Could not send this join request.');
     } finally {
       setBusy(false);
     }
@@ -128,7 +148,7 @@ export function JoinGroupPage() {
 
         {error && <div className="mt-5 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex gap-2"><AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />{error}</div>}
 
-        {!preview && (
+        {!preview && !joinRequest && (
           <div className="mt-6 space-y-3">
             <div id={READER_ID} className={`overflow-hidden rounded-xl border ${cameraOpen ? 'border-indigo-300 bg-black min-h-[320px]' : 'hidden'}`} />
             <div id="kavach-hidden-reader" className="hidden" />
@@ -147,7 +167,37 @@ export function JoinGroupPage() {
           </div>
         )}
 
-        {busy && !preview && <div className="mt-6 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-indigo-600" /></div>}
+        {busy && !preview && !joinRequest && <div className="mt-6 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-indigo-600" /></div>}
+
+        {joinRequest && (
+          <div className="mt-6">
+            {joinRequest.status === 'PENDING' && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-center">
+                <Clock3 className="mx-auto h-8 w-8 text-amber-600" />
+                <p className="mt-3 font-black text-amber-950">Waiting for leader approval</p>
+                <p className="mt-1 text-xs leading-5 text-amber-700">Your QR was valid. The group leader must approve your request before you become a member and receive an individual trip credential.</p>
+                <div className="mt-4 inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-[11px] font-bold text-amber-800 ring-1 ring-amber-200">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Checking approval automatically
+                </div>
+              </div>
+            )}
+            {joinRequest.status === 'APPROVED' && (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center">
+                <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-600" />
+                <p className="mt-3 font-black text-emerald-950">Approved by group leader</p>
+                <p className="mt-1 text-xs text-emerald-700">You are now a group member. Opening your current trip…</p>
+              </div>
+            )}
+            {joinRequest.status === 'REJECTED' && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-center">
+                <XCircle className="mx-auto h-8 w-8 text-red-600" />
+                <p className="mt-3 font-black text-red-950">Join request declined</p>
+                <p className="mt-1 text-xs text-red-700">The group leader did not approve this request.</p>
+                <button type="button" onClick={() => { setJoinRequest(null); setGroupIdHash(''); }} className="mt-4 rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-black text-red-700">Scan another QR</button>
+              </div>
+            )}
+          </div>
+        )}
 
         {preview && (
           <div className="mt-6">
@@ -172,7 +222,7 @@ export function JoinGroupPage() {
             <div className="mt-4 flex gap-3">
               <button type="button" onClick={() => { setPreview(null); setGroupIdHash(''); }} disabled={busy} className="flex-1 py-3 rounded-lg border border-slate-200 bg-white text-slate-700 font-black text-xs uppercase tracking-wider">Scan Again</button>
               <button type="button" onClick={confirmJoin} disabled={busy} className="flex-1 py-3 rounded-lg bg-indigo-600 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-60">
-                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />} Join Trip
+                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />} Request to Join
               </button>
             </div>
           </div>

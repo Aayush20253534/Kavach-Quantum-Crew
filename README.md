@@ -32,3 +32,7 @@ Group invitations are now shared as expiring QR codes. The tourist app scans the
 
 ### Group QR join
 Group join QR codes are generated from the active group credential `idHash` (`chainHash`) using `KAVACH_GROUP:<idHash>`. The backend resolves and validates the hash before allowing membership.
+
+### Double-confirmation group joining
+
+Group QR scans are identification, not automatic authorization. A tourist scans the compact blockchain group `idHash`, reviews the trip, and submits a join request. The trip leader must approve that request before `GroupMember` creation and individual credential issuance. This prevents a copied group QR from silently adding arbitrary authenticated users to a trip.
