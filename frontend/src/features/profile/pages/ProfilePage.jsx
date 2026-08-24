@@ -25,6 +25,7 @@ import {
   LANGUAGES,
   NATIONALITIES,
   RELATIONSHIPS,
+  getNationalityFlag,
 } from '../../onboarding/constants/onboardingOptions';
 import { profileService } from '../api/profileService';
 
@@ -394,6 +395,9 @@ export function ProfilePage() {
                   options={NATIONALITIES}
                   placeholder="Select nationality"
                   onChange={(value) => setField('nationality', value)}
+                  searchable
+                  searchPlaceholder="Search nationality"
+                  optionPrefix={(option) => getNationalityFlag(option)}
                 />
                 <ProfileSelect
                   label="ID type"
@@ -527,6 +531,9 @@ function ProfileSelect({
   options,
   placeholder,
   onChange,
+  searchable = false,
+  searchPlaceholder = 'Search...',
+  optionPrefix,
 }) {
   return (
     <div>
@@ -538,6 +545,9 @@ function ProfileSelect({
         options={options}
         placeholder={placeholder}
         onChange={onChange}
+        searchable={searchable}
+        searchPlaceholder={searchPlaceholder}
+        optionPrefix={optionPrefix}
       />
     </div>
   );

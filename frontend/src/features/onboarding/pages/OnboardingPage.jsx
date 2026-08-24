@@ -26,6 +26,7 @@ import {
   LANGUAGES,
   NATIONALITIES,
   RELATIONSHIPS,
+  getNationalityFlag,
 } from '../constants/onboardingOptions';
 
 const tenDigitPhone = z
@@ -358,6 +359,9 @@ export function OnboardingPage() {
                           options={NATIONALITIES}
                           placeholder="Select nationality"
                           error={errors.nationality}
+                          searchable
+                          searchPlaceholder="Search nationality"
+                          optionPrefix={(option) => getNationalityFlag(option)}
                         />
                       )}
                     />
