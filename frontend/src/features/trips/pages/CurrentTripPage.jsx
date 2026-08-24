@@ -259,7 +259,7 @@ export function CurrentTripPage() {
               <h2 className="text-sm sm:text-base font-black">Trip Group</h2>
               <p className="text-[11px] sm:text-xs text-slate-500 mt-1">{groupMemberCount} active member(s)</p>
             </div>
-            {groupCredential?.idHash && (
+            {groupCredential?.groupJoinQrPayload && (
               <span className="rounded-lg bg-emerald-50 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-emerald-700">
                 QR ready to scan
               </span>
@@ -323,14 +323,13 @@ export function CurrentTripPage() {
             </div>
           )}
 
-          {groupCredential?.idHash && (
+          {groupCredential?.groupJoinQrPayload && (
             <CredentialQrPanel
               title="Scan Group ID to join"
-              description="This QR is generated directly from the group blockchain ID hash. It stays valid only while the group credential and planned trip are active."
-              value={`KAVACH_GROUP:${groupCredential.idHash}`}
-              copyValue={groupCredential.idHash}
-              copyLabel="Copy group ID hash"
-              rawValue={groupCredential.idHash}
+              description="This secure QR lets another tourist request to join your group. The underlying blockchain identifier is never displayed to users."
+              value={groupCredential.groupJoinQrPayload}
+              copyValue={groupCredential.publicId}
+              copyLabel="Copy group ID"
             />
           )}
         </div>
@@ -383,6 +382,12 @@ function CredentialCard({ title, credential }) {
       <p className="text-[10px] uppercase tracking-wider font-black text-slate-400">{title}</p>
       <p className="mt-1 break-all font-mono text-xs font-bold text-slate-800">{credential.publicId}</p>
       <p className={`mt-2 text-[10px] font-bold ${statusClass}`}>Blockchain: {blockchainStatus}</p>
+      {credential.blockchainError?.message && (
+        <p className="mt-1 text-[10px] leading-4 text-red-600">
+          {credential.blockchainError.message}
+          {credential.blockchainError.code ? ` (${credential.blockchainError.code})` : ''}
+        </p>
+      )}
       <p className="mt-1 text-[10px] text-slate-500">Expires {new Date(credential.expiresAt).toLocaleString()}</p>
     </div>
   );

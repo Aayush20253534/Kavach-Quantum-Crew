@@ -9,8 +9,8 @@ const READER_ID = 'kavach-group-qr-reader';
 const normalizePayload = (raw) => {
   const value = String(raw || '').trim();
   if (!value) return '';
-  if (value.startsWith('KAVACH_GROUP:')) return value.slice('KAVACH_GROUP:'.length).trim();
-  return /^0x[a-fA-F0-9]{64}$/.test(value) ? value : '';
+  if (value.startsWith('KAVACH_GROUP_JOIN:')) return value.slice('KAVACH_GROUP_JOIN:'.length).trim();
+  return '';
 };
 
 export function JoinGroupPage() {
@@ -20,7 +20,7 @@ export function JoinGroupPage() {
   const [busy, setBusy] = useState(false);
   const [starting, setStarting] = useState(false);
   const [preview, setPreview] = useState(null);
-  const [groupIdHash, setGroupIdHash] = useState('');
+  const [groupQrToken, setGroupQrToken] = useState('');
   const [error, setError] = useState('');
   const [cameraOpen, setCameraOpen] = useState(false);
   const [joinRequest, setJoinRequest] = useState(null);
@@ -57,17 +57,17 @@ export function JoinGroupPage() {
   }, [joinRequest?.requestId, joinRequest?.status, navigate]);
 
   const handleDecoded = async (decodedText) => {
-    const hash = normalizePayload(decodedText);
-    if (!hash) {
+    const qrToken = normalizePayload(decodedText);
+    if (!qrToken) {
       setError('This is not a valid Kavach group QR code.');
       return;
     }
     await stopScanner();
-    setGroupIdHash(hash);
+    setGroupQrToken(qrToken);
     setBusy(true);
     setError('');
     try {
-      const data = await groupService.previewJoinGroupByQr(hash);
+      const data = await groupService.previewJoinGroupByQr(qrToken);
       setPreview(data);
     } catch (e) {
       setPreview(null);
@@ -121,11 +121,11 @@ export function JoinGroupPage() {
   };
 
   const confirmJoin = async () => {
-    if (!groupIdHash) return;
+    if (!groupQrToken) return;
     setBusy(true);
     setError('');
     try {
-      const request = await groupService.joinGroupByQr(groupIdHash);
+      const request = await groupService.joinGroupByQr(groupQrToken);
       setJoinRequest(request);
       setPreview(null);
     } catch (e) {
@@ -193,7 +193,7 @@ export function JoinGroupPage() {
                 <XCircle className="mx-auto h-8 w-8 text-red-600" />
                 <p className="mt-3 font-black text-red-950">Join request declined</p>
                 <p className="mt-1 text-xs text-red-700">The group leader did not approve this request.</p>
-                <button type="button" onClick={() => { setJoinRequest(null); setGroupIdHash(''); }} className="mt-4 rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-black text-red-700">Scan another QR</button>
+                <button type="button" onClick={() => { setJoinRequest(null); setGroupQrToken(''); }} className="mt-4 rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-black text-red-700">Scan another QR</button>
               </div>
             )}
           </div>
@@ -220,7 +220,7 @@ export function JoinGroupPage() {
               </div>
             </div>
             <div className="mt-4 flex gap-3">
-              <button type="button" onClick={() => { setPreview(null); setGroupIdHash(''); }} disabled={busy} className="flex-1 py-3 rounded-lg border border-slate-200 bg-white text-slate-700 font-black text-xs uppercase tracking-wider">Scan Again</button>
+              <button type="button" onClick={() => { setPreview(null); setGroupQrToken(''); }} disabled={busy} className="flex-1 py-3 rounded-lg border border-slate-200 bg-white text-slate-700 font-black text-xs uppercase tracking-wider">Scan Again</button>
               <button type="button" onClick={confirmJoin} disabled={busy} className="flex-1 py-3 rounded-lg bg-indigo-600 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-60">
                 {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />} Request to Join
               </button>

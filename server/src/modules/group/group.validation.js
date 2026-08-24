@@ -17,5 +17,5 @@ export const joinGroupBodySchema = z.object({
 export const previewJoinGroupBodySchema = joinGroupBodySchema;
 
 export const groupQrBodySchema = z.object({
-  groupIdHash: z.string().regex(/^0x[a-fA-F0-9]{64}$/, "Invalid group ID hash"),
+  qrToken: z.string().min(32).max(4096),
 });
