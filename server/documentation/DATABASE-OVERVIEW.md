@@ -1,5 +1,8 @@
 # Database Overview
 
+> **Documentation status (24 Aug 2026):** This document is maintained against the current repository. Runtime source, `server/.env.example`, `server/prisma/schema.prisma`, and `server/openapi.yaml` are authoritative if a historical phase note differs.
+
+
 Database: PostgreSQL, accessed through Prisma.
 
 Current Prisma models (34):

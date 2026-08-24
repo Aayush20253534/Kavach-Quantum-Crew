@@ -1,5 +1,8 @@
 # Role and Permission Matrix
 
+> **Documentation status (24 Aug 2026):** This document is maintained against the current repository. Runtime source, `server/.env.example`, `server/prisma/schema.prisma`, and `server/openapi.yaml` are authoritative if a historical phase note differs.
+
+
 This is a high-level matrix. Ownership, consent, lifecycle, and membership checks can further restrict an allowed role.
 
 | Capability | TOURIST | DISASTER_MANAGER | SYSTEM_ADMIN |

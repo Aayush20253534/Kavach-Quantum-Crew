@@ -1,5 +1,8 @@
 # Blockchain Integration Catalogue
 
+> **Documentation status (24 Aug 2026):** This document is maintained against the current repository. Runtime source, `server/.env.example`, `server/prisma/schema.prisma`, and `server/openapi.yaml` are authoritative if a historical phase note differs.
+
+
 ## Scope
 
 These endpoints are provider contracts only. This repository does not implement wallets, smart contracts, signing keys, RPC clients, transactions, gas handling, or chain deployment.

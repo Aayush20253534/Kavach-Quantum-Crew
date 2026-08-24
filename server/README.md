@@ -1,5 +1,8 @@
 # Smart Tourist Safety System — Backend
 
+> **Documentation status (24 Aug 2026):** This document is maintained against the current repository. Runtime source, `server/.env.example`, `server/prisma/schema.prisma`, and `server/openapi.yaml` are authoritative if a historical phase note differs.
+
+
 Backend service for a tourist-safety platform that manages tourist accounts, trips, consent, Safety IDs, group travel, trusted location tracking, deterministic safety monitoring, SOS incidents, disaster-management response, emergency dispatch, evidence, notifications, analytics, administration, external AI/blockchain contracts, audit trails, and operational observability.
 
 The service is designed as a **modular Node.js backend**. AI models, blockchain clients/contracts, frontend applications, and concrete external notification vendors are separate integrations behind explicit backend boundaries.

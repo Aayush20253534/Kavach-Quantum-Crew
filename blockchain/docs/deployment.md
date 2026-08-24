@@ -1,5 +1,8 @@
 # Taking the Blockchain Trust Layer Online — Render Deployment Guide
 
+> **Documentation status (24 Aug 2026):** Retained as design/deployment history. The current server integration uses the isolated authenticated HTTP gateway (`blockchain/gateway/server.ts`), not an in-process adapter import into `server/`.
+
+
 ### SIH25002 — Smart Tourist Safety Monitoring & Incident Response System
 
 > Audience: the backend developer hosting the platform on Render. This document covers **only** what changes when you move the blockchain trust layer from your laptop (local Hardhat node) to a publicly reachable, hosted deployment. Everything about the contract, adapter functions, and HTTP contract routes stays exactly as already documented — this is purely the "how do I run this online" layer.

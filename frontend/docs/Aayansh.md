@@ -1,5 +1,8 @@
 # Frontend Functional Implementation Plan (Aayansh)
 
+> **Documentation status (24 Aug 2026):** Retained as project documentation and design history. Current `frontend/src/` behavior is authoritative where older phase language, placeholders, or proposed structure differs.
+
+
 ## Objective
 The backend API is now fully mounted with 148 routes covering Authentication, Trips, Tracking, Geofencing, SOS, Incidents, and Disaster Management. The frontend UI shell is mostly designed by Prachi. 
 

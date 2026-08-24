@@ -1,12 +1,16 @@
 # AI Integration Catalogue
 
+> **Documentation status (24 Aug 2026):** This document is maintained against the current repository. Runtime source, `server/.env.example`, `server/prisma/schema.prisma`, and `server/openapi.yaml` are authoritative if a historical phase note differs.
+
+
 ## Current status
 
-The backend currently exposes **two AI analysis contracts** plus capability discovery. It does **not** expose a general conversational chatbot endpoint.
+The backend exposes two distinct AI boundaries:
 
-All mounted integration routes pass through `authenticate`, and the service further restricts integration access to `DISASTER_MANAGER` and `SYSTEM_ADMIN`. A `TOURIST` cannot call these routes.
+1. **Staff integration contracts** under `/api/v1/integrations/ai/*` for risk assessment and hazard analysis. These are restricted to `DISASTER_MANAGER` and `SYSTEM_ADMIN` and return `501 INTEGRATION_PROVIDER_NOT_CONFIGURED` with the default provider.
+2. **Tourist chatbot contract** at `POST /api/v1/chatbot/messages`. It is restricted to authenticated `TOURIST` accounts and returns `501 CHATBOT_PROVIDER_NOT_CONFIGURED` until a concrete chatbot provider is injected.
 
-The default `aiProvider` has no concrete model implementation injected. Therefore the two AI POST endpoints return `501 INTEGRATION_PROVIDER_NOT_CONFIGURED` until a real provider is connected.
+The current frontend `ChatbotWidget.jsx` has not yet been wired to the backend chatbot route and still creates a temporary simulated response locally.
 
 ## Endpoint summary
 
@@ -83,6 +87,4 @@ No Gemini, OpenAI, Groq, local LLM, RAG pipeline, or other inference provider is
 
 ## Chatbot boundary
 
-The tourist-facing `Rakshak AI` widget is separate. Currently, `frontend/src/components/chatbot/ChatbotWidget.jsx` keeps messages in component state and creates a simulated response with `setTimeout`. There is no `/chatbot`, `/chat`, `/assistant`, or tourist-accessible AI endpoint.
-
-Do not wire the tourist chatbot directly to the staff-only risk/hazard routes. See `CHATBOT-INTEGRATION.md`.
+The tourist-facing chatbot API is implemented at `POST /api/v1/chatbot/messages`, but the default provider is unconfigured. The frontend widget is still local/simulated, so end-to-end chatbot inference is not complete. Do not route tourist chat messages through staff-only risk/hazard endpoints.
