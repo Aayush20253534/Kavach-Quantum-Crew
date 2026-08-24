@@ -207,10 +207,10 @@ The backend defines validated, **staff-only** contracts for trip/location risk a
 
 No inference model is implemented by default, so the AI POST routes return `501 INTEGRATION_PROVIDER_NOT_CONFIGURED` until a provider is injected.
 
-There is currently **no tourist conversational chatbot endpoint**. The frontend Rakshak AI widget is simulated and must not call the staff-only integration routes. See [`documentation/AI-CATALOGUE.md`](documentation/AI-CATALOGUE.md) and [`documentation/CHATBOT-INTEGRATION.md`](documentation/CHATBOT-INTEGRATION.md).
+The tourist conversational boundary is implemented at `POST /api/v1/chatbot/messages` and is restricted to authenticated tourist accounts. Its default provider still needs a real AI implementation, and the frontend widget may remain simulated until it is wired to this route. The staff-only `/integrations/ai/*` routes are separate analysis contracts. See [`documentation/AI-CATALOGUE.md`](documentation/AI-CATALOGUE.md).
 
 ### Blockchain
-The backend defines contracts for Safety ID proof, incident proof, evidence proof, and proof verification. No wallet, smart contract, private-key handling, chain SDK, or transaction implementation is included. See [`documentation/BLOCKCHAIN-CATALOGUE.md`](documentation/BLOCKCHAIN-CATALOGUE.md).
+The backend has a live asynchronous blockchain path for individual/group trip credentials: it hashes credential identities, queues `ISSUE`/`EXTEND`/`REVOKE` jobs, calls the isolated blockchain gateway, and verifies confirmed credentials on-chain. The issuer private key and ethers/contract runtime remain isolated in `blockchain/gateway/`. Separate integration-contract endpoints for Safety ID, incident, and evidence proofs also exist. See [`documentation/BLOCKCHAIN-CATALOGUE.md`](documentation/BLOCKCHAIN-CATALOGUE.md) and [`../blockchain/docs/workflow.md`](../blockchain/docs/workflow.md).
 
 ### Notification providers
 `IN_APP` delivery is internal. `EMAIL`, `SMS`, `PUSH`, and `WHATSAPP` are provider-neutral delivery channels. See [`documentation/NOTIFICATION-DELIVERY.md`](documentation/NOTIFICATION-DELIVERY.md).
@@ -248,6 +248,7 @@ Dedicated domain suites remain available for targeted debugging, but `npm test` 
 
 | Document | Purpose |
 |---|---|
+| [`TECHNICAL-FLOW.md`](documentation/TECHNICAL-FLOW.md) | Start here: request lifecycle, modules, dependencies, terminology, database, realtime, jobs, caching, integrations, and security for JavaScript developers |
 | [`ARCHITECTURE.md`](documentation/ARCHITECTURE.md) | Finished backend architecture and major boundaries |
 | [`ENDPOINTS.md`](documentation/ENDPOINTS.md) | All mounted HTTP API routes |
 | [`SYSTEM-FLOW.md`](documentation/SYSTEM-FLOW.md) | End-to-end system explanation for non-specialists |
@@ -258,7 +259,6 @@ Dedicated domain suites remain available for targeted debugging, but `npm test` 
 | [`ENVIRONMENT.md`](documentation/ENVIRONMENT.md) | Environment-variable reference |
 | [`EMAIL-VERIFICATION.md`](documentation/EMAIL-VERIFICATION.md) | Gmail SMTP OTP signup verification flow and Postman testing |
 | [`AI-CATALOGUE.md`](documentation/AI-CATALOGUE.md) | Mounted AI analysis endpoints, validation, provider status, and handoff guidance |
-| [`CHATBOT-INTEGRATION.md`](documentation/CHATBOT-INTEGRATION.md) | Current Rakshak AI UI/backend gap and recommended future chatbot contract |
 | [`BLOCKCHAIN-CATALOGUE.md`](documentation/BLOCKCHAIN-CATALOGUE.md) | Blockchain proof boundaries |
 | [`NOTIFICATION-DELIVERY.md`](documentation/NOTIFICATION-DELIVERY.md) | Delivery jobs/providers/retries |
 | [`TESTING.md`](documentation/TESTING.md) | Test strategy and commands |
@@ -308,6 +308,8 @@ The integration uses Upstash's HTTPS REST API through Node's built-in `fetch`, s
 no Redis npm dependency.
 
 ## Blockchain QR integration
+
+For the full chain workflow, terminology, queue/retry model, gateway security boundary, and on-chain/off-chain data split, see [`../blockchain/docs/workflow.md`](../blockchain/docs/workflow.md).
 
 The API now owns QR issuance and verification while delegating signing transactions to the isolated `blockchain/` gateway. This avoids importing TypeScript/Hardhat code into the Express runtime and, more importantly, keeps the issuer private key out of the general API process.
 

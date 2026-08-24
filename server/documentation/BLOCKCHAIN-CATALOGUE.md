@@ -1,11 +1,22 @@
 # Blockchain Integration Catalogue
 
+## Documentation navigation
+
+For the complete request-to-database/integration execution model, JavaScript-oriented terminology, and module map, start with [`TECHNICAL-FLOW.md`](TECHNICAL-FLOW.md). For the product journey without as much implementation detail, use [`SYSTEM-FLOW.md`](SYSTEM-FLOW.md).
+
+
 > **Documentation status (24 Aug 2026):** This document is maintained against the current repository. Runtime source, `server/.env.example`, `server/prisma/schema.prisma`, and `server/openapi.yaml` are authoritative if a historical phase note differs.
 
 
+## Current implementation status
+
+The **live Express-to-chain path currently covers individual/group trip credentials**: issue, extend, revoke, and verify. `TrustAnchor.sol` also contains evidence and incident anchoring primitives, but those are contract/script capabilities until backend services enqueue and call them. Do not describe every backend incident/evidence record as automatically on-chain.
+
+For the detailed execution path, see [`../../blockchain/docs/workflow.md`](../../blockchain/docs/workflow.md).
+
 ## Scope
 
-These endpoints are provider contracts only. This repository does not implement wallets, smart contracts, signing keys, RPC clients, transactions, gas handling, or chain deployment.
+This catalogue covers two related surfaces. The `/api/v1/integrations/blockchain/*` proof endpoints remain provider-contract boundaries, while trip QR credentials have a live implementation through `src/integrations/blockchain/`, the database-backed anchor worker, and the isolated `blockchain/gateway/`. The Express process never holds the issuer private key; signing, RPC, gas, contract calls, and deployment remain isolated in the blockchain workspace/gateway.
 
 Access: `DISASTER_MANAGER` or `SYSTEM_ADMIN`.
 

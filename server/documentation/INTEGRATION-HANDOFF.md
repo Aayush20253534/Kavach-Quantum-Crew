@@ -1,5 +1,10 @@
 # Integration Handoff
 
+## Documentation navigation
+
+For the complete request-to-database/integration execution model, JavaScript-oriented terminology, and module map, start with [`TECHNICAL-FLOW.md`](TECHNICAL-FLOW.md). For the product journey without as much implementation detail, use [`SYSTEM-FLOW.md`](SYSTEM-FLOW.md).
+
+
 > **Documentation status (24 Aug 2026):** This document is maintained against the current repository. Runtime source, `server/.env.example`, `server/prisma/schema.prisma`, and `server/openapi.yaml` are authoritative if a historical phase note differs.
 
 
@@ -15,11 +20,11 @@ Read:
 
 Frontend must implement the signup verification UX: register -> OTP entry -> verify-email, expose resend after cooldown, and only enter the authenticated app after verification succeeds. Future normal login does not require OTP. Frontend also owns device GPS acquisition, UI state, access-token usage/refresh flow, multipart evidence upload, and Socket.IO reconnect/subscription behavior.
 
-The current `ChatbotWidget.jsx` is UI-only and simulated. There is no tourist chatbot backend route yet. Do not connect it to `/integrations/ai/risk-assessment` or `/integrations/ai/hazard-analysis`; those routes are staff-only analysis contracts. Read `CHATBOT-INTEGRATION.md` before implementing chatbot networking.
+The tourist chatbot backend route is `POST /api/v1/chatbot/messages` and is restricted to authenticated tourist accounts. If `ChatbotWidget.jsx` is still simulated, wire it to that route rather than `/integrations/ai/risk-assessment` or `/integrations/ai/hazard-analysis`, which are staff-only analysis contracts. See `AI-CATALOGUE.md` for the provider boundary.
 
 ## AI team
 
-Read `AI-CATALOGUE.md` and `CHATBOT-INTEGRATION.md`. The mounted AI routes cover staff risk assessment and hazard analysis only. A tourist conversational assistant requires a separate backend contract; it does not currently exist.
+Read `AI-CATALOGUE.md`. Staff risk assessment/hazard analysis and the tourist chatbot are intentionally separate provider contracts. The tourist route exists at `/api/v1/chatbot/messages`; supplying a production AI provider and wiring the frontend are separate integration tasks.
 
 ## Blockchain team
 
