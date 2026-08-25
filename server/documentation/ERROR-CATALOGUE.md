@@ -194,3 +194,7 @@ For the complete request-to-database/integration execution model, JavaScript-ori
 - `VALIDATION_ERROR`
 
 Clients should branch on `error.code`, not message text.
+
+## Emergency dispatch errors
+
+New domain error codes include `EMERGENCY_SERVICE_FORBIDDEN`, `DISPATCH_NOT_OWNED`, `SERVICE_CANCEL_FORBIDDEN`, `INCIDENT_LOCATION_REQUIRED`, `NO_AVAILABLE_EMERGENCY_UNIT`, and existing dispatch transition/unit errors. Tracking also uses `TRACKING_FORBIDDEN` when a tourist attempts to read another incident's dispatch.

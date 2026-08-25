@@ -124,3 +124,7 @@ PUBLIC_APP_URL=http://localhost:5173
 ```
 
 `BLOCKCHAIN_GATEWAY_KEY` must match `GATEWAY_API_KEY` in `blockchain/.env`. The EVM private key is deliberately absent from `server/.env`.
+
+## Emergency service environment impact
+
+No new application secret is required. The feature uses the existing JWT/session, PostgreSQL, and Socket.IO configuration. Container startup now needs a reachable `DATABASE_URL` because committed Prisma migrations are applied before the server starts.

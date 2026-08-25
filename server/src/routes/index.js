@@ -7,6 +7,7 @@ import { createAlertRouter } from "../modules/alert/alert.routes.js";
 import { createAnalyticsRouter } from "../modules/analytics/analytics.routes.js";
 import { createDisasterManagementRouter } from "../modules/disaster-management/disaster-management.routes.js";
 import { createDispatchRouter } from "../modules/dispatch/dispatch.routes.js";
+import { createEmergencyServiceRouter } from "../modules/emergency-service/emergency-service.routes.js";
 import { createDashboardRouter } from "../modules/dashboard/dashboard.routes.js";
 import { createDestinationRouter } from "../modules/destination/destination.routes.js";
 import { createIncidentRouter } from "../modules/incident/incident.routes.js";
@@ -75,6 +76,7 @@ export const createApiRouter = (config = environment) => {
         phase13: { riskZones: `${config.API_PREFIX}/risk-zones` },
         phase14: { monitoring: `${config.API_PREFIX}/monitoring` },
         phase15: { dispatch: `${config.API_PREFIX}/dispatch` },
+        emergencyServices: { portal: `${config.API_PREFIX}/emergency-services`, tracking: `${config.API_PREFIX}/emergency-services/tracking/:dispatchId` },
         phase16: { incidentCommunication: `${config.API_PREFIX}/incidents/:incidentId/messages` },
         phase17: { evidence: `${config.API_PREFIX}/evidence` },
         phase18: { systemAdmin: `${config.API_PREFIX}/admin` },
@@ -132,6 +134,7 @@ export const createApiRouter = (config = environment) => {
   router.use("/risk-zones", createRiskZoneRouter());
   router.use("/monitoring", createMonitoringRouter());
   router.use("/dispatch", createDispatchRouter());
+  router.use("/emergency-services", createEmergencyServiceRouter());
   router.use("/evidence", createEvidenceRouter());
   router.use("/admin", createSystemAdminRouter());
   router.use("/analytics", createAnalyticsRouter());

@@ -12,7 +12,7 @@ COPY prisma.config.ts ./
 
 # Generation only parses the datasource URL; it does not connect to this placeholder.
 RUN DATABASE_URL=postgresql://postgres:postgres@localhost:5432/build npm run prisma:generate \
-  && npm prune --omit=dev
+  && npm cache clean --force
 
 FROM node:${NODE_VERSION}-bookworm-slim AS runtime
 
@@ -30,4 +30,7 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:' + process.env.PORT + '/health').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"
 
-CMD ["node", "src/server.js"]
+# Keep the Prisma CLI in the runtime image because container startup applies
+# committed migrations before Node starts. Without it, `prisma:migrate:deploy`
+# would fail after dev dependencies were pruned.
+CMD ["sh", "-c", "npm run prisma:migrate:deploy && exec node src/server.js"]

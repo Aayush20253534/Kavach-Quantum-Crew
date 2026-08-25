@@ -331,3 +331,7 @@ PROFILE_IMAGE_MAX_FILE_BYTES=5242880
 - `GET /api/v1/credentials/verify/:token` - public verification used by QR scanners.
 
 Verification checks the signed token, database revocation/expiry, trip state, and, once confirmed, the TrustAnchor contract state.
+
+## Police / Fire / Ambulance endpoints
+
+Emergency-service registration: `POST /emergency-services/register`. Service portal: `GET /emergency-services/me`, `PATCH /emergency-services/me/location`, `GET /emergency-services/me/dispatches`, `PATCH /emergency-services/dispatches/:dispatchId/location`, and `PATCH /emergency-services/dispatches/:dispatchId/status`. Tourist snapshot tracking: `GET /emergency-services/tracking/:dispatchId`. Disaster Management nearest-unit assignment: `POST /dispatch/incidents/:incidentId/auto/police`, `/auto/fire`, or `/auto/ambulance`. Full request/flow details are in `EMERGENCY-SERVICE-DISPATCH.md`.

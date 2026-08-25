@@ -93,3 +93,7 @@ No Gemini, OpenAI, Groq, local LLM, RAG pipeline, or other inference provider is
 ## Chatbot boundary
 
 The tourist-facing chatbot API is implemented at `POST /api/v1/chatbot/messages`, but the default provider is unconfigured. The frontend widget is still local/simulated, so end-to-end chatbot inference is not complete. Do not route tourist chat messages through staff-only risk/hazard endpoints.
+
+## Emergency dispatch integration
+
+Police/Fire/Ambulance nearest-unit selection is deterministic backend logic, not an AI decision. Any future AI incident classifier should output a recommended service type only; authorization and actual dispatch assignment remain in the disaster-management/dispatch backend.

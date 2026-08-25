@@ -2,6 +2,15 @@ export const ROLES = Object.freeze({
   TOURIST: "TOURIST",
   DISASTER_MANAGER: "DISASTER_MANAGER",
   SYSTEM_ADMIN: "SYSTEM_ADMIN",
+  POLICE: "POLICE",
+  FIRE: "FIRE",
+  AMBULANCE: "AMBULANCE",
 });
 
 export const AUTHENTICATED_ROLES = Object.freeze(Object.values(ROLES));
+
+export const EMERGENCY_SERVICE_ROLES = Object.freeze([
+  ROLES.POLICE,
+  ROLES.FIRE,
+  ROLES.AMBULANCE,
+]);

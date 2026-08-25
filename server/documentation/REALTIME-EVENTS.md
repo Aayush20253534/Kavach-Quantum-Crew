@@ -56,3 +56,7 @@ REST remains the authoritative recovery/read path. Realtime does not bypass REST
 ## Tourist verification prerequisite
 
 Email OTP itself is handled over REST, not Socket.IO. After successful `POST /api/v1/auth/verify-email`, the issued session/access token can be used for authenticated realtime connections.
+
+## Emergency response realtime events
+
+Service location and status changes publish `dispatch:updated`. Events go to Disaster Management/System Admin role rooms, the incident room used by the tourist, and the assigned Police/Fire/Ambulance account room when unit ownership is present. Unit location/status changes also publish `emergency-unit:updated`.

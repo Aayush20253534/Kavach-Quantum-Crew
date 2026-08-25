@@ -1621,3 +1621,7 @@ docker compose down -v
 ```
 
 It removes the normal Compose volume and therefore deletes Docker-managed PostgreSQL data for that Compose project.
+
+## Emergency dispatch schema startup
+
+The runtime container now executes `npm run prisma:migrate:deploy` before `node src/server.js`. This is required so Police/Fire/Ambulance service accounts and unit-location fields exist before the emergency-service routes accept traffic.

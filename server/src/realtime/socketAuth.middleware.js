@@ -22,6 +22,13 @@ const findAccount = async (db, id, role) => {
   }
   if (role === ROLES.DISASTER_MANAGER) return db.disasterManager.findUnique(query);
   if (role === ROLES.SYSTEM_ADMIN) return db.systemAdmin.findUnique(query);
+  if ([ROLES.POLICE, ROLES.FIRE, ROLES.AMBULANCE].includes(role)) {
+    const account = await db.emergencyServiceAccount.findUnique({
+      where: { id },
+      select: { id: true, status: true, serviceType: true },
+    });
+    return account?.serviceType === role ? account : null;
+  }
   return null;
 };
 

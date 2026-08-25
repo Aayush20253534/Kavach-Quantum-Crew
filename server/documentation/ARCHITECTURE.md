@@ -115,3 +115,7 @@ Authorization is layered:
 - global and sensitive-action rate limits.
 
 Never infer access from a resource UUID alone.
+
+## Emergency service dispatch extension
+
+Emergency response uses the existing Incident -> Dispatch -> EmergencyUnit architecture. Police, Fire, and Ambulance accounts authenticate through the shared auth/session layer, own emergency units, update their live coordinates, and receive dispatch events. Nearest-unit selection is performed inside the dispatch service using incident and unit coordinates; realtime updates reuse Socket.IO incident/account rooms. See `EMERGENCY-SERVICE-DISPATCH.md`.

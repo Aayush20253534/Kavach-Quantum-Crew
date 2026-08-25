@@ -26,12 +26,20 @@ export const createDispatchRepository = ({ db = prisma } = {}) => ({
     return responder?.jurisdiction || null;
   },
   findUnit: (id) => db.emergencyUnit.findUnique({ where: { id } }),
+  listAvailableUnitsByType: (type) => db.emergencyUnit.findMany({
+    where: {
+      type,
+      status: "AVAILABLE",
+      latitude: { not: null },
+      longitude: { not: null },
+    },
+  }),
   updateUnit: (id, data) => db.emergencyUnit.update({ where: { id }, data }),
   findIncident: (id) => db.incident.findUnique({ where: { id } }),
-  createDispatch: (data) => db.dispatch.create({ data }),
-  findDispatch: (id) => db.dispatch.findUnique({ where: { id } }),
-  listForIncident: (incidentId) => db.dispatch.findMany({ where: { incidentId }, orderBy: { createdAt: "desc" } }),
-  updateDispatch: (id, data) => db.dispatch.update({ where: { id }, data }),
+  createDispatch: (data) => db.dispatch.create({ data, include: { unit: true } }),
+  findDispatch: (id) => db.dispatch.findUnique({ where: { id }, include: { unit: true } }),
+  listForIncident: (incidentId) => db.dispatch.findMany({ where: { incidentId }, include: { unit: true }, orderBy: { createdAt: "desc" } }),
+  updateDispatch: (id, data) => db.dispatch.update({ where: { id }, data, include: { unit: true } }),
   createEvent: (data) => db.dispatchEvent.create({ data }),
   createAudit: ({ actorId, actorRole, action, entityId, metadata }) => db.auditLog.create({ data: { actorId, actorRole, action, entityType: "Dispatch", entityId, metadata } }),
 });

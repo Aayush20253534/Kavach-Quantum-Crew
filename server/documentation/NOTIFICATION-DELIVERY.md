@@ -38,3 +38,7 @@ Retryable failures schedule bounded retry attempts. Attempt history is preserved
 External destination data is resolved from the target account at processing time instead of duplicating permanent copies into delivery jobs.
 
 A concrete external provider should perform one vendor call, return normalized external identifiers, classify failure as retryable/terminal, and never leak provider secrets.
+
+## Emergency dispatch notifications
+
+Realtime service assignment/tracking uses Socket.IO `dispatch:updated` events. Existing durable notification delivery remains available for future assignment alerts by SMS/email/push; this backend change does not duplicate the notification-delivery subsystem.
