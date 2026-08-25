@@ -15,6 +15,9 @@ export function PublicRoute() {
     if (user?.role === 'SYSTEM_ADMIN') {
       return <Navigate to="/admin/dashboard" replace />;
     }
+    if (['POLICE', 'FIRE', 'AMBULANCE'].includes(user?.role)) {
+      return <Navigate to="/responder/dispatch" replace />;
+    }
     // Authenticated users should never fall back to the public landing page.
     return <Navigate to="/login" replace />;
   }
