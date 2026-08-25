@@ -13,7 +13,7 @@ The disaster-management backend now supports three operational fleet sections: *
 
 ## Service account registration
 
-`POST /api/v1/emergency-services/register`
+`POST /api/v1/emergency-services/accounts` (Disaster Management/System Admin only)
 
 The single registration endpoint accepts `serviceType` as `POLICE`, `FIRE`, or `AMBULANCE`, plus the service location. The location can be supplied by browser/device geolocation in the future frontend.
 
@@ -53,6 +53,8 @@ Manual assignment continues to use the existing dispatch endpoints, so Disaster 
 ## Emergency service portal endpoints
 
 Authenticated Police/Fire/Ambulance accounts use:
+
+The Disaster Management **Account Creation** page provisions Police, Fire, and Ambulance/Hospital accounts with service type, username, email, phone, and password. Credentials are hashed before storage. New accounts can sign in immediately, but their primary unit has no coordinates until the responder publishes live GPS, so it is excluded from nearest-unit auto-selection until then.
 
 - `GET /api/v1/emergency-services/me`
 - `PATCH /api/v1/emergency-services/me/location`

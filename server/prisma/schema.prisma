@@ -119,9 +119,9 @@ model EmergencyServiceAccount {
   organization      String?           @db.VarChar(160)
   address           String?           @db.VarChar(240)
   jurisdiction      String?           @db.VarChar(160)
-  latitude          Float
-  longitude         Float
-  locationUpdatedAt DateTime           @default(now())
+  latitude          Float?
+  longitude         Float?
+  locationUpdatedAt DateTime?
   lastLoginAt       DateTime?
   passwordChangedAt DateTime?
   createdAt         DateTime           @default(now())

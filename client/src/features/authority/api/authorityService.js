@@ -6,6 +6,7 @@ const unwrap = (response) => {
 };
 
 export const authorityService = {
+  createEmergencyServiceAccount: async (data) => unwrap(await apiClient.post('/emergency-services/accounts', data)),
   getDashboard: async () => unwrap(await apiClient.get('/disaster-management/dashboard')),
   getJurisdictionOverview: async () =>
     unwrap(await apiClient.get('/disaster-management/jurisdiction-overview')),

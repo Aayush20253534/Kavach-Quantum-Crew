@@ -14,7 +14,8 @@ import {
   Map,
   ShieldAlert,
   Users2,
-  BarChart4
+  BarChart4,
+  UserPlus
 } from 'lucide-react';
 import { logout } from '../../features/auth/store/authSlice';
 import { authService } from '../../features/auth/api/authService';
@@ -75,6 +76,7 @@ export function AuthorityLayout() {
     { name: 'Hazard Triage', path: '/authority/hazards', icon: ShieldAlert },
     { name: 'Fleet Dispatch', path: '/authority/dispatch', icon: Car },
     { name: 'Personnel Roster', path: '/authority/responders', icon: Users2 },
+    { name: 'Account Creation', path: '/authority/accounts/create', icon: UserPlus },
     { name: 'Risk Zones', path: '/authority/zones', icon: Map },
     { name: 'Analytics', path: '/authority/analytics', icon: BarChart4 },
   ];

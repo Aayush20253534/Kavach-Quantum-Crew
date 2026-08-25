@@ -68,3 +68,10 @@ Authentication alone never grants arbitrary access to another user's resource.
 - **System Admin:** retains administrative visibility/configuration.
 
 No emergency-service role receives an automatic dispatch merely because a danger-zone or signal-loss event exists.
+
+
+## Emergency-service account provisioning
+
+- `DISASTER_MANAGER` and `SYSTEM_ADMIN` may create Police, Fire, and Ambulance/Hospital login accounts through `POST /api/v1/emergency-services/accounts`.
+- Public users and tourist accounts cannot provision responder accounts.
+- Passwords are stored only as password hashes. Newly provisioned units are not eligible for nearest-unit dispatch until a live location has been published.

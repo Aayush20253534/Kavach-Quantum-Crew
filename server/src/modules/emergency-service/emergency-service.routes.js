@@ -5,11 +5,12 @@ import { authenticate } from "../../middleware/authenticate.middleware.js";
 import { authorize } from "../../middleware/authorize.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
 import { emergencyServiceController } from "./emergency-service.controller.js";
-import { emergencyDispatchParamsSchema, emergencyDispatchStatusBodySchema, emergencyLocationBodySchema, registerEmergencyServiceBodySchema } from "./emergency-service.validation.js";
+import { emergencyDispatchParamsSchema, emergencyDispatchStatusBodySchema, emergencyLocationBodySchema, provisionEmergencyServiceBodySchema, registerEmergencyServiceBodySchema } from "./emergency-service.validation.js";
 
 export const createEmergencyServiceRouter = ({ controller = emergencyServiceController } = {}) => {
   const router = Router();
-  router.post("/register", validate({ body: registerEmergencyServiceBodySchema }), asyncHandler(controller.register));
+  router.post("/register", authenticate, authorize(ROLES.DISASTER_MANAGER, ROLES.SYSTEM_ADMIN), validate({ body: registerEmergencyServiceBodySchema }), asyncHandler(controller.register));
+  router.post("/accounts", authenticate, authorize(ROLES.DISASTER_MANAGER, ROLES.SYSTEM_ADMIN), validate({ body: provisionEmergencyServiceBodySchema }), asyncHandler(controller.provision));
   router.get("/tracking/:dispatchId", authenticate, authorize(ROLES.TOURIST, ROLES.DISASTER_MANAGER, ROLES.SYSTEM_ADMIN, ROLES.POLICE, ROLES.FIRE, ROLES.AMBULANCE), validate({ params: emergencyDispatchParamsSchema }), asyncHandler(controller.tracking));
   router.get("/tourist/dispatches", authenticate, authorize(ROLES.TOURIST), asyncHandler(controller.touristDispatches));
   router.use(authenticate, authorize(ROLES.POLICE, ROLES.FIRE, ROLES.AMBULANCE));
