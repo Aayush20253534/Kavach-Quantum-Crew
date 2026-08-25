@@ -39,6 +39,7 @@ export function ResponderLayout() {
   const handleLogout = async () => {
     setLogoutBusy(true);
     markExplicitSignOut();
+    localStorage.removeItem('DEV_ROLE');
     try {
       await authService.logout();
     } catch {

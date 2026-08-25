@@ -4,6 +4,7 @@ import { MapPin, Navigation, Signal } from 'lucide-react';
 
 export function LiveTrackingPage() {
   const { theme } = useOutletContext();
+  const ThemeIcon = theme.icon;
   
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -37,7 +38,7 @@ export function LiveTrackingPage() {
             <div className={`w-20 h-20 rounded-full ${theme.lightBgClass} flex items-center justify-center mb-6 relative shadow-2xl ring-4 ring-white`}>
               <div className={`absolute -inset-4 rounded-full ${theme.bgClass} opacity-20 animate-ping`} style={{ animationDuration: '2s' }}></div>
               <div className={`absolute -inset-8 rounded-full ${theme.bgClass} opacity-10 animate-ping`} style={{ animationDuration: '3s' }}></div>
-              <theme.icon className={`w-10 h-10 ${theme.textClass}`} />
+              <ThemeIcon className={`w-10 h-10 ${theme.textClass}`} />
             </div>
             <div className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-[11px] font-bold shadow-2xl flex items-center gap-2 uppercase tracking-widest border border-slate-700">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
