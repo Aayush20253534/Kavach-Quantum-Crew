@@ -6,6 +6,7 @@ import { MapPin, Navigation, Radio, CheckCircle, Clock } from 'lucide-react';
 
 export function ActiveDispatchPage() {
   const { theme } = useOutletContext();
+  const ThemeIcon = theme.icon;
   const [dispatches, setDispatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -81,7 +82,7 @@ export function ActiveDispatchPage() {
       
       <div className={`p-6 rounded-2xl ${theme.bgClass} text-white shadow-lg relative overflow-hidden`}>
         <div className="absolute top-0 right-0 p-8 opacity-10">
-          <theme.icon className="w-32 h-32" />
+          <ThemeIcon className="w-32 h-32" />
         </div>
         <div className="relative z-10">
           <h1 className="text-2xl font-black uppercase tracking-tight flex items-center gap-2">
