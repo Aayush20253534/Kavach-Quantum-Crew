@@ -5,14 +5,35 @@ export interface ChatMessage {
   content: string;
 }
 
-export interface ChatRequestBody {
-  sessionId: string;
-  message: string;
+export interface LocationPayload {
+  latitude: number;
+  longitude: number;
 }
 
-export interface ChatResponseBody {
-  reply: string;
-  sourceFile: string | null;
+export interface ChatbotRequestBody {
+  message: string;
+  conversationId: string | null;
+  location?: LocationPayload;
+  context?: Record<string, unknown>;
+}
+
+export interface ChatbotResponseData {
+  conversationId: string;
+  message: string;
+  sources: string[];
+  suggestedActions: string[];
+}
+
+export interface ChatbotSuccessResponse {
+  success: true;
+  message: string;
+  data: ChatbotResponseData;
+}
+
+export interface ChatbotErrorResponse {
+  success: false;
+  message: string;
+  code?: string;
 }
 
 export interface KnowledgeFileScore {
