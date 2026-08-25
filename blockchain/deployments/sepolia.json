@@ -1,0 +1,10 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "contractAddress": "0x4F90e88B372769903C5de8cFb17ab46af77B6B20",
+  "deployerAddress": "0xeAD26C6063E2B791E66a2Eff51bfe8B15924A475",
+  "deployedAtBlock": 11566614,
+  "deployedAtTimestamp": "2026-08-25T21:13:43.928Z",
+  "contractVersion": "trust-anchor-v1",
+  "abiPath": "./artifacts/contracts/TrustAnchor.sol/TrustAnchor.json"
+}

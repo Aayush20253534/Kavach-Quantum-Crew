@@ -1,0 +1,40 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "C:\\Users\\LENOVO\\Desktop\\SIH\\Tourism\\Quantum-Crew\\blockchain\\contracts\\TrustAnchor.sol": {
+      "lastModificationDate": 1787681064324,
+      "contentHash": "c9f44ddc7db6a400f760192c28c23090",
+      "sourceName": "contracts/TrustAnchor.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.19"
+      ],
+      "artifacts": [
+        "TrustAnchor"
+      ]
+    }
+  }
+}
