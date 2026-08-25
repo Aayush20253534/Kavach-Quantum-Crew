@@ -8,6 +8,7 @@ export function DispatchHistoryPage() {
   const { theme } = useOutletContext();
   const [dispatches, setDispatches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchDispatches = async () => {
@@ -18,18 +19,8 @@ export function DispatchHistoryPage() {
         setDispatches(completed);
       } catch (err) {
         console.error('Failed to fetch dispatches:', err);
-        // Mock data
-        setDispatches([
-          {
-            id: 'dispatch-hist-1',
-            status: 'COMPLETED',
-            incident: {
-              title: 'Minor Fire at Central Market',
-            },
-            createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-            updatedAt: new Date(Date.now() - 82800000).toISOString(), // 23 hours ago
-          }
-        ]);
+        setDispatches([]);
+        setError(err?.response?.data?.error?.message || 'Unable to load dispatch history.');
       } finally {
         setLoading(false);
       }
@@ -61,6 +52,8 @@ export function DispatchHistoryPage() {
           </p>
         </div>
       </div>
+
+      {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         {dispatches.length === 0 ? (

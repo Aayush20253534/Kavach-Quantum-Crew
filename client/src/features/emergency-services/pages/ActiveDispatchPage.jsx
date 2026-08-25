@@ -21,21 +21,8 @@ export function ActiveDispatchPage() {
       setDispatches(active);
     } catch (err) {
       console.error('Failed to fetch dispatches:', err);
-      // Mock data for UI presentation if backend isn't ready
-      setDispatches([
-        {
-          id: 'dispatch-mock-123',
-          status: 'ASSIGNED',
-          incident: {
-            id: 'inc-456',
-            title: 'Critical Emergency at Sector 4',
-            latitude: 21.1458,
-            longitude: 79.0882,
-            createdAt: new Date().toISOString(),
-          },
-          createdAt: new Date().toISOString(),
-        }
-      ]);
+      setDispatches([]);
+      setError(err?.response?.data?.error?.message || 'Unable to load dispatches from the backend.');
     } finally {
       setLoading(false);
     }

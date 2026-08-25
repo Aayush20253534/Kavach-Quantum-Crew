@@ -33,10 +33,10 @@ export const createMonitoringService = ({
 
   const policyFor = (trip) => ({ ...DEFAULT_MONITORING_POLICY, ...(trip.monitoringPolicy ?? {}) });
 
-  const ensureAlert = async ({ tripId, userId, type, level = "WARNING", sourceId, message, details }) => {
+  const ensureAlert = async ({ tripId, userId, type, level = "WARNING", sourceId, message, details, reportIncident = true }) => {
     const existing = await repository.findOpenAlert(tripId, userId, type, sourceId);
     const alert = existing ?? await repository.createAlert({ tripId, userId, type, level, sourceId, message, details });
-    if (incidentReporter && !existing) await incidentReporter.ingestSafetyAlert(alert);
+    if (incidentReporter && !existing && reportIncident) await incidentReporter.ingestSafetyAlert(alert);
     return alert;
   };
 
@@ -60,7 +60,7 @@ export const createMonitoringService = ({
 
     const gapExceeded = !latest || now.getTime() - new Date(latest.capturedAt).getTime() > minutes(policy.trackingGapAfterMinutes);
     if (gapExceeded) {
-      await ensureAlert({ tripId: trip.id, userId, type: "TRACKING_INTERRUPTION", sourceId: "tracking-gap", message: "Location tracking has been interrupted", details: { latestLocationAt: latest?.capturedAt ?? null, thresholdMinutes: policy.trackingGapAfterMinutes } });
+      await ensureAlert({ tripId: trip.id, userId, type: "TRACKING_INTERRUPTION", sourceId: "tracking-gap", message: "Location tracking has been interrupted", details: { latestLocationAt: latest?.capturedAt ?? null, thresholdMinutes: policy.trackingGapAfterMinutes }, reportIncident: !(trip.group && userId !== trip.group.leaderId) });
       add("TRACKING_INTERRUPTION", "WARNING");
     } else {
       await resolveAlert(trip.id, userId, "TRACKING_INTERRUPTION", "tracking-gap", now);

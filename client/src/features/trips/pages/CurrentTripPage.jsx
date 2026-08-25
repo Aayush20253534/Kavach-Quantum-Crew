@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Calendar, CheckCircle2, Clock3, Copy, Loader2, LogIn, MapPin, Play, ShieldCheck, TimerReset, UserCheck, UserX, Users, XCircle } from 'lucide-react';
+import { AlertTriangle, Calendar, CheckCircle2, Clock3, Copy, Loader2, LogIn, MapPin, Navigation, Play, ShieldCheck, TimerReset, UserCheck, UserX, Users, XCircle } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Link } from 'react-router-dom';
 
 import { groupService } from '../../groups/api/groupService';
 import { credentialService } from '../../credentials/api/credentialService';
 import { tripService } from '../api/tripService';
+import { emergencyServicesApi } from '../../emergency-services/api/emergencyServicesApi';
 
 const dateText = (value) => value ? new Date(value).toLocaleString() : '—';
 const MIN_GROUP_MEMBERS_TO_START = 2;
@@ -18,6 +19,8 @@ export function CurrentTripPage() {
   const [individualCredential, setIndividualCredential] = useState(null);
   const [groupCredential, setGroupCredential] = useState(null);
   const [joinRequests, setJoinRequests] = useState([]);
+  const [signalCases, setSignalCases] = useState([]);
+  const [responseDispatches, setResponseDispatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -31,24 +34,29 @@ export function CurrentTripPage() {
       setTrip(current || null);
       if (current) {
         try { setIndividualCredential(await credentialService.getMyCredential(current.id)); } catch { setIndividualCredential(null); }
+        try { const response = await emergencyServicesApi.getTouristDispatches(); setResponseDispatches(response?.data?.data || []); } catch { setResponseDispatches([]); }
       } else {
         setIndividualCredential(null);
+        setResponseDispatches([]);
       }
       if (current?.tripType === 'GROUP') {
         try {
           const loadedGroup = await groupService.getGroupForTrip(current.id);
           setGroup(loadedGroup);
           try { setGroupCredential(await credentialService.getGroupCredential(loadedGroup.id)); } catch { setGroupCredential(null); }
-          if (loadedGroup.leaderId === user?.id && current.status === 'PLANNED') {
-            try { setJoinRequests(await groupService.getPendingJoinRequests(loadedGroup.id)); } catch { setJoinRequests([]); }
+          if (loadedGroup.leaderId === user?.id) {
+            if (current.status === 'PLANNED') { try { setJoinRequests(await groupService.getPendingJoinRequests(loadedGroup.id)); } catch { setJoinRequests([]); } } else setJoinRequests([]);
+            if (current.status === 'ACTIVE') { try { setSignalCases(await groupService.getSignalLossCases(current.id)); } catch { setSignalCases([]); } } else setSignalCases([]);
           } else {
             setJoinRequests([]);
+            setSignalCases([]);
           }
         } catch { setGroup(null); setGroupCredential(null); setJoinRequests([]); }
       } else {
         setGroup(null);
         setGroupCredential(null);
         setJoinRequests([]);
+        setSignalCases([]);
       }
     } catch (e) {
       if (e?.response?.status === 404) setTrip(null);
@@ -174,6 +182,47 @@ export function CurrentTripPage() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {signalCases.length > 0 && (
+        <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 sm:p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm font-black text-amber-950">Member signal-loss confirmation required</h2>
+              <p className="mt-1 text-[11px] leading-5 text-amber-800">KAVACH detected a group member offline for at least 5 minutes. Confirm danger or mark false alarm. No response within the 5-minute window escalates the case to Disaster Management.</p>
+              <div className="mt-3 space-y-2">
+                {signalCases.map((item) => (
+                  <div key={item.id} className="rounded-xl border border-amber-200 bg-white p-3 sm:flex sm:items-center sm:justify-between sm:gap-4">
+                    <div>
+                      <p className="text-xs font-black text-slate-900">Signal-loss case · {item.status.replaceAll('_', ' ')}</p>
+                      <p className="mt-1 text-[10px] text-slate-500">Detected {dateText(item.detectedAt)} · response deadline {dateText(item.responseDeadlineAt)}</p>
+                    </div>
+                    <div className="mt-3 flex gap-2 sm:mt-0">
+                      <button disabled={Boolean(busy)} onClick={() => run(`signal-false-${item.id}`, () => groupService.respondToSignalLoss(item.id, 'FALSE_ALARM'))} className="rounded-lg border border-slate-200 px-3 py-2 text-[10px] font-black text-slate-700 disabled:opacity-50">False alarm</button>
+                      <button disabled={Boolean(busy)} onClick={() => run(`signal-danger-${item.id}`, () => groupService.respondToSignalLoss(item.id, 'CONFIRMED_DANGER'))} className="rounded-lg bg-red-600 px-3 py-2 text-[10px] font-black text-white disabled:opacity-50">Confirm danger</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {responseDispatches.length > 0 && (
+        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 sm:p-5 shadow-sm">
+          <h2 className="text-sm font-black text-blue-950 flex items-center gap-2"><Navigation className="h-4 w-4" /> Emergency response live tracking</h2>
+          <p className="mt-1 text-[11px] text-blue-700">Police, ambulance/hospital and fire dispatches assigned to your incident or group can be checked live from here.</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {responseDispatches.map((dispatch) => (
+              <Link key={dispatch.id} to={`/tourist/response/${dispatch.id}`} className="rounded-xl border border-blue-200 bg-white p-3 hover:border-blue-400">
+                <p className="text-xs font-black text-slate-900">{dispatch.requestedUnitType} · {dispatch.status}</p>
+                <p className="mt-1 text-[10px] text-slate-500">{dispatch.incident?.title || 'Emergency response'} · Open live tracking</p>
+              </Link>
+            ))}
           </div>
         </div>
       )}
@@ -328,8 +377,8 @@ export function CurrentTripPage() {
               title="Scan Group ID to join"
               description="This secure QR lets another tourist request to join your group. The underlying blockchain identifier is never displayed to users."
               value={groupCredential.groupJoinQrPayload}
-              copyValue={groupCredential.publicId}
-              copyLabel="Copy group ID"
+              copyValue={groupCredential.groupJoinUrl || groupCredential.groupJoinQrPayload}
+              copyLabel="Copy join link"
             />
           )}
         </div>

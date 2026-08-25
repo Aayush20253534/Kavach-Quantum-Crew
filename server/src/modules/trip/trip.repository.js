@@ -14,7 +14,7 @@ export const createTripRepository = ({ db = prisma } = {}) => ({
   findTourist(userId) {
     return db.user.findUnique({
       where: { id: userId },
-      select: { id: true, onboardingCompleted: true, status: true },
+      select: { id: true, onboardingCompleted: true, status: true, dateOfBirth: true },
     });
   },
 

@@ -33,6 +33,7 @@ const EMPTY_FORM = {
   name: '',
   email: '',
   phone: '',
+  dateOfBirth: '',
   emergencyPhone: '',
   emergencyContactName: '',
   emergencyContactRelation: '',
@@ -84,6 +85,7 @@ export function ProfilePage() {
       name: data?.name || '',
       email: data?.email || '',
       phone: data?.phone || '',
+      dateOfBirth: data?.dateOfBirth ? String(data.dateOfBirth).slice(0, 10) : '',
       emergencyPhone: data?.emergencyContact || '',
       emergencyContactName: data?.emergencyContactName || '',
       emergencyContactRelation: data?.emergencyContactRelation || '',
@@ -190,6 +192,7 @@ export function ProfilePage() {
         name: form.name.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
+        dateOfBirth: form.dateOfBirth,
         emergencyPhone: form.emergencyPhone.trim(),
         emergencyContactName: form.emergencyContactName.trim(),
         emergencyContactRelation: form.emergencyContactRelation.trim(),
@@ -379,9 +382,10 @@ export function ProfilePage() {
             />
             <div className="p-5 sm:p-7 space-y-6 sm:space-y-8">
               <div className="grid sm:grid-cols-2 gap-5">
-                <Field label="Full name" value={form.name} onChange={(value) => setField('name', value)} required />
-                <Field label="Phone" value={form.phone} onChange={(value) => setField('phone', value)} required />
-                <Field label="Email" type="email" value={form.email} onChange={(value) => setField('email', value)} required />
+                <Field label="Full name" value={form.name} onChange={(value) => setField('name', value)} required disabled={profile?.tripIdentityLocked} />
+                <Field label="Phone" value={form.phone} onChange={(value) => setField('phone', value)} required disabled={profile?.tripIdentityLocked} />
+                <Field label="Email" type="email" value={form.email} onChange={(value) => setField('email', value)} required disabled={profile?.tripIdentityLocked} />
+                <Field label="Date of birth" type="date" value={form.dateOfBirth} onChange={(value) => setField('dateOfBirth', value)} required disabled={profile?.tripIdentityLocked} />
                 <ProfileSelect
                   label="Preferred language"
                   value={form.preferredLanguage}
@@ -445,7 +449,7 @@ export function ProfilePage() {
                     rows={4}
                     value={form.medicalHistory}
                     onChange={(event) => setField('medicalHistory', event.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm font-semibold rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 resize-y"
+                    className="w-full disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm font-semibold rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 resize-y"
                     placeholder="Allergies, conditions, medicines or other emergency information"
                   />
                 </div>
@@ -508,7 +512,7 @@ function SectionTitle({ icon: Icon, title }) {
   );
 }
 
-function Field({ label, value, onChange, type = 'text', required = false }) {
+function Field({ label, value, onChange, type = 'text', required = false, disabled = false }) {
   return (
     <div>
       <label className="block text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
@@ -518,6 +522,7 @@ function Field({ label, value, onChange, type = 'text', required = false }) {
         type={type}
         value={value}
         required={required}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
         className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm font-semibold rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
       />

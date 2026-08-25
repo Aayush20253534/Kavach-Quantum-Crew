@@ -25,6 +25,7 @@ export const createDispatchRepository = ({ db = prisma } = {}) => ({
     });
     return responder?.jurisdiction || null;
   },
+  listActiveDispatches: () => db.dispatch.findMany({ where: { status: { notIn: ["COMPLETED", "CANCELLED"] } }, include: { incident: true, unit: { include: { serviceAccount: true } }, events: { orderBy: { createdAt: "asc" } } }, orderBy: { requestedAt: "desc" } }),
   findUnit: (id) => db.emergencyUnit.findUnique({ where: { id } }),
   listAvailableUnitsByType: (type) => db.emergencyUnit.findMany({
     where: {

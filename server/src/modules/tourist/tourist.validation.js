@@ -10,6 +10,7 @@ export const onboardingBodySchema = z
   .object({
     gender,
     age: z.coerce.number().int().min(0).max(100),
+    dateOfBirth: z.coerce.date(),
     medicalHistory: z.string().trim().max(5000).optional().nullable(),
     emergencyPhone: phone,
     nationality: z.string().trim().min(2).max(80),
@@ -55,6 +56,7 @@ export const updateTouristProfileBodySchema = z
     profilePicUrl: z.string().trim().url().max(2048).optional().nullable(),
     gender: gender.optional(),
     age: z.coerce.number().int().min(0).max(100).optional(),
+    dateOfBirth: z.coerce.date().optional(),
     medicalHistory: z.string().trim().max(5000).optional().nullable(),
     emergencyPhone: phone.optional(),
     nationality: z.string().trim().min(2).max(80).optional(),

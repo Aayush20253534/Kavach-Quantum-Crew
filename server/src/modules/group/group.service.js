@@ -13,6 +13,7 @@ const serializeGroup = (group) => ({
   id: group.id,
   tripId: group.tripId,
   leaderId: group.leaderId,
+  name: group.name,
   status: group.status,
   createdAt: group.createdAt,
   closedAt: group.closedAt,
@@ -240,6 +241,7 @@ export const createGroupService = ({ repository = groupRepository, clock = () =>
 
     await repository.approveJoinRequest(request.id, groupId, request.userId, now);
     await credentialService.ensureIndividual(group.tripId, request.userId);
+    await credentialService.appendGroupMembershipSnapshot(groupId, request.userId);
     await repository.createAudit({ actorId: userId, action: "GROUP_JOIN_REQUEST_APPROVED", entityId: groupId, metadata: { requestId, approvedUserId: request.userId } });
     return serializeGroup(await repository.findGroup(groupId));
   },
@@ -259,6 +261,7 @@ export const createGroupService = ({ repository = groupRepository, clock = () =>
     const { invitation, group } = await validateJoinableInvitation(repository, userId, inviteToken, now);
     await repository.joinGroup(group.id, userId, now);
     await credentialService.ensureIndividual(group.tripId, userId);
+    await credentialService.appendGroupMembershipSnapshot(group.id, userId);
     await repository.createAudit({ actorId: userId, action: "GROUP_JOINED", entityId: group.id, metadata: { invitationId: invitation.id } });
     return serializeGroup(await repository.findGroup(group.id));
   },

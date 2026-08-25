@@ -7,6 +7,9 @@ const ABI = [
   "function extendId(bytes32 idHash, uint64 expiresAt)",
   "function revokeId(bytes32 idHash, uint8 reasonCode)",
   "function verifyId(bytes32 idHash) view returns (uint8 status, address issuer, uint64 issuedAt, uint64 expiresAt, uint8 version)",
+  "function appendDataSnapshot(bytes32 idHash, bytes32 payloadHash, bytes encryptedPayload, uint32 sequence, uint8 snapshotType)",
+  "function getDataSnapshotCount(bytes32 idHash) view returns (uint256)",
+  "function getLatestDataSnapshot(bytes32 idHash) view returns (bytes32 payloadHash, bytes encryptedPayload, uint64 anchoredAt, uint32 sequence, uint8 snapshotType)",
 ];
 
 const rpcUrl = process.env.CHAIN_RPC_URL || "http://127.0.0.1:8545";
@@ -144,6 +147,22 @@ const server = http.createServer(async (req, res) => {
         if (Number(current[0]) !== 1) throw error;
         return json(res, 200, { txHash: null, idempotent: true });
       }
+    }
+    if (req.method === "POST" && url.pathname === "/v1/snapshots/append") {
+      const body = await readBody(req);
+      const idHash = bytes32(body.idHash, "idHash");
+      const payloadHash = bytes32(body.payloadHash, "payloadHash");
+      const sequence = Number(body.sequence);
+      const currentCount = Number(await contract.getDataSnapshotCount(idHash));
+      if (currentCount >= sequence) return json(res, 200, { txHash: null, idempotent: true, sequence });
+      const tx = await contract.appendDataSnapshot(idHash, payloadHash, body.ciphertext, sequence, Number(body.snapshotType));
+      const receipt = await tx.wait();
+      return json(res, 200, { txHash: receipt.hash, sequence });
+    }
+    const snapshotMatch = url.pathname.match(/^\/v1\/snapshots\/(0x[a-fA-F0-9]{64})\/latest$/);
+    if (req.method === "GET" && snapshotMatch) {
+      const [payloadHash, ciphertext, anchoredAt, sequence, snapshotType] = await contract.getLatestDataSnapshot(snapshotMatch[1]);
+      return json(res, 200, { payloadHash, ciphertext, anchoredAt: Number(anchoredAt), sequence: Number(sequence), snapshotType: Number(snapshotType) });
     }
     const match = url.pathname.match(/^\/v1\/credentials\/(0x[a-fA-F0-9]{64})$/);
     if (req.method === "GET" && match) {

@@ -78,6 +78,12 @@ export const blockchainService = Object.freeze({
   revoke({ idHash, reasonCode = 1 }) {
     return callGateway("/v1/credentials/revoke", { body: { idHash, reasonCode } });
   },
+  appendSnapshot({ idHash, payloadHash, ciphertext, sequence, snapshotType }) {
+    return callGateway("/v1/snapshots/append", { body: { idHash, payloadHash, ciphertext, sequence, snapshotType } });
+  },
+  async latestSnapshot(idHash) {
+    return callGateway(`/v1/snapshots/${encodeURIComponent(idHash)}/latest`, { method: "GET" });
+  },
   async verify(idHash) {
     const result = await callGateway(`/v1/credentials/${encodeURIComponent(idHash)}`, { method: "GET" });
     return { ...result, enabled: true };

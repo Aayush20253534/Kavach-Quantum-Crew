@@ -37,6 +37,7 @@ const onboardingSchema = z
   .object({
     gender: z.string().min(1, 'Please select gender'),
     age: z.coerce.number().int().min(0, 'Age cannot be negative').max(100, 'Age cannot be above 100'),
+    dateOfBirth: z.string().min(1, 'Date of birth is required'),
     nationality: z.string().min(1, 'Please select nationality'),
     language: z.string().min(1, 'Please select preferred language'),
     emergencyName: z.string().trim().min(2, 'Emergency contact name is required').max(120),
@@ -109,6 +110,7 @@ export function OnboardingPage() {
     defaultValues: {
       gender: '',
       age: '',
+      dateOfBirth: '',
       nationality: '',
       language: '',
       emergencyName: '',
@@ -127,7 +129,7 @@ export function OnboardingPage() {
 
   const nextStep = async () => {
     let fields = [];
-    if (step === 1) fields = ['gender', 'age', 'nationality', 'language'];
+    if (step === 1) fields = ['gender', 'age', 'dateOfBirth', 'nationality', 'language'];
     if (step === 2) fields = ['emergencyName', 'emergencyRelation', 'emergencyPhone'];
     if (step === 3) fields = ['bloodGroup', 'idType', 'idNumber'];
     if (step === 4) fields = ['liveTracking', 'geoAlerts'];
@@ -212,6 +214,7 @@ export function OnboardingPage() {
       const response = await apiClient.post('/tourists/me/onboarding', {
         gender: genderMap[data.gender] ?? 'PREFER_NOT_TO_SAY',
         age: data.age,
+        dateOfBirth: data.dateOfBirth,
         nationality: data.nationality,
         preferredLanguage: data.language,
         emergencyContactName: data.emergencyName.trim(),
@@ -345,6 +348,10 @@ export function OnboardingPage() {
                       }}
                       className="onboarding-control"
                     />
+                  </Field>
+
+                  <Field label="Date of Birth" error={errors.dateOfBirth?.message}>
+                    <input type="date" {...register('dateOfBirth')} className="onboarding-control" />
                   </Field>
                 </div>
 

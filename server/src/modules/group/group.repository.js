@@ -51,7 +51,8 @@ export const createGroupRepository = ({ db = prisma } = {}) => ({
   },
   async createGroup(tripId, leaderId, now) {
     return db.$transaction(async (tx) => {
-      const group = await tx.tripGroup.create({ data: { tripId, leaderId } });
+      const leader = await tx.user.findUnique({ where: { id: leaderId }, select: { name: true } });
+      const group = await tx.tripGroup.create({ data: { tripId, leaderId, name: `${leader?.name || "Kavach"} Group` } });
       await tx.groupMember.create({ data: { groupId: group.id, userId: leaderId, role: "LEADER", joinedAt: now } });
       return tx.tripGroup.findUnique({ where: { id: group.id }, include: groupInclude });
     });

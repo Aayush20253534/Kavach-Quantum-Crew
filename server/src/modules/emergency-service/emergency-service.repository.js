@@ -28,6 +28,23 @@ export const createEmergencyServiceRepository = ({ db = prisma } = {}) => ({
   updateUnit: (id, data) => db.emergencyUnit.update({ where: { id }, data }),
   updateDispatch: (id, data) => db.dispatch.update({ where: { id }, include: { incident: true, unit: true } }),
   createEvent: (data) => db.dispatchEvent.create({ data }),
+  findTripParticipant: (tripId, userId) => db.trip.findFirst({
+    where: { id: tripId, OR: [{ touristId: userId }, { group: { members: { some: { userId, leftAt: null } } } }] },
+    select: { id: true },
+  }),
+  listTouristDispatches: (userId) => db.dispatch.findMany({
+    where: {
+      status: { notIn: ["COMPLETED", "CANCELLED"] },
+      incident: {
+        OR: [
+          { userId },
+          { trip: { group: { members: { some: { userId, leftAt: null } } } } },
+        ],
+      },
+    },
+    include: { incident: true, unit: true, events: { orderBy: { createdAt: "asc" } } },
+    orderBy: { requestedAt: "desc" },
+  }),
 });
 
 export const emergencyServiceRepository = createEmergencyServiceRepository();

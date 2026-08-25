@@ -98,6 +98,9 @@ const requireOnboardedTourist = async (repository, userId) => {
       code: "ONBOARDING_REQUIRED",
     });
   }
+  if (!tourist.dateOfBirth) {
+    throw ApiError.badRequest("Date of birth is required before creating a trip", { code: "DATE_OF_BIRTH_REQUIRED" });
+  }
   return tourist;
 };
 

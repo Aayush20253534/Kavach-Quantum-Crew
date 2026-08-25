@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Car, UserPlus, AlertTriangle, Crosshair, 
   RefreshCw, Loader2, ServerCrash, ShieldAlert 
@@ -7,6 +8,7 @@ import { authorityService } from '../api/authorityService';
 
 export function AuthorityDispatchPage() {
   const [units, setUnits] = useState([]);
+  const [activeDispatches, setActiveDispatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -18,9 +20,10 @@ export function AuthorityDispatchPage() {
     try {
       setLoading(true);
       setError('');
-      const response = await authorityService.getUnits();
+      const [response, dispatchRows] = await Promise.all([authorityService.getUnits(), authorityService.getActiveDispatches()]);
       const data = response || [];
       setUnits(Array.isArray(data) ? data : []);
+      setActiveDispatches(Array.isArray(dispatchRows) ? dispatchRows : []);
     } catch (err) {
       setError(err.response?.data?.error?.message || err.message || 'Failed to load dispatch units');
     } finally {
@@ -88,6 +91,29 @@ export function AuthorityDispatchPage() {
           <div className="bg-red-50 p-4 rounded-xl border border-red-200 shadow-sm flex flex-col items-center justify-center">
             <span className="text-[28px] font-black text-red-700">{units.filter(u => u.status === 'OUT_OF_SERVICE').length}</span>
             <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest mt-1">Offline</span>
+          </div>
+        </div>
+      )}
+
+      {activeDispatches.length > 0 && (
+        <div className="mb-8">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">Active response tracking</h2>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{activeDispatches.length} active</span>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {activeDispatches.map((dispatch) => (
+              <Link key={dispatch.id} to={`/authority/response/${dispatch.id}`} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-400 hover:shadow-md">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-black text-slate-900">{dispatch.requestedUnitType} · {dispatch.status}</p>
+                    <p className="mt-1 text-[11px] text-slate-500">{dispatch.incident?.title || 'Emergency incident'}</p>
+                  </div>
+                  <Crosshair className="h-4 w-4 text-slate-500" />
+                </div>
+                <p className="mt-3 text-[10px] font-bold uppercase tracking-widest text-blue-600">Open live unit tracking →</p>
+              </Link>
+            ))}
           </div>
         </div>
       )}

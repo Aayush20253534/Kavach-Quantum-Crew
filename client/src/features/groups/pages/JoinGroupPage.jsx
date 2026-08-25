@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Camera, CheckCircle2, Clock3, ImageUp, Loader2, ShieldCheck, Users, X, AlertTriangle, XCircle } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { groupService } from '../api/groupService';
 
 const READER_ID = 'kavach-group-qr-reader';
@@ -10,11 +10,16 @@ const normalizePayload = (raw) => {
   const value = String(raw || '').trim();
   if (!value) return '';
   if (value.startsWith('KAVACH_GROUP_JOIN:')) return value.slice('KAVACH_GROUP_JOIN:'.length).trim();
+  try {
+    const url = new URL(value, window.location.origin);
+    if (url.pathname.endsWith('/tourist/groups/join')) return url.searchParams.get('token') || '';
+  } catch {}
   return '';
 };
 
 export function JoinGroupPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const scannerRef = useRef(null);
   const runningRef = useRef(false);
   const [busy, setBusy] = useState(false);
@@ -76,6 +81,15 @@ export function JoinGroupPage() {
       setBusy(false);
     }
   };
+
+
+  useEffect(() => {
+    const token = searchParams.get('token');
+    if (!token || groupQrToken || preview || joinRequest) return;
+    handleDecoded(`${window.location.origin}/tourist/groups/join?token=${encodeURIComponent(token)}`);
+    setSearchParams({}, { replace: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const openCamera = async () => {
     setError('');
@@ -163,7 +177,7 @@ export function JoinGroupPage() {
               <ImageUp className="w-4 h-4" /> Upload QR Image
               <input type="file" accept="image/*" className="hidden" onChange={uploadQr} disabled={busy} />
             </label>
-            <p className="text-center text-[11px] leading-5 text-slate-400">The QR contains only the group blockchain ID hash. Personal details are never stored inside the QR code.</p>
+            <p className="text-center text-[11px] leading-5 text-slate-400">The QR is a normal HTTPS join link, so any QR scanner can open it. Personal details are not embedded in the code.</p>
           </div>
         )}
 

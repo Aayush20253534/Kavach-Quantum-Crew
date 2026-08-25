@@ -5,6 +5,13 @@ export const createTouristRepository = ({ db = prisma } = {}) => ({
     return db.user.findUnique({ where: { id: userId } });
   },
 
+  findOpenTrip(userId) {
+    return db.trip.findFirst({
+      where: { status: { in: ["PLANNED", "ACTIVE"] }, OR: [{ touristId: userId }, { group: { is: { members: { some: { userId, leftAt: null } } } } }] },
+      select: { id: true, status: true },
+    });
+  },
+
   findUsernameConflict(username, exceptUserId) {
     return db.user.findFirst({
       where: { username, NOT: { id: exceptUserId } },
