@@ -47,8 +47,10 @@ export function CurrentTripPage() {
   const [error, setError] = useState('');
   const [now, setNow] = useState(() => Date.now());
   const [blockchainIntegrity, setBlockchainIntegrity] = useState(null);
+  const [groupBlockchainIntegrity, setGroupBlockchainIntegrity] = useState(null);
   const [integritySocketConnected, setIntegritySocketConnected] = useState(false);
   const integrityTimerRef = useRef([]);
+  const groupIntegrityTimerRef = useRef([]);
 
   const load = async () => {
     try {
@@ -132,62 +134,93 @@ export function CurrentTripPage() {
       const timer = window.setTimeout(() => setBlockchainIntegrity(value), delay);
       integrityTimerRef.current.push(timer);
     };
+    const clearGroupIntegrityTimers = () => {
+      groupIntegrityTimerRef.current.forEach((timer) => window.clearTimeout(timer));
+      groupIntegrityTimerRef.current = [];
+    };
+    const scheduleGroupIntegrityState = (delay, value) => {
+      const timer = window.setTimeout(() => setGroupBlockchainIntegrity(value), delay);
+      groupIntegrityTimerRef.current.push(timer);
+    };
 
     const handleConnect = () => {
       setIntegritySocketConnected(true);
       setBlockchainIntegrity({ status: 'CHECKING', message: 'Checking the latest trusted blockchain snapshot.' });
+      if (groupCredential?.id) setGroupBlockchainIntegrity({ status: 'CHECKING', message: 'Checking the latest trusted blockchain group snapshot.' });
     };
     const handleDisconnect = () => {
       setIntegritySocketConnected(false);
       clearIntegrityTimers();
+      clearGroupIntegrityTimers();
     };
     const handleConnectError = (error) => {
       setIntegritySocketConnected(false);
       clearIntegrityTimers();
+      clearGroupIntegrityTimers();
       console.error('Realtime integrity socket connection failed:', error?.message || error);
     };
-    const handleIntegrity = ({ integrity } = {}) => {
-      if (!integrity || integrity.credentialId !== individualCredential.id || integrity.tripId !== trip.id) return;
-
+    const applyIntegrityLifecycle = ({ integrity, setState, clearTimers, scheduleState, refresh }) => {
       if (integrity.status === 'INTEGRITY_UNAVAILABLE') {
-        clearIntegrityTimers();
-        setBlockchainIntegrity(integrity);
+        clearTimers();
+        setState(integrity);
         return;
       }
-
       if (integrity.status === 'DB_TAMPERED') {
-        clearIntegrityTimers();
-        setBlockchainIntegrity(integrity);
+        clearTimers();
+        setState(integrity);
         return;
       }
-
       if (integrity.status === 'FIXING') {
-        setBlockchainIntegrity((current) => {
-          if (current?.status === 'DB_TAMPERED') return current;
-          return integrity;
+        setState((current) => current?.status === 'DB_TAMPERED' ? current : integrity);
+        return;
+      }
+      if (integrity.status === 'FIXED') {
+        setState((current) => current?.status === 'DB_TAMPERED' ? current : integrity);
+        return;
+      }
+      if (integrity.status === 'VERIFIED') {
+        clearTimers();
+        setState((current) => {
+          if (integrity.restored && ['DB_TAMPERED', 'FIXING', 'FIXED'].includes(current?.status)) {
+            const base = { ...integrity, tamperedFields: integrity.tamperedFields || current?.tamperedFields };
+            scheduleState(1200, { ...base, status: 'FIXING' });
+            scheduleState(2400, { ...base, status: 'FIXED' });
+            scheduleState(4400, { ...base, status: 'VERIFIED', restored: false });
+            window.setTimeout(() => void refresh(), 2400);
+            return { ...base, status: 'DB_TAMPERED' };
+          }
+          return { ...integrity, restored: false };
+        });
+      }
+    };
+
+    const handleIntegrity = ({ integrity } = {}) => {
+      if (!integrity || integrity.tripId !== trip.id) return;
+
+      if (integrity.credentialId === individualCredential.id) {
+        applyIntegrityLifecycle({
+          integrity,
+          setState: setBlockchainIntegrity,
+          clearTimers: clearIntegrityTimers,
+          scheduleState: scheduleIntegrityState,
+          refresh: () => tripService.getCurrentTrip().then((currentTrip) => setTrip(currentTrip || null)).catch(() => {}),
         });
         return;
       }
 
-      if (integrity.status === 'FIXED') {
-        setBlockchainIntegrity((current) => current?.status === 'DB_TAMPERED' ? current : integrity);
-        return;
-      }
-
-      if (integrity.status === 'VERIFIED') {
-        clearIntegrityTimers();
-        setBlockchainIntegrity((current) => {
-          if (integrity.restored && ['DB_TAMPERED', 'FIXING', 'FIXED'].includes(current?.status)) {
-            const base = { ...integrity, tamperedFields: integrity.tamperedFields || current?.tamperedFields };
-            scheduleIntegrityState(1200, { ...base, status: 'FIXING' });
-            scheduleIntegrityState(2400, { ...base, status: 'FIXED' });
-            scheduleIntegrityState(4400, { ...base, status: 'VERIFIED', restored: false });
-            window.setTimeout(() => {
-              void tripService.getCurrentTrip().then((currentTrip) => setTrip(currentTrip || null)).catch(() => {});
-            }, 2400);
-            return { ...base, status: 'DB_TAMPERED' };
-          }
-          return { ...integrity, restored: false };
+      if (groupCredential?.id && integrity.credentialId === groupCredential.id) {
+        applyIntegrityLifecycle({
+          integrity,
+          setState: setGroupBlockchainIntegrity,
+          clearTimers: clearGroupIntegrityTimers,
+          scheduleState: scheduleGroupIntegrityState,
+          refresh: async () => {
+            try {
+              const loadedGroup = await groupService.getGroupForTrip(trip.id);
+              setGroup(loadedGroup);
+              setGroupCredential(await credentialService.getGroupCredential(loadedGroup.id));
+            } catch {}
+          },
         });
       }
     };
@@ -200,6 +233,7 @@ export function CurrentTripPage() {
 
     return () => {
       clearIntegrityTimers();
+      clearGroupIntegrityTimers();
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
       socket.off('connect_error', handleConnectError);
@@ -207,7 +241,7 @@ export function CurrentTripPage() {
       socket.disconnect();
       setIntegritySocketConnected(false);
     };
-  }, [individualCredential?.id, trip?.id]);
+  }, [individualCredential?.id, groupCredential?.id, trip?.id]);
 
   useEffect(() => {
     if (!group?.id || group.leaderId !== user?.id || trip?.status !== 'PLANNED') return undefined;
@@ -476,6 +510,7 @@ export function CurrentTripPage() {
               <CredentialCard
                 title="Group ID"
                 credential={groupCredential}
+                integrity={groupBlockchainIntegrity}
                 integritySocketConnected={integritySocketConnected}
               />
             </div>
