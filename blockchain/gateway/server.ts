@@ -16,9 +16,13 @@ const rpcUrl = process.env.CHAIN_RPC_URL || "http://127.0.0.1:8545";
 const contractAddress = process.env.CONTRACT_ADDRESS || process.env.address;
 const privateKey = process.env.ISSUER_PRIVATE_KEY || process.env.privateKey;
 const apiKey = process.env.GATEWAY_API_KEY;
-// Render injects PORT and requires binding to 0.0.0.0. Local development can still override both.
-const host = process.env.GATEWAY_HOST || "0.0.0.0";
+// Render requires a public web service to bind to 0.0.0.0 and to the injected PORT.
+// Do not allow a production GATEWAY_HOST override to accidentally bind to localhost.
+const host = process.env.NODE_ENV === "production" ? "0.0.0.0" : (process.env.GATEWAY_HOST || "0.0.0.0");
 const port = Number(process.env.PORT || process.env.GATEWAY_PORT || 4100);
+if (!Number.isInteger(port) || port <= 0 || port > 65535) {
+  throw new Error(`Invalid gateway port: ${process.env.PORT || process.env.GATEWAY_PORT || "4100"}`);
+}
 const expectedChainId = process.env.CHAIN_ID ? Number(process.env.CHAIN_ID) : undefined;
 if (!contractAddress || !privateKey || !apiKey) {
   throw new Error(
@@ -63,16 +67,31 @@ const gatewayError = (error: any) => {
   return { status: 500, code: "BLOCKCHAIN_GATEWAY_ERROR", message: raw.slice(0, 300) };
 };
 
-const healthSnapshot = async () => {
-  const network = await provider.getNetwork();
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> => {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+};
+
+const readinessSnapshot = async () => {
+  const timeoutMs = Number(process.env.GATEWAY_READINESS_TIMEOUT_MS || 5000);
+  const network = await withTimeout(provider.getNetwork(), timeoutMs, "Blockchain RPC readiness check timed out");
   const actualChainId = Number(network.chainId);
-  const code = await provider.getCode(contractAddress);
+  const code = await withTimeout(provider.getCode(contractAddress), timeoutMs, "Contract readiness check timed out");
   const chainMatches = expectedChainId === undefined || expectedChainId === actualChainId;
   const contractDeployed = code !== "0x";
   return {
     ok: chainMatches && contractDeployed,
     service: "kavach-blockchain-gateway",
-    message: chainMatches && contractDeployed ? "Blockchain gateway is working" : "Blockchain gateway is not ready",
+    message: chainMatches && contractDeployed ? "Blockchain gateway is ready" : "Blockchain gateway is not ready",
     chainId: actualChainId,
     expectedChainId: expectedChainId ?? null,
     chainMatches,
@@ -81,28 +100,60 @@ const healthSnapshot = async () => {
   };
 };
 
-const PUBLIC_HEALTH_PATHS = new Set(["/", "/health", "/healthz"]);
+const LIVENESS_PATHS = new Set(["/", "/health", "/healthz"]);
+const READINESS_PATHS = new Set(["/ready", "/readiness"]);
 
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
 
-    // Health checks must remain outside gateway authentication. Uptime providers and
-    // hosting platforms may probe with either GET or HEAD and do not know the private
-    // x-kavach-chain-key used by the Express backend.
-    if ((req.method === "GET" || req.method === "HEAD") && PUBLIC_HEALTH_PATHS.has(url.pathname)) {
-      const health = await healthSnapshot();
-      const status = health.ok ? 200 : 503;
-
+    // Render port/liveness probes must receive an immediate HTTP response. Do not make
+    // liveness depend on Sepolia/RPC availability; blockchain readiness is exposed separately.
+    if ((req.method === "GET" || req.method === "HEAD") && LIVENESS_PATHS.has(url.pathname)) {
       if (req.method === "HEAD") {
-        res.writeHead(status, {
+        res.writeHead(200, {
           "content-type": "application/json",
           "cache-control": "no-store",
         });
         return res.end();
       }
+      return json(res, 200, {
+        ok: true,
+        service: "kavach-blockchain-gateway",
+        message: "Blockchain gateway process is running",
+        status: "online",
+        readiness: "/ready",
+      });
+    }
 
-      return json(res, status, health);
+    if ((req.method === "GET" || req.method === "HEAD") && READINESS_PATHS.has(url.pathname)) {
+      try {
+        const readiness = await readinessSnapshot();
+        const status = readiness.ok ? 200 : 503;
+        if (req.method === "HEAD") {
+          res.writeHead(status, {
+            "content-type": "application/json",
+            "cache-control": "no-store",
+          });
+          return res.end();
+        }
+        return json(res, status, readiness);
+      } catch (error: any) {
+        if (req.method === "HEAD") {
+          res.writeHead(503, {
+            "content-type": "application/json",
+            "cache-control": "no-store",
+          });
+          return res.end();
+        }
+        return json(res, 503, {
+          ok: false,
+          service: "kavach-blockchain-gateway",
+          message: "Blockchain gateway process is online but chain readiness check failed",
+          code: "CHAIN_NOT_READY",
+          details: String(error?.message || error).slice(0, 300),
+        });
+      }
     }
 
     if (req.headers["x-kavach-chain-key"] !== apiKey) {
@@ -176,4 +227,14 @@ const server = http.createServer(async (req, res) => {
     return json(res, normalized.status, { error: { code: normalized.code, message: normalized.message } });
   }
 });
-server.listen(port, host, () => console.log(`[blockchain-gateway] listening on http://${host}:${port}`));
+server.on("error", (error) => {
+  console.error("[blockchain-gateway] HTTP server error", error);
+  process.exitCode = 1;
+});
+
+server.listen(port, host, () => {
+  const address = server.address();
+  console.log(`[blockchain-gateway] listening on http://${host}:${port}`);
+  console.log("[blockchain-gateway] bound address", address);
+  console.log("[blockchain-gateway] liveness endpoints: /, /health, /healthz; readiness: /ready");
+});
