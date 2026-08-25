@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { AlertTriangle, Calendar, CheckCircle2, Clock3, Copy, Loader2, LogIn, MapPin, Navigation, Play, ShieldCheck, TimerReset, UserCheck, UserX, Users, XCircle } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -8,6 +8,7 @@ import { groupService } from '../../groups/api/groupService';
 import { credentialService } from '../../credentials/api/credentialService';
 import { tripService } from '../api/tripService';
 import { emergencyServicesApi } from '../../emergency-services/api/emergencyServicesApi';
+import { createRealtimeSocket } from '../../../services/realtimeClient';
 
 const dateText = (value) => value ? new Date(value).toLocaleString() : '—';
 const MIN_GROUP_MEMBERS_TO_START = 2;
@@ -25,6 +26,9 @@ export function CurrentTripPage() {
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [now, setNow] = useState(() => Date.now());
+  const [blockchainIntegrity, setBlockchainIntegrity] = useState(null);
+  const [integritySocketConnected, setIntegritySocketConnected] = useState(false);
+  const integrityTimerRef = useRef(null);
 
   const load = async () => {
     try {
@@ -72,6 +76,60 @@ export function CurrentTripPage() {
     const timer = window.setInterval(() => setNow(Date.now()), 30_000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!individualCredential?.id || !trip?.id) return undefined;
+
+    setBlockchainIntegrity(null);
+    const socket = createRealtimeSocket();
+
+    const handleConnect = () => setIntegritySocketConnected(true);
+    const handleDisconnect = () => setIntegritySocketConnected(false);
+    const handleIntegrity = ({ integrity } = {}) => {
+      if (!integrity || integrity.credentialId !== individualCredential.id || integrity.tripId !== trip.id) return;
+
+      if (integrity.status === 'DB_TAMPERED') {
+        if (integrityTimerRef.current) window.clearTimeout(integrityTimerRef.current);
+        integrityTimerRef.current = null;
+        setBlockchainIntegrity({ ...integrity, visibleUntil: Date.now() + 2500 });
+        return;
+      }
+
+      if (integrity.status === 'VERIFIED') {
+        setBlockchainIntegrity((current) => {
+          const delay = current?.status === 'DB_TAMPERED'
+            ? Math.max(0, (current.visibleUntil || 0) - Date.now())
+            : 0;
+          if (delay > 0) {
+            if (integrityTimerRef.current) window.clearTimeout(integrityTimerRef.current);
+            integrityTimerRef.current = window.setTimeout(() => {
+              setBlockchainIntegrity(integrity);
+              void tripService.getCurrentTrip().then((current) => setTrip(current || null)).catch(() => {});
+              integrityTimerRef.current = null;
+            }, delay);
+            return current;
+          }
+          void tripService.getCurrentTrip().then((currentTrip) => setTrip(currentTrip || null)).catch(() => {});
+          return integrity;
+        });
+      }
+    };
+
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('blockchain:integrity', handleIntegrity);
+    socket.connect();
+
+    return () => {
+      if (integrityTimerRef.current) window.clearTimeout(integrityTimerRef.current);
+      integrityTimerRef.current = null;
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('blockchain:integrity', handleIntegrity);
+      socket.disconnect();
+      setIntegritySocketConnected(false);
+    };
+  }, [individualCredential?.id, trip?.id]);
 
   useEffect(() => {
     if (!group?.id || group.leaderId !== user?.id || trip?.status !== 'PLANNED') return undefined;
@@ -283,7 +341,12 @@ export function CurrentTripPage() {
         )}
 
         <div className="grid sm:grid-cols-2 gap-3 sm:gap-4 mt-5 sm:mt-7">
-          <CredentialCard title="Individual ID" credential={individualCredential} />
+          <CredentialCard
+            title="Individual ID"
+            credential={individualCredential}
+            integrity={blockchainIntegrity}
+            integritySocketConnected={integritySocketConnected}
+          />
           <Link to="/tourist/checkins" className="p-3.5 sm:p-4 bg-slate-50 rounded-xl">
             <p className="text-[10px] uppercase tracking-wider font-black text-slate-400">Safety Check-ins</p>
             <p className="mt-1 font-bold text-sm">Open check-in schedule →</p>
@@ -417,20 +480,49 @@ function CredentialQrPanel({ title, description, value, copyValue, copyLabel, ra
   );
 }
 
-function CredentialCard({ title, credential }) {
+function CredentialCard({ title, credential, integrity = null, integritySocketConnected = false }) {
   if (!credential) return <div className="p-3.5 sm:p-4 bg-slate-50 rounded-xl text-xs text-slate-500">Loading {title.toLowerCase()}…</div>;
   const blockchainStatus = credential.blockchainStatus;
-  const statusClass = blockchainStatus === 'CONFIRMED'
-    ? 'text-emerald-600'
-    : blockchainStatus === 'DISABLED'
-      ? 'text-slate-500'
-      : 'text-amber-600';
+  const tampered = integrity?.status === 'DB_TAMPERED';
+  const restored = integrity?.status === 'VERIFIED' && integrity?.restored;
+  const statusClass = tampered
+    ? 'text-red-600'
+    : blockchainStatus === 'CONFIRMED'
+      ? 'text-emerald-600'
+      : blockchainStatus === 'DISABLED'
+        ? 'text-slate-500'
+        : 'text-amber-600';
+  const statusText = tampered
+    ? 'DB tampered · self-correcting'
+    : blockchainStatus === 'CONFIRMED'
+      ? 'Blockchain verified'
+      : `Blockchain: ${blockchainStatus}`;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 sm:p-4">
-      <p className="text-[10px] uppercase tracking-wider font-black text-slate-400">{title}</p>
-      <p className="mt-1 break-all font-mono text-xs font-bold text-slate-800">{credential.publicId}</p>
-      <p className={`mt-2 text-[10px] font-bold ${statusClass}`}>Blockchain: {blockchainStatus}</p>
+    <div className={`rounded-xl border p-3.5 sm:p-4 ${tampered ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-slate-50'}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] uppercase tracking-wider font-black text-slate-400">{title}</p>
+          <p className="mt-1 break-all font-mono text-xs font-bold text-slate-800">{credential.publicId}</p>
+        </div>
+        {blockchainStatus === 'CONFIRMED' && (
+          <span className={`mt-0.5 inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wide ${integritySocketConnected ? 'text-emerald-600' : 'text-slate-400'}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${integritySocketConnected ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+            {integritySocketConnected ? 'Live integrity' : 'Connecting'}
+          </span>
+        )}
+      </div>
+      <p className={`mt-2 text-[10px] font-bold ${statusClass}`}>{statusText}</p>
+      {tampered && (
+        <p className="mt-1 text-[10px] leading-4 text-red-600">
+          Changed fields: {integrity.tamperedFields?.join(', ') || 'protected trip data'}. Trusted blockchain values are being restored.
+        </p>
+      )}
+      {restored && (
+        <p className="mt-1 text-[10px] leading-4 text-emerald-600">
+          Tampered database values were restored from blockchain and verified.
+        </p>
+      )}
       {credential.blockchainError?.message && (
         <p className="mt-1 text-[10px] leading-4 text-red-600">
           {credential.blockchainError.message}

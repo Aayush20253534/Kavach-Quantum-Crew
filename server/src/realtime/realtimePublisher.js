@@ -118,6 +118,13 @@ export const realtimePublisher = Object.freeze({
       socketServer.to(accountRoom(unit.type, unit.serviceAccountId)).emit("emergency-unit:updated", payload);
     }
   },
+  publishBlockchainIntegrity(userId, integrity) {
+    if (!socketServer || !userId || !integrity?.credentialId) return;
+    socketServer
+      .to(accountRoom("TOURIST", userId))
+      .emit("blockchain:integrity", { integrity });
+    socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("blockchain:integrity", { integrity });
+  },
 });
 
 export const realtimeRooms = Object.freeze({ accountRoom, incidentRoom, roleRoom });

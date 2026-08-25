@@ -1,11 +1,20 @@
 import { prisma } from "../../config/database.js";
 import { environment } from "../../config/environment.js";
+import { realtimePublisher } from "../../realtime/realtimePublisher.js";
 import { blockchainService } from "./blockchain.service.js";
 import { decryptSnapshot, hashSnapshot } from "./blockchain.snapshot.js";
 
 const openStatuses = ["PLANNED", "ACTIVE"];
 
 const normalizeDate = (value) => value ? new Date(value).toISOString() : null;
+
+const integrityPayload = (credential, status, extra = {}) => ({
+  credentialId: credential.id,
+  tripId: credential.tripId,
+  status,
+  checkedAt: new Date().toISOString(),
+  ...extra,
+});
 
 export const blockchainIntegrityService = Object.freeze({
   async reconcileCredential(credential) {
@@ -33,7 +42,23 @@ export const blockchainIntegrityService = Object.freeze({
     if (normalizeDate(current.user.dateOfBirth) !== normalizeDate(payload.dateOfBirth)) userPatch.dateOfBirth = new Date(payload.dateOfBirth);
     const destinationChanged = current.trip.locationName !== payload.destination;
 
-    if (!Object.keys(userPatch).length && !destinationChanged) return false;
+    const tamperedFields = [
+      ...Object.keys(userPatch),
+      ...(destinationChanged ? ["destination"] : []),
+    ];
+
+    if (!tamperedFields.length) return false;
+
+    const detectedAt = new Date().toISOString();
+    realtimePublisher.publishBlockchainIntegrity(
+      current.userId,
+      integrityPayload(current, "DB_TAMPERED", {
+        detectedAt,
+        tamperedFields,
+        message: "Database tampering detected. Restoring trusted values from blockchain.",
+      }),
+    );
+
     await prisma.$transaction(async (tx) => {
       if (Object.keys(userPatch).length) await tx.user.update({ where: { id: current.userId }, data: userPatch });
       if (destinationChanged) await tx.trip.update({ where: { id: current.tripId }, data: { locationName: payload.destination } });
@@ -45,6 +70,18 @@ export const blockchainIntegrityService = Object.freeze({
         metadata: { restoredUserFields: Object.keys(userPatch), restoredDestination: destinationChanged, snapshotSequence: latest.sequence },
       } });
     });
+
+    realtimePublisher.publishBlockchainIntegrity(
+      current.userId,
+      integrityPayload(current, "VERIFIED", {
+        detectedAt,
+        correctedAt: new Date().toISOString(),
+        tamperedFields,
+        restored: true,
+        snapshotSequence: Number(latest.sequence),
+        message: "Database values restored from blockchain and verified.",
+      }),
+    );
     return true;
   },
 

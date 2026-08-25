@@ -50,6 +50,7 @@ Sensitive tracking/incident rooms require subscription authorization.
 | `emergency-unit:updated` | Emergency-unit state changed |
 | `evidence:created` | Evidence created |
 | `evidence:deleted` | Evidence deleted |
+| `blockchain:integrity` | Tourist trip DB integrity changed: `DB_TAMPERED` or restored `VERIFIED` |
 
 REST remains the authoritative recovery/read path. Realtime does not bypass REST authorization.
 
@@ -64,3 +65,10 @@ Service location and status changes publish `dispatch:updated`. Events go to Dis
 ## Emergency responder tracking update
 
 Responder location/status changes publish `dispatch:updated` through incident/role rooms. The event is supplemental to the REST source of truth: clients should refetch/merge backend dispatch state and must not treat an unverified Socket.IO payload as authorization. Danger-zone/signal-loss detection does not emit a responder assignment until Disaster Management actually creates/assigns the dispatch.
+
+
+## Blockchain integrity realtime event
+
+For confirmed individual credentials on `PLANNED` or `ACTIVE` trips, the integrity watcher compares protected PostgreSQL fields against the latest trusted encrypted blockchain snapshot. Direct database writes bypass the API, so detection is performed by a five-second watcher and the result is delivered to the authenticated tourist through Socket.IO.
+
+When a mismatch is found the server first emits `blockchain:integrity` with `status: DB_TAMPERED`, the protected field names, credential ID and trip ID. It then restores the trusted values inside a database transaction, writes `BLOCKCHAIN_DB_RESTORED` to the audit log, and emits a second `blockchain:integrity` event with `status: VERIFIED` and `restored: true`. The Current Trip UI keeps the tamper state visible briefly before rendering the restored verified state so both transitions are observable.

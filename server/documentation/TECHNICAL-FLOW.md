@@ -1096,4 +1096,9 @@ Danger-zone/signal-loss events do not call responder assignment automatically. D
 
 `credential.service.js` still generates the existing `idHash` and queues `ISSUE`. It additionally queues `SNAPSHOT` jobs. `blockchain.snapshot.js` canonicalizes JSON, computes SHA-256, and encrypts the payload with AES-256-GCM using `BLOCKCHAIN_DATA_ENCRYPTION_KEY`. The queue sends ciphertext/hash/sequence/type to the gateway, which calls `TrustAnchor.appendDataSnapshot`. Snapshot jobs deliberately do not mutate the underlying credential `chainStatus`/issuance transaction state.
 
-`blockchainIntegrity.job.js` runs every minute for confirmed individual credentials on open trips. It reads the latest type-1 snapshot, decrypts it, verifies the hash and credential identity, compares name/DOB/email/phone/destination against PostgreSQL, restores differences, and records `BLOCKCHAIN_DB_RESTORED`. A decrypt/hash/identity mismatch is never trusted as recovery data.
+`blockchainIntegrity.job.js` runs every five seconds for confirmed individual credentials on open trips, with an overlap guard so a slow reconciliation cycle cannot run twice concurrently. It reads the latest type-1 snapshot, decrypts it, verifies the hash and credential identity, compares name/DOB/email/phone/destination against PostgreSQL, restores differences, and records `BLOCKCHAIN_DB_RESTORED`. A decrypt/hash/identity mismatch is never trusted as recovery data.
+
+
+### Realtime blockchain integrity status
+
+When reconciliation detects protected PostgreSQL values that differ from the latest trusted individual snapshot, `blockchain.integrity.service.js` publishes `blockchain:integrity` with `DB_TAMPERED` to the tourist account room before applying the repair. After the transaction restores the chain-backed values and records `BLOCKCHAIN_DB_RESTORED`, it publishes `VERIFIED`. This makes the trip credential card reflect the detection/correction lifecycle over Socket.IO while REST/PostgreSQL remain the operational source of truth after reconciliation.
