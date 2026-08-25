@@ -246,7 +246,7 @@ Group member offline >= tracking-gap threshold (default 5 min)
        FALSE_ALARM -> close case
        CONFIRMED_DANGER -> incident escalation
        timeout -> incident escalation
-  -> if still offline, remind hourly and open a fresh 5-min response window
+  -> if still offline, remind again after 5 min and open a fresh 5-min response window
 
 Disaster Management initiates dispatch
   -> optional nearest available unit selection by service type

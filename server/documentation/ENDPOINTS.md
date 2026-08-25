@@ -354,7 +354,7 @@ The responder UI should treat each registered service account as a single fleet 
 ### Signal-loss cases
 - `GET /signal-loss-cases?tripId=<tripId>` lists cases visible to the group leader.
 - `POST /signal-loss-cases/:caseId/respond` accepts `{ "response": "FALSE_ALARM" }` or `{ "response": "CONFIRMED_DANGER" }`.
-- Default behavior: 5-minute offline threshold, 5-minute leader response window, then Disaster Management escalation; hourly reminders continue while the member remains offline.
+- Default behavior: 5-minute offline threshold, 5-minute leader response window, then Disaster Management escalation; 5-minute reminders continue after each handled response while the member remains offline.
 
 ### Emergency-service live tracking
 - `GET /emergency-services/tourist/dispatches` returns dispatches relevant to the authenticated tourist.

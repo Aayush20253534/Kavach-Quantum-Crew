@@ -4,9 +4,9 @@ import { notificationService } from "../notification/notification.service.js";
 import { signalLossRepository } from "./signal-loss.repository.js";
 
 const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
 const DEFAULT_GAP_MINUTES = 5;
 const RESPONSE_WINDOW_MS = 5 * MINUTE;
+const REMINDER_COOLDOWN_MS = 5 * MINUTE;
 
 export const createSignalLossService = ({
   repository = signalLossRepository,
@@ -71,7 +71,7 @@ export const createSignalLossService = ({
               detectedAt: now,
               lastNotifiedAt: now,
               responseDeadlineAt: new Date(now.getTime() + RESPONSE_WINDOW_MS),
-              nextReminderAt: new Date(now.getTime() + HOUR),
+              nextReminderAt: new Date(now.getTime() + REMINDER_COOLDOWN_MS),
             });
             await notifier.signalLoss({ signalCase, trip, member: member.user, leader: trip.group.leader, reminder: false });
             result.opened += 1;
@@ -85,9 +85,13 @@ export const createSignalLossService = ({
 
           if (now >= new Date(signalCase.nextReminderAt)) {
             const updated = await repository.updateCase(signalCase.id, {
+              status: "WAITING_FOR_LEADER",
+              leaderResponse: null,
+              leaderRespondedAt: null,
+              resolvedAt: null,
               lastNotifiedAt: now,
               responseDeadlineAt: new Date(now.getTime() + RESPONSE_WINDOW_MS),
-              nextReminderAt: new Date(now.getTime() + HOUR),
+              nextReminderAt: new Date(now.getTime() + REMINDER_COOLDOWN_MS),
             });
             await notifier.signalLoss({ signalCase: updated, trip, member: member.user, leader: trip.group.leader, reminder: true });
             result.reminded += 1;
@@ -106,7 +110,9 @@ export const createSignalLossService = ({
       if (!signalCase || signalCase.leaderId !== userId) {
         throw ApiError.notFound("Signal-loss case not found", { code: "SIGNAL_LOSS_CASE_NOT_FOUND" });
       }
-      if (["FALSE_ALARM", "RESOLVED"].includes(signalCase.status)) return signalCase;
+      if (signalCase.status !== "WAITING_FOR_LEADER") {
+        throw ApiError.conflict("This signal-loss response window is already closed", { code: "SIGNAL_LOSS_RESPONSE_WINDOW_CLOSED" });
+      }
       const now = clock();
 
       if (response === "FALSE_ALARM") {
@@ -116,13 +122,18 @@ export const createSignalLossService = ({
           leaderResponse: "FALSE_ALARM",
           leaderRespondedAt: now,
           resolvedAt: now,
+          nextReminderAt: new Date(now.getTime() + REMINDER_COOLDOWN_MS),
         });
         await repository.createAudit({ actorId: userId, action: "SIGNAL_LOSS_FALSE_ALARM", entityId: caseId, metadata: { tripId: signalCase.tripId, userId: signalCase.userId } });
         return updated;
       }
 
       if (response === "CONFIRMED_DANGER") {
-        const updated = await repository.updateCase(signalCase.id, { leaderResponse: "CONFIRMED_DANGER", leaderRespondedAt: now });
+        const updated = await repository.updateCase(signalCase.id, {
+          leaderResponse: "CONFIRMED_DANGER",
+          leaderRespondedAt: now,
+          nextReminderAt: new Date(now.getTime() + REMINDER_COOLDOWN_MS),
+        });
         const escalated = await escalateCase(updated, now);
         await repository.createAudit({ actorId: userId, action: "SIGNAL_LOSS_CONFIRMED_DANGER", entityId: caseId, metadata: { tripId: signalCase.tripId, userId: signalCase.userId } });
         return escalated;
