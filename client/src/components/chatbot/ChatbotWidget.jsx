@@ -12,6 +12,52 @@ import {
   Trash2,
 } from 'lucide-react';
 
+function renderInlineMarkdown(text) {
+  const parts = String(text).split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      return <strong key={index} className="font-semibold">{part.slice(2, -2)}</strong>;
+    }
+
+    if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
+      return (
+        <code key={index} className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[0.95em] text-slate-700">
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+
+    return <React.Fragment key={index}>{part}</React.Fragment>;
+  });
+}
+
+function ChatbotMarkdown({ text }) {
+  const lines = String(text ?? '').split('\n');
+
+  return (
+    <div className="space-y-1 whitespace-normal break-words">
+      {lines.map((line, index) => {
+        const bulletMatch = line.match(/^\s*[-*]\s+(.+)$/);
+        if (bulletMatch) {
+          return (
+            <div key={index} className="flex items-start gap-1.5">
+              <span aria-hidden="true" className="mt-[0.15em]">•</span>
+              <span>{renderInlineMarkdown(bulletMatch[1])}</span>
+            </div>
+          );
+        }
+
+        if (!line.trim()) {
+          return <div key={index} className="h-1" aria-hidden="true" />;
+        }
+
+        return <div key={index}>{renderInlineMarkdown(line)}</div>;
+      })}
+    </div>
+  );
+}
+
 export function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
@@ -253,7 +299,11 @@ export function ChatbotWidget() {
                         : 'bg-white border border-slate-200 text-slate-800 rounded-md rounded-tl-none'
                       }`}
                   >
-                    {currentMessage.text}
+                    {currentMessage.sender === 'ai' ? (
+                      <ChatbotMarkdown text={currentMessage.text} />
+                    ) : (
+                      currentMessage.text
+                    )}
                   </div>
 
                   <span className="text-[9px] text-slate-400 mt-1 px-0.5">
