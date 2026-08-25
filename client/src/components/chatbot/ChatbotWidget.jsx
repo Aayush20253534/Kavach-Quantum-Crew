@@ -24,7 +24,7 @@ export function ChatbotWidget() {
     {
       id: 1,
       sender: 'ai',
-      text: 'Namaste! I am your Prayagraj safety assistant. How can I help you today?',
+      text: 'Namaste! I am Rakshak AI, your Kavach travel and safety assistant. How can I help you today?',
       time: new Date().toLocaleTimeString([], {
         hour: '2-digit',
         minute: '2-digit',
@@ -98,7 +98,7 @@ export function ChatbotWidget() {
       setMessages([{
         id: `welcome-${Date.now()}`,
         sender: 'ai',
-        text: 'Namaste! I am your Prayagraj safety assistant. How can I help you today?',
+        text: 'Namaste! I am Rakshak AI, your Kavach travel and safety assistant. How can I help you today?',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }]);
       setError('');

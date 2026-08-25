@@ -40,3 +40,9 @@ Conversation history is in memory and resets when Render restarts or a different
 
 Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
 
+
+## Response routing
+
+The chatbot must not treat KB retrieval as an allow/deny gate. A missing KB match still proceeds to Groq for normal conversation. When a KB file matches, its content is added as grounding for Kavach-specific questions.
+
+Location-dependent questions use live platform context where implemented. `Nearest Safe Zone` calls the authenticated main Kavach safety-zone API using `KAVACH_API_URL`, calculates nearest configured safe zones from the browser coordinates, and gives those results to the model. Live platform context takes precedence over static KB text.

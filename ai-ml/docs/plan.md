@@ -735,3 +735,11 @@ The production safety flow preserves the principle that AI does not auto-dispatc
 
 Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
 
+
+## Current routing behavior
+
+- Normal conversation does not require a KB match.
+- Kavach-specific questions use matching Markdown knowledge when available.
+- Recent persisted per-user chat history is always supplied as conversation context.
+- Nearest-safe-zone questions use live data from the main Kavach API rather than asking the model to infer places from coordinates.
+- Configure `KAVACH_API_URL` on the AI service to the main backend URL including `/api/v1`.
