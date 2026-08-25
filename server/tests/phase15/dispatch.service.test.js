@@ -13,7 +13,8 @@ const setup = (overrides = {}) => {
     findIncident: jest.fn().mockResolvedValue(incident), createDispatch: jest.fn().mockResolvedValue(requested), findDispatch: jest.fn().mockResolvedValue(requested), listForIncident: jest.fn().mockResolvedValue([requested]), updateDispatch: jest.fn().mockImplementation(async (_id,data)=>({ ...requested, ...data })), createEvent: jest.fn().mockResolvedValue({}), createAudit: jest.fn().mockResolvedValue({}), ...overrides,
   };
   const publisher = { publishDispatchUpdated: jest.fn(), publishEmergencyUnitUpdated: jest.fn() };
-  return { repository, publisher, service: createDispatchService({ repository, publisher, clock: () => new Date("2026-08-21T18:00:00Z") }) };
+  const emailer = { dispatchAssigned: jest.fn().mockResolvedValue({ delivered: true }) };
+  return { repository, publisher, emailer, service: createDispatchService({ repository, publisher, emailer, clock: () => new Date("2026-08-21T18:00:00Z") }) };
 };
 
 describe("Phase 15 emergency dispatch", () => {
@@ -38,6 +39,22 @@ describe("Phase 15 emergency dispatch", () => {
     await expect(service.transition(manager, assigned.id, "ON_SCENE")).rejects.toMatchObject({ code: "DISPATCH_INVALID_TRANSITION" });
     await expect(service.transition(manager, assigned.id, "DISPATCHED")).resolves.toMatchObject({ status: "DISPATCHED" });
   });
+  test("emails the fleet when a dispatch is auto assigned", async () => {
+    const serviceAccount = { id: "77777777-7777-4777-8777-777777777777", email: "ambulance@example.com", name: "City Hospital", serviceType: "AMBULANCE" };
+    const assignedUnit = { ...unit, serviceAccount };
+    const { service, emailer } = setup({
+      findUnit: jest.fn().mockResolvedValue(assignedUnit),
+      listAvailableUnitsByType: jest.fn().mockResolvedValue([assignedUnit]),
+      createDispatch: jest.fn().mockImplementation(async (data) => ({ ...requested, ...data, incident, unit: assignedUnit })),
+    });
+    await service.autoAssign(manager, incident.id, "ambulance", {});
+    expect(emailer.dispatchAssigned).toHaveBeenCalledWith(expect.objectContaining({
+      account: serviceAccount,
+      autoAssigned: true,
+      dispatch: expect.objectContaining({ incidentId: incident.id }),
+    }));
+  });
+
   test("only system admin manages emergency unit inventory", async () => {
     const { service } = setup();
     await expect(service.createUnit(manager, { name: "A", type: "AMBULANCE" })).rejects.toMatchObject({ code: "UNIT_MANAGE_FORBIDDEN" });

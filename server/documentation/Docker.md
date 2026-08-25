@@ -1625,3 +1625,16 @@ It removes the normal Compose volume and therefore deletes Docker-managed Postgr
 ## Emergency dispatch schema startup
 
 The runtime container now executes `npm run prisma:migrate:deploy` before `node src/server.js`. This is required so Police/Fire/Ambulance service accounts and unit-location fields exist before the emergency-service routes accept traffic.
+
+## Emergency email environment in Docker Compose
+
+The backend container now receives the same Brevo variables used by local/Render deployments:
+
+```env
+BREVO_API_KEY=...
+BREVO_SENDER_EMAIL=...
+BREVO_SENDER_NAME=QuantumCrew
+PUBLIC_APP_URL=https://your-frontend.example
+```
+
+`PUBLIC_APP_URL` is required for clickable SOS/incident and responder-dispatch links. Do not put a backend URL here; it must be the frontend origin that implements `/login?redirect=...`.

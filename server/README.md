@@ -356,3 +356,9 @@ Requester status can be checked with `GET /api/v1/groups/join/requests/:requestI
 ## Police, Fire, and Ambulance dispatch
 
 The backend now includes a unified emergency-service portal for Police, Fire, and Ambulance, nearest-available-unit auto assignment, service-side location/status updates, and tourist tracking. See `documentation/EMERGENCY-SERVICE-DISPATCH.md` for the complete backend contract. Docker startup applies committed Prisma migrations before launching the API.
+
+### Emergency responder email flow
+
+Police, Ambulance/Hospital, and Fire use a single-account-per-fleet model. The responder-facing product can stay focused on **Active Dispatch**, **Live Tracking**, and **Dispatch History**.
+
+New SOS/incidents email active Disaster Managers with a protected deep link to the exact incident. Auto-assigned and manually assigned dispatches email the selected responder fleet with a protected deep link to the exact dispatch. Links use `PUBLIC_APP_URL` and `/login?redirect=...`; the frontend is responsible for preserving the redirect through authentication.

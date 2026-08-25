@@ -47,3 +47,16 @@ The API and blockchain project are separate runtimes. Start `blockchain/gateway/
 ## Frontend handoff: emergency fleets
 
 The Disaster Management UI can render three sections using the same dispatch API filtered/triggered by `POLICE`, `FIRE`, and `AMBULANCE`. The future service portal uses one registration/login surface with a service-type selector and browser geolocation feeding latitude/longitude. Tourist delivery-style movement should subscribe to the incident room and animate between successive `dispatch:updated` locations. See `EMERGENCY-SERVICE-DISPATCH.md`.
+
+## Frontend handoff: emergency email deep links
+
+The frontend must support these protected destinations:
+
+```text
+/disaster-management/incidents/:incidentId
+/emergency-services/dispatches/:dispatchId
+```
+
+Emergency emails point to `/login?redirect=<destination>&role=<role>`. Login must preserve the `redirect` query parameter. If a valid session already exists, skip the form and navigate directly. After successful authentication, navigate to the redirect destination only after validating that the authenticated role is allowed to open it.
+
+For the current responder portal, one account represents one complete Police, Ambulance/Hospital, or Fire fleet. The expected primary tabs are Active Dispatch, Live Tracking, and Dispatch History. A separate Profile or per-vehicle Fleet UI is not required.
