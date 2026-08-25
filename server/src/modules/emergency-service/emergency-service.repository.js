@@ -33,19 +33,33 @@ export const createEmergencyServiceRepository = ({ db = prisma } = {}) => ({
     where: { id: tripId, OR: [{ touristId: userId }, { group: { members: { some: { userId, leftAt: null } } } }] },
     select: { id: true },
   }),
-  listTouristDispatches: (userId) => db.dispatch.findMany({
-    where: {
-      status: { notIn: ["COMPLETED", "CANCELLED"] },
-      incident: {
+  listTouristDispatches: async (userId) => {
+    const trips = await db.trip.findMany({
+      where: {
         OR: [
-          { userId },
-          { trip: { group: { members: { some: { userId, leftAt: null } } } } },
+          { touristId: userId },
+          { group: { members: { some: { userId, leftAt: null } } } },
         ],
       },
-    },
-    include: { incident: true, unit: true, events: { orderBy: { createdAt: "asc" } } },
-    orderBy: { requestedAt: "desc" },
-  }),
+      select: { id: true },
+    });
+
+    const tripIds = trips.map((trip) => trip.id);
+
+    return db.dispatch.findMany({
+      where: {
+        status: { notIn: ["COMPLETED", "CANCELLED"] },
+        incident: {
+          OR: [
+            { userId },
+            ...(tripIds.length > 0 ? [{ tripId: { in: tripIds } }] : []),
+          ],
+        },
+      },
+      include: { incident: true, unit: true, events: { orderBy: { createdAt: "asc" } } },
+      orderBy: { requestedAt: "desc" },
+    });
+  },
 });
 
 export const emergencyServiceRepository = createEmergencyServiceRepository();
