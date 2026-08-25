@@ -52,6 +52,7 @@ import { AuthorityAnalyticsPage } from '../features/authority/pages/AuthorityAna
 import { ActiveDispatchPage } from '../features/emergency-services/pages/ActiveDispatchPage';
 import { LiveTrackingPage as ResponderLiveTrackingPage } from '../features/emergency-services/pages/LiveTrackingPage';
 import { DispatchHistoryPage } from '../features/emergency-services/pages/DispatchHistoryPage';
+import { SharedDispatchTrackingPage } from '../features/emergency-services/pages/SharedDispatchTrackingPage';
 
 // Pages - Admin
 import { AdminDashboardPage } from '../features/admin/pages/AdminDashboardPage';
@@ -116,6 +117,7 @@ export const router = createBrowserRouter([
                   { path: 'incidents/history', element: <IncidentHistoryPage /> },
                   { path: 'checkins', element: <TouristCheckinsPage /> },
                   { path: 'profile', element: <ProfilePage /> },
+                  { path: 'response/:dispatchId', element: <SharedDispatchTrackingPage /> },
                 ],
               },
             ],
@@ -140,6 +142,7 @@ export const router = createBrowserRouter([
                   { path: 'zones', element: <div className="admin-risk-zone-page"><AuthorityRiskZonesPage /></div> },
                   { path: 'responders', element: <AuthorityRespondersPage /> },
                   { path: 'analytics', element: <AuthorityAnalyticsPage /> },
+                  { path: 'response/:dispatchId', element: <SharedDispatchTrackingPage /> },
                 ],
               },
             ],

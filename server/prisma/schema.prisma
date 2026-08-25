@@ -23,6 +23,7 @@ model User {
   profilePicUrl       String?
   gender              Gender?
   age                 Int?
+  dateOfBirth         DateTime?
   medicalHistory            String?
   medicalDocumentUrl        String?
   medicalDocumentName       String?       @db.VarChar(255)
@@ -245,6 +246,7 @@ model TripConsent {
 model TripGroup {
   id          String            @id @default(uuid()) @db.Uuid
   tripId      String            @unique @db.Uuid
+  name        String            @db.VarChar(160)
   leaderId    String            @db.Uuid
   status      GroupStatus       @default(ACTIVE)
   createdAt   DateTime          @default(now())
@@ -729,6 +731,44 @@ enum EmergencyType {
   OTHER
 }
 
+
+
+model SignalLossCase {
+  id                 String                   @id @default(uuid()) @db.Uuid
+  tripId             String                   @db.Uuid
+  groupId            String                   @db.Uuid
+  userId             String                   @db.Uuid
+  leaderId           String                   @db.Uuid
+  status             SignalLossCaseStatus     @default(WAITING_FOR_LEADER)
+  detectedAt         DateTime                 @default(now())
+  responseDeadlineAt DateTime
+  nextReminderAt     DateTime
+  lastNotifiedAt     DateTime                 @default(now())
+  leaderResponse     SignalLossLeaderResponse?
+  leaderRespondedAt  DateTime?
+  escalatedAt        DateTime?
+  resolvedAt         DateTime?
+  incidentId         String?                  @db.Uuid
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+
+  @@index([status, responseDeadlineAt])
+  @@index([status, nextReminderAt])
+  @@index([tripId, userId, status])
+  @@map("signal_loss_cases")
+}
+
+enum SignalLossCaseStatus {
+  WAITING_FOR_LEADER
+  ESCALATED
+  FALSE_ALARM
+  RESOLVED
+}
+
+enum SignalLossLeaderResponse {
+  FALSE_ALARM
+  CONFIRMED_DANGER
+}
 
 model Notification {
   id              String             @id @default(uuid()) @db.Uuid

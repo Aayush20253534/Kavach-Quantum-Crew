@@ -8,6 +8,7 @@ export const createEmergencyServiceController = ({ service = emergencyServiceSer
   dispatches: async (req, res) => ApiResponse.success(res, { message: "Assigned dispatches", data: await service.dispatches(req.user) }),
   updateDispatchLocation: async (req, res) => ApiResponse.success(res, { message: "Live dispatch location updated", data: await service.updateDispatchLocation(req.user, req.params.dispatchId, req.body) }),
   transition: async (req, res) => ApiResponse.success(res, { message: "Dispatch status updated", data: await service.transition(req.user, req.params.dispatchId, req.body.status, req.body.note) }),
-  touristTracking: async (req, res) => ApiResponse.success(res, { message: "Live emergency response tracking", data: await service.touristTracking(req.user, req.params.dispatchId) }),
+  touristDispatches: async (req, res) => ApiResponse.success(res, { message: "Active emergency response dispatches", data: await service.listTouristDispatches(req.user) }),
+  tracking: async (req, res) => ApiResponse.success(res, { message: "Live emergency response tracking", data: await service.tracking(req.user, req.params.dispatchId) }),
 });
 export const emergencyServiceController = createEmergencyServiceController();

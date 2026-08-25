@@ -55,6 +55,8 @@ export const authorityService = {
   },
 
   // Phase 2: Dispatch & Zones
+  getActiveDispatches: async () => unwrap(await apiClient.get('/dispatch/active')),
+  getDispatchTracking: async (dispatchId) => unwrap(await apiClient.get(`/emergency-services/tracking/${dispatchId}`)),
   getUnits: async () => {
     const response = await apiClient.get('/dispatch/units');
     return unwrap(response);

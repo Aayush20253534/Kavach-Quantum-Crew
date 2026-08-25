@@ -11,6 +11,7 @@ export const createDispatchRouter = ({ controller = dispatchController } = {}) =
   const router = Router();
   router.use(authenticate, authorize(ROLES.DISASTER_MANAGER, ROLES.SYSTEM_ADMIN));
   router.get("/units", validate({ query: unitListQuerySchema }), asyncHandler(controller.listUnits));
+  router.get("/active", asyncHandler(controller.listActive));
   router.post("/units", authorize(ROLES.SYSTEM_ADMIN), validate({ body: createUnitBodySchema }), asyncHandler(controller.createUnit));
   router.patch("/units/:unitId/status", authorize(ROLES.SYSTEM_ADMIN), validate({ params: unitParamsSchema, body: unitStatusBodySchema }), asyncHandler(controller.setUnitStatus));
   router.post("/incidents/:incidentId/auto/:serviceType", validate({ params: autoDispatchParamsSchema, body: autoDispatchBodySchema }), asyncHandler(controller.autoAssign));

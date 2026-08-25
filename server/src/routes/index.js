@@ -29,6 +29,7 @@ import { createHazardRouter } from "../modules/hazard/hazard.routes.js";
 import { createMonitoringRouter } from "../modules/monitoring/monitoring.routes.js";
 import { createRiskZoneRouter } from "../modules/risk-zone/risk-zone.routes.js";
 import { createSafetyRouter } from "../modules/safety/safety.routes.js";
+import { createSignalLossRouter } from "../modules/signal-loss/signal-loss.routes.js";
 import { createTouristRouter } from "../modules/tourist/tourist.routes.js";
 import { createTrackingRouter } from "../modules/tracking/tracking.routes.js";
 import { createTripRouter } from "../modules/trip/trip.routes.js";
@@ -123,6 +124,7 @@ export const createApiRouter = (config = environment) => {
   );
 
   router.use("/safety", createSafetyRouter());
+  router.use("/signal-loss-cases", createSignalLossRouter());
   router.use("/alerts", createAlertRouter());
   router.use("/sos", createSosRouter());
   router.use("/incidents", createIncidentRouter());

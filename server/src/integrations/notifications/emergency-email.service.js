@@ -19,8 +19,8 @@ const loginLink = (config, destination, role) => {
   return `${appUrl(config)}/login?redirect=${redirect}${roleQuery}`;
 };
 
-const incidentDestination = (incidentId) => `/disaster-management/incidents/${incidentId}`;
-const dispatchDestination = (dispatchId) => `/emergency-services/dispatches/${dispatchId}`;
+const incidentDestination = (incidentId) => `/authority/incidents/${incidentId}`;
+const dispatchDestination = (dispatchId) => `/responder/dispatch?dispatch=${encodeURIComponent(dispatchId)}`;
 
 export const createEmergencyEmailService = ({
   config = environment,
@@ -103,6 +103,34 @@ export const createEmergencyEmailService = ({
           }),
         ),
       );
+    },
+
+    async dangerZoneEntered({ recipient, incident }) {
+      if (!recipient?.email) return { skipped: true, reason: "NO_RECIPIENT" };
+      const destination = `/tourist/tracking`;
+      const link = loginLink(config, destination, "TOURIST");
+      return send({
+        to: recipient.email,
+        name: recipient.name,
+        subject: `Danger zone alert: ${incident.title}`,
+        context: { kind: "DANGER_ZONE_ENTRY", incidentId: incident.id, userId: recipient.id },
+        textContent: `KAVACH detected that you entered a danger zone during an active trip.\n${incident.title}\n\nOpen live safety tracking: ${link}`,
+        htmlContent: `<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;padding:24px;color:#0f172a"><h2>Danger zone alert</h2><p><strong>${escapeHtml(incident.title)}</strong></p><p>Your live location entered a high-risk safety zone. Disaster Management has also been notified.</p><p style="margin:24px 0"><a href="${escapeHtml(link)}" style="display:inline-block;padding:12px 18px;background:#be123c;color:#fff;text-decoration:none;border-radius:6px">Open live safety tracking</a></p></div>`,
+      });
+    },
+
+    async signalLossAlert({ recipients, member, trip, signalCase, reminder = false }) {
+      const destination = `/tourist/trips/current`;
+      const link = loginLink(config, destination, "TOURIST");
+      const subject = `${reminder ? "Still offline" : "Signal lost"}: ${member.name || "group member"}`;
+      return Promise.all((recipients || []).filter((r) => r?.email).map((recipient) => send({
+        to: recipient.email,
+        name: recipient.name,
+        subject,
+        context: { kind: reminder ? "SIGNAL_LOSS_REMINDER" : "SIGNAL_LOSS", signalLossCaseId: signalCase.id },
+        textContent: `${member.name || "A group member"} has not sent a trusted location update for at least 5 minutes on ${trip.locationName}.\nLeader response is required within 5 minutes: false alarm or confirmed danger.\n\nOpen KAVACH: ${link}`,
+        htmlContent: `<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;padding:24px;color:#0f172a"><h2>${reminder ? "Group member is still offline" : "Group member signal lost"}</h2><p><strong>${escapeHtml(member.name || "A group member")}</strong> has not sent a trusted location update for at least 5 minutes during <strong>${escapeHtml(trip.locationName)}</strong>.</p><p>The group leader has a 5-minute window to mark this as a false alarm or confirm danger. If there is no response, the case is escalated to Disaster Management.</p><p style="margin:24px 0"><a href="${escapeHtml(link)}" style="display:inline-block;padding:12px 18px;background:#0f172a;color:#fff;text-decoration:none;border-radius:6px">Open signal-loss case</a></p></div>`,
+      })));
     },
 
     async dispatchAssigned({ account, dispatch, autoAssigned = false }) {

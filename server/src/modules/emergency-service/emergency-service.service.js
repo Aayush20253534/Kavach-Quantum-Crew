@@ -65,15 +65,42 @@ export const createEmergencyServiceService = ({ repository = emergencyServiceRep
       publisher.publishDispatchUpdated?.(updated, { type: status, actorId: actor.id });
       return updated;
     },
-    async touristTracking(actor, id) {
+    async listTouristDispatches(actor) {
       if (actor.role !== "TOURIST") throw ApiError.forbidden("Tourist access required", { code: "TRACKING_FORBIDDEN" });
+      return repository.listTouristDispatches(actor.id);
+    },
+    async tracking(actor, id) {
       const dispatch = await repository.findDispatch(id);
       if (!dispatch) throw ApiError.notFound("Dispatch not found", { code: "DISPATCH_NOT_FOUND" });
-      if (dispatch.incident.userId !== actor.id) throw ApiError.forbidden("This dispatch does not belong to your incident", { code: "TRACKING_FORBIDDEN" });
-      const unitLocation = dispatch.unit?.latitude != null && dispatch.unit?.longitude != null ? { latitude: dispatch.unit.latitude, longitude: dispatch.unit.longitude, updatedAt: dispatch.unit.locationUpdatedAt } : null;
-      const incidentLocation = dispatch.incident.latitude != null && dispatch.incident.longitude != null ? { latitude: dispatch.incident.latitude, longitude: dispatch.incident.longitude } : null;
+
+      if (actor.role === "TOURIST") {
+        const participant = await repository.findTripParticipant(dispatch.incident.tripId, actor.id);
+        if (!participant) throw ApiError.forbidden("This dispatch is not visible to your trip", { code: "TRACKING_FORBIDDEN" });
+      } else if (actor.role === "DISASTER_MANAGER" || actor.role === "SYSTEM_ADMIN") {
+        // Disaster Management and system administrators can observe active fleet response.
+      } else if (SERVICE_ROLES.has(actor.role)) {
+        if (dispatch.unit?.serviceAccountId !== actor.id) throw ApiError.forbidden("Dispatch is not assigned to this service account", { code: "TRACKING_FORBIDDEN" });
+      } else {
+        throw ApiError.forbidden("Dispatch tracking access denied", { code: "TRACKING_FORBIDDEN" });
+      }
+
+      const unitLocation = dispatch.unit?.latitude != null && dispatch.unit?.longitude != null
+        ? { latitude: dispatch.unit.latitude, longitude: dispatch.unit.longitude, updatedAt: dispatch.unit.locationUpdatedAt }
+        : null;
+      const incidentLocation = dispatch.incident.latitude != null && dispatch.incident.longitude != null
+        ? { latitude: dispatch.incident.latitude, longitude: dispatch.incident.longitude }
+        : null;
       const distanceM = unitLocation && incidentLocation ? Math.round(haversineDistanceM(unitLocation, incidentLocation)) : null;
-      return { dispatchId: dispatch.id, serviceType: dispatch.requestedUnitType, status: dispatch.status, unit: dispatch.unit ? { id: dispatch.unit.id, name: dispatch.unit.name, organization: dispatch.unit.organization, location: unitLocation } : null, destination: incidentLocation, distanceRemainingM: distanceM, timeline: dispatch.events };
+      return {
+        dispatchId: dispatch.id,
+        incidentId: dispatch.incidentId,
+        serviceType: dispatch.requestedUnitType,
+        status: dispatch.status,
+        unit: dispatch.unit ? { id: dispatch.unit.id, name: dispatch.unit.name, organization: dispatch.unit.organization, location: unitLocation } : null,
+        destination: incidentLocation,
+        distanceRemainingM: distanceM,
+        timeline: dispatch.events,
+      };
     },
   });
 };

@@ -58,18 +58,22 @@ export const blockchainQueue = Object.freeze({
       if (job.operation === "ISSUE") result = await blockchainService.issue({ idHash: job.payloadHash, ...job.extraArgs });
       else if (job.operation === "EXTEND") result = await blockchainService.extend({ idHash: job.payloadHash, ...job.extraArgs });
       else if (job.operation === "REVOKE") result = await blockchainService.revoke({ idHash: job.payloadHash, ...job.extraArgs });
+      else if (job.operation === "SNAPSHOT") result = await blockchainService.appendSnapshot({ idHash: job.payloadHash, ...job.extraArgs });
       else throw new Error(`Unsupported blockchain operation: ${job.operation}`);
 
-      await prisma.$transaction([
+      const successOps = [
         prisma.blockchainAnchorJob.update({
           where: { id: job.id },
           data: { state: "CONFIRMED", txHash: result.txHash ?? null, lastError: null },
         }),
-        credentialModel(prisma, job.entityType).update({
+      ];
+      if (job.operation !== "SNAPSHOT") {
+        successOps.push(credentialModel(prisma, job.entityType).update({
           where: { id: job.entityId },
           data: { chainStatus: "CONFIRMED", chainTxHash: result.txHash ?? null, chainError: null },
-        }),
-      ]);
+        }));
+      }
+      await prisma.$transaction(successOps);
     } catch (error) {
       const attempts = job.attempts + 1;
       const failed = attempts >= environment.BLOCKCHAIN_MAX_ATTEMPTS;
@@ -84,16 +88,19 @@ export const blockchainQueue = Object.freeze({
         maxAttempts: environment.BLOCKCHAIN_MAX_ATTEMPTS,
         lastAttemptAt: new Date().toISOString(),
       });
-      await prisma.$transaction([
+      const failureOps = [
         prisma.blockchainAnchorJob.update({
           where: { id: job.id },
           data: { state: failed ? "FAILED" : "PENDING", lastError: failureText, availableAt: retryAt },
         }),
-        credentialModel(prisma, job.entityType).update({
+      ];
+      if (job.operation !== "SNAPSHOT") {
+        failureOps.push(credentialModel(prisma, job.entityType).update({
           where: { id: job.entityId },
           data: { chainStatus: failed ? "FAILED" : "PENDING", chainError: failureText },
-        }),
-      ]);
+        }));
+      }
+      await prisma.$transaction(failureOps);
     }
     return true;
   },

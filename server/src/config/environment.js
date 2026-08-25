@@ -172,6 +172,7 @@ const environmentSchema = z
     BLOCKCHAIN_ENABLED: booleanFromEnvironment.default(false),
     BLOCKCHAIN_GATEWAY_URL: z.string().trim().url().default("http://127.0.0.1:4100"),
     BLOCKCHAIN_GATEWAY_KEY: z.string().min(16).default("dev-chain-gateway-key-change-me"),
+    BLOCKCHAIN_DATA_ENCRYPTION_KEY: z.string().min(32).default("dev-blockchain-data-encryption-key-change-me"),
     BLOCKCHAIN_CONTRACT_VERSION: integerFromEnvironment(1, 255).default(1),
     BLOCKCHAIN_WORKER_INTERVAL_MS: integerFromEnvironment(1000, 60000).default(5000),
     BLOCKCHAIN_MAX_ATTEMPTS: integerFromEnvironment(1, 20).default(5),

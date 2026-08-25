@@ -6,6 +6,7 @@ import { ApiError } from "../../common/errors/ApiError.js";
 import { environment } from "../../config/environment.js";
 import { blockchainService, hashCredential } from "../../integrations/blockchain/blockchain.service.js";
 import { blockchainQueue } from "../../integrations/blockchain/blockchain.queue.js";
+import { encryptSnapshot, hashSnapshot } from "../../integrations/blockchain/blockchain.snapshot.js";
 import { credentialRepository } from "./credential.repository.js";
 
 const publicId = (prefix) => `KAV-${prefix}-${crypto.randomBytes(6).toString("hex").toUpperCase()}`;
@@ -51,6 +52,10 @@ const decorate = async (credential, type) => {
   const isActive = active(credential);
   const token = isActive ? signToken(credential, type) : null;
   const verificationUrl = token ? `${environment.PUBLIC_APP_URL.replace(/\/$/, "")}/verify/${token}` : null;
+  const groupJoinToken = type === "GROUP" && isActive ? signGroupJoinToken(credential) : null;
+  const groupJoinUrl = groupJoinToken
+    ? `${environment.PUBLIC_APP_URL.replace(/\/$/, "")}/tourist/groups/join?token=${encodeURIComponent(groupJoinToken)}`
+    : null;
   return {
     id: credential.id,
     type,
@@ -63,7 +68,8 @@ const decorate = async (credential, type) => {
     blockchainTxHash: credential.chainTxHash,
     blockchainError: parseChainError(credential.chainError),
     verificationUrl,
-    groupJoinQrPayload: type === "GROUP" && isActive ? `KAVACH_GROUP_JOIN:${signGroupJoinToken(credential)}` : null,
+    groupJoinUrl,
+    groupJoinQrPayload: groupJoinUrl,
     qrDataUrl: verificationUrl ? await QRCode.toDataURL(verificationUrl, { width: 320, margin: 1 }) : null,
   };
 };
@@ -75,6 +81,18 @@ const enqueueIssue = async (credential, type, tripId) => blockchainQueue.enqueue
   payloadHash: credential.chainHash,
   extraArgs: { tripId, issuedAt: credential.issuedAt, expiresAt: credential.expiresAt },
 });
+
+
+const enqueueSnapshot = async ({ credential, payload, snapshotType, sequence }) => {
+  if (!environment.BLOCKCHAIN_ENABLED) return;
+  await blockchainQueue.enqueue({
+    operation: "SNAPSHOT",
+    entityType: snapshotType === 1 ? "INDIVIDUAL" : "GROUP",
+    entityId: credential.id,
+    payloadHash: credential.chainHash,
+    extraArgs: { payloadHash: hashSnapshot(payload), ciphertext: encryptSnapshot(payload), sequence, snapshotType },
+  });
+};
 
 const retryFailedAnchor = async (credential, type, reload) => {
   if (!credential || credential.chainStatus !== "FAILED" || !environment.BLOCKCHAIN_ENABLED) return credential;
@@ -97,6 +115,13 @@ export const credentialService = Object.freeze({
       ? await credentialRepository.updateIndividual(existing.id, { publicId: pub, tokenId: jti, chainHash, issuedAt: now, expiresAt: trip.plannedEndAt, revokedAt: null, chainStatus: environment.BLOCKCHAIN_ENABLED ? "PENDING" : "DISABLED", chainTxHash: null, chainError: null })
       : await credentialRepository.createIndividual({ tripId, userId, publicId: pub, tokenId: jti, chainHash, issuedAt: now, expiresAt: trip.plannedEndAt, chainStatus: environment.BLOCKCHAIN_ENABLED ? "PENDING" : "DISABLED" });
     await enqueueIssue(credential, "INDIVIDUAL", tripId);
+    const user = await credentialRepository.findUser(userId);
+    if (!user?.dateOfBirth) throw ApiError.badRequest("Date of birth is required before creating a blockchain trip credential", { code: "DATE_OF_BIRTH_REQUIRED" });
+    await enqueueSnapshot({ credential, snapshotType: 1, sequence: 1, payload: {
+      schema: "kavach.individual.v1", idHash: credential.chainHash, tripId, userId,
+      name: user.name, dateOfBirth: user.dateOfBirth.toISOString(), destination: trip.locationName,
+      phone: user.phone, email: user.email,
+    } });
     return decorate(credential, "INDIVIDUAL");
   },
 
@@ -117,7 +142,29 @@ export const credentialService = Object.freeze({
     const chainHash = hashCredential({ type: "GROUP", publicId: pub, tripId, tokenId: jti });
     const credential = await credentialRepository.createGroup({ groupId, tripId, publicId: pub, tokenId: jti, chainHash, issuedAt: now, expiresAt, chainStatus: environment.BLOCKCHAIN_ENABLED ? "PENDING" : "DISABLED" });
     await enqueueIssue(credential, "GROUP", tripId);
+    const full = await credentialRepository.findGroupCredential(groupId);
+    const leader = full.group.leader;
+    await enqueueSnapshot({ credential, snapshotType: 2, sequence: 1, payload: {
+      schema: "kavach.group.v1", idHash: credential.chainHash, groupId, tripId,
+      groupName: full.group.name, memberCount: full.group.members.length, destination: full.group.trip.locationName,
+      leader: { name: leader.name, email: leader.email, phone: leader.phone }, addedMember: null,
+    } });
     return decorate(credential, "GROUP");
+  },
+
+  async appendGroupMembershipSnapshot(groupId, addedUserId) {
+    if (!environment.BLOCKCHAIN_ENABLED) return;
+    const credential = await credentialRepository.findGroupCredential(groupId);
+    if (!credential) return;
+    const added = credential.group.members.find((member) => member.userId === addedUserId)?.user;
+    const leader = credential.group.leader;
+    const sequence = (await credentialRepository.countSnapshotJobs(credential.id)) + 1;
+    await enqueueSnapshot({ credential, snapshotType: 2, sequence, payload: {
+      schema: "kavach.group.v1", idHash: credential.chainHash, groupId, tripId: credential.tripId,
+      groupName: credential.group.name, memberCount: credential.group.members.length, destination: credential.group.trip.locationName,
+      leader: { name: leader.name, email: leader.email, phone: leader.phone },
+      addedMember: added ? { userId: added.id, name: added.name, dateOfBirth: added.dateOfBirth?.toISOString() ?? null, email: added.email, phone: added.phone } : { userId: addedUserId },
+    } });
   },
 
   async getMyIndividual(tripId, userId) {

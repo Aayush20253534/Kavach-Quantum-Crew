@@ -3,6 +3,7 @@ import { dispatchService } from "./dispatch.service.js";
 export const createDispatchController = ({ service = dispatchService } = {}) => ({
   createUnit: async (req,res)=>ApiResponse.success(res,{statusCode:201,message:"Emergency unit created",data:await service.createUnit(req.user,req.body)}),
   listUnits: async (req,res)=>ApiResponse.success(res,{message:"Emergency units",data:await service.listUnits(req.user,req.query)}),
+  listActive: async (req,res)=>ApiResponse.success(res,{message:"Active dispatches",data:await service.listActive(req.user)}),
   setUnitStatus: async (req,res)=>ApiResponse.success(res,{message:"Emergency unit status updated",data:await service.setUnitStatus(req.user,req.params.unitId,req.body.status)}),
   create: async (req,res)=>ApiResponse.success(res,{statusCode:201,message:"Dispatch created",data:await service.create(req.user,req.params.incidentId,req.body)}),
   autoAssign: async (req,res)=>ApiResponse.success(res,{statusCode:201,message:`Nearest ${req.params.serviceType} unit auto-assigned`,data:await service.autoAssign(req.user,req.params.incidentId,req.params.serviceType,req.body)}),

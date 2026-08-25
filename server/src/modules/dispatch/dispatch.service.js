@@ -19,6 +19,7 @@ export const createDispatchService = ({ repository = dispatchRepository, publish
 
   return Object.freeze({
     async createUnit(actor, input) { adminOnly(actor); const unit = await repository.createUnit({ ...input, status: "AVAILABLE" }); await repository.createAudit({ actorId: actor.id, actorRole: actor.role, action: "EMERGENCY_UNIT_CREATED", entityId: unit.id, metadata: { type: unit.type } }); publisher.publishEmergencyUnitUpdated?.(unit, { type: "CREATED" }); return unit; },
+    async listActive(actor) { staffOnly(actor); return repository.listActiveDispatches(); },
     async listUnits(actor, query) {
       staffOnly(actor);
       const jurisdiction =

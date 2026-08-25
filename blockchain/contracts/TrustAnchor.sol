@@ -3,9 +3,9 @@ pragma solidity ^0.8.19;
 
 /// @title TrustAnchor
 /// @notice Blockchain trust layer for the Smart Tourist Safety Monitoring &
-///         Incident Response System (SIH25002). Stores ONLY hashes,
-///         timestamps, signer addresses, and version tags — never raw PII,
-///         GPS coordinates, file bytes, or free-text reasons.
+///         Incident Response System (SIH25002). Stores hashes plus append-only
+///         AES-GCM encrypted identity/group snapshots. Raw plaintext PII, GPS
+///         coordinates, evidence bytes and free-text reasons are never stored.
 /// @dev    All state-changing functions are restricted to authorized
 ///         issuer accounts controlled by the backend. Tourists never
 ///         interact with this contract directly and never hold a wallet.
@@ -29,12 +29,23 @@ contract TrustAnchor {
         uint8 version;
     }
 
+    struct DataSnapshot {
+        bytes32 payloadHash;
+        bytes encryptedPayload;
+        uint64 anchoredAt;
+        uint32 sequence;
+        uint8 snapshotType;
+    }
+
     // ---------------------------------------------------------------
     // State
     // ---------------------------------------------------------------
 
     /// @notice idHash => digital ID record
     mapping(bytes32 => DigitalId) public ids;
+
+    /// @notice Credential/group ID hash => append-only encrypted snapshots.
+    mapping(bytes32 => DataSnapshot[]) private dataSnapshots;
 
     /// @notice evidenceHash => whether it has been anchored
     mapping(bytes32 => bool) public evidenceAnchors;
@@ -82,6 +93,15 @@ contract TrustAnchor {
         bytes32 indexed idHash,
         uint64 previousExpiresAt,
         uint64 expiresAt,
+        address indexed actor
+    );
+
+    event DataSnapshotAnchored(
+        bytes32 indexed idHash,
+        bytes32 indexed payloadHash,
+        uint32 sequence,
+        uint8 snapshotType,
+        uint64 anchoredAt,
         address indexed actor
     );
 
@@ -243,6 +263,57 @@ contract TrustAnchor {
             record.expiresAt,
             record.version
         );
+    }
+
+    // ---------------------------------------------------------------
+    // Append-only encrypted identity/group snapshots
+    // ---------------------------------------------------------------
+
+    function appendDataSnapshot(
+        bytes32 idHash,
+        bytes32 payloadHash,
+        bytes calldata encryptedPayload,
+        uint32 sequence,
+        uint8 snapshotType
+    ) external onlyAuthorizedIssuer {
+        require(ids[idHash].issuer != address(0), "ID_NOT_FOUND");
+        require(encryptedPayload.length > 0, "EMPTY_SNAPSHOT");
+        require(sequence == dataSnapshots[idHash].length + 1, "INVALID_SNAPSHOT_SEQUENCE");
+
+        dataSnapshots[idHash].push(DataSnapshot({
+            payloadHash: payloadHash,
+            encryptedPayload: encryptedPayload,
+            anchoredAt: uint64(block.timestamp),
+            sequence: sequence,
+            snapshotType: snapshotType
+        }));
+
+        emit DataSnapshotAnchored(idHash, payloadHash, sequence, snapshotType, uint64(block.timestamp), msg.sender);
+    }
+
+    function getDataSnapshotCount(bytes32 idHash) external view returns (uint256) {
+        return dataSnapshots[idHash].length;
+    }
+
+    function getLatestDataSnapshot(bytes32 idHash)
+        external
+        view
+        returns (bytes32 payloadHash, bytes memory encryptedPayload, uint64 anchoredAt, uint32 sequence, uint8 snapshotType)
+    {
+        uint256 count = dataSnapshots[idHash].length;
+        require(count > 0, "SNAPSHOT_NOT_FOUND");
+        DataSnapshot storage snapshot = dataSnapshots[idHash][count - 1];
+        return (snapshot.payloadHash, snapshot.encryptedPayload, snapshot.anchoredAt, snapshot.sequence, snapshot.snapshotType);
+    }
+
+    function getDataSnapshot(bytes32 idHash, uint256 index)
+        external
+        view
+        returns (bytes32 payloadHash, bytes memory encryptedPayload, uint64 anchoredAt, uint32 sequence, uint8 snapshotType)
+    {
+        require(index < dataSnapshots[idHash].length, "SNAPSHOT_NOT_FOUND");
+        DataSnapshot storage snapshot = dataSnapshots[idHash][index];
+        return (snapshot.payloadHash, snapshot.encryptedPayload, snapshot.anchoredAt, snapshot.sequence, snapshot.snapshotType);
     }
 
     // ---------------------------------------------------------------
