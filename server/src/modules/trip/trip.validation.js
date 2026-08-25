@@ -41,3 +41,23 @@ export const tripHistoryQuerySchema = z.object({
 export const extendTripBodySchema = z.object({
   plannedEndAt: dateTime,
 });
+
+export const startTripBodySchema = z
+  .object({
+    latitude: z.number().min(-90).max(90).optional(),
+    longitude: z.number().min(-180).max(180).optional(),
+    accuracyM: z.number().nonnegative().max(5000).optional(),
+    capturedAt: dateTime.optional(),
+  })
+  .superRefine((value, context) => {
+    const hasLatitude = value.latitude !== undefined;
+    const hasLongitude = value.longitude !== undefined;
+    if (hasLatitude !== hasLongitude) {
+      context.addIssue({
+        code: "custom",
+        path: hasLatitude ? ["longitude"] : ["latitude"],
+        message: "latitude and longitude must be provided together",
+      });
+    }
+  })
+  .default({});

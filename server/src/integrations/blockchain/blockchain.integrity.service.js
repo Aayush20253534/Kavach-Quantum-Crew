@@ -1,6 +1,8 @@
 import { prisma } from "../../config/database.js";
 import { environment } from "../../config/environment.js";
+import { logger } from "../../config/logger.js";
 import { realtimePublisher } from "../../realtime/realtimePublisher.js";
+import { blockchainQueue } from "./blockchain.queue.js";
 import { blockchainService } from "./blockchain.service.js";
 import { decryptSnapshot, hashSnapshot } from "./blockchain.snapshot.js";
 
@@ -19,6 +21,27 @@ const integrityPayload = (credential, status, extra = {}) => ({
 export const blockchainIntegrityService = Object.freeze({
   async reconcileCredential(credential) {
     if (!environment.BLOCKCHAIN_ENABLED || credential.chainStatus !== "CONFIRMED") return false;
+
+    const snapshotJob = await blockchainQueue.latestSnapshotJob("INDIVIDUAL", credential.id);
+    if (!snapshotJob) {
+      logger.warn(
+        { credentialId: credential.id, tripId: credential.tripId },
+        "Blockchain integrity skipped because no individual snapshot job exists",
+      );
+      return false;
+    }
+
+    if (snapshotJob.state === "FAILED") {
+      const retried = await blockchainQueue.retryFailedSnapshots("INDIVIDUAL", credential.id);
+      logger.warn(
+        { credentialId: credential.id, tripId: credential.tripId, retried },
+        "Retrying failed blockchain identity snapshot before integrity reconciliation",
+      );
+      return false;
+    }
+
+    if (snapshotJob.state !== "CONFIRMED") return false;
+
     const latest = await blockchainService.latestSnapshot(credential.chainHash);
     if (Number(latest.snapshotType) !== 1) return false;
     const payload = decryptSnapshot(latest.ciphertext);
@@ -101,7 +124,14 @@ export const blockchainIntegrityService = Object.freeze({
     });
     let restored = 0;
     for (const credential of credentials) {
-      try { if (await this.reconcileCredential(credential)) restored += 1; } catch { /* retry next cycle */ }
+      try {
+        if (await this.reconcileCredential(credential)) restored += 1;
+      } catch (error) {
+        logger.error(
+          { err: error, credentialId: credential.id, tripId: credential.tripId },
+          "Blockchain integrity reconciliation failed; will retry on the next cycle",
+        );
+      }
     }
     return restored;
   },

@@ -40,6 +40,30 @@ export const blockchainQueue = Object.freeze({
     return true;
   },
 
+
+  async retryFailedSnapshots(entityType, entityId) {
+    if (!environment.BLOCKCHAIN_ENABLED) return 0;
+
+    const failed = await prisma.blockchainAnchorJob.findMany({
+      where: { entityType, entityId, operation: "SNAPSHOT", state: "FAILED" },
+      select: { id: true },
+    });
+    if (!failed.length) return 0;
+
+    const result = await prisma.blockchainAnchorJob.updateMany({
+      where: { id: { in: failed.map((job) => job.id) }, state: "FAILED" },
+      data: { state: "PENDING", attempts: 0, lastError: null, availableAt: new Date() },
+    });
+    return result.count;
+  },
+
+  latestSnapshotJob(entityType, entityId) {
+    return prisma.blockchainAnchorJob.findFirst({
+      where: { entityType, entityId, operation: "SNAPSHOT" },
+      orderBy: { createdAt: "desc" },
+    });
+  },
+
   async processNext() {
     const job = await prisma.blockchainAnchorJob.findFirst({
       where: { state: "PENDING", availableAt: { lte: new Date() } },

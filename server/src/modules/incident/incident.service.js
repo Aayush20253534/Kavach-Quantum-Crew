@@ -30,8 +30,15 @@ export const createIncidentService = ({ repository = incidentRepository, notifie
       if (!alert?.id) return null;
       const existing = await repository.findBySafetyAlert(alert.id);
       if (existing) { await notifier.incidentCreated(existing); return existing; }
-      const location = await repository.findLatestLocation(alert.tripId, alert.userId);
-      const incident = await repository.createFromSafetyAlert(alert, location); await notifier.incidentCreated(incident); publisher.publishIncidentCreated(incident); return incident;
+      const latestLocation = await repository.findLatestLocation(alert.tripId, alert.userId);
+      const alertLocation =
+        Number.isFinite(Number(alert.details?.latitude)) && Number.isFinite(Number(alert.details?.longitude))
+          ? { latitude: Number(alert.details.latitude), longitude: Number(alert.details.longitude) }
+          : null;
+      const incident = await repository.createFromSafetyAlert(alert, latestLocation ?? alertLocation);
+      await notifier.incidentCreated(incident);
+      publisher.publishIncidentCreated(incident);
+      return incident;
     },
     async triggerSos(userId, input) {
       const trip = await repository.findTripContext(input.tripId, userId);

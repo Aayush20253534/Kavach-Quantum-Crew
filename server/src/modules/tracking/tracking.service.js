@@ -1,5 +1,6 @@
 import { ApiError } from "../../common/errors/ApiError.js";
 import { haversineDistanceM } from "../../common/utils/geo.js";
+import { logger } from "../../config/logger.js";
 import { locationPublisher } from "../../realtime/locationPublisher.js";
 import { monitoringService } from "../monitoring/monitoring.service.js";
 import { safetyService } from "../safety/safety.service.js";
@@ -408,7 +409,11 @@ export const createTrackingService = ({
               longitude: ping.longitude,
               capturedAt: ping.capturedAt,
             });
-        } catch {
+        } catch (error) {
+          logger.error(
+            { err: error, tripId: trip.id, userId, pingId: ping.id },
+            "Safety evaluation after tracking ping failed",
+          );
           safety = {
             status: "DEGRADED",
           };
