@@ -42,3 +42,17 @@ A concrete external provider should perform one vendor call, return normalized e
 ## Emergency dispatch notifications
 
 Realtime service assignment/tracking uses Socket.IO `dispatch:updated` events. Existing durable notification delivery remains available for future assignment alerts by SMS/email/push; this backend change does not duplicate the notification-delivery subsystem.
+
+## Emergency operational email notifications
+
+Critical operational events use the existing Brevo transactional-email configuration in addition to database and Socket.IO notifications.
+
+### New incident / SOS -> Disaster Management
+
+When `notificationService.incidentCreated()` runs, all active Disaster Managers receive an email containing the incident severity, available coordinates, and a login-aware incident deep link. This covers SOS and other incident creation paths that enter the central incident queue.
+
+### Dispatch assignment -> Police / Ambulance / Fire
+
+When a dispatch reaches `ASSIGNED`, the registered email of the selected emergency-service fleet receives an email. The same behavior is used for automatic nearest assignment and manual Disaster Management assignment.
+
+Email delivery is best-effort. A Brevo outage must never undo a persisted SOS or dispatch; failures are logged for operations while realtime/in-app notification remains available.

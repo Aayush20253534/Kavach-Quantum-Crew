@@ -87,3 +87,44 @@ The Docker runtime now executes `npm run prisma:migrate:deploy` before starting 
 ## Production hardening note
 
 The current registration endpoint creates an active service account for the project workflow. A production deployment should add organization verification/approval before permitting operational dispatch access. Do not expose unrestricted emergency-service registration on a public production API without that control.
+
+## Single-account fleet model
+
+For the current product scope, one emergency-service account represents the entire responding fleet/organization. Do not create separate accounts for vehicles and do not require a Fleet or Profile screen in the responder UI.
+
+Recommended responder navigation is intentionally small:
+
+- **Active Dispatch** - current assigned emergency and status actions.
+- **Live Tracking** - map/location sharing while responding.
+- **Dispatch History** - completed/cancelled dispatches.
+
+The internally associated `EmergencyUnit` record is an implementation detail used by the dispatch engine for availability and location. In the current UI model it should be treated as the location/status of the whole registered Police, Ambulance/Hospital, or Fire fleet account.
+
+## Dispatch email delivery
+
+Whenever a Police, Ambulance, or Fire fleet is assigned, the backend also sends a Brevo transactional email to the registered emergency-service account email address. This applies to both:
+
+- nearest-fleet automatic assignment (`/dispatch/incidents/:incidentId/auto/:serviceType`), and
+- Disaster Management/manual assignment.
+
+The email contains incident summary information and a deep link generated from `PUBLIC_APP_URL`:
+
+```text
+/login?redirect=/emergency-services/dispatches/<dispatchId>&role=<POLICE|AMBULANCE|FIRE>
+```
+
+Frontend contract: if the fleet is already authenticated, the login route should immediately honor `redirect`. Otherwise it should complete login and then navigate to the requested active dispatch.
+
+Emergency email failure is logged but does not roll back or block an emergency dispatch. Dispatch persistence and realtime delivery remain authoritative even if the external email provider is temporarily unavailable.
+
+## Disaster Management incident email
+
+Every newly created incident entering the Disaster Management queue, including tourist SOS incidents and safety-alert/manual incident ingestion, also generates an email to every active Disaster Manager with an email address.
+
+The link format is:
+
+```text
+/login?redirect=/disaster-management/incidents/<incidentId>&role=DISASTER_MANAGER
+```
+
+After authentication the frontend should open the exact incident rather than the generic queue.

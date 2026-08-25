@@ -204,3 +204,28 @@ QR scan
 ## Emergency fleet flow
 
 Incident/SOS -> Disaster Management -> choose Police/Fire/Ambulance -> manual assignment or nearest-unit auto assignment -> service account receives assignment -> service sends location/status updates -> tourist receives delivery-style tracking snapshots/events -> unit becomes available again after completion. Both SOS and manually originated incidents use the same dispatch engine.
+
+## Emergency email path
+
+```text
+Tourist SOS / incident
+        |
+        v
+Incident persisted + realtime notification
+        |
+        +--> Email all active Disaster Managers
+             /login?redirect=/disaster-management/incidents/:id
+
+Disaster Management dispatches
+        |
+        +--> nearest automatic fleet OR manual fleet selection
+        |
+        v
+Dispatch persisted as ASSIGNED
+        |
+        +--> Socket.IO dispatch update
+        +--> Email selected Police/Ambulance/Fire fleet
+             /login?redirect=/emergency-services/dispatches/:id
+```
+
+Email is a notification transport, not the source of truth. Incident/dispatch database state is created first and remains valid if Brevo delivery fails.

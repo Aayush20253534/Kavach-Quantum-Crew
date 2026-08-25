@@ -3,18 +3,19 @@ import { haversineDistanceM } from "../../common/utils/geo.js";
 import { ROLES } from "../../constants/roles.js";
 import { realtimePublisher } from "../../realtime/realtimePublisher.js";
 import { dispatchRepository } from "./dispatch.repository.js";
+import { emergencyEmailService } from "../../integrations/notifications/emergency-email.service.js";
 
 const STAFF = new Set([ROLES.DISASTER_MANAGER, ROLES.SYSTEM_ADMIN]);
 const TERMINAL = new Set(["COMPLETED", "CANCELLED"]);
 const NEXT = Object.freeze({ ASSIGNED: "DISPATCHED", DISPATCHED: "EN_ROUTE", EN_ROUTE: "ON_SCENE", ON_SCENE: "COMPLETED" });
 
-export const createDispatchService = ({ repository = dispatchRepository, publisher = realtimePublisher, clock = () => new Date() } = {}) => {
+export const createDispatchService = ({ repository = dispatchRepository, publisher = realtimePublisher, emailer = emergencyEmailService, clock = () => new Date() } = {}) => {
   const staffOnly = (actor) => { if (!STAFF.has(actor.role)) throw ApiError.forbidden("Emergency staff access required", { code: "DISPATCH_FORBIDDEN" }); };
   const adminOnly = (actor) => { if (actor.role !== ROLES.SYSTEM_ADMIN) throw ApiError.forbidden("System admin access required", { code: "UNIT_MANAGE_FORBIDDEN" }); };
   const getDispatch = async (id) => { const row = await repository.findDispatch(id); if (!row) throw ApiError.notFound("Dispatch not found", { code: "DISPATCH_NOT_FOUND" }); return row; };
   const getUnit = async (id) => { const row = await repository.findUnit(id); if (!row) throw ApiError.notFound("Emergency unit not found", { code: "EMERGENCY_UNIT_NOT_FOUND" }); return row; };
   const ensureAssignableUnit = async (unitId, expectedType) => { const unit = await getUnit(unitId); if (unit.status !== "AVAILABLE") throw ApiError.conflict("Emergency unit is unavailable", { code: "EMERGENCY_UNIT_UNAVAILABLE" }); if (expectedType && unit.type !== expectedType) throw ApiError.conflict("Emergency unit type does not match dispatch request", { code: "EMERGENCY_UNIT_TYPE_MISMATCH" }); return unit; };
-  const record = async (dispatch, actor, type, note, metadata = {}) => { await repository.createEvent({ dispatchId: dispatch.id, type, actorId: actor.id, actorRole: actor.role, note: note ?? null, metadata }); await repository.createAudit({ actorId: actor.id, actorRole: actor.role, action: `DISPATCH_${type}`, entityId: dispatch.id, metadata }); publisher.publishDispatchUpdated?.(dispatch, { type, actorId: actor.id }); return dispatch; };
+  const record = async (dispatch, actor, type, note, metadata = {}) => { await repository.createEvent({ dispatchId: dispatch.id, type, actorId: actor.id, actorRole: actor.role, note: note ?? null, metadata }); await repository.createAudit({ actorId: actor.id, actorRole: actor.role, action: `DISPATCH_${type}`, entityId: dispatch.id, metadata }); publisher.publishDispatchUpdated?.(dispatch, { type, actorId: actor.id }); if (type === "ASSIGNED" && dispatch.unit?.serviceAccount) await emailer.dispatchAssigned({ account: dispatch.unit.serviceAccount, dispatch, autoAssigned: metadata.autoAssigned === true }); return dispatch; };
 
   return Object.freeze({
     async createUnit(actor, input) { adminOnly(actor); const unit = await repository.createUnit({ ...input, status: "AVAILABLE" }); await repository.createAudit({ actorId: actor.id, actorRole: actor.role, action: "EMERGENCY_UNIT_CREATED", entityId: unit.id, metadata: { type: unit.type } }); publisher.publishEmergencyUnitUpdated?.(unit, { type: "CREATED" }); return unit; },

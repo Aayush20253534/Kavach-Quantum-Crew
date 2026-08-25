@@ -335,3 +335,16 @@ Verification checks the signed token, database revocation/expiry, trip state, an
 ## Police / Fire / Ambulance endpoints
 
 Emergency-service registration: `POST /emergency-services/register`. Service portal: `GET /emergency-services/me`, `PATCH /emergency-services/me/location`, `GET /emergency-services/me/dispatches`, `PATCH /emergency-services/dispatches/:dispatchId/location`, and `PATCH /emergency-services/dispatches/:dispatchId/status`. Tourist snapshot tracking: `GET /emergency-services/tracking/:dispatchId`. Disaster Management nearest-unit assignment: `POST /dispatch/incidents/:incidentId/auto/police`, `/auto/fire`, or `/auto/ambulance`. Full request/flow details are in `EMERGENCY-SERVICE-DISPATCH.md`.
+
+## Emergency email side effects
+
+No extra public email endpoint is required. Email delivery is a backend side effect of existing emergency operations:
+
+- `POST /sos` -> creates SOS/incident and emails active Disaster Managers.
+- incident ingestion -> emails active Disaster Managers.
+- `POST /dispatch/incidents/:incidentId/auto/police` -> emails the selected Police fleet.
+- `POST /dispatch/incidents/:incidentId/auto/ambulance` -> emails the selected Ambulance/Hospital fleet.
+- `POST /dispatch/incidents/:incidentId/auto/fire` -> emails the selected Fire fleet.
+- manual dispatch assignment -> emails the manually selected fleet.
+
+The responder UI should treat each registered service account as a single fleet and primarily expose Active Dispatch, Live Tracking, and Dispatch History.
