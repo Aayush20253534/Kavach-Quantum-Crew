@@ -1,4 +1,7 @@
 # AI/ML Implementation Blueprint
+
+> **Implementation status (24 Aug 2026):** This is a planning/design document. The repository currently contains no standalone `ai-ml` runtime or FastAPI service. The Express backend has provider contracts for staff AI analysis and a tourist chatbot endpoint, but concrete AI providers are not configured in this snapshot.
+
 ### Smart Tourist Safety Monitoring & Incident Response System — SIH25002
 
 > **Scope:** AI/ML service only (rules engine + Isolation Forest + safety score + alert classification + search/dispatch assistance). Blockchain, frontend, and the core Node/Express backend are referenced **only where the AI service must integrate with them**.
@@ -720,3 +723,10 @@ Recommended Action
 
     AI recommends. Humans decide.
 ```
+## Blockchain/QR integration boundary
+
+AI/ML services must not consume QR JWTs, gateway API keys, issuer private keys, or raw blockchain credentials. If a future risk model needs identity context, the backend should pass only the minimum internal trip/user identifiers required for inference. Blockchain verification remains an API/backend responsibility.
+
+## Current runtime escalation boundary
+
+The production safety flow preserves the principle that AI does not auto-dispatch responders. A danger-zone event notifies the tourist and Disaster Management. Group-member signal loss is handled by the deterministic backend `SignalLossCase` workflow (default 5-minute gap, 5-minute leader decision, hourly reminder). Police/Fire/Ambulance assignment begins only after Disaster Management initiates dispatch; AI may recommend severity/resources but does not bypass that human-controlled boundary.

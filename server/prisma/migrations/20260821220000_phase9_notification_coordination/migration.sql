@@ -1,0 +1,14 @@
+ALTER TYPE "IncidentEventType" ADD VALUE 'ESCALATED';
+CREATE TYPE "NotificationType" AS ENUM ('INCIDENT_CREATED','INCIDENT_ACKNOWLEDGED','INCIDENT_ASSIGNED','RESPONSE_STARTED','INCIDENT_RESOLVED','INCIDENT_DISMISSED','INCIDENT_ESCALATED','GROUP_MEMBER_EMERGENCY');
+ALTER TABLE "incidents" ADD COLUMN "assignedToId" UUID, ADD COLUMN "assignedToRole" "Role", ADD COLUMN "assignedAt" TIMESTAMP(3), ADD COLUMN "escalationLevel" INTEGER NOT NULL DEFAULT 0, ADD COLUMN "lastEscalatedAt" TIMESTAMP(3);
+CREATE TABLE "notifications" ("id" UUID NOT NULL,"targetAccountId" UUID NOT NULL,"targetRole" "Role" NOT NULL,"incidentId" UUID,"type" "NotificationType" NOT NULL,"dedupeKey" VARCHAR(220) NOT NULL,"title" VARCHAR(160) NOT NULL,"message" VARCHAR(500) NOT NULL,"readAt" TIMESTAMP(3),"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "notifications_pkey" PRIMARY KEY ("id"));
+CREATE UNIQUE INDEX "notifications_dedupeKey_key" ON "notifications"("dedupeKey");
+CREATE INDEX "notifications_targetAccountId_targetRole_readAt_createdAt_idx" ON "notifications"("targetAccountId","targetRole","readAt","createdAt");
+CREATE INDEX "notifications_incidentId_createdAt_idx" ON "notifications"("incidentId","createdAt");
+CREATE TABLE "incident_assignments" ("id" UUID NOT NULL,"incidentId" UUID NOT NULL,"responderId" UUID NOT NULL,"responderRole" "Role" NOT NULL,"assignedById" UUID NOT NULL,"assignedByRole" "Role" NOT NULL,"assignedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"unassignedAt" TIMESTAMP(3),CONSTRAINT "incident_assignments_pkey" PRIMARY KEY ("id"));
+CREATE INDEX "incident_assignments_incidentId_unassignedAt_assignedAt_idx" ON "incident_assignments"("incidentId","unassignedAt","assignedAt");
+CREATE INDEX "incident_assignments_responderId_responderRole_unassignedAt_idx" ON "incident_assignments"("responderId","responderRole","unassignedAt");
+ALTER TABLE "incident_assignments" ADD CONSTRAINT "incident_assignments_incidentId_fkey" FOREIGN KEY ("incidentId") REFERENCES "incidents"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+CREATE TABLE "incident_notes" ("id" UUID NOT NULL,"incidentId" UUID NOT NULL,"authorId" UUID NOT NULL,"authorRole" "Role" NOT NULL,"note" VARCHAR(1000) NOT NULL,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "incident_notes_pkey" PRIMARY KEY ("id"));
+CREATE INDEX "incident_notes_incidentId_createdAt_idx" ON "incident_notes"("incidentId","createdAt");
+ALTER TABLE "incident_notes" ADD CONSTRAINT "incident_notes_incidentId_fkey" FOREIGN KEY ("incidentId") REFERENCES "incidents"("id") ON DELETE CASCADE ON UPDATE CASCADE;

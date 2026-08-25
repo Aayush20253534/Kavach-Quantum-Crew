@@ -1,0 +1,13 @@
+export const HAZARD_TYPES = Object.freeze({
+  FLOOD: "FLOOD",
+  LANDSLIDE: "LANDSLIDE",
+  FIRE: "FIRE",
+  ROAD_BLOCK: "ROAD_BLOCK",
+  WEATHER: "WEATHER",
+  CROWD: "CROWD",
+  UNSAFE_AREA: "UNSAFE_AREA",
+  MEDICAL: "MEDICAL",
+  OTHER: "OTHER",
+});
+
+export const HAZARD_TYPE_VALUES = Object.freeze(Object.values(HAZARD_TYPES));

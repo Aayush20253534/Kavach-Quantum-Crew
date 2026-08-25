@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #3b82f6;
+  --color-secondary: #10b981;
+}
+
+@layer base {
+  html,
+  body {
+    @apply h-full antialiased bg-gray-50 text-gray-900;
+  }
+}
+
+/*
+ * Tourist Dashboard mobile stat cards
+ *
+ * The dashboard uses a 2-column grid on mobile. Long values such as
+ * "Unrecognizable" must stay inside their own card instead of overflowing
+ * into the next card.
+ */
+@media (max-width: 639px) {
+  /* Allow all mobile dashboard grid children to actually shrink. */
+  .grid.grid-cols-2 > * {
+    min-width: 0;
+  }
+
+  /*
+   * Dashboard statistic cards use the `group` class.
+   * Prevent their contents from escaping the card.
+   */
+  .grid.grid-cols-2 > .group {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  /*
+   * Statistic values.
+   *
+   * Normal values such as 0 and 5 are unaffected visually in practice,
+   * while long values such as "Unrecognizable" shrink enough to fit.
+   */
+  .grid.grid-cols-2 > .group > h3 {
+    min-width: 0;
+    max-width: 100%;
+    font-size: clamp(0.82rem, 3.8vw, 1.15rem) !important;
+    line-height: 1.15 !important;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  /*
+   * Keep labels/icons from forcing the card wider.
+   */
+  .grid.grid-cols-2 > .group > div {
+    min-width: 0;
+  }
+
+  .grid.grid-cols-2 > .group p {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  /*
+   * Safety Status is the third stat card in the dashboard.
+   * Give its value slightly more aggressive sizing because
+   * "Unrecognizable" is much longer than the other metric values.
+   */
+  .grid.grid-cols-2 > .group:nth-child(3) > h3 {
+    font-size: clamp(0.76rem, 3.4vw, 0.95rem) !important;
+    letter-spacing: -0.02em;
+  }
+}
