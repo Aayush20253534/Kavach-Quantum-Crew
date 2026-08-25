@@ -98,7 +98,8 @@ app.get("/", (_req, res) => {
   res.status(200).json({
     ok: true,
     service: "kavach-ai-chatbot-service",
-    message: "Kavach AI chatbot service is running",
+    message: "Rakshak AI service is running",
+    status: "online",
     health: "/health",
     chatbot: "/api/v1/chatbot/messages",
   });

@@ -9,7 +9,13 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "types": [
+      "node"
+    ]
   },
-  "include": ["server.ts", "chatbot/**/*.ts"]
+  "include": [
+    "server.ts",
+    "chatbot/**/*.ts"
+  ]
 }
