@@ -911,7 +911,7 @@ A tourist should be able to understand their current safety situation and access
 # 39. Latest Operational Requirements
 
 1. Danger-zone detection must notify the tourist and Disaster Management immediately by in-app/web notification and email, without automatic Police/Fire/Ambulance dispatch.
-2. Group-member signal loss must create a leader decision workflow after the tracking-gap threshold (default 5 minutes). The leader has 5 minutes to mark false alarm or confirm danger; timeout/confirmation escalates to Disaster Management. Offline reminders repeat hourly.
+2. Group-member signal loss must create a leader decision workflow after the tracking-gap threshold (default 5 minutes). The leader has 5 minutes to mark false alarm or confirm danger; timeout/confirmation escalates to Disaster Management. Offline reminders repeat every 5 minutes after a handled response.
 3. Police, Fire, and Ambulance/Hospital are unified fleet accounts with Active Dispatch, Live Tracking, and Dispatch History backed by real APIs.
 4. Affected tourists, Disaster Management, and authorized responders must be able to view live responder tracking.
 5. Group QR must be a normal HTTPS deep link and work with generic QR scanners.

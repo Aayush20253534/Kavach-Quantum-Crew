@@ -1450,3 +1450,6 @@ Group QR rendering uses the backend-provided HTTPS `groupJoinUrl`/`groupJoinQrPa
 
 Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
 
+## Realtime integrity presentation
+
+`CurrentTripPage.jsx` uses the shared authenticated Socket.IO client for both individual and group blockchain integrity. Credential confirmation and snapshot integrity are separate concepts: a confirmed credential may still be checking or temporarily unavailable. The UI must render server-published integrity state rather than deriving approval solely from `chainStatus`.

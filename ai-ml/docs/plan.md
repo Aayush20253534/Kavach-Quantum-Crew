@@ -729,7 +729,7 @@ AI/ML services must not consume QR JWTs, gateway API keys, issuer private keys, 
 
 ## Current runtime escalation boundary
 
-The production safety flow preserves the principle that AI does not auto-dispatch responders. A danger-zone event notifies the tourist and Disaster Management. Group-member signal loss is handled by the deterministic backend `SignalLossCase` workflow (default 5-minute gap, 5-minute leader decision, hourly reminder). Police/Fire/Ambulance assignment begins only after Disaster Management initiates dispatch; AI may recommend severity/resources but does not bypass that human-controlled boundary.
+The production safety flow preserves the principle that AI does not auto-dispatch responders. A danger-zone event notifies the tourist and Disaster Management. Group-member signal loss is handled by the deterministic backend `SignalLossCase` workflow (default 5-minute gap, 5-minute leader decision, 5-minute reminder after a handled response). Police/Fire/Ambulance assignment begins only after Disaster Management initiates dispatch; AI may recommend severity/resources but does not bypass that human-controlled boundary.
 
 ## Latest Rakshak AI integration
 

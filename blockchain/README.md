@@ -200,7 +200,7 @@ The latest contract keeps the original digital-ID mapping and adds append-only `
 - Snapshot type `1`: individual trip identity (`name`, `dateOfBirth`, `destination`, `phone`, `email`, IDs).
 - Snapshot type `2`: group history (`groupName`, `memberCount`, destination, leader contact identity, and the newly added member for membership-change snapshots).
 - Group creation writes sequence 1; every accepted new member appends the next sequence. Previous snapshots are never overwritten.
-- The server runs a periodic integrity job that reads/decrypts the latest individual snapshot and can restore protected PostgreSQL fields if they differ.
+- The server runs a five-second integrity job that reads/decrypts the latest individual or group snapshot, publishes realtime integrity state, and restores only supported protected PostgreSQL fields when safe.
 
 Because snapshots change the contract ABI, redeploy `TrustAnchor.sol` and update `CONTRACT_ADDRESS` before enabling this backend version.
 
@@ -214,3 +214,15 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 The gateway binds to Render's injected `PORT` on `0.0.0.0` in production. Use `/health` as the Render health-check path because it is a process-level liveness endpoint and returns immediately without waiting for the blockchain RPC. Use `/ready` when you specifically need to verify RPC connectivity, chain ID, and contract deployment.
 
 Do not set `PORT` manually on Render. A sleeping free-tier service can still cold-start after inactivity; that behavior is separate from HTTP port binding.
+
+## What is hashed, encrypted and stored
+
+Credential `idHash` is SHA-256 of the canonical application string:
+
+`kavach:v1:<INDIVIDUAL|GROUP>:<publicId>:<tripId>:<tokenId>`
+
+`tripHash` is SHA-256 of `kavach:v1:trip:<tripId>`.
+
+For snapshots, the main API creates canonical JSON, computes SHA-256 over that plaintext JSON as `payloadHash`, encrypts the same canonical JSON using AES-256-GCM, and sends the ciphertext plus hash to the gateway. The Solidity contract stores `payloadHash`, encrypted bytes, timestamp, sequence and snapshot type. Plaintext name, DOB, email, phone and destination are not directly written to Sepolia.
+
+See [`docs/data-storage-and-integrity.md`](docs/data-storage-and-integrity.md) for exact individual/group payloads, append history, reconciliation, deployment compatibility and failure cases.

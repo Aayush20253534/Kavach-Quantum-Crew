@@ -122,9 +122,9 @@ Emergency response uses the existing Incident -> Dispatch -> EmergencyUnit archi
 
 ## Latest safety orchestration and blockchain integrity
 
-`signal-loss` is a dedicated persisted domain rather than an immediate generic tracking-interruption incident for group members. Its scheduled sweep owns the 5-minute decision deadline and hourly reminders, avoiding duplicate/racing escalation paths. `dispatch` remains a separate Disaster-Management-controlled domain; `/auto/:serviceType` performs nearest-unit assignment only after that action is initiated.
+`signal-loss` is a dedicated persisted domain rather than an immediate generic tracking-interruption incident for group members. Its scheduled sweep owns the 5-minute decision deadline and 5-minute reminders after a handled response, avoiding duplicate/racing escalation paths. `dispatch` remains a separate Disaster-Management-controlled domain; `/auto/:serviceType` performs nearest-unit assignment only after that action is initiated.
 
-Blockchain is also split into credential state and append-only data snapshots. `ISSUE`/`EXTEND`/`REVOKE` update credential trust state, while `SNAPSHOT` jobs append encrypted individual/group payloads. Snapshot failure does not mark the underlying QR credential as failed. A separate integrity job verifies/decrypts the latest individual snapshot and repairs protected PostgreSQL values when required.
+Blockchain is also split into credential state and append-only data snapshots. `ISSUE`/`EXTEND`/`REVOKE` update credential trust state, while `SNAPSHOT` jobs append encrypted individual/group payloads. Snapshot failure does not mark the underlying QR credential as failed. A separate integrity job verifies/decrypts the latest individual or group snapshot and repairs protected PostgreSQL values when required.
 
 ## Latest Rakshak AI integration
 

@@ -77,3 +77,8 @@ When a mismatch is found the server first emits `blockchain:integrity` with `sta
 
 Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
 
+## Blockchain integrity lifecycle
+
+Authenticated tourist sockets receive `blockchain:integrity` updates for relevant individual credentials and, for active members, relevant group credentials. Payloads identify the entity type and credential and carry states including `CHECKING`, `VERIFIED`, `DB_TAMPERED`, `FIXING`, `FIXED`, and `INTEGRITY_UNAVAILABLE`.
+
+The Current Trip UI maps the healthy `VERIFIED` state to `APPROVED`. A tamper repair is deliberately visible as `TAMPERED -> FIXING -> FIXED -> APPROVED`.

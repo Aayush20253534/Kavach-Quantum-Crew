@@ -261,3 +261,21 @@ Group QR codes use a standard signed HTTPS join URL. Blockchain issuance keeps t
 
 Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
 
+## Current blockchain reconciliation flow
+
+```text
+confirmed individual/group credential
+  -> every 5 seconds read latest snapshot
+  -> decrypt + verify SHA-256 payloadHash + identity
+  -> compare protected PostgreSQL fields
+  -> match: publish VERIFIED
+  -> mismatch: publish DB_TAMPERED
+       -> publish FIXING
+       -> safely restore supported fields
+       -> audit recovery
+       -> publish FIXED
+       -> publish VERIFIED
+  -> unreadable/unsafe snapshot: publish INTEGRITY_UNAVAILABLE
+```
+
+Group membership-count mismatches are detected but are not automatically repaired by deleting or inventing member rows.

@@ -134,7 +134,7 @@ After authentication the frontend should open the exact incident rather than the
 
 1. Tourist enters a danger zone: tourist and Disaster Management receive immediate in-app/email safety notifications. No responder is auto-dispatched.
 2. Group member signal loss: after the configured tracking gap (default 5 minutes), the leader and Disaster Management are notified. The leader can mark `FALSE_ALARM` or `CONFIRMED_DANGER`.
-3. If the leader confirms danger, or does not respond within 5 minutes, the signal-loss case escalates into the incident pipeline. While the member remains offline, reminders repeat hourly with a fresh 5-minute response window.
+3. If the leader confirms danger, or does not respond within 5 minutes, the signal-loss case escalates into the incident pipeline. While the member remains offline, reminders repeat every 5 minutes after a handled response with a fresh 5-minute response window.
 4. Disaster Management reviews the incident and initiates Police, Fire, or Ambulance/Hospital dispatch. The backend may select the nearest available unit for the requested service type.
 5. Only after assignment does the responder fleet receive the dispatch through in-app/realtime state and email.
 6. Responder browser GPS updates the assigned unit/dispatch. Live responder tracking is authorized for the affected tourist/group, Disaster Management, System Admin, and the assigned emergency-service role.
