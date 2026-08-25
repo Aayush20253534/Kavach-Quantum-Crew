@@ -1,9 +1,15 @@
 # Blockchain Trust Layer — Implementation Blueprint
+
+> **Current workflow:** Read [`workflow.md`](workflow.md) first for the repository's live credential integration and terminology. This document then covers its narrower deployment/design topic.
+
+
+> **Documentation status (24 Aug 2026):** Retained as design/deployment history. The current server integration uses the isolated authenticated HTTP gateway (`blockchain/gateway/server.ts`), not an in-process adapter import into `server/`.
+
 ### Smart Tourist Safety Monitoring & Incident Response System — SIH25002
 
 > **Scope:** the blockchain trust layer only (digital ID anchoring, evidence/incident integrity, consent receipts, inter-agency verification). PostgreSQL, the tourist/authority frontends, and the AI service are referenced **only where the trust layer must integrate with them**.
 >
-> **Core principle: blockchain stores proofs, not data.** The chain never holds a name, phone number, identity document, GPS coordinate, photo/video, medical record, or login credential — it holds a hash, a timestamp, a signer, and a version.
+> **Current principle:** the chain stores credential proofs plus **encrypted append-only identity/group snapshots**. Plaintext names, phone numbers, emails, DOBs, GPS, documents, media, medical records, and login credentials are never written directly to the public chain. Snapshot ciphertext is public, while decryption remains server-controlled.
 
 ```
 Trip & Safety Signals → Off-Chain Record (PostgreSQL) → Canonical Hash → On-Chain Anchor → Inter-Agency Verification
@@ -194,7 +200,7 @@ flowchart TD
 
 | Concern | Rule |
 |---|---|
-| Raw PII on-chain | never — not even encrypted; only hashes leave the backend |
+| Plaintext PII on-chain | never; recoverable identity/group history is stored only as backend-encrypted ciphertext plus a payload hash |
 | Exact GPS on-chain | never |
 | Low-entropy IDs | salted before hashing to prevent brute-force reversal |
 | Reason codes / notes | reason **codes** may anchor for audit; free-text reasons stay off-chain |
@@ -485,5 +491,11 @@ Inter-Agency Verification
         ↓
    TAMPER-EVIDENT PROOF
 
-  Blockchain stores proofs, not data.
+  Blockchain stores proofs plus encrypted snapshot history, never plaintext PII.
 ```
+
+## 19. Runtime delta: encrypted trip/group snapshots
+
+The implemented runtime now extends the original proof-only blueprint. `TrustAnchor.sol` includes append-only encrypted data snapshots keyed by the existing credential `idHash`. This supports trip-time integrity/recovery without exposing plaintext PII. Individual snapshots are fixed at sequence 1 for the credential; group snapshots are versioned by monotonically increasing sequence as membership grows.
+
+The emergency critical path remains off-chain. Danger-zone detection, signal-loss timers, notifications, responder dispatch, and live GPS must never wait for blockchain confirmation.

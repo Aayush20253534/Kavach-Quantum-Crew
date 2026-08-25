@@ -1,0 +1,130 @@
+let socketServer = null;
+
+const accountRoom = (role, id) => `account:${role}:${id}`;
+const incidentRoom = (id) => `incident:${id}`;
+const roleRoom = (role) => `role:${role}`;
+
+export const setRealtimeSocketServer = (io) => {
+  socketServer = io ?? null;
+};
+
+const emitIncident = (eventName, incident, extra = {}) => {
+  if (!socketServer || !incident?.id) return;
+  const payload = { incident, ...extra };
+  socketServer.to(incidentRoom(incident.id)).emit(eventName, payload);
+  if (incident.userId) {
+    socketServer.to(accountRoom("TOURIST", incident.userId)).emit(eventName, payload);
+  }
+  socketServer.to(roleRoom("DISASTER_MANAGER")).emit(eventName, payload);
+  socketServer.to(roleRoom("SYSTEM_ADMIN")).emit(eventName, payload);
+};
+
+export const realtimePublisher = Object.freeze({
+  publishIncidentCreated(incident) {
+    emitIncident("incident:created", incident);
+  },
+  publishIncidentUpdated(incident, change = {}) {
+    emitIncident("incident:updated", incident, { change });
+  },
+  publishIncidentNote(incident, note) {
+    emitIncident("incident:note", incident, { note });
+  },
+  publishIncidentMessage(incident, message) {
+    emitIncident("incident:message", incident, { message });
+  },
+  publishEvidenceCreated(attachment, target) {
+    if (!socketServer || !attachment?.id) return;
+    const payload = { attachment };
+    if (attachment.incidentId) {
+      socketServer.to(incidentRoom(attachment.incidentId)).emit("evidence:created", payload);
+      socketServer.to(roleRoom("DISASTER_MANAGER")).emit("evidence:created", payload);
+      socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("evidence:created", payload);
+      if (target?.userId) socketServer.to(accountRoom("TOURIST", target.userId)).emit("evidence:created", payload);
+      return;
+    }
+    socketServer.to(roleRoom("DISASTER_MANAGER")).emit("evidence:created", payload);
+    socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("evidence:created", payload);
+    if (target?.reporterId && target?.reporterRole) {
+      socketServer.to(accountRoom(target.reporterRole, target.reporterId)).emit("evidence:created", payload);
+    }
+  },
+  publishEvidenceDeleted(attachment) {
+    if (!socketServer || !attachment?.id) return;
+    const payload = { attachmentId: attachment.id, incidentId: attachment.incidentId, hazardId: attachment.hazardId };
+    if (attachment.incidentId) socketServer.to(incidentRoom(attachment.incidentId)).emit("evidence:deleted", payload);
+    socketServer.to(roleRoom("DISASTER_MANAGER")).emit("evidence:deleted", payload);
+    socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("evidence:deleted", payload);
+  },
+  publishNotificationCreated(notification) {
+    if (!socketServer || !notification?.targetAccountId || !notification?.targetRole) return;
+    socketServer
+      .to(accountRoom(notification.targetRole, notification.targetAccountId))
+      .emit("notification:created", { notification });
+  },
+  publishNotificationRead(notification) {
+    if (!socketServer || !notification?.targetAccountId || !notification?.targetRole) return;
+    socketServer
+      .to(accountRoom(notification.targetRole, notification.targetAccountId))
+      .emit("notification:read", { notification });
+  },
+  publishNotificationsReadAll(actor, readAt) {
+    if (!socketServer || !actor?.id || !actor?.role) return;
+    socketServer
+      .to(accountRoom(actor.role, actor.id))
+      .emit("notification:read-all", { readAt });
+  },
+  publishHazardCreated(hazard) {
+    if (!socketServer || !hazard?.id) return;
+    const payload = { hazard };
+    socketServer.to(roleRoom("DISASTER_MANAGER")).emit("hazard:created", payload);
+    socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("hazard:created", payload);
+    if (hazard.reporterId) socketServer.to(accountRoom("TOURIST", hazard.reporterId)).emit("hazard:created", payload);
+  },
+  publishHazardUpdated(hazard, change = {}) {
+    if (!socketServer || !hazard?.id) return;
+    const payload = { hazard, change };
+    socketServer.to(roleRoom("DISASTER_MANAGER")).emit("hazard:updated", payload);
+    socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("hazard:updated", payload);
+    if (hazard.reporterId) socketServer.to(accountRoom("TOURIST", hazard.reporterId)).emit("hazard:updated", payload);
+  },
+  publishRiskZoneUpdated(zone, change = {}) {
+    if (!socketServer || !zone?.id) return;
+    const payload = { zone, change };
+    socketServer.to(roleRoom("DISASTER_MANAGER")).emit("risk-zone:updated", payload);
+    socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("risk-zone:updated", payload);
+  },
+  publishResponderStatus(responder) {
+    if (!socketServer || !responder?.id) return;
+    socketServer.to(roleRoom("DISASTER_MANAGER")).emit("responder:status", { responder });
+    socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("responder:status", { responder });
+    socketServer.to(accountRoom("DISASTER_MANAGER", responder.id)).emit("responder:status", { responder });
+  },
+  publishDispatchUpdated(dispatch, change = {}) {
+    if (!socketServer || !dispatch?.id) return;
+    const payload = { dispatch, change };
+    socketServer.to(roleRoom("DISASTER_MANAGER")).emit("dispatch:updated", payload);
+    socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("dispatch:updated", payload);
+    if (dispatch.incidentId) socketServer.to(incidentRoom(dispatch.incidentId)).emit("dispatch:updated", payload);
+    if (dispatch.unit?.serviceAccountId && dispatch.requestedUnitType) {
+      socketServer.to(accountRoom(dispatch.requestedUnitType, dispatch.unit.serviceAccountId)).emit("dispatch:updated", payload);
+    }
+  },
+  publishEmergencyUnitUpdated(unit, change = {}) {
+    if (!socketServer || !unit?.id) return;
+    const payload = { unit, change };
+    socketServer.to(roleRoom("DISASTER_MANAGER")).emit("emergency-unit:updated", payload);
+    socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("emergency-unit:updated", payload);
+    if (unit.serviceAccountId && unit.type) {
+      socketServer.to(accountRoom(unit.type, unit.serviceAccountId)).emit("emergency-unit:updated", payload);
+    }
+  },
+  publishBlockchainIntegrity(userId, integrity) {
+    if (!socketServer || !userId || !integrity?.credentialId) return;
+    socketServer
+      .to(accountRoom("TOURIST", userId))
+      .emit("blockchain:integrity", { integrity });
+    socketServer.to(roleRoom("SYSTEM_ADMIN")).emit("blockchain:integrity", { integrity });
+  },
+});
+
+export const realtimeRooms = Object.freeze({ accountRoom, incidentRoom, roleRoom });

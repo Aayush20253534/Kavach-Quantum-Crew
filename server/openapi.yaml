@@ -1,0 +1,1215 @@
+openapi: 3.1.0
+info:
+  title: Smart Tourist Safety API
+  version: 0.2.0
+  description: Phase 0 infrastructure plus authentication, tourist profile, and Phase 4 trip lifecycle.
+servers:
+  - url: http://localhost:4000
+    description: Local development
+tags:
+  - name: Health
+  - name: Auth
+  - name: Tourist
+  - name: Trips
+  - name: Notifications
+  - name: Incidents
+  - name: Evidence
+  - name: System Admin
+  - name: Escalations
+  - name: Disaster Management
+  - name: Emergency Services
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Process liveness
+      operationId: getLiveness
+      responses:
+        "200":
+          description: The Node.js process is alive.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+  /health/ready:
+    get:
+      tags: [Health]
+      summary: Service readiness
+      operationId: getReadiness
+      responses:
+        "200":
+          description: Required dependencies are ready.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "503":
+          description: At least one required dependency is unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+  /health/database:
+    get:
+      tags: [Health]
+      summary: PostgreSQL health and latency
+      operationId: getDatabaseHealth
+      responses:
+        "200":
+          description: PostgreSQL responded to a probe.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "503":
+          description: PostgreSQL did not respond.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a tourist account
+      operationId: registerTourist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Tourist account created; a six-digit verification code is sent when Gmail delivery is configured. No authenticated session is issued until verification.
+        "400":
+          description: Invalid signup data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Username, email, or phone is already registered.
+  /api/v1/auth/verify-email:
+    post:
+      tags: [Auth]
+      summary: Verify a newly registered tourist email
+      operationId: verifyTouristEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, otp]
+              properties:
+                email:
+                  type: string
+                  format: email
+                otp:
+                  type: string
+                  pattern: "^[0-9]{6}$"
+                  example: "123456"
+      responses:
+        "200":
+          description: Email verified and authenticated access/refresh session issued.
+        "400":
+          description: OTP is invalid or expired.
+        "409":
+          description: Email is already verified.
+  /api/v1/auth/resend-verification:
+    post:
+      tags: [Auth]
+      summary: Resend tourist email verification code
+      operationId: resendTouristEmailVerification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: Request accepted. Response does not disclose whether an account exists or is already verified.
+        "503":
+          description: Gmail delivery is not configured or currently unavailable.
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Sign in using username or email
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier, password]
+              properties:
+                identifier:
+                  type: string
+                  example: tourist.one
+                password:
+                  type: string
+                  format: password
+      responses:
+        "200":
+          description: Signed in successfully.
+        "401":
+          description: Invalid credentials.
+  /api/v1/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Rotate refresh session
+      operationId: refreshSession
+      responses:
+        "200":
+          description: New access token issued and refresh cookie rotated.
+        "401":
+          description: Refresh session is invalid or expired.
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke current refresh session
+      operationId: logout
+      responses:
+        "200":
+          description: Signed out successfully.
+  /api/v1/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get permanent account details
+      operationId: getAuthenticatedAccount
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Authenticated account.
+        "401":
+          description: Access token is missing, invalid, or expired.
+  /api/v1/tourists/me/onboarding:
+    post:
+      tags: [Tourist]
+      summary: Complete tourist onboarding
+      operationId: completeTouristOnboarding
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OnboardingRequest"
+      responses:
+        "200":
+          description: Onboarding completed.
+        "403":
+          description: Tourist role is required.
+  /api/v1/tourists/me:
+    get:
+      tags: [Tourist]
+      summary: Get tourist profile
+      operationId: getTouristProfile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Tourist profile.
+    patch:
+      tags: [Tourist]
+      summary: Update tourist profile
+      operationId: updateTouristProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdateRequest"
+      responses:
+        "200":
+          description: Tourist profile updated.
+        "400":
+          description: Onboarding must be completed first or data is invalid.
+  /api/v1/trips:
+    post:
+      tags: [Trips]
+      summary: Create a planned solo or group trip
+      security: [{ bearerAuth: [] }]
+      responses:
+        "201": { description: Trip created }
+  /api/v1/trips/current:
+    get:
+      tags: [Trips]
+      summary: Get the tourist's current planned or active trip
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Current trip or null }
+  /api/v1/trips/history:
+    get:
+      tags: [Trips]
+      summary: Get completed and cancelled trip history
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Trip history }
+  /api/v1/trips/{tripId}/consents:
+    post:
+      tags: [Trips]
+      summary: Grant location-tracking or emergency-sharing consent
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: tripId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Consent granted }
+  /api/v1/trips/{tripId}/safety-id:
+    post:
+      tags: [Trips]
+      summary: Issue an opaque trip-scoped Safety ID after required consents
+      description: Does not generate QR or perform blockchain anchoring. Those remain partner-owned integrations.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: tripId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "201": { description: Safety ID issued }
+  /api/v1/trips/{tripId}/start:
+    post:
+      tags: [Trips]
+      summary: Start a planned trip after consent and Safety ID checks
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Trip started }
+  /api/v1/trips/{tripId}/complete:
+    post:
+      tags: [Trips]
+      summary: Complete an active trip and revoke temporary access
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Trip completed }
+  /api/v1/trips/{tripId}/cancel:
+    post:
+      tags: [Trips]
+      summary: Cancel a planned or active trip and revoke temporary access
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Trip cancelled }
+  /alerts:
+    get:
+      summary: List the authenticated tourist's safety alerts
+      tags: [Phase 8 Alerts]
+      responses:
+        '200': { description: Safety alerts }
+  /alerts/{alertId}/acknowledge:
+    post:
+      summary: Acknowledge an own safety alert
+      tags: [Phase 8 Alerts]
+      parameters:
+        - in: path
+          name: alertId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Alert acknowledged }
+  /sos:
+    post:
+      summary: Trigger a CRITICAL SOS incident for an active trip
+      tags: [Phase 8 SOS]
+      responses:
+        '201': { description: SOS incident created }
+  /incidents/mine:
+    get:
+      summary: List incidents visible to the authenticated tourist
+      tags: [Phase 8 Incidents]
+      responses:
+        '200': { description: Visible incidents }
+  /incidents/queue:
+    get:
+      summary: List the active emergency response queue
+      tags: [Phase 8 Incidents]
+      responses:
+        '200': { description: Emergency queue }
+  /incidents/{incidentId}/messages:
+    get:
+      summary: List authorized incident conversation messages
+      tags: [Phase 16 Communication]
+      parameters:
+        - in: path
+          name: incidentId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: before
+          schema: { type: string, format: date-time }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        '200': { description: Incident message history }
+    post:
+      summary: Send an authorized incident conversation message
+      tags: [Phase 16 Communication]
+      parameters:
+        - in: path
+          name: incidentId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message: { type: string, minLength: 1, maxLength: 2000 }
+      responses:
+        '201': { description: Incident message created }
+        '409': { description: Incident is resolved or dismissed }
+  /incidents/{incidentId}/acknowledge:
+    post:
+      summary: Acknowledge an incident as emergency staff
+      tags: [Phase 8 Incidents]
+      parameters:
+        - in: path
+          name: incidentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Incident acknowledged }
+  /incidents/{incidentId}/start:
+    post:
+      summary: Start emergency response
+      tags: [Phase 8 Incidents]
+      responses:
+        '200': { description: Response started }
+  /incidents/{incidentId}/resolve:
+    post:
+      summary: Resolve an incident
+      tags: [Phase 8 Incidents]
+      responses:
+        '200': { description: Incident resolved }
+
+
+  /api/v1/notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications for the authenticated account
+      responses:
+        "200": { description: Notification history }
+  /api/v1/notifications/unread-count:
+    get:
+      tags: [Notifications]
+      summary: Count unread notifications
+      responses:
+        "200": { description: Unread notification count }
+  /api/v1/notifications/read-all:
+    patch:
+      tags: [Notifications]
+      summary: Mark all notifications as read
+      responses:
+        "200": { description: Notifications marked read }
+  /api/v1/notifications/{notificationId}/read:
+    patch:
+      tags: [Notifications]
+      summary: Mark one owned notification as read
+      parameters:
+        - in: path
+          name: notificationId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Notification marked read }
+  /api/v1/incidents/{incidentId}/assign:
+    post:
+      tags: [Incidents]
+      summary: Assign incident to an active disaster manager
+      responses:
+        "200": { description: Incident assigned }
+  /api/v1/incidents/{incidentId}/unassign:
+    post:
+      tags: [Incidents]
+      summary: Remove active responder assignment
+      responses:
+        "200": { description: Incident unassigned }
+  /api/v1/incidents/{incidentId}/notes:
+    post:
+      tags: [Incidents]
+      summary: Add a response coordination note
+      responses:
+        "200": { description: Response note recorded }
+  /api/v1/escalations/run:
+    post:
+      tags: [Escalations]
+      summary: Run overdue incident escalation sweep
+      description: System-admin endpoint intended for cron or a deployment scheduler.
+      responses:
+        "200": { description: Escalation sweep completed }
+  /api/v1/disaster-management/dashboard:
+    get:
+      tags: [Disaster Management]
+      summary: Get emergency operations dashboard metrics
+      responses:
+        "200": { description: Dashboard summary returned }
+  /api/v1/disaster-management/responders:
+    get:
+      tags: [Disaster Management]
+      summary: List active responders with workload and capacity
+      parameters:
+        - { in: query, name: status, schema: { type: string, enum: [AVAILABLE, BUSY, OFF_DUTY] } }
+        - { in: query, name: organization, schema: { type: string } }
+        - { in: query, name: jurisdiction, schema: { type: string } }
+      responses:
+        "200": { description: Responder directory returned }
+  /api/v1/disaster-management/responders/me:
+    get:
+      tags: [Disaster Management]
+      summary: Get authenticated disaster-manager profile and workload
+      responses:
+        "200": { description: Responder profile returned }
+  /api/v1/disaster-management/responders/me/status:
+    patch:
+      tags: [Disaster Management]
+      summary: Update authenticated responder availability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [AVAILABLE, BUSY, OFF_DUTY] }
+      responses:
+        "200": { description: Responder status updated }
+  /api/v1/disaster-management/responders/me/incidents:
+    get:
+      tags: [Disaster Management]
+      summary: List incidents assigned to the authenticated responder
+      responses:
+        "200": { description: Assigned incidents returned }
+  /api/v1/disaster-management/responders/{responderId}:
+    get:
+      tags: [Disaster Management]
+      summary: Get responder details and workload
+      parameters:
+        - in: path
+          name: responderId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Responder returned }
+  /hazards:
+    get:
+      summary: List hazard reports visible to the authenticated account
+      responses:
+        "200": { description: Hazard list }
+    post:
+      summary: Submit a hazard report as a tourist
+      responses:
+        "201": { description: Hazard reported }
+  /hazards/nearby:
+    get:
+      summary: Find verified hazards near coordinates
+      responses:
+        "200": { description: Nearby hazards }
+  /hazards/{hazardId}:
+    get:
+      summary: Get a visible hazard report
+      parameters:
+        - in: path
+          name: hazardId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Hazard report }
+  /hazards/{hazardId}/verify:
+    patch:
+      summary: Verify a pending hazard report
+      responses:
+        "200": { description: Hazard verified }
+  /hazards/{hazardId}/reject:
+    patch:
+      summary: Reject a pending hazard report
+      responses:
+        "200": { description: Hazard rejected }
+  /hazards/{hazardId}/resolve:
+    patch:
+      summary: Resolve a verified hazard report
+      responses:
+        "200": { description: Hazard resolved }
+
+
+  /risk-zones:
+    get:
+      summary: List effective risk zones
+      responses:
+        "200": { description: Risk zone list }
+    post:
+      summary: Create a circle or polygon risk zone
+      responses:
+        "201": { description: Risk zone created }
+  /risk-zones/evaluate:
+    post:
+      summary: Evaluate coordinates against effective risk zones
+      responses:
+        "200": { description: Geofence evaluation }
+  /risk-zones/{zoneId}:
+    get:
+      summary: Get a risk zone
+      responses:
+        "200": { description: Risk zone }
+    patch:
+      summary: Update a risk zone
+      responses:
+        "200": { description: Risk zone updated }
+  /risk-zones/{zoneId}/activate:
+    post:
+      summary: Activate a risk zone
+      responses:
+        "200": { description: Risk zone activated }
+  /risk-zones/{zoneId}/deactivate:
+    post:
+      summary: Deactivate a risk zone
+      responses:
+        "200": { description: Risk zone deactivated }
+  /monitoring/trips/{tripId}/policy:
+    get:
+      summary: Get effective advanced monitoring policy for a trip
+      responses:
+        "200": { description: Monitoring policy }
+    patch:
+      summary: Update trip monitoring thresholds or planned route
+      responses:
+        "200": { description: Monitoring policy updated }
+  /monitoring/trips/{tripId}/evaluate:
+    post:
+      summary: Evaluate advanced deterministic safety rules for a trip participant
+      responses:
+        "200": { description: Monitoring evaluation }
+  /monitoring/sweep:
+    post:
+      summary: Evaluate advanced monitoring rules across active trips
+      responses:
+        "200": { description: Monitoring sweep completed }
+
+  /dispatch/units:
+    get:
+      summary: List emergency units
+      responses:
+        "200": { description: Emergency units }
+    post:
+      summary: Create emergency unit (system admin)
+      responses:
+        "201": { description: Emergency unit created }
+  /dispatch/units/{unitId}/status:
+    patch:
+      summary: Update emergency unit operational status
+      parameters:
+        - in: path
+          name: unitId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Emergency unit updated }
+  /dispatch/incidents/{incidentId}:
+    get:
+      summary: List dispatches for an incident
+      parameters:
+        - in: path
+          name: incidentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Incident dispatches }
+    post:
+      summary: Request emergency dispatch for an incident
+      parameters:
+        - in: path
+          name: incidentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "201": { description: Dispatch created }
+  /dispatch/incidents/{incidentId}/auto/{serviceType}:
+    post:
+      tags: [Emergency Services]
+      summary: Auto-assign the nearest available police, fire, or ambulance unit
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: incidentId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: serviceType
+          required: true
+          schema: { type: string, enum: [police, fire, ambulance] }
+      responses:
+        "201": { description: Nearest available unit assigned }
+  /dispatch/{dispatchId}:
+    get:
+      summary: Get emergency dispatch
+      parameters:
+        - in: path
+          name: dispatchId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Dispatch }
+  /dispatch/{dispatchId}/assign:
+    post:
+      summary: Assign an available emergency unit
+      parameters:
+        - in: path
+          name: dispatchId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Unit assigned }
+  /dispatch/{dispatchId}/status:
+    patch:
+      summary: Advance or cancel a dispatch lifecycle
+      parameters:
+        - in: path
+          name: dispatchId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Dispatch updated }
+
+  /emergency-services/register:
+    post:
+      tags: [Emergency Services]
+      summary: Register a Police, Fire, or Ambulance service account and primary unit
+      responses:
+        "201": { description: Emergency service account created }
+        "409": { description: Username, email, or phone already exists }
+  /emergency-services/me:
+    get:
+      tags: [Emergency Services]
+      security: [{ bearerAuth: [] }]
+      summary: Get current emergency service account and units
+      responses:
+        "200": { description: Emergency service account }
+  /emergency-services/me/location:
+    patch:
+      tags: [Emergency Services]
+      security: [{ bearerAuth: [] }]
+      summary: Update service and owned-unit geolocation
+      responses:
+        "200": { description: Location updated }
+  /emergency-services/me/dispatches:
+    get:
+      tags: [Emergency Services]
+      security: [{ bearerAuth: [] }]
+      summary: List dispatches assigned to the authenticated service account
+      responses:
+        "200": { description: Assigned dispatches }
+  /emergency-services/dispatches/{dispatchId}/location:
+    patch:
+      tags: [Emergency Services]
+      security: [{ bearerAuth: [] }]
+      summary: Publish current responder-unit location for a dispatch
+      responses:
+        "200": { description: Live location updated }
+  /emergency-services/dispatches/{dispatchId}/status:
+    patch:
+      tags: [Emergency Services]
+      security: [{ bearerAuth: [] }]
+      summary: Advance an owned dispatch lifecycle
+      responses:
+        "200": { description: Dispatch status updated }
+  /emergency-services/tracking/{dispatchId}:
+    get:
+      tags: [Emergency Services]
+      security: [{ bearerAuth: [] }]
+      summary: Get tourist-authorized emergency response tracking snapshot
+      responses:
+        "200": { description: Emergency response tracking snapshot }
+
+  /api/v1/evidence:
+    get:
+      tags: [Evidence]
+      summary: List authorized evidence for one incident or hazard
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: incidentId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: hazardId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        "200": { description: Evidence attachments }
+    post:
+      tags: [Evidence]
+      summary: Upload evidence to one incident or hazard
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                incidentId: { type: string, format: uuid }
+                hazardId: { type: string, format: uuid }
+                file: { type: string, format: binary }
+      responses:
+        "201": { description: Evidence uploaded }
+  /api/v1/evidence/{attachmentId}:
+    get:
+      tags: [Evidence]
+      summary: Get evidence metadata
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: attachmentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Evidence metadata }
+    delete:
+      tags: [Evidence]
+      summary: Delete evidence uploaded by the caller, or as system admin
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: attachmentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Evidence deleted }
+  /api/v1/evidence/{attachmentId}/content:
+    get:
+      tags: [Evidence]
+      summary: Download authorized evidence bytes
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: attachmentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Evidence content
+          content:
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/png: { schema: { type: string, format: binary } }
+            image/webp: { schema: { type: string, format: binary } }
+            video/mp4: { schema: { type: string, format: binary } }
+            application/pdf: { schema: { type: string, format: binary } }
+  /api/v1/admin/dashboard:
+    get:
+      tags: [System Admin]
+      summary: Get platform-wide administrative dashboard counts
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Administrative dashboard summary }
+        "403": { description: System administrator access required }
+  /api/v1/admin/accounts:
+    get:
+      tags: [System Admin]
+      summary: Search and list platform accounts without sensitive credentials
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: role, schema: { type: string, enum: [TOURIST, DISASTER_MANAGER, SYSTEM_ADMIN] } }
+        - { in: query, name: status, schema: { type: string, enum: [ACTIVE, SUSPENDED, DISABLED] } }
+        - { in: query, name: search, schema: { type: string } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+      responses:
+        "200": { description: Safe account summaries }
+  /api/v1/admin/accounts/{role}/{accountId}:
+    get:
+      tags: [System Admin]
+      summary: Get a safe administrative account view
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: role, required: true, schema: { type: string, enum: [TOURIST, DISASTER_MANAGER, SYSTEM_ADMIN] } }
+        - { in: path, name: accountId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Account summary }
+        "404": { description: Account not found }
+  /api/v1/admin/accounts/{role}/{accountId}/status:
+    patch:
+      tags: [System Admin]
+      summary: Activate, suspend, or disable an account and revoke sessions when inactive
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: role, required: true, schema: { type: string, enum: [TOURIST, DISASTER_MANAGER, SYSTEM_ADMIN] } }
+        - { in: path, name: accountId, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [ACTIVE, SUSPENDED, DISABLED] }
+                reason: { type: string, maxLength: 500 }
+      responses:
+        "200": { description: Updated account }
+        "409": { description: Self-deactivation is not allowed }
+  /api/v1/admin/resources/{resource}:
+    get:
+      tags: [System Admin]
+      summary: Inspect a core operational resource collection
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: resource, required: true, schema: { type: string, enum: [trips, groups, incidents, hazards, risk-zones, emergency-units, dispatches] } }
+        - { in: query, name: status, schema: { type: string } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+      responses:
+        "200": { description: Resource collection }
+  /api/v1/analytics/overview:
+    get:
+      tags: [Analytics]
+      summary: Platform safety overview
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: from, schema: { type: string, format: date-time } }
+        - { in: query, name: to, schema: { type: string, format: date-time } }
+      responses: { '200': { description: Analytics overview } }
+  /api/v1/analytics/incidents:
+    get:
+      tags: [Analytics]
+      summary: Incident breakdown and response times
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Incident analytics } }
+  /api/v1/analytics/trips:
+    get:
+      tags: [Analytics]
+      summary: Trip status and type analytics
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Trip analytics } }
+  /api/v1/analytics/hazards:
+    get:
+      tags: [Analytics]
+      summary: Hazard status, type and severity analytics
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Hazard analytics } }
+  /api/v1/analytics/sos:
+    get:
+      tags: [Analytics]
+      summary: SOS requests by emergency type
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: SOS analytics } }
+  /api/v1/analytics/dispatch:
+    get:
+      tags: [Analytics]
+      summary: Dispatch performance analytics
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Dispatch analytics } }
+  /api/v1/analytics/responders:
+    get:
+      tags: [Analytics]
+      summary: Responder availability and active workload
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Responder analytics } }
+  /api/v1/analytics/response-times:
+    get:
+      tags: [Analytics]
+      summary: Incident and dispatch response-time aggregates
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Response-time analytics } }
+  /api/v1/integrations/capabilities:
+    get:
+      tags: [Integrations]
+      summary: Integration contract capabilities
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Contract capability metadata } }
+  /api/v1/integrations/ai/risk-assessment:
+    post:
+      tags: [Integrations]
+      summary: AI risk-assessment contract boundary
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Provider result }, '501': { description: Provider not configured } }
+  /api/v1/integrations/ai/hazard-analysis:
+    post:
+      tags: [Integrations]
+      summary: AI hazard-analysis contract boundary
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Provider result }, '501': { description: Provider not configured } }
+  /api/v1/integrations/blockchain/safety-id-proof:
+    post:
+      tags: [Integrations]
+      summary: Blockchain Safety ID proof contract boundary
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Provider result }, '501': { description: Provider not configured } }
+  /api/v1/integrations/blockchain/incident-proof:
+    post:
+      tags: [Integrations]
+      summary: Blockchain incident proof contract boundary
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Provider result }, '501': { description: Provider not configured } }
+  /api/v1/integrations/blockchain/evidence-proof:
+    post:
+      tags: [Integrations]
+      summary: Blockchain evidence proof contract boundary
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: Provider result }, '501': { description: Provider not configured } }
+  /api/v1/integrations/blockchain/verification/{reference}:
+    get:
+      tags: [Integrations]
+      summary: Blockchain verification contract boundary
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: reference, required: true, schema: { type: string } }
+      responses: { '200': { description: Provider result }, '501': { description: Provider not configured } }
+  /api/v1/notification-deliveries/capabilities:
+    get:
+      tags: [Notification Delivery]
+      summary: Delivery channel capability metadata
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Delivery capabilities }
+  /api/v1/notification-deliveries:
+    get:
+      tags: [Notification Delivery]
+      summary: List notification delivery jobs
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: notificationId, schema: { type: string, format: uuid } }
+        - { in: query, name: channel, schema: { type: string, enum: [IN_APP, EMAIL, SMS, PUSH, WHATSAPP] } }
+        - { in: query, name: status, schema: { type: string, enum: [PENDING, SENDING, SENT, FAILED, RETRY_SCHEDULED] } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+      responses:
+        "200": { description: Delivery jobs }
+  /api/v1/notification-deliveries/notifications/{notificationId}:
+    post:
+      tags: [Notification Delivery]
+      summary: Enqueue provider-neutral delivery jobs for an existing notification
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: notificationId, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [channels]
+              properties:
+                channels:
+                  type: array
+                  minItems: 1
+                  maxItems: 5
+                  uniqueItems: true
+                  items: { type: string, enum: [IN_APP, EMAIL, SMS, PUSH, WHATSAPP] }
+      responses:
+        "200": { description: Delivery jobs enqueued }
+        "404": { description: Notification not found }
+  /api/v1/notification-deliveries/process-due:
+    post:
+      tags: [Notification Delivery]
+      summary: Process due delivery jobs
+      description: System administrator operation intended to be invoked by scheduler infrastructure.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                limit: { type: integer, minimum: 1, maximum: 100, default: 25 }
+      responses:
+        "200": { description: Delivery processing summary }
+        "403": { description: System administrator required }
+  /api/v1/notification-deliveries/{deliveryId}:
+    get:
+      tags: [Notification Delivery]
+      summary: Get delivery state and attempt history
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: deliveryId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Notification delivery }
+        "404": { description: Delivery not found }
+  /api/v1/notification-deliveries/{deliveryId}/retry:
+    post:
+      tags: [Notification Delivery]
+      summary: Requeue a failed notification delivery
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: deliveryId, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Delivery requeued }
+        "409": { description: Delivery cannot be retried in current state }
+  /audit:
+    get:
+      tags: [Audit]
+      summary: List audit events
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: action
+          schema: { type: string }
+        - in: query
+          name: actorRole
+          schema: { type: string }
+        - in: query
+          name: entityType
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      responses:
+        "200": { description: Audit events retrieved }
+        "403": { description: System administrator access required }
+
+  /audit/summary:
+    get:
+      tags: [Audit]
+      summary: Summarize audit events by action
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { description: Audit summary retrieved }
+        "403": { description: System administrator access required }
+
+  /observability/metrics:
+    get:
+      tags: [Observability]
+      summary: Read in-process HTTP metrics
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { description: Operational metrics retrieved }
+        "403": { description: System administrator access required }
+
+  /observability/diagnostics:
+    get:
+      tags: [Observability]
+      summary: Read process and dependency diagnostics
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { description: Operational diagnostics retrieved }
+        "403": { description: System administrator access required }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [name, username, email, phone, password, confirmPassword]
+      properties:
+        name:
+          type: string
+          example: Tourist One
+        username:
+          type: string
+          example: tourist.one
+        email:
+          type: string
+          format: email
+          example: tourist@example.com
+        phone:
+          type: string
+          example: "+919876543210"
+        password:
+          type: string
+          format: password
+        confirmPassword:
+          type: string
+          format: password
+    OnboardingRequest:
+      type: object
+      required: [gender, age, emergencyPhone, nationality]
+      properties:
+        gender:
+          type: string
+          enum: [MALE, FEMALE, OTHER, PREFER_NOT_TO_SAY]
+        age:
+          type: integer
+          minimum: 1
+          maximum: 120
+        medicalHistory:
+          type: [string, "null"]
+        emergencyPhone:
+          type: string
+          example: "+919876543211"
+        nationality:
+          type: string
+          example: Indian
+    ProfileUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        profilePicUrl:
+          type: [string, "null"]
+          format: uri
+        gender:
+          type: string
+          enum: [MALE, FEMALE, OTHER, PREFER_NOT_TO_SAY]
+        age:
+          type: integer
+        medicalHistory:
+          type: [string, "null"]
+        emergencyPhone:
+          type: string
+        nationality:
+          type: string
+    SuccessResponse:
+      type: object
+      required: [success, message, data, requestId, timestamp]
+      properties:
+        success:
+          type: boolean
+          const: true
+        message:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        requestId:
+          type: string
+          description: Server-generated UUID or validated caller-provided correlation ID.
+        timestamp:
+          type: string
+          format: date-time
+    ErrorResponse:
+      type: object
+      required: [success, error, requestId, timestamp]
+      properties:
+        success:
+          type: boolean
+          const: false
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details: {}
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time

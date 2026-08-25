@@ -1,0 +1,1093 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                  String        @id @default(uuid()) @db.Uuid
+  name                String        @db.VarChar(120)
+  username            String        @unique @db.VarChar(40)
+  email               String        @unique @db.VarChar(254)
+  emailVerifiedAt     DateTime?
+  phone               String        @unique @db.VarChar(20)
+  passwordHash        String
+  status              AccountStatus @default(ACTIVE)
+  onboardingCompleted Boolean       @default(false)
+  lastLoginAt         DateTime?
+  passwordChangedAt   DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  profilePicUrl       String?
+  gender              Gender?
+  age                 Int?
+  dateOfBirth         DateTime?
+  medicalHistory            String?
+  medicalDocumentUrl        String?
+  medicalDocumentName       String?       @db.VarChar(255)
+  emergencyPhone            String?       @db.VarChar(20)
+  nationality               String?       @db.VarChar(80)
+  preferredLanguage         String?       @db.VarChar(40)
+  emergencyContactName      String?       @db.VarChar(120)
+  emergencyContactRelation  String?       @db.VarChar(60)
+  bloodGroup                String?       @db.VarChar(8)
+  governmentIdType          String?       @db.VarChar(20)
+  governmentIdNumber        String?       @db.VarChar(120)
+  liveTrackingEnabled       Boolean       @default(true)
+  geoAlertsEnabled          Boolean       @default(true)
+  groupMemberships    GroupMember[]
+  ledGroups           TripGroup[]   @relation("GroupLeader")
+  trips               Trip[]
+  touristCredentials  TouristTripCredential[]
+  groupJoinRequests    GroupJoinRequest[]
+  emailVerificationOtp EmailVerificationOtp?
+
+  @@index([status])
+  @@index([nationality])
+  @@map("users")
+}
+
+model EmailVerificationOtp {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @unique @db.Uuid
+  codeHash   String   @db.VarChar(64)
+  expiresAt  DateTime
+  attempts   Int      @default(0)
+  lastSentAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("email_verification_otps")
+}
+
+model DisasterManager {
+  id                String        @id @default(uuid()) @db.Uuid
+  name              String        @db.VarChar(120)
+  username          String        @unique @db.VarChar(40)
+  email             String        @unique @db.VarChar(254)
+  phone             String        @unique @db.VarChar(20)
+  passwordHash      String
+  status            AccountStatus @default(ACTIVE)
+  organization      String?       @db.VarChar(160)
+  department        String?       @db.VarChar(120)
+  jurisdiction      String?       @db.VarChar(160)
+  staffInfo         String?
+  responderStatus   ResponderStatus @default(AVAILABLE)
+  maxActiveIncidents Int          @default(5)
+  statusChangedAt   DateTime?
+  lastLoginAt       DateTime?
+  passwordChangedAt DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([status])
+  @@index([responderStatus, status])
+  @@index([organization, jurisdiction])
+  @@map("disaster_managers")
+}
+
+model SystemAdmin {
+  id                String        @id @default(uuid()) @db.Uuid
+  name              String        @db.VarChar(120)
+  username          String        @unique @db.VarChar(40)
+  email             String        @unique @db.VarChar(254)
+  phone             String        @unique @db.VarChar(20)
+  passwordHash      String
+  status            AccountStatus @default(ACTIVE)
+  lastLoginAt       DateTime?
+  passwordChangedAt DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([status])
+  @@map("system_admins")
+}
+
+model EmergencyServiceAccount {
+  id                String            @id @default(uuid()) @db.Uuid
+  name              String            @db.VarChar(120)
+  username          String            @unique @db.VarChar(40)
+  email             String            @unique @db.VarChar(254)
+  phone             String            @unique @db.VarChar(20)
+  passwordHash      String
+  status            AccountStatus     @default(ACTIVE)
+  serviceType       EmergencyUnitType
+  organization      String?           @db.VarChar(160)
+  address           String?           @db.VarChar(240)
+  jurisdiction      String?           @db.VarChar(160)
+  latitude          Float
+  longitude         Float
+  locationUpdatedAt DateTime           @default(now())
+  lastLoginAt       DateTime?
+  passwordChangedAt DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  units             EmergencyUnit[]
+
+  @@index([serviceType, status])
+  @@index([latitude, longitude])
+  @@map("emergency_service_accounts")
+}
+
+model AuthSession {
+  id               String    @id @default(uuid()) @db.Uuid
+  accountId        String    @db.Uuid
+  accountRole      Role
+  refreshTokenHash String    @unique @db.VarChar(64)
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  userAgent        String?   @db.VarChar(512)
+  ipAddress        String?   @db.VarChar(64)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([accountId, accountRole, revokedAt])
+  @@index([expiresAt])
+  @@map("auth_sessions")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @db.Uuid
+  action     String   @db.VarChar(100)
+  entityType String?  @db.VarChar(100)
+  entityId   String?  @db.VarChar(100)
+  metadata   Json?
+  ipAddress  String?  @db.VarChar(64)
+  createdAt  DateTime @default(now())
+  actorRole  Role?
+
+  @@index([actorId, actorRole, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+model Trip {
+  id             String        @id @default(uuid()) @db.Uuid
+  touristId      String        @db.Uuid
+  locationName   String        @db.VarChar(160)
+  tripType       TripType
+  status         TripStatus    @default(PLANNED)
+  plannedStartAt DateTime
+  plannedEndAt   DateTime
+  startedAt      DateTime?
+  endedAt        DateTime?
+  cancelledAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  consents       TripConsent[]
+  group          TripGroup?
+  safetyId       TripSafetyId?
+  tourist        User          @relation(fields: [touristId], references: [id], onDelete: Cascade)
+  monitoringPolicy TripMonitoringPolicy?
+  touristCredentials TouristTripCredential[]
+  groupCredential GroupTripCredential?
+
+  @@index([touristId, status, createdAt])
+  @@index([plannedStartAt, plannedEndAt])
+  @@map("trips")
+}
+
+
+model TripMonitoringPolicy {
+  id                       String   @id @default(uuid()) @db.Uuid
+  tripId                   String   @unique @db.Uuid
+  enabled                  Boolean  @default(true)
+  trackingGapAfterMinutes  Int      @default(5)
+  inactivityAfterMinutes   Int      @default(15)
+  inactivityRadiusM        Float    @default(50)
+  groupSeparationM         Float    @default(500)
+  routeDeviationM          Float    @default(300)
+  overtimeGraceMinutes     Int      @default(15)
+  plannedRoute             Json?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  trip                     Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([enabled, updatedAt])
+  @@map("trip_monitoring_policies")
+}
+
+model TripSafetyId {
+  id        String    @id @default(uuid()) @db.Uuid
+  tripId    String    @unique @db.Uuid
+  publicId  String    @unique @db.VarChar(80)
+  issuedAt  DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  trip      Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt, revokedAt])
+  @@map("trip_safety_ids")
+}
+
+model TripConsent {
+  id        String        @id @default(uuid()) @db.Uuid
+  tripId    String        @db.Uuid
+  type      ConsentType
+  status    ConsentStatus @default(GRANTED)
+  grantedAt DateTime      @default(now())
+  revokedAt DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  trip      Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, type])
+  @@index([tripId, status])
+  @@map("trip_consents")
+}
+
+model TripGroup {
+  id          String            @id @default(uuid()) @db.Uuid
+  tripId      String            @unique @db.Uuid
+  name        String            @db.VarChar(160)
+  leaderId    String            @db.Uuid
+  status      GroupStatus       @default(ACTIVE)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  closedAt    DateTime?
+  invitations GroupInvitation[]
+  members     GroupMember[]
+  leader      User              @relation("GroupLeader", fields: [leaderId], references: [id], onDelete: Cascade)
+  trip        Trip              @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  credential  GroupTripCredential?
+  joinRequests GroupJoinRequest[]
+
+  @@index([leaderId, status])
+  @@map("trip_groups")
+}
+
+model GroupMember {
+  id        String          @id @default(uuid()) @db.Uuid
+  groupId   String          @db.Uuid
+  userId    String          @db.Uuid
+  role      GroupMemberRole @default(MEMBER)
+  joinedAt  DateTime        @default(now())
+  leftAt    DateTime?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  group     TripGroup       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([userId, leftAt])
+  @@map("group_members")
+}
+
+model GroupInvitation {
+  id        String    @id @default(uuid()) @db.Uuid
+  groupId   String    @db.Uuid
+  code      String    @unique @db.VarChar(32)
+  tokenHash String    @unique @db.VarChar(64)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  group     TripGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, expiresAt, revokedAt])
+  @@map("group_invitations")
+}
+
+model GroupJoinRequest {
+  id          String                 @id @default(uuid()) @db.Uuid
+  groupId     String                 @db.Uuid
+  userId      String                 @db.Uuid
+  groupIdHash String                 @db.VarChar(66)
+  status      GroupJoinRequestStatus @default(PENDING)
+  requestedAt DateTime               @default(now())
+  decidedAt   DateTime?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  group       TripGroup              @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user        User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId, status, requestedAt])
+  @@index([userId, status, requestedAt])
+  @@map("group_join_requests")
+}
+
+model TouristTripCredential {
+  id              String   @id @default(uuid()) @db.Uuid
+  tripId          String   @db.Uuid
+  userId          String   @db.Uuid
+  publicId        String   @unique @db.VarChar(80)
+  tokenId         String   @unique @db.VarChar(64)
+  chainHash       String   @unique @db.VarChar(66)
+  chainStatus     String   @default("PENDING") @db.VarChar(20)
+  chainTxHash     String?  @db.VarChar(80)
+  chainError      String?
+  issuedAt        DateTime @default(now())
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  trip            Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, userId])
+  @@index([userId, expiresAt, revokedAt])
+  @@index([chainStatus, updatedAt])
+  @@map("tourist_trip_credentials")
+}
+
+model GroupTripCredential {
+  id              String    @id @default(uuid()) @db.Uuid
+  tripId          String    @unique @db.Uuid
+  groupId         String    @unique @db.Uuid
+  publicId        String    @unique @db.VarChar(80)
+  tokenId         String    @unique @db.VarChar(64)
+  chainHash       String    @unique @db.VarChar(66)
+  chainStatus     String    @default("PENDING") @db.VarChar(20)
+  chainTxHash     String?   @db.VarChar(80)
+  chainError      String?
+  issuedAt        DateTime  @default(now())
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  trip            Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  group           TripGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt, revokedAt])
+  @@index([chainStatus, updatedAt])
+  @@map("group_trip_credentials")
+}
+
+model BlockchainAnchorJob {
+  id          String   @id @default(uuid()) @db.Uuid
+  operation   String   @db.VarChar(32)
+  entityType  String   @db.VarChar(32)
+  entityId    String   @db.Uuid
+  payloadHash String   @db.VarChar(66)
+  extraArgs   Json
+  state       String   @default("PENDING") @db.VarChar(20)
+  txHash      String?  @db.VarChar(80)
+  attempts    Int      @default(0)
+  lastError   String?
+  availableAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([state, availableAt, createdAt])
+  @@index([entityType, entityId])
+  @@map("blockchain_anchor_jobs")
+}
+
+enum Role {
+  TOURIST
+  DISASTER_MANAGER
+  SYSTEM_ADMIN
+  POLICE
+  FIRE
+  AMBULANCE
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  DISABLED
+}
+
+enum ResponderStatus {
+  AVAILABLE
+  BUSY
+  OFF_DUTY
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum TripType {
+  SOLO
+  GROUP
+}
+
+enum TripStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum ConsentType {
+  LOCATION_TRACKING
+  EMERGENCY_SHARING
+}
+
+enum ConsentStatus {
+  GRANTED
+  REVOKED
+}
+
+enum GroupStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum GroupMemberRole {
+  LEADER
+  MEMBER
+}
+
+enum GroupJoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+
+model TripParticipantConsent {
+  id        String   @id @default(uuid()) @db.Uuid
+  tripId    String   @db.Uuid
+  userId    String   @db.Uuid
+  grantedAt DateTime @default(now())
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([tripId, userId])
+  @@index([userId, revokedAt])
+  @@map("trip_participant_consents")
+}
+
+model LocationPing {
+  id            String              @id @default(uuid()) @db.Uuid
+  tripId        String              @db.Uuid
+  userId        String              @db.Uuid
+  latitude      Float
+  longitude     Float
+  accuracyM     Float
+  altitudeM     Float?
+  headingDeg    Float?
+  speedMps      Float?
+  batteryLevel  Int?
+  networkStatus NetworkStatus?
+  capturedAt    DateTime
+  receivedAt    DateTime            @default(now())
+  trustStatus   LocationTrustStatus @default(TRUSTED)
+  createdAt     DateTime            @default(now())
+  @@unique([tripId, userId, capturedAt])
+  @@index([tripId, userId, capturedAt])
+  @@map("location_pings")
+}
+
+model LatestTrustedLocation {
+  id             String   @id @default(uuid()) @db.Uuid
+  tripId         String   @db.Uuid
+  userId         String   @db.Uuid
+  locationPingId String   @db.Uuid
+  latitude       Float
+  longitude      Float
+  accuracyM      Float
+  capturedAt     DateTime
+  updatedAt      DateTime @updatedAt
+  @@unique([tripId, userId])
+  @@index([locationPingId])
+  @@map("latest_trusted_locations")
+}
+
+model SafetyZone {
+  id            String           @id @default(uuid()) @db.Uuid
+  name          String           @db.VarChar(120)
+  description   String?
+  type          SafetyZoneType
+  severity      SafetySeverity   @default(LOW)
+  geometryType  RiskZoneGeometry @default(CIRCLE)
+  latitude      Float?
+  longitude     Float?
+  radiusM       Float?
+  polygon       Json?
+  active        Boolean          @default(true)
+  validFrom     DateTime?
+  validUntil    DateTime?
+  createdById   String?          @db.Uuid
+  createdByRole Role?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  @@index([active, type])
+  @@index([active, severity, geometryType])
+  @@index([validFrom, validUntil])
+  @@map("safety_zones")
+}
+
+model TripCheckIn {
+  id          String        @id @default(uuid()) @db.Uuid
+  tripId      String        @db.Uuid
+  userId      String        @db.Uuid
+  dueAt       DateTime
+  status      CheckInStatus @default(PENDING)
+  checkedInAt DateTime?
+  missedAt    DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  @@index([tripId, userId, status, dueAt])
+  @@index([status, dueAt])
+  @@map("trip_check_ins")
+}
+
+model GeofenceEvent {
+  id         String            @id @default(uuid()) @db.Uuid
+  tripId     String            @db.Uuid
+  userId     String            @db.Uuid
+  zoneId     String            @db.Uuid
+  locationPingId String?       @db.Uuid
+  type       GeofenceEventType
+  occurredAt DateTime          @default(now())
+  createdAt  DateTime          @default(now())
+  @@index([tripId, userId, zoneId, occurredAt])
+  @@index([zoneId, occurredAt])
+  @@index([locationPingId])
+  @@map("geofence_events")
+}
+
+model SafetyAlert {
+  id             String            @id @default(uuid()) @db.Uuid
+  tripId         String            @db.Uuid
+  userId         String            @db.Uuid
+  type           SafetyAlertType
+  level          SafetyAlertLevel
+  status         SafetyAlertStatus @default(OPEN)
+  sourceId       String?           @db.VarChar(100)
+  message        String            @db.VarChar(240)
+  details        Json?
+  acknowledgedAt DateTime?
+  resolvedAt     DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  @@index([tripId, userId, status, createdAt])
+  @@index([type, sourceId, status])
+  @@map("safety_alerts")
+}
+
+model Incident {
+  id                  String             @id @default(uuid()) @db.Uuid
+  tripId              String             @db.Uuid
+  userId              String             @db.Uuid
+  sourceType          IncidentSourceType
+  sourceSafetyAlertId String?            @unique @db.Uuid
+  severity            IncidentSeverity
+  status              IncidentStatus     @default(OPEN)
+  title               String             @db.VarChar(160)
+  description         String?            @db.VarChar(1000)
+  latitude            Float?
+  longitude           Float?
+  acknowledgedById    String?            @db.Uuid
+  acknowledgedByRole  Role?
+  acknowledgedAt      DateTime?
+  startedAt           DateTime?
+  resolvedById        String?            @db.Uuid
+  resolvedByRole      Role?
+  resolvedAt          DateTime?
+  dismissedAt         DateTime?
+  resolutionNote      String?            @db.VarChar(1000)
+  assignedToId        String?            @db.Uuid
+  assignedToRole      Role?
+  assignedAt          DateTime?
+  escalationLevel     Int                @default(0)
+  lastEscalatedAt     DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  dispatches           Dispatch[]
+  attachments          Attachment[]
+  @@index([status, severity, createdAt])
+  @@index([tripId, userId, status])
+  @@map("incidents")
+}
+
+model IncidentMessage {
+  id         String   @id @default(uuid()) @db.Uuid
+  incidentId String   @db.Uuid
+  senderId   String   @db.Uuid
+  senderRole Role
+  body       String   @db.VarChar(2000)
+  createdAt  DateTime @default(now())
+
+  @@index([incidentId, createdAt])
+  @@index([senderId, senderRole, createdAt])
+  @@map("incident_messages")
+}
+
+model IncidentEvent {
+  id         String            @id @default(uuid()) @db.Uuid
+  incidentId String            @db.Uuid
+  type       IncidentEventType
+  actorId    String?           @db.Uuid
+  actorRole  Role?
+  note       String?           @db.VarChar(1000)
+  metadata   Json?
+  createdAt  DateTime          @default(now())
+  @@index([incidentId, createdAt])
+  @@map("incident_events")
+}
+
+model SosRequest {
+  id            String        @id @default(uuid()) @db.Uuid
+  incidentId    String        @unique @db.Uuid
+  tripId        String        @db.Uuid
+  userId        String        @db.Uuid
+  emergencyType EmergencyType
+  message       String?       @db.VarChar(500)
+  latitude      Float?
+  longitude     Float?
+  accuracyM     Float?
+  triggeredAt   DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+  @@index([tripId, userId, triggeredAt])
+  @@map("sos_requests")
+}
+
+enum NetworkStatus {
+  WIFI
+  CELLULAR
+  OFFLINE
+  UNKNOWN
+}
+enum LocationTrustStatus {
+  TRUSTED
+  REJECTED
+}
+enum SafetyZoneType {
+  SAFE
+  RISK
+}
+enum RiskZoneGeometry {
+  CIRCLE
+  POLYGON
+}
+enum SafetySeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+enum CheckInStatus {
+  PENDING
+  COMPLETED
+  MISSED
+}
+enum GeofenceEventType {
+  ENTER
+  EXIT
+}
+enum SafetyAlertType {
+  RISK_ZONE_ENTRY
+  MISSED_CHECK_IN
+  STALE_LOCATION
+  TRACKING_INTERRUPTION
+  INACTIVITY
+  TRIP_OVERTIME
+  GROUP_SEPARATION
+  ROUTE_DEVIATION
+}
+enum SafetyAlertLevel {
+  WARNING
+  DANGER
+}
+enum SafetyAlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+enum IncidentSourceType {
+  SAFETY_ALERT
+  SOS
+}
+enum IncidentSeverity {
+  WARNING
+  DANGER
+  CRITICAL
+}
+enum IncidentStatus {
+  OPEN
+  ACKNOWLEDGED
+  IN_PROGRESS
+  RESOLVED
+  DISMISSED
+}
+enum IncidentEventType {
+  CREATED
+  ACKNOWLEDGED
+  RESPONSE_STARTED
+  RESOLVED
+  DISMISSED
+  ESCALATED
+}
+enum EmergencyType {
+  MEDICAL
+  LOST
+  THREAT
+  ACCIDENT
+  NATURAL_DISASTER
+  OTHER
+}
+
+
+
+model SignalLossCase {
+  id                 String                   @id @default(uuid()) @db.Uuid
+  tripId             String                   @db.Uuid
+  groupId            String                   @db.Uuid
+  userId             String                   @db.Uuid
+  leaderId           String                   @db.Uuid
+  status             SignalLossCaseStatus     @default(WAITING_FOR_LEADER)
+  detectedAt         DateTime                 @default(now())
+  responseDeadlineAt DateTime
+  nextReminderAt     DateTime
+  lastNotifiedAt     DateTime                 @default(now())
+  leaderResponse     SignalLossLeaderResponse?
+  leaderRespondedAt  DateTime?
+  escalatedAt        DateTime?
+  resolvedAt         DateTime?
+  incidentId         String?                  @db.Uuid
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+
+  @@index([status, responseDeadlineAt])
+  @@index([status, nextReminderAt])
+  @@index([tripId, userId, status])
+  @@map("signal_loss_cases")
+}
+
+enum SignalLossCaseStatus {
+  WAITING_FOR_LEADER
+  ESCALATED
+  FALSE_ALARM
+  RESOLVED
+}
+
+enum SignalLossLeaderResponse {
+  FALSE_ALARM
+  CONFIRMED_DANGER
+}
+
+model Notification {
+  id              String             @id @default(uuid()) @db.Uuid
+  targetAccountId String             @db.Uuid
+  targetRole      Role
+  incidentId      String?            @db.Uuid
+  type            NotificationType
+  dedupeKey       String             @unique @db.VarChar(220)
+  title           String             @db.VarChar(160)
+  message         String             @db.VarChar(500)
+  readAt          DateTime?
+  createdAt       DateTime           @default(now())
+  deliveries      NotificationDelivery[]
+  @@index([targetAccountId, targetRole, readAt, createdAt])
+  @@index([incidentId, createdAt])
+  @@map("notifications")
+}
+
+model IncidentAssignment {
+  id             String   @id @default(uuid()) @db.Uuid
+  incidentId     String   @db.Uuid
+  responderId    String   @db.Uuid
+  responderRole  Role
+  assignedById   String   @db.Uuid
+  assignedByRole Role
+  assignedAt     DateTime @default(now())
+  unassignedAt   DateTime?
+  @@index([incidentId, unassignedAt, assignedAt])
+  @@index([responderId, responderRole, unassignedAt])
+  @@map("incident_assignments")
+}
+
+model IncidentNote {
+  id         String   @id @default(uuid()) @db.Uuid
+  incidentId String   @db.Uuid
+  authorId   String   @db.Uuid
+  authorRole Role
+  note       String   @db.VarChar(1000)
+  createdAt  DateTime @default(now())
+  @@index([incidentId, createdAt])
+  @@map("incident_notes")
+}
+
+enum NotificationType {
+  INCIDENT_CREATED
+  INCIDENT_ACKNOWLEDGED
+  INCIDENT_ASSIGNED
+  RESPONSE_STARTED
+  INCIDENT_RESOLVED
+  INCIDENT_DISMISSED
+  INCIDENT_ESCALATED
+  GROUP_MEMBER_EMERGENCY
+}
+
+
+enum NotificationDeliveryChannel {
+  IN_APP
+  EMAIL
+  SMS
+  PUSH
+  WHATSAPP
+}
+
+enum NotificationDeliveryStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+  RETRY_SCHEDULED
+}
+
+model NotificationDelivery {
+  id               String                      @id @default(uuid()) @db.Uuid
+  notificationId   String                      @db.Uuid
+  channel          NotificationDeliveryChannel
+  status           NotificationDeliveryStatus  @default(PENDING)
+  attemptsCount    Int                         @default(0)
+  provider         String?                     @db.VarChar(80)
+  externalId       String?                     @db.VarChar(200)
+  nextAttemptAt    DateTime?
+  lastAttemptAt    DateTime?
+  lastErrorCode    String?                     @db.VarChar(100)
+  lastErrorMessage String?                     @db.VarChar(500)
+  sentAt           DateTime?
+  failedAt         DateTime?
+  createdAt        DateTime                    @default(now())
+  updatedAt        DateTime                    @updatedAt
+  notification     Notification                @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  attempts         NotificationDeliveryAttempt[]
+
+  @@unique([notificationId, channel])
+  @@index([status, nextAttemptAt])
+  @@index([notificationId, createdAt])
+  @@map("notification_deliveries")
+}
+
+model NotificationDeliveryAttempt {
+  id            String                     @id @default(uuid()) @db.Uuid
+  deliveryId    String                     @db.Uuid
+  attemptNumber Int
+  status        NotificationDeliveryStatus
+  provider      String?                    @db.VarChar(80)
+  externalId    String?                    @db.VarChar(200)
+  errorCode     String?                    @db.VarChar(100)
+  errorMessage  String?                    @db.VarChar(500)
+  attemptedAt   DateTime                   @default(now())
+  delivery      NotificationDelivery       @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@unique([deliveryId, attemptNumber])
+  @@index([deliveryId, attemptedAt])
+  @@map("notification_delivery_attempts")
+}
+
+
+model HazardReport {
+  id             String         @id @default(uuid()) @db.Uuid
+  reporterId     String         @db.Uuid
+  reporterRole   Role
+  type           HazardType
+  severity       HazardSeverity @default(MEDIUM)
+  status         HazardStatus   @default(PENDING)
+  title          String         @db.VarChar(160)
+  description    String         @db.VarChar(1000)
+  latitude       Float
+  longitude      Float
+  locationName   String?        @db.VarChar(200)
+  occurredAt     DateTime
+  reviewedById   String?        @db.Uuid
+  reviewedByRole Role?
+  moderationNote String?        @db.VarChar(1000)
+  verifiedAt     DateTime?
+  rejectedAt     DateTime?
+  resolvedAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  attachments    Attachment[]
+
+  @@index([status, severity, createdAt])
+  @@index([type, status, createdAt])
+  @@index([reporterId, reporterRole, createdAt])
+  @@index([latitude, longitude, status])
+  @@map("hazard_reports")
+}
+
+enum HazardType {
+  FLOOD
+  LANDSLIDE
+  FIRE
+  ROAD_BLOCK
+  WEATHER
+  CROWD
+  UNSAFE_AREA
+  MEDICAL
+  OTHER
+}
+
+enum HazardSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum HazardStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  RESOLVED
+}
+
+model Attachment {
+  id           String               @id @default(uuid()) @db.Uuid
+  targetType   AttachmentTargetType
+  incidentId   String?              @db.Uuid
+  hazardId     String?              @db.Uuid
+  uploaderId   String               @db.Uuid
+  uploaderRole Role
+  kind         EvidenceKind
+  originalName String               @db.VarChar(255)
+  mimeType     String               @db.VarChar(120)
+  sizeBytes    Int
+  storageKey   String               @unique @db.VarChar(255)
+  checksumSha256 String             @db.Char(64)
+  createdAt    DateTime             @default(now())
+
+  incident Incident?    @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  hazard   HazardReport? @relation(fields: [hazardId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId, createdAt])
+  @@index([hazardId, createdAt])
+  @@index([uploaderId, uploaderRole, createdAt])
+  @@map("attachments")
+}
+
+enum AttachmentTargetType {
+  INCIDENT
+  HAZARD
+}
+
+enum EvidenceKind {
+  IMAGE
+  VIDEO
+  DOCUMENT
+}
+
+model EmergencyUnit {
+  id            String              @id @default(uuid()) @db.Uuid
+  name          String              @db.VarChar(120)
+  type          EmergencyUnitType
+  status        EmergencyUnitStatus @default(AVAILABLE)
+  serviceAccountId String?          @db.Uuid
+  organization  String?             @db.VarChar(160)
+  jurisdiction  String?             @db.VarChar(160)
+  contactPhone  String?             @db.VarChar(20)
+  latitude      Float?
+  longitude     Float?
+  locationUpdatedAt DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  dispatches     Dispatch[]
+  serviceAccount EmergencyServiceAccount? @relation(fields: [serviceAccountId], references: [id], onDelete: SetNull)
+  @@index([type, status])
+  @@index([jurisdiction, status])
+  @@index([serviceAccountId, status])
+  @@index([latitude, longitude])
+  @@map("emergency_units")
+}
+
+model Dispatch {
+  id                String            @id @default(uuid()) @db.Uuid
+  incidentId        String            @db.Uuid
+  requestedUnitType EmergencyUnitType
+  unitId            String?           @db.Uuid
+  status            DispatchStatus    @default(REQUESTED)
+  requestedById     String            @db.Uuid
+  requestedByRole   Role
+  requestedAt       DateTime          @default(now())
+  assignedAt        DateTime?
+  dispatchedAt      DateTime?
+  enRouteAt         DateTime?
+  onSceneAt         DateTime?
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  incident          Incident          @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  unit              EmergencyUnit?    @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  events            DispatchEvent[]
+  @@index([incidentId, createdAt])
+  @@index([unitId, status])
+  @@index([status, requestedAt])
+  @@map("dispatches")
+}
+
+model DispatchEvent {
+  id         String            @id @default(uuid()) @db.Uuid
+  dispatchId String            @db.Uuid
+  type       DispatchEventType
+  actorId    String?           @db.Uuid
+  actorRole  Role?
+  note       String?           @db.VarChar(1000)
+  metadata   Json?
+  createdAt  DateTime          @default(now())
+  dispatch   Dispatch          @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
+  @@index([dispatchId, createdAt])
+  @@map("dispatch_events")
+}
+
+enum EmergencyUnitType {
+  POLICE
+  AMBULANCE
+  FIRE
+  RESCUE
+  OTHER
+}
+
+enum EmergencyUnitStatus {
+  AVAILABLE
+  DISPATCHED
+  OUT_OF_SERVICE
+}
+
+enum DispatchStatus {
+  REQUESTED
+  ASSIGNED
+  DISPATCHED
+  EN_ROUTE
+  ON_SCENE
+  COMPLETED
+  CANCELLED
+}
+
+enum DispatchEventType {
+  REQUESTED
+  ASSIGNED
+  DISPATCHED
+  EN_ROUTE
+  ON_SCENE
+  COMPLETED
+  CANCELLED
+}
+
+model Destination {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique @db.VarChar(80)
+  name        String   @unique @db.VarChar(120)
+  state       String   @db.VarChar(120)
+  country     String   @db.VarChar(80) @default("India")
+  latitude    Float
+  longitude   Float
+  description String?  @db.VarChar(500)
+  imageUrl    String?
+  featured    Boolean  @default(true)
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active, featured, sortOrder])
+  @@index([name])
+  @@map("destinations")
+}
