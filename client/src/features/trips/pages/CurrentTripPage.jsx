@@ -85,6 +85,10 @@ export function CurrentTripPage() {
 
     const handleConnect = () => setIntegritySocketConnected(true);
     const handleDisconnect = () => setIntegritySocketConnected(false);
+    const handleConnectError = (error) => {
+      setIntegritySocketConnected(false);
+      console.error('Realtime integrity socket connection failed:', error?.message || error);
+    };
     const handleIntegrity = ({ integrity } = {}) => {
       if (!integrity || integrity.credentialId !== individualCredential.id || integrity.tripId !== trip.id) return;
 
@@ -117,6 +121,7 @@ export function CurrentTripPage() {
 
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
+    socket.on('connect_error', handleConnectError);
     socket.on('blockchain:integrity', handleIntegrity);
     socket.connect();
 
@@ -125,6 +130,7 @@ export function CurrentTripPage() {
       integrityTimerRef.current = null;
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
+      socket.off('connect_error', handleConnectError);
       socket.off('blockchain:integrity', handleIntegrity);
       socket.disconnect();
       setIntegritySocketConnected(false);
