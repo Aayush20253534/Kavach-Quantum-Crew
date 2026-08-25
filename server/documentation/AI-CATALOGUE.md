@@ -15,7 +15,7 @@ The backend exposes two distinct AI boundaries:
 1. **Staff integration contracts** under `/api/v1/integrations/ai/*` for risk assessment and hazard analysis. These are restricted to `DISASTER_MANAGER` and `SYSTEM_ADMIN` and return `501 INTEGRATION_PROVIDER_NOT_CONFIGURED` with the default provider.
 2. **Tourist chatbot contract** at `POST /api/v1/chatbot/messages`. It is restricted to authenticated `TOURIST` accounts and returns `501 CHATBOT_PROVIDER_NOT_CONFIGURED` until a concrete chatbot provider is injected.
 
-The current frontend `ChatbotWidget.jsx` has not yet been wired to the backend chatbot route and still creates a temporary simulated response locally.
+The frontend `ChatbotWidget.jsx` is wired to the standalone `ai-ml` chatbot service through `VITE_AI_SERVICE_URL`. The legacy main-backend chatbot contract may remain for compatibility, but the browser no longer uses the simulated local response.
 
 ## Endpoint summary
 
@@ -92,7 +92,7 @@ No Gemini, OpenAI, Groq, local LLM, RAG pipeline, or other inference provider is
 
 ## Chatbot boundary
 
-The tourist-facing chatbot API is implemented at `POST /api/v1/chatbot/messages`, but the default provider is unconfigured. The frontend widget is still local/simulated, so end-to-end chatbot inference is not complete. Do not route tourist chat messages through staff-only risk/hazard endpoints.
+The standalone chatbot runtime is deployed from `ai-ml` and exposes `POST /api/v1/chatbot/messages`. The frontend calls that service directly using `VITE_AI_SERVICE_URL`. Groq is configured only on the AI service. Do not route tourist chat messages through staff-only risk/hazard endpoints.
 
 ## Emergency dispatch integration
 

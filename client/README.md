@@ -150,3 +150,8 @@ The frontend now consumes the real emergency-service backend for Active Dispatch
 Group QR codes are standard HTTPS join links, so system camera apps and ordinary scanners can open them. In-app scanning still supports the same signed join token.
 
 When the tourist has a `PLANNED` or `ACTIVE` trip, name, date of birth, email, and phone are displayed as locked profile fields. The backend enforces the same restriction; the disabled UI is only a usability cue, not the security boundary.
+
+
+## Rakshak AI
+
+The floating chatbot calls the separately deployed AI service. Set `VITE_AI_SERVICE_URL` to the Render service origin, for example `https://kavach-ai.onrender.com`. The client sends the existing access token when available; Groq API keys must never be added to Vite variables.

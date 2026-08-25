@@ -1,9 +1,11 @@
-import { ChatMessage } from "./types";
+import { ChatMessage } from "./types.js";
 
-const MAX_HISTORY = 10;
-
-// sessionId -> last N messages. In-memory only; resets on server restart.
 const sessionHistory = new Map<string, ChatMessage[]>();
+
+function maxHistory(): number {
+  const parsed = Number(process.env.CHATBOT_MAX_HISTORY || 10);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.min(Math.floor(parsed), 50) : 10;
+}
 
 export function getHistory(sessionId: string): ChatMessage[] {
   return sessionHistory.get(sessionId) ?? [];
@@ -11,6 +13,5 @@ export function getHistory(sessionId: string): ChatMessage[] {
 
 export function appendToHistory(sessionId: string, message: ChatMessage): void {
   const existing = sessionHistory.get(sessionId) ?? [];
-  const updated = [...existing, message].slice(-MAX_HISTORY);
-  sessionHistory.set(sessionId, updated);
+  sessionHistory.set(sessionId, [...existing, message].slice(-maxHistory()));
 }
