@@ -1,5 +1,6 @@
 import { prisma } from "../../config/database.js";
 import { environment } from "../../config/environment.js";
+import { logger } from "../../config/logger.js";
 import { blockchainFailure, blockchainService } from "./blockchain.service.js";
 
 const credentialModel = (db, entityType) =>
@@ -125,6 +126,19 @@ export const blockchainQueue = Object.freeze({
         }));
       }
       await prisma.$transaction(failureOps);
+      logger.warn(
+        {
+          jobId: job.id,
+          operation: job.operation,
+          entityType: job.entityType,
+          entityId: job.entityId,
+          state: failed ? "FAILED" : "PENDING",
+          attempts,
+          maxAttempts: environment.BLOCKCHAIN_MAX_ATTEMPTS,
+          failure,
+        },
+        "Blockchain anchor operation failed",
+      );
     }
     return true;
   },

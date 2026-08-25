@@ -28,21 +28,60 @@ export const blockchainIntegrityService = Object.freeze({
         { credentialId: credential.id, tripId: credential.tripId },
         "Blockchain integrity skipped because no individual snapshot job exists",
       );
-      return false;
-    }
-
-    if (snapshotJob.state === "FAILED") {
-      const retried = await blockchainQueue.retryFailedSnapshots("INDIVIDUAL", credential.id);
-      logger.warn(
-        { credentialId: credential.id, tripId: credential.tripId, retried },
-        "Retrying failed blockchain identity snapshot before integrity reconciliation",
+      realtimePublisher.publishBlockchainIntegrity(
+        credential.userId,
+        integrityPayload(credential, "INTEGRITY_UNAVAILABLE", {
+          message: "No blockchain identity snapshot exists for this credential, so integrity cannot be approved.",
+        }),
       );
       return false;
     }
 
-    if (snapshotJob.state !== "CONFIRMED") return false;
+    let latest;
+    try {
+      // Trust the chain first. A local SNAPSHOT job can be marked FAILED even when the
+      // transaction reached Sepolia but the gateway response timed out. Reading the
+      // latest snapshot prevents that bookkeeping failure from blocking reconciliation.
+      latest = await blockchainService.latestSnapshot(credential.chainHash);
+    } catch (error) {
+      if (snapshotJob.state === "FAILED") {
+        const retried = await blockchainQueue.retryFailedSnapshots("INDIVIDUAL", credential.id);
+        logger.warn(
+          {
+            credentialId: credential.id,
+            tripId: credential.tripId,
+            retried,
+            snapshotJobError: snapshotJob.lastError,
+            err: error,
+          },
+          "Trusted blockchain snapshot unavailable; retrying failed identity snapshot",
+        );
+      }
+      realtimePublisher.publishBlockchainIntegrity(
+        credential.userId,
+        integrityPayload(credential, "INTEGRITY_UNAVAILABLE", {
+          message: "Blockchain integrity snapshot is not currently readable. Protected data cannot be approved until recovery succeeds.",
+        }),
+      );
+      return false;
+    }
 
-    const latest = await blockchainService.latestSnapshot(credential.chainHash);
+    if (!latest?.ciphertext || latest.ciphertext === "0x" || Number(latest.sequence || 0) < 1) {
+      if (snapshotJob.state === "FAILED") {
+        const retried = await blockchainQueue.retryFailedSnapshots("INDIVIDUAL", credential.id);
+        logger.warn(
+          { credentialId: credential.id, tripId: credential.tripId, retried, snapshotJobError: snapshotJob.lastError },
+          "No trusted on-chain identity snapshot yet; retrying failed identity snapshot",
+        );
+      }
+      realtimePublisher.publishBlockchainIntegrity(
+        credential.userId,
+        integrityPayload(credential, "INTEGRITY_UNAVAILABLE", {
+          message: "No confirmed blockchain identity snapshot is available yet.",
+        }),
+      );
+      return false;
+    }
     if (Number(latest.snapshotType) !== 1) return false;
     const payload = decryptSnapshot(latest.ciphertext);
     if (hashSnapshot(payload).toLowerCase() !== String(latest.payloadHash).toLowerCase()) {
@@ -70,7 +109,17 @@ export const blockchainIntegrityService = Object.freeze({
       ...(destinationChanged ? ["destination"] : []),
     ];
 
-    if (!tamperedFields.length) return false;
+    if (!tamperedFields.length) {
+      realtimePublisher.publishBlockchainIntegrity(
+        current.userId,
+        integrityPayload(current, "VERIFIED", {
+          restored: false,
+          snapshotSequence: Number(latest.sequence),
+          message: "Blockchain integrity approved.",
+        }),
+      );
+      return false;
+    }
 
     const detectedAt = new Date().toISOString();
     realtimePublisher.publishBlockchainIntegrity(
@@ -78,7 +127,15 @@ export const blockchainIntegrityService = Object.freeze({
       integrityPayload(current, "DB_TAMPERED", {
         detectedAt,
         tamperedFields,
-        message: "Database tampering detected. Restoring trusted values from blockchain.",
+        message: "Database tampering detected.",
+      }),
+    );
+    realtimePublisher.publishBlockchainIntegrity(
+      current.userId,
+      integrityPayload(current, "FIXING", {
+        detectedAt,
+        tamperedFields,
+        message: "Restoring trusted values from the blockchain snapshot.",
       }),
     );
 
@@ -96,13 +153,24 @@ export const blockchainIntegrityService = Object.freeze({
 
     realtimePublisher.publishBlockchainIntegrity(
       current.userId,
+      integrityPayload(current, "FIXED", {
+        detectedAt,
+        correctedAt: new Date().toISOString(),
+        tamperedFields,
+        restored: true,
+        snapshotSequence: Number(latest.sequence),
+        message: "Tampered database values were restored from blockchain.",
+      }),
+    );
+    realtimePublisher.publishBlockchainIntegrity(
+      current.userId,
       integrityPayload(current, "VERIFIED", {
         detectedAt,
         correctedAt: new Date().toISOString(),
         tamperedFields,
         restored: true,
         snapshotSequence: Number(latest.sequence),
-        message: "Database values restored from blockchain and verified.",
+        message: "Blockchain integrity approved.",
       }),
     );
     return true;
