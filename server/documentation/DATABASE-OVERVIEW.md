@@ -47,3 +47,7 @@ Evidence bytes live behind the storage adapter; the DB stores metadata/checksum/
 ## Tourist email verification data
 
 `User.emailVerifiedAt` records when the current tourist email was verified. `EmailVerificationOtp` is a one-to-one temporary record containing only a keyed code hash plus expiry, attempt count, and last-send timestamp. The raw six-digit OTP is never persisted. Successful verification deletes the OTP record. Existing tourists were backfilled as verified by migration `20260822011000_email_verification_otp`.
+
+## Emergency service data
+
+`EmergencyServiceAccount` stores Police/Fire/Ambulance operator accounts and geolocation. `EmergencyUnit` now has optional `serviceAccountId`, `latitude`, `longitude`, and `locationUpdatedAt`. Existing standalone units remain valid. `Role` includes `POLICE`, `FIRE`, and `AMBULANCE`. The migration is `20260825161000_emergency_service_dispatch`.

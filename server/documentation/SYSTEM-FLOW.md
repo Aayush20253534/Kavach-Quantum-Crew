@@ -200,3 +200,7 @@ QR scan
   -> if anchor is confirmed, API reads TrustAnchor verifyId
   -> result shown as VALID / INVALID with blockchain status
 ```
+
+## Emergency fleet flow
+
+Incident/SOS -> Disaster Management -> choose Police/Fire/Ambulance -> manual assignment or nearest-unit auto assignment -> service account receives assignment -> service sends location/status updates -> tourist receives delivery-style tracking snapshots/events -> unit becomes available again after completion. Both SOS and manually originated incidents use the same dispatch engine.

@@ -31,6 +31,9 @@ const accountDelegate = (db, role) => {
   if (role === ROLES.TOURIST) return db.user;
   if (role === ROLES.DISASTER_MANAGER) return db.disasterManager;
   if (role === ROLES.SYSTEM_ADMIN) return db.systemAdmin;
+  if ([ROLES.POLICE, ROLES.FIRE, ROLES.AMBULANCE].includes(role)) {
+    return db.emergencyServiceAccount;
+  }
   return null;
 };
 
@@ -40,17 +43,18 @@ const selectForRole = (role) =>
 export const createAuthRepository = ({ db = prisma } = {}) => ({
   async usernameExists(username) {
     const normalized = username.trim().toLowerCase();
-    const [tourist, disasterManager, systemAdmin] = await Promise.all([
+    const [tourist, disasterManager, systemAdmin, emergencyService] = await Promise.all([
       db.user.findUnique({ where: { username: normalized }, select: { id: true } }),
       db.disasterManager.findUnique({ where: { username: normalized }, select: { id: true } }),
       db.systemAdmin.findUnique({ where: { username: normalized }, select: { id: true } }),
+      db.emergencyServiceAccount.findUnique({ where: { username: normalized }, select: { id: true } }),
     ]);
-    return Boolean(tourist || disasterManager || systemAdmin);
+    return Boolean(tourist || disasterManager || systemAdmin || emergencyService);
   },
 
   async findRegistrationConflict({ username, email, phone }) {
     const where = { OR: [{ username }, { email }, { phone }] };
-    const [tourist, disasterManager, systemAdmin] = await Promise.all([
+    const [tourist, disasterManager, systemAdmin, emergencyService] = await Promise.all([
       db.user.findFirst({ where, select: { username: true, email: true, phone: true } }),
       db.disasterManager.findFirst({
         where,
@@ -60,8 +64,12 @@ export const createAuthRepository = ({ db = prisma } = {}) => ({
         where,
         select: { username: true, email: true, phone: true },
       }),
+      db.emergencyServiceAccount.findFirst({
+        where,
+        select: { username: true, email: true, phone: true },
+      }),
     ]);
-    return tourist ?? disasterManager ?? systemAdmin;
+    return tourist ?? disasterManager ?? systemAdmin ?? emergencyService;
   },
 
   async createTourist(data) {
@@ -80,7 +88,11 @@ export const createAuthRepository = ({ db = prisma } = {}) => ({
     if (disasterManager) return withRole(disasterManager, ROLES.DISASTER_MANAGER);
 
     const systemAdmin = await db.systemAdmin.findFirst({ where });
-    return withRole(systemAdmin, ROLES.SYSTEM_ADMIN);
+    if (systemAdmin) return withRole(systemAdmin, ROLES.SYSTEM_ADMIN);
+
+    const emergencyService = await db.emergencyServiceAccount.findFirst({ where });
+    if (!emergencyService) return null;
+    return withRole(emergencyService, emergencyService.serviceType);
   },
 
   async findPublicAccountById(id, role) {

@@ -43,3 +43,7 @@ Any contract-shape change should update validation, provider interface, tests, O
 ## Blockchain directory handoff
 
 The API and blockchain project are separate runtimes. Start `blockchain/gateway/server.ts` from the blockchain directory and point `server/` to it using `BLOCKCHAIN_GATEWAY_URL`. Authentication is via `x-kavach-chain-key`; use the same secret on both sides and restrict the gateway to a private interface/network in deployment.
+
+## Frontend handoff: emergency fleets
+
+The Disaster Management UI can render three sections using the same dispatch API filtered/triggered by `POLICE`, `FIRE`, and `AMBULANCE`. The future service portal uses one registration/login surface with a service-type selector and browser geolocation feeding latitude/longitude. Tourist delivery-style movement should subscribe to the incident room and animate between successive `dispatch:updated` locations. See `EMERGENCY-SERVICE-DISPATCH.md`.

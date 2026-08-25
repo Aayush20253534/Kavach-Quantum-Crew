@@ -114,3 +114,7 @@ The previous provider placeholder is no longer the path used for trip IDs. Trip 
 | Natural planned end | QR JWT + API validity expires | `verifyId` reports `EXPIRED` |
 
 Only hashes, timestamps, addresses, numeric reason codes, and version values are on-chain.
+
+## Emergency dispatch integration
+
+The Police/Fire/Ambulance fleet feature does not require new blockchain writes. Incident/evidence anchoring remains separate from operational geolocation, which should stay off-chain because live responder coordinates are mutable and privacy-sensitive.

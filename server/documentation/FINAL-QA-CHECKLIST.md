@@ -76,3 +76,7 @@ For the complete request-to-database/integration execution model, JavaScript-ori
 - [ ] Role matrix reviewed.
 - [ ] AI/blockchain catalogues reviewed.
 - [ ] Realtime/environment/testing/deployment docs reviewed.
+
+## Emergency service QA additions
+
+Verify Police/Fire/Ambulance registration and login role matching; nearest-unit selection with known coordinates; rejection when incident location is missing or no unit is available; unit location updates; service-owned dispatch authorization; status progression; tourist ownership checks; Socket.IO `dispatch:updated` delivery; migration deployment in Docker.

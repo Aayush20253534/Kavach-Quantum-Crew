@@ -56,3 +56,7 @@ Local `storage/evidence` is not sufficient for hosts with ephemeral filesystems;
 ## Gmail verification deployment check
 
 Before starting production, set `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `EMAIL_FROM`, and a strong `EMAIL_OTP_SECRET`. The production environment validator rejects missing Gmail credentials and weak/default OTP secrets. After deployment, perform one real signup/verify/login smoke test using a test mailbox.
+
+## Emergency dispatch deployment requirement
+
+Deployments must apply the Prisma migration that creates `emergency_service_accounts` and emergency-unit location columns. The Docker image now runs `prisma migrate deploy` before the server process. Ensure `DATABASE_URL` is available at container startup and migration permissions are granted.

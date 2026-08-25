@@ -41,3 +41,7 @@ After automated tests pass, use a fresh real receiving email in Postman:
 6. Confirm future login works without OTP.
 7. Register another user and test resend cooldown/replacement-code behavior.
 8. Inspect Prisma Studio to confirm no plaintext OTP is stored.
+
+## Emergency dispatch test coverage
+
+Tests for this feature should cover service registration validation/conflicts, role-aware login, geolocation validation, nearest-unit ranking, no-location/no-unit failures, ownership checks, dispatch state transitions, tourist tracking authorization, realtime publishing, and migration startup. Existing Phase 15 dispatch tests should remain valid because manual dispatch APIs are preserved.

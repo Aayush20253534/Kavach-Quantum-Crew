@@ -3,13 +3,13 @@ import { createDispatchService } from "../../src/modules/dispatch/dispatch.servi
 
 const manager = { id: "11111111-1111-4111-8111-111111111111", role: "DISASTER_MANAGER" };
 const admin = { id: "22222222-2222-4222-8222-222222222222", role: "SYSTEM_ADMIN" };
-const incident = { id: "33333333-3333-4333-8333-333333333333", status: "OPEN" };
-const unit = { id: "44444444-4444-4444-8444-444444444444", name: "Ambulance 1", type: "AMBULANCE", status: "AVAILABLE" };
+const incident = { id: "33333333-3333-4333-8333-333333333333", status: "OPEN", latitude: 21.1458, longitude: 79.0882, sourceType: "SOS" };
+const unit = { id: "44444444-4444-4444-8444-444444444444", name: "Ambulance 1", type: "AMBULANCE", status: "AVAILABLE", latitude: 21.146, longitude: 79.089 };
 const requested = { id: "55555555-5555-4555-8555-555555555555", incidentId: incident.id, requestedUnitType: "AMBULANCE", unitId: null, status: "REQUESTED" };
 
 const setup = (overrides = {}) => {
   const repository = {
-    createUnit: jest.fn().mockResolvedValue(unit), listUnits: jest.fn().mockResolvedValue([unit]), findUnit: jest.fn().mockResolvedValue(unit), updateUnit: jest.fn().mockImplementation(async (_id,data)=>({ ...unit, ...data })),
+    createUnit: jest.fn().mockResolvedValue(unit), listUnits: jest.fn().mockResolvedValue([unit]), listAvailableUnitsByType: jest.fn().mockResolvedValue([unit]), findUnit: jest.fn().mockResolvedValue(unit), updateUnit: jest.fn().mockImplementation(async (_id,data)=>({ ...unit, ...data })),
     findIncident: jest.fn().mockResolvedValue(incident), createDispatch: jest.fn().mockResolvedValue(requested), findDispatch: jest.fn().mockResolvedValue(requested), listForIncident: jest.fn().mockResolvedValue([requested]), updateDispatch: jest.fn().mockImplementation(async (_id,data)=>({ ...requested, ...data })), createEvent: jest.fn().mockResolvedValue({}), createAudit: jest.fn().mockResolvedValue({}), ...overrides,
   };
   const publisher = { publishDispatchUpdated: jest.fn(), publishEmergencyUnitUpdated: jest.fn() };
@@ -42,5 +42,15 @@ describe("Phase 15 emergency dispatch", () => {
     const { service } = setup();
     await expect(service.createUnit(manager, { name: "A", type: "AMBULANCE" })).rejects.toMatchObject({ code: "UNIT_MANAGE_FORBIDDEN" });
     await expect(service.createUnit(admin, { name: "Ambulance 1", type: "AMBULANCE" })).resolves.toEqual(unit);
+  });
+  test("auto assigns the nearest available unit for the requested service", async () => {
+    const farther = { ...unit, id: "66666666-6666-4666-8666-666666666666", latitude: 21.3, longitude: 79.3 };
+    const { service, repository } = setup({
+      listAvailableUnitsByType: jest.fn().mockResolvedValue([farther, unit]),
+      createDispatch: jest.fn().mockImplementation(async (data) => ({ ...requested, ...data })),
+    });
+    const result = await service.autoAssign(manager, incident.id, "ambulance", {});
+    expect(result.unitId).toBe(unit.id);
+    expect(repository.updateUnit).toHaveBeenCalledWith(unit.id, { status: "DISPATCHED" });
   });
 });

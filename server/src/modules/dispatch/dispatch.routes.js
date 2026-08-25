@@ -5,7 +5,7 @@ import { authenticate } from "../../middleware/authenticate.middleware.js";
 import { authorize } from "../../middleware/authorize.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
 import { dispatchController } from "./dispatch.controller.js";
-import { assignDispatchBodySchema, createDispatchBodySchema, createUnitBodySchema, dispatchParamsSchema, dispatchTransitionBodySchema, incidentDispatchParamsSchema, unitListQuerySchema, unitParamsSchema, unitStatusBodySchema } from "./dispatch.validation.js";
+import { assignDispatchBodySchema, autoDispatchBodySchema, autoDispatchParamsSchema, createDispatchBodySchema, createUnitBodySchema, dispatchParamsSchema, dispatchTransitionBodySchema, incidentDispatchParamsSchema, unitListQuerySchema, unitParamsSchema, unitStatusBodySchema } from "./dispatch.validation.js";
 
 export const createDispatchRouter = ({ controller = dispatchController } = {}) => {
   const router = Router();
@@ -13,6 +13,7 @@ export const createDispatchRouter = ({ controller = dispatchController } = {}) =
   router.get("/units", validate({ query: unitListQuerySchema }), asyncHandler(controller.listUnits));
   router.post("/units", authorize(ROLES.SYSTEM_ADMIN), validate({ body: createUnitBodySchema }), asyncHandler(controller.createUnit));
   router.patch("/units/:unitId/status", authorize(ROLES.SYSTEM_ADMIN), validate({ params: unitParamsSchema, body: unitStatusBodySchema }), asyncHandler(controller.setUnitStatus));
+  router.post("/incidents/:incidentId/auto/:serviceType", validate({ params: autoDispatchParamsSchema, body: autoDispatchBodySchema }), asyncHandler(controller.autoAssign));
   router.post("/incidents/:incidentId", validate({ params: incidentDispatchParamsSchema, body: createDispatchBodySchema }), asyncHandler(controller.create));
   router.get("/incidents/:incidentId", validate({ params: incidentDispatchParamsSchema }), asyncHandler(controller.listForIncident));
   router.get("/:dispatchId", validate({ params: dispatchParamsSchema }), asyncHandler(controller.get));

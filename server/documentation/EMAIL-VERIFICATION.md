@@ -127,3 +127,7 @@ When a verified tourist changes email, `emailVerifiedAt` is cleared and refresh 
 7. Login normally; confirm no new OTP is required.
 8. For resend testing, register another account, call resend immediately (cooldown), then after 60 seconds request a replacement code and verify the new code.
 9. Inspect `EmailVerificationOtp` in Prisma Studio and confirm the raw OTP is absent.
+
+## Emergency service accounts
+
+Tourist email OTP behavior is unchanged. Police/Fire/Ambulance accounts use the shared login/session stack but are registered through `/emergency-services/register`; the current project flow does not add emergency-service email OTP. Production deployments should add service-organization verification/approval before enabling public registration.

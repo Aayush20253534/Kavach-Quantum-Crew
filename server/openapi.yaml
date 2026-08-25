@@ -17,6 +17,7 @@ tags:
   - name: System Admin
   - name: Escalations
   - name: Disaster Management
+  - name: Emergency Services
 paths:
   /health:
     get:
@@ -639,6 +640,22 @@ paths:
           schema: { type: string, format: uuid }
       responses:
         "201": { description: Dispatch created }
+  /dispatch/incidents/{incidentId}/auto/{serviceType}:
+    post:
+      tags: [Emergency Services]
+      summary: Auto-assign the nearest available police, fire, or ambulance unit
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: incidentId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: serviceType
+          required: true
+          schema: { type: string, enum: [police, fire, ambulance] }
+      responses:
+        "201": { description: Nearest available unit assigned }
   /dispatch/{dispatchId}:
     get:
       summary: Get emergency dispatch
@@ -669,6 +686,56 @@ paths:
           schema: { type: string, format: uuid }
       responses:
         "200": { description: Dispatch updated }
+
+  /emergency-services/register:
+    post:
+      tags: [Emergency Services]
+      summary: Register a Police, Fire, or Ambulance service account and primary unit
+      responses:
+        "201": { description: Emergency service account created }
+        "409": { description: Username, email, or phone already exists }
+  /emergency-services/me:
+    get:
+      tags: [Emergency Services]
+      security: [{ bearerAuth: [] }]
+      summary: Get current emergency service account and units
+      responses:
+        "200": { description: Emergency service account }
+  /emergency-services/me/location:
+    patch:
+      tags: [Emergency Services]
+      security: [{ bearerAuth: [] }]
+      summary: Update service and owned-unit geolocation
+      responses:
+        "200": { description: Location updated }
+  /emergency-services/me/dispatches:
+    get:
+      tags: [Emergency Services]
+      security: [{ bearerAuth: [] }]
+      summary: List dispatches assigned to the authenticated service account
+      responses:
+        "200": { description: Assigned dispatches }
+  /emergency-services/dispatches/{dispatchId}/location:
+    patch:
+      tags: [Emergency Services]
+      security: [{ bearerAuth: [] }]
+      summary: Publish current responder-unit location for a dispatch
+      responses:
+        "200": { description: Live location updated }
+  /emergency-services/dispatches/{dispatchId}/status:
+    patch:
+      tags: [Emergency Services]
+      security: [{ bearerAuth: [] }]
+      summary: Advance an owned dispatch lifecycle
+      responses:
+        "200": { description: Dispatch status updated }
+  /emergency-services/tracking/{dispatchId}:
+    get:
+      tags: [Emergency Services]
+      security: [{ bearerAuth: [] }]
+      summary: Get tourist-authorized emergency response tracking snapshot
+      responses:
+        "200": { description: Emergency response tracking snapshot }
 
   /api/v1/evidence:
     get:

@@ -39,6 +39,14 @@ const findAccount = async (db, id, role) => {
     const user = await db.systemAdmin.findUnique({ where: { id }, select: baseSelect });
     return user ? { ...user, role } : null;
   }
+  if ([ROLES.POLICE, ROLES.FIRE, ROLES.AMBULANCE].includes(role)) {
+    const user = await db.emergencyServiceAccount.findUnique({
+      where: { id },
+      select: { ...baseSelect, serviceType: true, latitude: true, longitude: true },
+    });
+    if (!user || user.serviceType !== role) return null;
+    return { ...user, role };
+  }
   return null;
 };
 

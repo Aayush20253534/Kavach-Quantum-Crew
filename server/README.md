@@ -352,3 +352,7 @@ Group leaders create an expiring invitation. The frontend renders that invitatio
 QR joining uses two-step membership approval. `POST /api/v1/groups/join/qr` no longer creates a `GroupMember` immediately; it creates or refreshes a `PENDING` `GroupJoinRequest`. The authenticated group leader reviews requests with `GET /api/v1/groups/:groupId/join-requests` and explicitly approves or rejects them. Only approval creates membership and issues the tourist's individual trip credential.
 
 Requester status can be checked with `GET /api/v1/groups/join/requests/:requestId`. This keeps the blockchain group `idHash` useful as a compact scannable identifier without treating possession of the QR as authorization to enter the group.
+
+## Police, Fire, and Ambulance dispatch
+
+The backend now includes a unified emergency-service portal for Police, Fire, and Ambulance, nearest-available-unit auto assignment, service-side location/status updates, and tourist tracking. See `documentation/EMERGENCY-SERVICE-DISPATCH.md` for the complete backend contract. Docker startup applies committed Prisma migrations before launching the API.

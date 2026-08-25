@@ -106,6 +106,32 @@ model SystemAdmin {
   @@map("system_admins")
 }
 
+model EmergencyServiceAccount {
+  id                String            @id @default(uuid()) @db.Uuid
+  name              String            @db.VarChar(120)
+  username          String            @unique @db.VarChar(40)
+  email             String            @unique @db.VarChar(254)
+  phone             String            @unique @db.VarChar(20)
+  passwordHash      String
+  status            AccountStatus     @default(ACTIVE)
+  serviceType       EmergencyUnitType
+  organization      String?           @db.VarChar(160)
+  address           String?           @db.VarChar(240)
+  jurisdiction      String?           @db.VarChar(160)
+  latitude          Float
+  longitude         Float
+  locationUpdatedAt DateTime           @default(now())
+  lastLoginAt       DateTime?
+  passwordChangedAt DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  units             EmergencyUnit[]
+
+  @@index([serviceType, status])
+  @@index([latitude, longitude])
+  @@map("emergency_service_accounts")
+}
+
 model AuthSession {
   id               String    @id @default(uuid()) @db.Uuid
   accountId        String    @db.Uuid
@@ -356,6 +382,9 @@ enum Role {
   TOURIST
   DISASTER_MANAGER
   SYSTEM_ADMIN
+  POLICE
+  FIRE
+  AMBULANCE
 }
 
 enum AccountStatus {
@@ -910,14 +939,21 @@ model EmergencyUnit {
   name          String              @db.VarChar(120)
   type          EmergencyUnitType
   status        EmergencyUnitStatus @default(AVAILABLE)
+  serviceAccountId String?          @db.Uuid
   organization  String?             @db.VarChar(160)
   jurisdiction  String?             @db.VarChar(160)
   contactPhone  String?             @db.VarChar(20)
+  latitude      Float?
+  longitude     Float?
+  locationUpdatedAt DateTime?
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
   dispatches     Dispatch[]
+  serviceAccount EmergencyServiceAccount? @relation(fields: [serviceAccountId], references: [id], onDelete: SetNull)
   @@index([type, status])
   @@index([jurisdiction, status])
+  @@index([serviceAccountId, status])
+  @@index([latitude, longitude])
   @@map("emergency_units")
 }
 

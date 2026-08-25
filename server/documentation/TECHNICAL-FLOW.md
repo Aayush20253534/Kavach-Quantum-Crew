@@ -1077,3 +1077,7 @@ Read these depending on what you are changing:
 If you know JavaScript, reduce the backend to this:
 
 **Express receives untrusted HTTP input; middleware establishes safe request context; controllers translate HTTP to function calls; services enforce the actual product rules; repositories use Prisma to persist those rules in PostgreSQL; adapters talk to external systems; Socket.IO pushes realtime changes; jobs perform delayed/retryable work; Redis accelerates selected reads; and centralized configuration, logging, errors, tests, and documentation keep the whole thing operable.**
+
+## Technical emergency dispatch flow
+
+Auto assignment loads the incident coordinates, fetches available units of the selected type with non-null coordinates, computes Haversine distance, assigns the nearest unit, records a dispatch event/audit entry, and marks the unit unavailable for competing dispatches. Service tracking persists coordinates in PostgreSQL and fans updates out through Socket.IO. See `EMERGENCY-SERVICE-DISPATCH.md` for API details and terminology.
