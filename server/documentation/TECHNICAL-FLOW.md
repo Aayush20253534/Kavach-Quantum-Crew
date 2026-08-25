@@ -1086,7 +1086,7 @@ Auto assignment loads the incident coordinates, fetches available units of the s
 
 ### Signal-loss state machine
 
-For active group trips, `signalLoss.job.js` periodically checks each non-leader member's latest trusted location. After the configured tracking gap (default 5 minutes), the service creates a persisted `SignalLossCase`, sends leader + Disaster Management notifications/email, and records a 5-minute response deadline. `FALSE_ALARM` resolves the case; `CONFIRMED_DANGER` or deadline expiry creates/escalates a `TRACKING_INTERRUPTION` safety alert into the incident pipeline. If the member remains offline, `nextReminderAt` schedules hourly reminders and resets the 5-minute response window. Returning online resolves the case and linked alert.
+For active group trips, `signalLoss.job.js` periodically checks each non-leader member's latest trusted location. After the configured tracking gap (default 5 minutes), the service creates a persisted `SignalLossCase`, sends leader + Disaster Management notifications/email, and records a 5-minute response deadline. `FALSE_ALARM` resolves the case; `CONFIRMED_DANGER` or deadline expiry creates/escalates a `TRACKING_INTERRUPTION` safety alert into the incident pipeline. If the member remains offline, `nextReminderAt` schedules 5-minute reminders after a handled response and resets the 5-minute response window. Returning online resolves the case and linked alert.
 
 ### Emergency-service dispatch boundary
 

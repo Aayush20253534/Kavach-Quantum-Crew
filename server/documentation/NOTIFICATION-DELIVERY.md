@@ -64,7 +64,7 @@ Email delivery is best-effort. A Brevo outage must never undo a persisted SOS or
 | Danger-zone entry | app + email | as applicable | app + email | **none** |
 | Initial group-member signal loss | member context as applicable | app + email | app + email | **none** |
 | Leader confirms danger / 5-min timeout | incident path | app state | escalated incident | **none until dispatch** |
-| Member remains offline for 1 hour | context/reminder | app + email, new 5-min window | case remains visible | **none until dispatch** |
+| Member remains offline after a handled 5-minute response | context/reminder | app + email, new 5-min window | case remains visible | **none until dispatch** |
 | Disaster Management assigns responder | incident tracking | incident tracking | realtime/app | app/realtime + email |
 
 Email-provider failure never rolls back persisted safety/dispatch state.

@@ -24,7 +24,7 @@ export const createSignalLossRepository = ({ db = prisma } = {}) => ({
   },
   findOpenCase(tripId, userId) {
     return db.signalLossCase.findFirst({
-      where: { tripId, userId, status: { in: ["WAITING_FOR_LEADER", "ESCALATED"] } },
+      where: { tripId, userId, status: { in: ["WAITING_FOR_LEADER", "ESCALATED", "FALSE_ALARM"] } },
       orderBy: { detectedAt: "desc" },
     });
   },
@@ -33,7 +33,7 @@ export const createSignalLossRepository = ({ db = prisma } = {}) => ({
   findCase(id) { return db.signalLossCase.findUnique({ where: { id } }); },
   listForLeader(leaderId, tripId) {
     return db.signalLossCase.findMany({
-      where: { leaderId, ...(tripId ? { tripId } : {}), status: { in: ["WAITING_FOR_LEADER", "ESCALATED"] } },
+      where: { leaderId, ...(tripId ? { tripId } : {}), status: "WAITING_FOR_LEADER" },
       orderBy: { detectedAt: "desc" },
       take: 50,
     });

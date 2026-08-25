@@ -98,6 +98,27 @@ export function CurrentTripPage() {
   }, []);
 
   useEffect(() => {
+    if (!trip?.id || trip.status !== 'ACTIVE' || trip.tripType !== 'GROUP' || group?.leaderId !== user?.id) return undefined;
+    let cancelled = false;
+
+    const refreshSignalCases = async () => {
+      try {
+        const cases = await groupService.getSignalLossCases(trip.id);
+        if (!cancelled) setSignalCases(cases || []);
+      } catch {
+        // Keep the previous cases on transient network failures.
+      }
+    };
+
+    void refreshSignalCases();
+    const timer = window.setInterval(refreshSignalCases, 5_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [trip?.id, trip?.status, trip?.tripType, group?.leaderId, user?.id]);
+
+  useEffect(() => {
     if (!individualCredential?.id || !trip?.id) return undefined;
 
     setBlockchainIntegrity(null);
@@ -176,6 +197,20 @@ export function CurrentTripPage() {
     try { await action(); await load(); }
     catch (e) { setError(e?.response?.data?.error?.message || e.message || 'Action failed'); }
     finally { setBusy(''); }
+  };
+
+  const respondToSignalCase = async (item, response) => {
+    const actionName = response === 'FALSE_ALARM' ? `signal-false-${item.id}` : `signal-danger-${item.id}`;
+    setBusy(actionName);
+    setError('');
+    try {
+      await groupService.respondToSignalLoss(item.id, response);
+      setSignalCases((current) => current.filter((candidate) => candidate.id !== item.id));
+    } catch (e) {
+      setError(e?.response?.data?.error?.message || e.message || 'Unable to record signal-loss response');
+    } finally {
+      setBusy('');
+    }
   };
 
   const start = () => run('start', async () => {
@@ -286,8 +321,8 @@ export function CurrentTripPage() {
                       <p className="mt-1 text-[10px] text-slate-500">Detected {dateText(item.detectedAt)} · response deadline {dateText(item.responseDeadlineAt)}</p>
                     </div>
                     <div className="mt-3 flex gap-2 sm:mt-0">
-                      <button disabled={Boolean(busy)} onClick={() => run(`signal-false-${item.id}`, () => groupService.respondToSignalLoss(item.id, 'FALSE_ALARM'))} className="rounded-lg border border-slate-200 px-3 py-2 text-[10px] font-black text-slate-700 disabled:opacity-50">False alarm</button>
-                      <button disabled={Boolean(busy)} onClick={() => run(`signal-danger-${item.id}`, () => groupService.respondToSignalLoss(item.id, 'CONFIRMED_DANGER'))} className="rounded-lg bg-red-600 px-3 py-2 text-[10px] font-black text-white disabled:opacity-50">Confirm danger</button>
+                      <button disabled={Boolean(busy)} onClick={() => respondToSignalCase(item, 'FALSE_ALARM')} className="rounded-lg border border-slate-200 px-3 py-2 text-[10px] font-black text-slate-700 disabled:opacity-50">{busy === `signal-false-${item.id}` ? 'Saving…' : 'False alarm'}</button>
+                      <button disabled={Boolean(busy)} onClick={() => respondToSignalCase(item, 'CONFIRMED_DANGER')} className="rounded-lg bg-red-600 px-3 py-2 text-[10px] font-black text-white disabled:opacity-50">{busy === `signal-danger-${item.id}` ? 'Saving…' : 'Confirm danger'}</button>
                     </div>
                   </div>
                 ))}
