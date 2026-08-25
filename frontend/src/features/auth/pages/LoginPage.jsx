@@ -13,6 +13,9 @@ import {
   Building2,
   UserCog,
   LogIn,
+  ShieldAlert,
+  Flame,
+  Ambulance,
 } from 'lucide-react';
 
 import { authService } from '../api/authService';
@@ -22,23 +25,44 @@ import { setAccessToken } from '../../../services/apiClient';
 const loginSchema = z.object({
   identifier: z.string().min(1, 'Email, username, or phone number is required'),
   password: z.string().min(1, 'Password is required'),
-  role: z.enum(['TOURIST', 'DISASTER_MANAGER', 'SYSTEM_ADMIN']),
+  role: z.enum(['TOURIST', 'DISASTER_MANAGER', 'SYSTEM_ADMIN', 'POLICE', 'FIRE', 'AMBULANCE']),
   remember: z.boolean().optional(),
 });
 
-const roles = [
+const mainRoles = [
   { id: 'TOURIST', title: 'Tourist', subtitle: 'Tourist access', icon: UserRound },
   {
     id: 'DISASTER_MANAGER',
-    title: 'Disaster Management',
-    subtitle: 'Emergency command',
+    title: 'Disaster Mgt.',
+    subtitle: 'Command',
     icon: Building2,
   },
   {
     id: 'SYSTEM_ADMIN',
-    title: 'System Administration',
-    subtitle: 'System control',
+    title: 'SysAdmin',
+    subtitle: 'System',
     icon: UserCog,
+  },
+];
+
+const responderRoles = [
+  {
+    id: 'POLICE',
+    title: 'Police',
+    icon: ShieldAlert,
+    color: 'blue'
+  },
+  {
+    id: 'FIRE',
+    title: 'Fire',
+    icon: Flame,
+    color: 'red'
+  },
+  {
+    id: 'AMBULANCE',
+    title: 'Ambulance',
+    icon: Ambulance,
+    color: 'emerald'
   },
 ];
 
@@ -111,6 +135,11 @@ export default function LoginPage() {
         return;
       }
 
+      if (['POLICE', 'FIRE', 'AMBULANCE'].includes(user.role)) {
+        navigate('/responder/dispatch', { replace: true });
+        return;
+      }
+
       if (user.role === 'TOURIST') {
         navigate(
           user.onboardingCompleted ? '/tourist/dashboard' : '/onboarding',
@@ -145,44 +174,42 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="mb-4 grid grid-cols-[0.78fr_1.12fr_1.12fr] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          {roles.map((role, idx) => {
+        <div className="mb-4 grid grid-cols-3 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          {mainRoles.map((role, idx) => {
             const Icon = role.icon;
-            const active = selectedRole === role.id;
+            const isCategoryActive = 
+              selectedRole === role.id || 
+              (role.id === 'DISASTER_MANAGER' && ['POLICE', 'FIRE', 'AMBULANCE'].includes(selectedRole));
 
             return (
               <button
                 key={role.id}
                 type="button"
                 onClick={() => handleRoleChange(role.id)}
-                className={`relative flex min-h-[58px] min-w-0 items-center justify-center gap-2 px-2.5 py-2.5 transition-colors ${
-                  active
+                className={`relative flex min-h-[44px] min-w-0 items-center justify-center gap-1.5 px-1.5 py-1.5 transition-colors ${
+                  isCategoryActive
                     ? 'z-10 bg-red-50 text-red-600'
                     : 'bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-                } ${idx > 0 ? 'border-l border-slate-200' : ''}`}
+                } ${idx % 3 !== 0 ? 'border-l border-slate-200' : ''}`}
               >
-                {active && (
+                {isCategoryActive && (
                   <span className="absolute inset-x-0 bottom-0 h-0.5 bg-red-500" />
                 )}
 
                 <Icon
-                  size={15}
-                  className={`shrink-0 ${active ? 'text-red-500' : 'text-slate-400'}`}
+                  size={14}
+                  className={`shrink-0 ${isCategoryActive ? 'text-red-500' : 'text-slate-400'}`}
                 />
 
                 <div className="min-w-0 text-left leading-tight">
                   <span
-                    className={`block font-bold ${
-                      role.id === 'DISASTER_MANAGER' || role.id === 'SYSTEM_ADMIN'
-                        ? 'whitespace-normal text-[8.5px] leading-[1.15] sm:whitespace-nowrap sm:text-[9.5px] lg:text-[10px]'
-                        : 'whitespace-nowrap text-[10px] sm:text-[11px]'
-                    }`}
+                    className={`block font-bold whitespace-nowrap text-[10px] sm:text-[11px] lg:text-[10px]`}
                   >
                     {role.title}
                   </span>
                   <span
                     className={`mt-0.5 hidden whitespace-nowrap text-[8px] font-medium 2xl:block ${
-                      active ? 'text-red-400' : 'text-slate-400'
+                      isCategoryActive ? 'text-red-400' : 'text-slate-400'
                     }`}
                   >
                     {role.subtitle}
@@ -192,6 +219,40 @@ export default function LoginPage() {
             );
           })}
         </div>
+
+        {['DISASTER_MANAGER', 'POLICE', 'FIRE', 'AMBULANCE'].includes(selectedRole) && (
+          <div className="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-xl animate-in fade-in slide-in-from-top-2 duration-300">
+            <p className="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Or login as Responder</p>
+            <div className="grid grid-cols-3 gap-2">
+              {responderRoles.map((role) => {
+                const Icon = role.icon;
+                const active = selectedRole === role.id;
+                
+                const activeClasses = {
+                  'blue': 'bg-blue-50 text-blue-700 border-blue-200 shadow-sm',
+                  'red': 'bg-red-50 text-red-700 border-red-200 shadow-sm',
+                  'emerald': 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm'
+                }[role.color];
+
+                return (
+                  <button
+                    key={role.id}
+                    type="button"
+                    onClick={() => handleRoleChange(role.id)}
+                    className={`flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-lg border transition-all ${
+                      active
+                        ? activeClasses
+                        : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                    }`}
+                  >
+                    <Icon size={16} className={active ? '' : 'text-slate-400'} />
+                    <span className="text-[9px] font-bold uppercase tracking-wider">{role.title}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">

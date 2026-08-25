@@ -5,6 +5,7 @@ import { AuthLayout } from './layouts/AuthLayout';
 import { TouristLayout } from './layouts/TouristLayout';
 import { AuthorityLayout } from './layouts/AuthorityLayout';
 import { AdminLayout } from './layouts/AdminLayout';
+import { ResponderLayout } from './layouts/ResponderLayout';
 
 // Guards
 import { PublicRoute } from './guards/PublicRoute';
@@ -46,6 +47,11 @@ import { AuthorityRiskZonesPage } from '../features/authority/pages/AuthorityRis
 import { AuthorityHazardsPage } from '../features/authority/pages/AuthorityHazardsPage';
 import { AuthorityRespondersPage } from '../features/authority/pages/AuthorityRespondersPage';
 import { AuthorityAnalyticsPage } from '../features/authority/pages/AuthorityAnalyticsPage';
+
+// Pages - Responder
+import { ActiveDispatchPage } from '../features/emergency-services/pages/ActiveDispatchPage';
+import { LiveTrackingPage as ResponderLiveTrackingPage } from '../features/emergency-services/pages/LiveTrackingPage';
+import { DispatchHistoryPage } from '../features/emergency-services/pages/DispatchHistoryPage';
 
 // Pages - Admin
 import { AdminDashboardPage } from '../features/admin/pages/AdminDashboardPage';
@@ -155,6 +161,25 @@ export const router = createBrowserRouter([
                   { path: 'zones', element: <AuthorityRiskZonesPage /> },
                   { path: 'accounts', element: <AdminAccountsPage /> },
                   { path: 'audit', element: <AdminAuditPage /> },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        path: '/responder',
+        element: <ProtectedRoute />,
+        children: [
+          {
+            element: <RoleRoute allowedRoles={['POLICE', 'FIRE', 'AMBULANCE']} />,
+            children: [
+              {
+                element: <ResponderLayout />,
+                children: [
+                  { path: 'dispatch', element: <ActiveDispatchPage /> },
+                  { path: 'tracking', element: <ResponderLiveTrackingPage /> },
+                  { path: 'history', element: <DispatchHistoryPage /> },
                 ],
               },
             ],
