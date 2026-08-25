@@ -480,11 +480,27 @@ function CredentialQrPanel({ title, description, value, copyValue, copyLabel, ra
   );
 }
 
-function CredentialCard({ title, credential, integrity = null, integritySocketConnected = false }) {
-  if (!credential) return <div className="p-3.5 sm:p-4 bg-slate-50 rounded-xl text-xs text-slate-500">Loading {title.toLowerCase()}…</div>;
+function CredentialCard({
+  title,
+  credential,
+  integrity = null,
+  integritySocketConnected = false,
+}) {
+  if (!credential) {
+    return (
+      <div className="p-3.5 sm:p-4 bg-slate-50 rounded-xl text-xs text-slate-500">
+        Loading {title.toLowerCase()}…
+      </div>
+    );
+  }
+
   const blockchainStatus = credential.blockchainStatus;
+
   const tampered = integrity?.status === 'DB_TAMPERED';
-  const restored = integrity?.status === 'VERIFIED' && integrity?.restored;
+  const restored =
+    integrity?.status === 'VERIFIED' &&
+    integrity?.restored;
+
   const statusClass = tampered
     ? 'text-red-600'
     : blockchainStatus === 'CONFIRMED'
@@ -492,6 +508,7 @@ function CredentialCard({ title, credential, integrity = null, integritySocketCo
       : blockchainStatus === 'DISABLED'
         ? 'text-slate-500'
         : 'text-amber-600';
+
   const statusText = tampered
     ? 'DB tampered · self-correcting'
     : blockchainStatus === 'CONFIRMED'
@@ -499,37 +516,81 @@ function CredentialCard({ title, credential, integrity = null, integritySocketCo
       : `Blockchain: ${blockchainStatus}`;
 
   return (
-    <div className={`rounded-xl border p-3.5 sm:p-4 ${tampered ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-slate-50'}`}>
+    <div
+      className={`rounded-xl border p-3.5 sm:p-4 ${
+        tampered
+          ? 'border-red-200 bg-red-50'
+          : 'border-slate-200 bg-slate-50'
+      }`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] uppercase tracking-wider font-black text-slate-400">{title}</p>
-          <p className="mt-1 break-all font-mono text-xs font-bold text-slate-800">{credential.publicId}</p>
+          <p className="text-[10px] uppercase tracking-wider font-black text-slate-400">
+            {title}
+          </p>
+
+          <p className="mt-1 break-all font-mono text-xs font-bold text-slate-800">
+            {credential.publicId}
+          </p>
         </div>
+
         {blockchainStatus === 'CONFIRMED' && (
-          <span className={`mt-0.5 inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wide ${integritySocketConnected ? 'text-emerald-600' : 'text-slate-400'}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${integritySocketConnected ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
-            {integritySocketConnected ? 'Live integrity' : 'Connecting'}
+          <span
+            className={`mt-0.5 inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wide ${
+              integritySocketConnected
+                ? 'text-emerald-600'
+                : 'text-red-600'
+            }`}
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full animate-pulse ${
+                integritySocketConnected
+                  ? 'bg-emerald-500'
+                  : 'bg-red-500'
+              }`}
+            />
+
+            {integritySocketConnected
+              ? 'Connected'
+              : 'Connecting'}
           </span>
         )}
       </div>
-      <p className={`mt-2 text-[10px] font-bold ${statusClass}`}>{statusText}</p>
+
+      <p
+        className={`mt-2 text-[10px] font-bold ${statusClass}`}
+      >
+        {statusText}
+      </p>
+
       {tampered && (
         <p className="mt-1 text-[10px] leading-4 text-red-600">
-          Changed fields: {integrity.tamperedFields?.join(', ') || 'protected trip data'}. Trusted blockchain values are being restored.
+          Changed fields:{' '}
+          {integrity.tamperedFields?.join(', ') ||
+            'protected trip data'}
+          . Trusted blockchain values are being restored.
         </p>
       )}
+
       {restored && (
         <p className="mt-1 text-[10px] leading-4 text-emerald-600">
-          Tampered database values were restored from blockchain and verified.
+          Tampered database values were restored from blockchain
+          and verified.
         </p>
       )}
+
       {credential.blockchainError?.message && (
         <p className="mt-1 text-[10px] leading-4 text-red-600">
           {credential.blockchainError.message}
-          {credential.blockchainError.code ? ` (${credential.blockchainError.code})` : ''}
+          {credential.blockchainError.code
+            ? ` (${credential.blockchainError.code})`
+            : ''}
         </p>
       )}
-      <p className="mt-1 text-[10px] text-slate-500">Expires {new Date(credential.expiresAt).toLocaleString()}</p>
+
+      <p className="mt-1 text-[10px] text-slate-500">
+        Expires {new Date(credential.expiresAt).toLocaleString()}
+      </p>
     </div>
   );
 }
