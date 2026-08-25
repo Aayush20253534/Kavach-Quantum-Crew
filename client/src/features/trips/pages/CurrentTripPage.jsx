@@ -386,7 +386,11 @@ export function CurrentTripPage() {
 
           {groupCredential && (
             <div className="mt-4">
-              <CredentialCard title="Group ID" credential={groupCredential} />
+              <CredentialCard
+                title="Group ID"
+                credential={groupCredential}
+                integritySocketConnected={integritySocketConnected}
+              />
             </div>
           )}
 
