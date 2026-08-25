@@ -32,7 +32,10 @@ const callGateway = async (path, { method = "POST", body } = {}) => {
         "x-kavach-chain-key": environment.BLOCKCHAIN_GATEWAY_KEY,
       },
       ...(body ? { body: JSON.stringify(body) } : {}),
-      signal: AbortSignal.timeout(10_000),
+      // Reads should fail fast, but Sepolia writes wait for a mined receipt in the
+      // gateway and routinely take longer than ten seconds. Aborting writes at 10s
+      // creates false FAILED jobs even when the transaction is still being mined.
+      signal: AbortSignal.timeout(method === "GET" ? 10_000 : 60_000),
     });
   } catch (error) {
     const failure = blockchainFailure(error);

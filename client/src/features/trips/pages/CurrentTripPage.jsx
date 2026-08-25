@@ -48,7 +48,7 @@ export function CurrentTripPage() {
   const [now, setNow] = useState(() => Date.now());
   const [blockchainIntegrity, setBlockchainIntegrity] = useState(null);
   const [integritySocketConnected, setIntegritySocketConnected] = useState(false);
-  const integrityTimerRef = useRef(null);
+  const integrityTimerRef = useRef([]);
 
   const load = async () => {
     try {
@@ -124,38 +124,70 @@ export function CurrentTripPage() {
     setBlockchainIntegrity(null);
     const socket = createRealtimeSocket();
 
-    const handleConnect = () => setIntegritySocketConnected(true);
-    const handleDisconnect = () => setIntegritySocketConnected(false);
+    const clearIntegrityTimers = () => {
+      integrityTimerRef.current.forEach((timer) => window.clearTimeout(timer));
+      integrityTimerRef.current = [];
+    };
+    const scheduleIntegrityState = (delay, value) => {
+      const timer = window.setTimeout(() => setBlockchainIntegrity(value), delay);
+      integrityTimerRef.current.push(timer);
+    };
+
+    const handleConnect = () => {
+      setIntegritySocketConnected(true);
+      setBlockchainIntegrity({ status: 'CHECKING', message: 'Checking the latest trusted blockchain snapshot.' });
+    };
+    const handleDisconnect = () => {
+      setIntegritySocketConnected(false);
+      clearIntegrityTimers();
+    };
     const handleConnectError = (error) => {
       setIntegritySocketConnected(false);
+      clearIntegrityTimers();
       console.error('Realtime integrity socket connection failed:', error?.message || error);
     };
     const handleIntegrity = ({ integrity } = {}) => {
       if (!integrity || integrity.credentialId !== individualCredential.id || integrity.tripId !== trip.id) return;
 
+      if (integrity.status === 'INTEGRITY_UNAVAILABLE') {
+        clearIntegrityTimers();
+        setBlockchainIntegrity(integrity);
+        return;
+      }
+
       if (integrity.status === 'DB_TAMPERED') {
-        if (integrityTimerRef.current) window.clearTimeout(integrityTimerRef.current);
-        integrityTimerRef.current = null;
-        setBlockchainIntegrity({ ...integrity, visibleUntil: Date.now() + 2500 });
+        clearIntegrityTimers();
+        setBlockchainIntegrity(integrity);
+        return;
+      }
+
+      if (integrity.status === 'FIXING') {
+        setBlockchainIntegrity((current) => {
+          if (current?.status === 'DB_TAMPERED') return current;
+          return integrity;
+        });
+        return;
+      }
+
+      if (integrity.status === 'FIXED') {
+        setBlockchainIntegrity((current) => current?.status === 'DB_TAMPERED' ? current : integrity);
         return;
       }
 
       if (integrity.status === 'VERIFIED') {
+        clearIntegrityTimers();
         setBlockchainIntegrity((current) => {
-          const delay = current?.status === 'DB_TAMPERED'
-            ? Math.max(0, (current.visibleUntil || 0) - Date.now())
-            : 0;
-          if (delay > 0) {
-            if (integrityTimerRef.current) window.clearTimeout(integrityTimerRef.current);
-            integrityTimerRef.current = window.setTimeout(() => {
-              setBlockchainIntegrity(integrity);
-              void tripService.getCurrentTrip().then((current) => setTrip(current || null)).catch(() => {});
-              integrityTimerRef.current = null;
-            }, delay);
-            return current;
+          if (integrity.restored && ['DB_TAMPERED', 'FIXING', 'FIXED'].includes(current?.status)) {
+            const base = { ...integrity, tamperedFields: integrity.tamperedFields || current?.tamperedFields };
+            scheduleIntegrityState(1200, { ...base, status: 'FIXING' });
+            scheduleIntegrityState(2400, { ...base, status: 'FIXED' });
+            scheduleIntegrityState(4400, { ...base, status: 'VERIFIED', restored: false });
+            window.setTimeout(() => {
+              void tripService.getCurrentTrip().then((currentTrip) => setTrip(currentTrip || null)).catch(() => {});
+            }, 2400);
+            return { ...base, status: 'DB_TAMPERED' };
           }
-          void tripService.getCurrentTrip().then((currentTrip) => setTrip(currentTrip || null)).catch(() => {});
-          return integrity;
+          return { ...integrity, restored: false };
         });
       }
     };
@@ -167,8 +199,7 @@ export function CurrentTripPage() {
     socket.connect();
 
     return () => {
-      if (integrityTimerRef.current) window.clearTimeout(integrityTimerRef.current);
-      integrityTimerRef.current = null;
+      clearIntegrityTimers();
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
       socket.off('connect_error', handleConnectError);
@@ -562,31 +593,52 @@ function CredentialCard({
 
   const blockchainStatus = credential.blockchainStatus;
 
-  const tampered = integrity?.status === 'DB_TAMPERED';
-  const restored =
-    integrity?.status === 'VERIFIED' &&
-    integrity?.restored;
+  const integrityStatus = integrity?.status || null;
+  const tampered = integrityStatus === 'DB_TAMPERED';
+  const fixing = integrityStatus === 'FIXING';
+  const fixed = integrityStatus === 'FIXED';
+  const unavailable = integrityStatus === 'INTEGRITY_UNAVAILABLE';
+  const checking = integrityStatus === 'CHECKING';
+  const approved = blockchainStatus === 'CONFIRMED' && integrityStatus === 'VERIFIED';
 
   const statusClass = tampered
     ? 'text-red-600'
-    : blockchainStatus === 'CONFIRMED'
-      ? 'text-emerald-600'
-      : blockchainStatus === 'DISABLED'
-        ? 'text-slate-500'
-        : 'text-amber-600';
+    : fixing || checking
+      ? 'text-amber-600'
+      : unavailable
+        ? 'text-red-600'
+        : blockchainStatus === 'CONFIRMED'
+          ? 'text-emerald-600'
+          : blockchainStatus === 'DISABLED'
+            ? 'text-slate-500'
+            : 'text-amber-600';
 
   const statusText = tampered
-    ? 'DB tampered · self-correcting'
-    : blockchainStatus === 'CONFIRMED'
-      ? 'Blockchain verified'
-      : `Blockchain: ${blockchainStatus}`;
+    ? 'Blockchain verified · TAMPERED'
+    : fixing
+      ? 'Blockchain verified · FIXING'
+      : fixed
+        ? 'Blockchain verified · FIXED'
+        : approved
+          ? 'Blockchain verified · APPROVED'
+          : unavailable
+            ? 'Blockchain verified · INTEGRITY UNAVAILABLE'
+            : checking
+              ? 'Blockchain verified · CHECKING'
+              : blockchainStatus === 'CONFIRMED'
+                ? 'Blockchain verified · CHECKING'
+                : `Blockchain: ${blockchainStatus}`;
 
   return (
     <div
       className={`rounded-xl border p-3.5 sm:p-4 ${
-        tampered
+        tampered || unavailable
           ? 'border-red-200 bg-red-50'
-          : 'border-slate-200 bg-slate-50'
+          : fixing || checking
+            ? 'border-amber-200 bg-amber-50'
+            : fixed
+              ? 'border-emerald-200 bg-emerald-50'
+              : 'border-slate-200 bg-slate-50'
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -631,17 +683,25 @@ function CredentialCard({
 
       {tampered && (
         <p className="mt-1 text-[10px] leading-4 text-red-600">
-          Changed fields:{' '}
-          {integrity.tamperedFields?.join(', ') ||
-            'protected trip data'}
-          . Trusted blockchain values are being restored.
+          Changed fields: {integrity.tamperedFields?.join(', ') || 'protected trip data'}. Database values differ from the trusted blockchain snapshot.
         </p>
       )}
 
-      {restored && (
-        <p className="mt-1 text-[10px] leading-4 text-emerald-600">
-          Tampered database values were restored from blockchain
-          and verified.
+      {fixing && (
+        <p className="mt-1 text-[10px] leading-4 text-amber-700">
+          Restoring the trusted blockchain values into PostgreSQL.
+        </p>
+      )}
+
+      {fixed && (
+        <p className="mt-1 text-[10px] leading-4 text-emerald-700">
+          Tampered database values were restored successfully. Re-validating integrity now.
+        </p>
+      )}
+
+      {unavailable && (
+        <p className="mt-1 text-[10px] leading-4 text-red-600">
+          {integrity.message || 'The trusted blockchain snapshot cannot currently be read, so integrity cannot be approved.'}
         </p>
       )}
 
