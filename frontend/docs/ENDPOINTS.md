@@ -1,6 +1,11 @@
 # API Endpoint Catalogue
 
-> **Documentation status (24 Aug 2026):** Retained as project documentation and design history. Current `frontend/src/` behavior is authoritative where older phase language, placeholders, or proposed structure differs.
+## Documentation navigation
+
+For the complete request-to-database/integration execution model, JavaScript-oriented terminology, and module map, start with [`TECHNICAL-FLOW.md`](TECHNICAL-FLOW.md). For the product journey without as much implementation detail, use [`SYSTEM-FLOW.md`](SYSTEM-FLOW.md).
+
+
+> **Documentation status (24 Aug 2026):** This document is maintained against the current repository. Runtime source, `server/.env.example`, `server/prisma/schema.prisma`, and `server/openapi.yaml` are authoritative if a historical phase note differs.
 
 
 > Base prefix: `/api/v1` unless explicitly shown otherwise.
@@ -239,6 +244,11 @@ This catalogue documents **148 mounted HTTP routes/aliases** in the current back
 
 ## AI & Blockchain Integration Contracts
 
+### Chatbot availability
+
+The tourist chatbot REST endpoint is `POST /api/v1/chatbot/messages` and requires an authenticated `TOURIST`. Its provider boundary is separate from the staff-only `/integrations/ai/*` risk/hazard analysis contracts. A frontend may still simulate responses until connected to the chatbot endpoint, and an unconfigured provider can still prevent real model inference.
+
+
 | Method | Endpoint | Access | Purpose |
 |---|---|---|---|
 | `GET` | `/api/v1/integrations/capabilities` | DISASTER_MANAGER / SYSTEM_ADMIN | Return available AI/blockchain integration contract capabilities. |
@@ -265,68 +275,76 @@ This catalogue documents **148 mounted HTTP routes/aliases** in the current back
 | `POST` | `/api/v1/auth/verify-email` | Public verification flow | Verify a newly registered tourist using email + 6-digit OTP; successful verification creates the authenticated session. |
 | `POST` | `/api/v1/auth/resend-verification` | Public verification flow | Generate and email a replacement OTP subject to resend cooldown. |
 
-## Dashboard integration
 
-- `GET /api/v1/dashboard/tourist?latitude=<lat>&longitude=<lng>` drives dashboard metrics and safe/danger status.
-- `GET /api/v1/destinations?search=<text>` drives the destination search bar.
-- Selecting a destination creates a `GROUP` trip through `POST /api/v1/trips`, then creates its group through `POST /api/v1/groups/trips/:tripId`.
-- Notifications use `/api/v1/notifications`, `/unread-count`, `/:notificationId/read`, and `/read-all`.
-- The dashboard Google Map requests nearby `police`, `hospital`, and `fire_station` places from the Google Places library around the browser's live geolocation.
+## Tourist chatbot
 
-
-## Tourist frontend integration status
-
-The tourist application now uses real backend endpoints for all core workflows:
-
-- Dashboard: `/dashboard/tourist`, `/destinations`, notifications.
-- Trips: create/current/history/start/complete/cancel, consent and Safety ID.
-- Groups: create-for-trip, invitation, join, leave and group details.
-- Live tracking: `/tracking/pings`, `/tracking/latest`, `/tracking/groups/:groupId`, `/risk-zones`.
-- Safety check-ins: `/safety/trips/:tripId/check-ins` and `/safety/check-ins/:checkInId/complete`.
-- Safety reports: general tourist concerns are submitted as `/hazards`; emergency SOS creates real incidents through `/sos`; history combines `/hazards?mine=true` and `/incidents/mine`.
-- Evidence: `/evidence`.
-- Profile: `/tourists/me` and profile-image upload.
-- AI: intentionally mocked in the tourist UI.
-- Blockchain: intentionally mocked in the tourist UI. Real evidence storage and Safety ID lifecycle still use the backend, but no blockchain provider is required.
-
-## Blockchain QR credentials
-
-| Method | Endpoint | Auth | Purpose |
+| Method | Endpoint | Access | Purpose |
 |---|---|---|---|
-| GET | `/credentials/trips/:tripId/me` | Tourist | Current user's trip-scoped individual QR credential |
-| GET | `/credentials/groups/:groupId` | Tourist/group member | Group QR credential |
-| GET | `/credentials/verify/:token` | Public | Validate signed QR, trip state, expiry, and on-chain proof |
+| `POST` | `/api/v1/chatbot/messages` | `TOURIST` | Validate a tourist chatbot message and forward it through the pluggable chatbot AI provider boundary. |
 
-## Group QR join
+Request body: `message` (required), optional `conversationId`, optional `location { latitude, longitude }`, and optional `context`. The default provider returns `501 CHATBOT_PROVIDER_NOT_CONFIGURED` until the AI branch supplies the provider implementation.
 
-### Preview scanned group invitation
+## Tourist dashboard and destinations
 
-`POST /groups/join/preview`
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| `GET` | `/api/v1/dashboard/tourist?latitude=&longitude=` | TOURIST | Dashboard summary: total tourist users, the caller's active alerts, binary safe/danger geofence status, current group size and current trip. |
+| `GET` | `/api/v1/destinations?search=&featured=&limit=` | TOURIST | Search/list configured destinations used by the dashboard and trip/group creation UI. |
 
-Body:
+Dashboard safety status is `DANGER` only when the supplied point falls inside an active `RISK` safety zone. Otherwise it is `SAFE`. Risk-zone mutation endpoints are restricted to `SYSTEM_ADMIN`; tourists and disaster managers retain read/evaluate access.
 
-```json
-{ "inviteToken": "opaque-token-from-group-qr" }
+
+### POST /api/v1/tourists/me/profile-image
+
+Uploads or replaces the authenticated tourist's profile image.
+
+- Authentication: Tourist bearer access token
+- Content-Type: `multipart/form-data`
+- Form field: `image`
+- Allowed types: JPEG, PNG, WebP
+- Maximum size: configured by `PROFILE_IMAGE_MAX_FILE_BYTES` (5 MB default)
+- Storage: Cloudinary
+- The secure URL is stored in `users.profilePicUrl`
+
+Required server environment variables:
+
+```env
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+PROFILE_IMAGE_MAX_FILE_BYTES=5242880
 ```
 
-Returns a non-mutating preview containing the group, leader, member count, trip location, planned end time and invitation expiry. The frontend must display this preview before calling the join endpoint.
 
-### Confirm join
+### Disaster Management jurisdiction overview
 
-`POST /groups/join`
+- GET `/api/v1/disaster-management/jurisdiction-overview`
+  - Role: `DISASTER_MANAGER`
+  - Uses the responder's backend `jurisdiction`.
+  - Returns jurisdiction-scoped active tourists, trips, incidents, emergency units, and Google Places police/fire/hospital locations.
+  - Server-side Google lookup requires `GOOGLE_MAPS_API_KEY`.
 
-Body:
+## QR credential endpoints
 
-```json
-{ "inviteToken": "opaque-token-from-group-qr" }
-```
+- `GET /api/v1/credentials/trips/:tripId/me` - authenticated tourist's individual credential and QR.
+- `GET /api/v1/credentials/groups/:groupId` - group credential for an active member.
+- `GET /api/v1/credentials/verify/:token` - public verification used by QR scanners.
 
-This creates the membership and triggers the existing individual digital credential issuance flow.
+Verification checks the signed token, database revocation/expiry, trip state, and, once confirmed, the TrustAnchor contract state.
 
-### Group QR approval
+## Police / Fire / Ambulance endpoints
 
-- `POST /groups/join/qr` - submit a pending join request from a scanned group `idHash`.
-- `GET /groups/join/requests/:requestId` - requester polls approval status.
-- `GET /groups/:groupId/join-requests` - leader lists pending requests.
-- `POST /groups/:groupId/join-requests/:requestId/approve` - leader approves and creates membership.
-- `POST /groups/:groupId/join-requests/:requestId/reject` - leader rejects the request.
+Emergency-service registration: `POST /emergency-services/register`. Service portal: `GET /emergency-services/me`, `PATCH /emergency-services/me/location`, `GET /emergency-services/me/dispatches`, `PATCH /emergency-services/dispatches/:dispatchId/location`, and `PATCH /emergency-services/dispatches/:dispatchId/status`. Tourist snapshot tracking: `GET /emergency-services/tracking/:dispatchId`. Disaster Management nearest-unit assignment: `POST /dispatch/incidents/:incidentId/auto/police`, `/auto/fire`, or `/auto/ambulance`. Full request/flow details are in `EMERGENCY-SERVICE-DISPATCH.md`.
+
+## Emergency email side effects
+
+No extra public email endpoint is required. Email delivery is a backend side effect of existing emergency operations:
+
+- `POST /sos` -> creates SOS/incident and emails active Disaster Managers.
+- incident ingestion -> emails active Disaster Managers.
+- `POST /dispatch/incidents/:incidentId/auto/police` -> emails the selected Police fleet.
+- `POST /dispatch/incidents/:incidentId/auto/ambulance` -> emails the selected Ambulance/Hospital fleet.
+- `POST /dispatch/incidents/:incidentId/auto/fire` -> emails the selected Fire fleet.
+- manual dispatch assignment -> emails the manually selected fleet.
+
+The responder UI should treat each registered service account as a single fleet and primarily expose Active Dispatch, Live Tracking, and Dispatch History.
