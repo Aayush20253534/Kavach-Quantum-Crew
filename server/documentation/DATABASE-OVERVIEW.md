@@ -56,7 +56,7 @@ Evidence bytes live behind the storage adapter; the DB stores metadata/checksum/
 
 - `User.dateOfBirth` supports immutable trip identity snapshots. Existing `age` remains for compatibility but DOB is the blockchain identity source.
 - `TripGroup.name` persists the human-readable group name used in group snapshots.
-- `SignalLossCase` stores member/leader/trip references, detection time, 5-minute response deadline, hourly reminder schedule, leader response, escalation/incident linkage, and resolution state.
+- `SignalLossCase` stores member/leader/trip references, detection time, 5-minute response deadline, 5-minute post-response reminder schedule, leader response, escalation/incident linkage, and resolution state.
 - Existing `BlockchainAnchorJob` also carries `SNAPSHOT` jobs. Snapshot history itself is append-only on-chain; PostgreSQL stores the queue/audit state rather than duplicating the full public-chain history.
 - Emergency-service tables continue to model one fleet account plus associated unit/dispatch/location history.
 
@@ -64,3 +64,6 @@ Evidence bytes live behind the storage adapter; the DB stores metadata/checksum/
 
 Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
 
+## Current signal-loss and blockchain records
+
+`SignalLossCase` persists the five-minute leader decision/cooldown lifecycle while a member remains offline. `BlockchainAnchorJob` persists credential and snapshot operations separately; snapshot failure does not rewrite a confirmed credential's issuance state. Individual and group snapshot integrity is reconciled every five seconds from the trusted chain data.

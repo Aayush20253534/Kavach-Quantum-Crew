@@ -328,12 +328,12 @@ No license file is present in this repository snapshot. Add one before distribut
 The current build separates **detection**, **human escalation**, **responder dispatch**, and **tamper-evident trip records**:
 
 - Danger-zone entry immediately notifies the tourist and Disaster Management by website/in-app channel and email. It does not automatically contact Police, Fire, or Ambulance/Hospital.
-- A non-leader group member who stops sending trusted location updates for the configured threshold (default 5 minutes) opens a persisted signal-loss case. The leader receives a 5-minute `FALSE_ALARM` / `CONFIRMED_DANGER` decision window. No response or confirmed danger escalates to Disaster Management. While still offline, reminders recur hourly.
+- A non-leader group member who stops sending trusted location updates for the configured threshold (default 5 minutes) opens a persisted signal-loss case. The leader receives a 5-minute `FALSE_ALARM` / `CONFIRMED_DANGER` decision window. No response or confirmed danger escalates to Disaster Management. While still offline, reminders recur every 5 minutes after a handled response.
 - Disaster Management initiates responder dispatch. Police, Fire, and Ambulance/Hospital use the unified fleet account UI for Active Dispatch, Live Tracking, and Dispatch History. Assigned responders receive email plus realtime/app state.
 - Responder GPS is visible to the affected tourist/group, Disaster Management, and the authorized responder side.
 - Group QR codes contain a standard HTTPS join link and can be opened by ordinary QR scanners.
 - Blockchain credentials retain the existing `idHash` and now also support encrypted append-only snapshots. Individual trip snapshots cover name, date of birth, destination, phone, and email. Group snapshots record group name, member count, destination, leader contact identity, and append a new snapshot when a member joins.
-- During a planned/active trip, tourists cannot edit name, DOB, email, or phone. A periodic integrity worker compares PostgreSQL against the latest individual blockchain snapshot and restores protected fields/destination if database values differ.
+- During a planned/active trip, tourists cannot edit name, DOB, email, or phone. A periodic integrity worker compares PostgreSQL against the latest individual or group blockchain snapshot and restores protected fields/destination if database values differ.
 
 Blockchain remains outside the emergency critical path: SOS, tracking, notifications, and dispatch continue even if blockchain anchoring is temporarily unavailable.
 
@@ -350,3 +350,24 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 ### Rakshak AI live context
 
 Rakshak AI answers normal conversation even when no static knowledge-base file matches. For grounded Kavach facts it uses the Markdown knowledge base, while location-dependent features may use authenticated live backend data. In particular, **Nearest Safe Zone** forwards the user's access token to the main backend safety-zone endpoint and calculates the closest configured `SAFE` zone from the browser's current location. The AI service requires `KAVACH_API_URL` pointing to the main backend API base URL including `/api/v1`.
+
+## August 2026 current architecture
+
+The repository currently runs as multiple deployable services:
+
+- `client/`: React/Vite browser application.
+- `server/`: main Express/Prisma/PostgreSQL API, Socket.IO, safety jobs, notifications, trips, groups, incidents and dispatch.
+- `blockchain/`: independent Ethereum Sepolia gateway plus `TrustAnchor.sol`.
+- `ai-ml/`: independent Rakshak AI TypeScript/Express service with Groq, Markdown retrieval and persistent PostgreSQL chat history.
+
+### Current safety flow
+
+Danger-zone detection notifies the affected tourist and Disaster Management immediately by application/realtime state and email. It does **not** automatically dispatch Police, Fire or Ambulance/Hospital. Disaster Management decides when to initiate a responder dispatch.
+
+For an active group trip, a non-leader member that stops sending trusted location updates for the configured threshold (default five minutes) creates a signal-loss case. The leader receives `FALSE_ALARM` and `CONFIRMED_DANGER` actions with a five-minute response window. Confirmation or timeout escalates into the incident path. After either leader action, if the member remains offline, another leader app/email reminder and fresh five-minute decision window are created after five minutes.
+
+### Blockchain integrity
+
+Individual and group credentials are issued to `TrustAnchor.sol` using a SHA-256 `idHash`. The contract also keeps append-only encrypted `DataSnapshot` records. The API integrity worker runs every five seconds and publishes realtime states such as `CHECKING`, `VERIFIED`, `DB_TAMPERED`, `FIXING`, `FIXED` and `INTEGRITY_UNAVAILABLE`.
+
+See `blockchain/docs/data-storage-and-integrity.md` for the exact hashed/encrypted fields and recovery model.

@@ -4,7 +4,7 @@ Kavach is a tourist safety platform. If a tourist is in immediate danger, they s
 
 Entering a configured danger zone creates immediate in-app safety notification behavior and can notify Disaster Management according to backend rules. Emergency-service dispatch remains an authorized Disaster Management action.
 
-For group travel, loss of a member's trusted signal triggers the configured leader/disaster-management escalation workflow. The chatbot should direct users to the live trip/safety screens for authoritative current status.
+For group travel, loss of a non-leader member's trusted signal for the default five-minute threshold creates the leader/disaster-management workflow. The leader gets a five-minute FALSE_ALARM / CONFIRMED_DANGER window. Confirmation or timeout escalates; if the member remains offline after a handled response, the leader is reminded again after five minutes with a fresh five-minute window. The chatbot should direct users to the live trip/safety screens for authoritative current status.
 
 ## Latest Rakshak AI integration
 

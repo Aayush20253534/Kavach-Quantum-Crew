@@ -1,12 +1,15 @@
-# Blockchain Verification
+# Blockchain Verification and Integrity
 
-Kavach uses its normal backend and PostgreSQL for real-time application state. Blockchain is a trust/integrity layer for selected trip credentials and encrypted snapshots.
+Kavach uses PostgreSQL for normal application state and Ethereum Sepolia as a trust/integrity layer.
 
-The individual trip credential keeps an idHash and blockchain validity state. Selected trip identity/contact data can be stored as encrypted snapshot payloads with hashes so the backend can detect database mismatches and restore trusted snapshot values. The Current Trip UI may display blockchain verification or database-tamper/self-correction state.
+Each individual or group trip credential has an `idHash` anchored in `TrustAnchor.sol`. The main backend can also append encrypted snapshots under that same `idHash`.
 
-Blockchain does not run live GPS tracking, notifications, signal-loss timers or emergency dispatch. A blockchain outage must not stop core emergency and tracking workflows.
+Individual snapshot type `1` protects: name, date of birth, trip destination, phone, email, and the trip/user/credential identifiers.
 
-## Latest Rakshak AI integration
+Group snapshot type `2` protects: group name, member count, destination, leader name/email/phone and identifiers. When a new member is accepted, a new append-only snapshot sequence records the updated count and the newly added member's ID/name/DOB/email/phone. Previous snapshots are not overwritten.
 
-Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+The API canonicalizes the snapshot JSON, SHA-256 hashes it, encrypts it using AES-256-GCM, and sends the hash plus ciphertext to the blockchain gateway. Plaintext PII is not directly stored in the Solidity fields.
 
+A five-second integrity worker verifies both individual and group snapshots. The Current Trip UI can show CHECKING/APPROVED and, for recoverable tampering, TAMPERED -> FIXING -> FIXED -> APPROVED. INTEGRITY UNAVAILABLE means the credential can still be blockchain-confirmed but a trusted snapshot is not currently safe/readable enough for approval or repair.
+
+Blockchain does not run GPS tracking, danger-zone calculations, signal-loss timers, email, chatbot history or responder dispatch. Those remain normal backend workflows.

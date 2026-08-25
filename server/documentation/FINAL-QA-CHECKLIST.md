@@ -84,7 +84,7 @@ Verify Police/Fire/Ambulance registration and login role matching; nearest-unit 
 ## Latest-flow QA additions
 
 - [ ] Danger zone notifies tourist + Disaster Management, not responders.
-- [ ] Signal loss uses a persisted 5-minute leader decision case and hourly reminders.
+- [ ] Signal loss uses a persisted 5-minute leader decision case and 5-minute reminders after a handled response.
 - [ ] Responder email occurs only after dispatch assignment.
 - [ ] Police/Fire/Ambulance pages use live backend data and browser GPS.
 - [ ] Group QR is an HTTPS deep link readable by generic scanners.
@@ -99,3 +99,11 @@ Verify Police/Fire/Ambulance registration and login role matching; nearest-unit 
 
 Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
 
+## Realtime blockchain integrity QA
+
+- [ ] Fresh individual credential reaches `APPROVED`.
+- [ ] Direct DB change to a protected individual field produces `TAMPERED -> FIXING -> FIXED -> APPROVED` without page refresh.
+- [ ] Fresh group credential reaches `APPROVED`.
+- [ ] Safe recoverable group-field tamper produces the same realtime lifecycle for active group members.
+- [ ] Snapshot unreadable/hash mismatch never reports approval.
+- [ ] New contract deployment is tested with fresh credentials; old-contract jobs are not mistaken for migrated state.

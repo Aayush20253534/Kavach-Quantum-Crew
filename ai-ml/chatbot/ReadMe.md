@@ -34,7 +34,7 @@ VITE_AI_SERVICE_URL=https://your-ai-service.onrender.com
 
 Files in `ai-ml/kb/*.md` and `*.txt` are scored using keyword overlap. The best matching full file is placed in the Groq system prompt. This is deliberately lightweight RAG: no vector database or embeddings.
 
-Conversation history is in memory and resets when Render restarts or a different instance handles the request.
+Conversation history is persisted per authenticated user in PostgreSQL. Recent persisted messages are supplied back to the model as context. Clearing the visible chat does not physically delete retained history rows.
 
 ## Latest Rakshak AI integration
 
@@ -46,3 +46,7 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 The chatbot must not treat KB retrieval as an allow/deny gate. A missing KB match still proceeds to Groq for normal conversation. When a KB file matches, its content is added as grounding for Kavach-specific questions.
 
 Location-dependent questions use live platform context where implemented. `Nearest Safe Zone` calls the authenticated main Kavach safety-zone API using `KAVACH_API_URL`, calculates nearest configured safe zones from the browser coordinates, and gives those results to the model. Live platform context takes precedence over static KB text.
+
+## Documentation map
+
+For current deployment, API, KB maintenance and data-boundary details, also read `../README.md` and `../docs/architecture.md`, `../docs/api.md`, `../docs/deployment.md`, `../docs/knowledge-base.md`, and `../docs/data-and-security.md`.

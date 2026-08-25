@@ -366,14 +366,21 @@ New SOS/incidents email active Disaster Managers with a protected deep link to t
 ## Current safety escalation and blockchain integrity rules
 
 - Danger-zone events notify the tourist and Disaster Management immediately through app/realtime state and email; they do not directly dispatch emergency fleets.
-- Group-member signal loss uses a persisted case, a 5-minute leader decision window, Disaster Management escalation on confirmation/timeout, and hourly reminders while offline.
+- Group-member signal loss uses a persisted case, a 5-minute leader decision window, Disaster Management escalation on confirmation/timeout, and 5-minute reminders after a handled response while offline.
 - Police/Fire/Ambulance-Hospital dispatch happens after Disaster Management initiates assignment. The `/auto/:serviceType` endpoint automates nearest-unit **selection**, not the decision to dispatch.
 - Emergency-service pages consume live backend state and publish responder browser GPS to dispatch tracking.
 - Individual and group blockchain credentials now append AES-256-GCM encrypted snapshots while retaining their existing on-chain `idHash` credential record.
 - `BLOCKCHAIN_DATA_ENCRYPTION_KEY` must be stable and at least 32 characters. Losing/changing it prevents recovery of older encrypted snapshots.
-- `blockchainIntegrity.job.js` runs every minute and can restore protected individual-trip fields in PostgreSQL from the latest verified blockchain snapshot.
+- `blockchainIntegrity.job.js` runs every 5 seconds and can restore protected individual-trip fields in PostgreSQL from the latest verified blockchain snapshot.
 
 ## Latest Rakshak AI integration
 
 Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
 
+## Current integrity worker and group support
+
+`blockchainIntegrity.job.js` runs every five seconds. It reconciles both confirmed individual credentials and confirmed group credentials while their trips remain open.
+
+Individual recovery compares the trusted decrypted snapshot with protected tourist identity/contact fields and destination. Group recovery validates the latest type-2 snapshot and compares recoverable group/leader/trip fields. Integrity state is pushed over Socket.IO to the affected tourist or active group members. A membership-count mismatch is detected but is not repaired by inventing/deleting membership rows; the service reports integrity unavailable for that unsafe automatic-repair case.
+
+Snapshot jobs are separate from credential issuance jobs. A failed snapshot does not invalidate an otherwise confirmed QR credential.
