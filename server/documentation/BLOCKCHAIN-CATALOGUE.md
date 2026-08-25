@@ -113,8 +113,17 @@ The previous provider placeholder is no longer the path used for trip IDs. Trip 
 | Trip completed/cancelled/auto-ended | revoke all trip credentials | `revokeId` |
 | Natural planned end | QR JWT + API validity expires | `verifyId` reports `EXPIRED` |
 
-Only hashes, timestamps, addresses, numeric reason codes, and version values are on-chain.
+Credential/evidence/incident anchors remain hash-and-metadata based. The latest contract additionally stores encrypted identity/group snapshot ciphertext together with payload hashes, sequence/type metadata, timestamps, and issuer addresses. Plaintext PII is not stored on-chain.
 
 ## Emergency dispatch integration
 
 The Police/Fire/Ambulance fleet feature does not require new blockchain writes. Incident/evidence anchoring remains separate from operational geolocation, which should stay off-chain because live responder coordinates are mutable and privacy-sensitive.
+
+## Encrypted identity/group snapshot operations
+
+Current runtime blockchain integration has two layers:
+
+1. **Credential trust state**: existing `idHash`, trip hash, issue/extend/revoke/verify.
+2. **Append-only data snapshots**: `appendDataSnapshot`, `getDataSnapshotCount`, `getLatestDataSnapshot`, and `getDataSnapshot`.
+
+Snapshot type `1` is an individual trip identity snapshot; type `2` is a group history snapshot. Payload plaintext is canonicalized, SHA-256 hashed, AES-256-GCM encrypted by the backend, and only the hash/ciphertext/sequence/type are submitted on-chain. The gateway never needs plaintext personal data.

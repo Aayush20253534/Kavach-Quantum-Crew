@@ -60,3 +60,7 @@ Email OTP itself is handled over REST, not Socket.IO. After successful `POST /ap
 ## Emergency response realtime events
 
 Service location and status changes publish `dispatch:updated`. Events go to Disaster Management/System Admin role rooms, the incident room used by the tourist, and the assigned Police/Fire/Ambulance account room when unit ownership is present. Unit location/status changes also publish `emergency-unit:updated`.
+
+## Emergency responder tracking update
+
+Responder location/status changes publish `dispatch:updated` through incident/role rooms. The event is supplemental to the REST source of truth: clients should refetch/merge backend dispatch state and must not treat an unverified Socket.IO payload as authorization. Danger-zone/signal-loss detection does not emit a responder assignment until Disaster Management actually creates/assigns the dispatch.

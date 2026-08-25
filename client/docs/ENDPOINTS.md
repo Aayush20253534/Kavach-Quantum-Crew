@@ -334,7 +334,7 @@ Verification checks the signed token, database revocation/expiry, trip state, an
 
 ## Police / Fire / Ambulance endpoints
 
-Emergency-service registration: `POST /emergency-services/register`. Service portal: `GET /emergency-services/me`, `PATCH /emergency-services/me/location`, `GET /emergency-services/me/dispatches`, `PATCH /emergency-services/dispatches/:dispatchId/location`, and `PATCH /emergency-services/dispatches/:dispatchId/status`. Tourist snapshot tracking: `GET /emergency-services/tracking/:dispatchId`. Disaster Management nearest-unit assignment: `POST /dispatch/incidents/:incidentId/auto/police`, `/auto/fire`, or `/auto/ambulance`. Full request/flow details are in `EMERGENCY-SERVICE-DISPATCH.md`.
+Emergency-service registration: `POST /emergency-services/register`. Service portal: `GET /emergency-services/me`, `PATCH /emergency-services/me/location`, `GET /emergency-services/me/dispatches`, `PATCH /emergency-services/dispatches/:dispatchId/location`, and `PATCH /emergency-services/dispatches/:dispatchId/status`. Tourist snapshot tracking: `GET /emergency-services/tracking/:dispatchId`. Disaster Management initiated nearest-unit selection: `POST /dispatch/incidents/:incidentId/auto/police`, `/auto/fire`, or `/auto/ambulance`. These routes do not mean incidents automatically notify responders; they run only when the dispatch action is initiated. Full request/flow details are in `EMERGENCY-SERVICE-DISPATCH.md`.
 
 ## Emergency email side effects
 
@@ -348,3 +348,21 @@ No extra public email endpoint is required. Email delivery is a backend side eff
 - manual dispatch assignment -> emails the manually selected fleet.
 
 The responder UI should treat each registered service account as a single fleet and primarily expose Active Dispatch, Live Tracking, and Dispatch History.
+
+## Latest safety, responder, QR, and blockchain contracts
+
+### Signal-loss cases
+- `GET /signal-loss-cases?tripId=<tripId>` lists cases visible to the group leader.
+- `POST /signal-loss-cases/:caseId/respond` accepts `{ "response": "FALSE_ALARM" }` or `{ "response": "CONFIRMED_DANGER" }`.
+- Default behavior: 5-minute offline threshold, 5-minute leader response window, then Disaster Management escalation; hourly reminders continue while the member remains offline.
+
+### Emergency-service live tracking
+- `GET /emergency-services/tourist/dispatches` returns dispatches relevant to the authenticated tourist.
+- `GET /emergency-services/tracking/:dispatchId` is authorized for affected tourists, Disaster Management, System Admin, and Police/Fire/Ambulance roles where permitted by the dispatch.
+- Responder location/status writes remain under `/emergency-services/dispatches/:dispatchId/*`.
+
+### Group QR
+The group QR payload is now a normal HTTPS URL: `/tourist/groups/join?token=<signed-token>`. Any standard QR scanner can open it. The old proprietary `KAVACH_GROUP_JOIN:<hash>` presentation is not the current user-facing contract.
+
+### Blockchain snapshots
+Credential issuance still uses the existing `idHash`. In addition, individual-trip and group snapshots are appended asynchronously through the blockchain gateway. Individual snapshots contain encrypted name, DOB, destination, phone and email data plus identifiers; group snapshots contain encrypted group/leader/member-history data. Plaintext PII is not written directly to the public chain.

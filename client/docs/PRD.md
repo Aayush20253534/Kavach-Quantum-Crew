@@ -907,3 +907,13 @@ A tourist should be able to understand their current safety situation and access
 - Socket.IO will be used to stream real-time alerts, incidents, location updates, and notifications when authenticated gateways are exposed.
 - Events will immediately synchronize with the TanStack Query cache.
 - Notifications require clear visual states: unread, historical, critical.
+
+# 39. Latest Operational Requirements
+
+1. Danger-zone detection must notify the tourist and Disaster Management immediately by in-app/web notification and email, without automatic Police/Fire/Ambulance dispatch.
+2. Group-member signal loss must create a leader decision workflow after the tracking-gap threshold (default 5 minutes). The leader has 5 minutes to mark false alarm or confirm danger; timeout/confirmation escalates to Disaster Management. Offline reminders repeat hourly.
+3. Police, Fire, and Ambulance/Hospital are unified fleet accounts with Active Dispatch, Live Tracking, and Dispatch History backed by real APIs.
+4. Affected tourists, Disaster Management, and authorized responders must be able to view live responder tracking.
+5. Group QR must be a normal HTTPS deep link and work with generic QR scanners.
+6. During a planned/active trip, tourist name, DOB, email, and phone must be immutable from tourist profile controls and backend APIs.
+7. Blockchain must preserve the existing credential `idHash`, append encrypted individual/group snapshots, append a new group snapshot as membership grows, and support server-side restoration of protected individual-trip fields if PostgreSQL differs from the verified chain snapshot.

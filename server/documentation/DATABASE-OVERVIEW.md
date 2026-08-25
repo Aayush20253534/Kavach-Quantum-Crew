@@ -51,3 +51,11 @@ Evidence bytes live behind the storage adapter; the DB stores metadata/checksum/
 ## Emergency service data
 
 `EmergencyServiceAccount` stores Police/Fire/Ambulance operator accounts and geolocation. `EmergencyUnit` now has optional `serviceAccountId`, `latitude`, `longitude`, and `locationUpdatedAt`. Existing standalone units remain valid. `Role` includes `POLICE`, `FIRE`, and `AMBULANCE`. The migration is `20260825161000_emergency_service_dispatch`.
+
+## Latest schema additions
+
+- `User.dateOfBirth` supports immutable trip identity snapshots. Existing `age` remains for compatibility but DOB is the blockchain identity source.
+- `TripGroup.name` persists the human-readable group name used in group snapshots.
+- `SignalLossCase` stores member/leader/trip references, detection time, 5-minute response deadline, hourly reminder schedule, leader response, escalation/incident linkage, and resolution state.
+- Existing `BlockchainAnchorJob` also carries `SNAPSHOT` jobs. Snapshot history itself is append-only on-chain; PostgreSQL stores the queue/audit state rather than duplicating the full public-chain history.
+- Emergency-service tables continue to model one fleet account plus associated unit/dispatch/location history.

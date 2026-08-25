@@ -71,7 +71,7 @@ blockchain/
 ## 2. `contracts/TrustAnchor.sol`
 
 ### Purpose
-The single on-chain contract. Stores only hashes/timestamps/status for three anchor types: digital IDs, evidence files, and incident timelines (plus consent receipts). No PII, ever, at the Solidity level — enforced structurally by only accepting `bytes32` hash parameters, never strings or arbitrary bytes.
+The single on-chain contract stores hash/timestamp/status anchors for digital IDs, evidence, incidents, and consent, and now also stores append-only encrypted `bytes` payloads for identity/group snapshots. Plaintext PII is never accepted as a semantic contract field; snapshot bytes must already be encrypted by the backend before submission.
 
 ### Solidity version & tooling
 - `pragma solidity ^0.8.19;`
@@ -494,3 +494,9 @@ Onboarding doc for the rest of the team (and for Prateek's own future reference)
 ## Server integration
 
 The Express backend no longer needs to import this TypeScript adapter directly. The supported cross-directory boundary is `gateway/server.ts`, authenticated with `GATEWAY_API_KEY`. The gateway owns `ethers`, the RPC connection, contract ABI calls, and issuer key. The Express backend owns retries and persistence in `BlockchainAnchorJob`.
+
+## 13. Implemented runtime extension: `DataSnapshot`
+
+`TrustAnchor.sol` now has an append-only `mapping(bytes32 => DataSnapshot[])` keyed by the existing credential `idHash`. `appendDataSnapshot` requires non-empty encrypted bytes and exact next sequence; read functions return count, latest, or indexed snapshots. The backend, not Solidity, performs canonicalization, SHA-256 payload hashing, AES-256-GCM encryption/decryption, and integrity reconciliation.
+
+Snapshot type `1` represents an individual trip identity snapshot. Snapshot type `2` represents group state/history. `SNAPSHOT` queue jobs are deliberately isolated from `ISSUE`/`EXTEND`/`REVOKE`: a failed snapshot must not flip a confirmed QR credential to failed or overwrite its issuance transaction hash.

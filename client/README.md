@@ -142,3 +142,11 @@ The backend exposes `POST /api/v1/chatbot/messages` for authenticated tourists, 
 - `docs/Phases.md` — implementation history/plan
 - `docs/Rules.md` — contribution constraints
 - `docs/Memory.md` and `Memory.md` — project-state notes; source code wins when stale
+
+## Current responder, QR, and profile behavior
+
+The frontend now consumes the real emergency-service backend for Active Dispatch, Live Tracking, and Dispatch History for Police, Fire, and Ambulance/Hospital fleet accounts. Tourists can view relevant responder tracking from the current-trip experience, while Disaster Management can open the same live dispatch tracking from fleet/incident views.
+
+Group QR codes are standard HTTPS join links, so system camera apps and ordinary scanners can open them. In-app scanning still supports the same signed join token.
+
+When the tourist has a `PLANNED` or `ACTIVE` trip, name, date of birth, email, and phone are displayed as locked profile fields. The backend enforces the same restriction; the disabled UI is only a usability cue, not the security boundary.

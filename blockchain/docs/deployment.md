@@ -236,3 +236,9 @@ BLOCKCHAIN_CONTRACT_VERSION=1
 ```
 
 `BLOCKCHAIN_CONTRACT_VERSION=1` is the numeric `uint8` written into `TrustAnchor.issueId`; it is separate from the blockchain team's string tag `CONTRACT_VERSION=trust-anchor-v1`.
+
+## Snapshot-enabled contract deployment
+
+The snapshot-enabled backend requires a newly deployed contract containing `appendDataSnapshot`, `getDataSnapshotCount`, `getLatestDataSnapshot`, and `getDataSnapshot`. After deployment, update the gateway `CONTRACT_ADDRESS`, then deploy the backend with a stable `BLOCKCHAIN_DATA_ENCRYPTION_KEY` (minimum 32 characters). Test both credential verification and snapshot append/read before routing production traffic.
+
+Changing the encryption secret is not equivalent to rotating an API token: old ciphertext becomes undecryptable unless key versioning/migration is implemented first.

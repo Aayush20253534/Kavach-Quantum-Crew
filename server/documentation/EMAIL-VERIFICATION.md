@@ -131,3 +131,7 @@ When a verified tourist changes email, `emailVerifiedAt` is cleared and refresh 
 ## Emergency service accounts
 
 Tourist email OTP behavior is unchanged. Police/Fire/Ambulance accounts use the shared login/session stack but are registered through `/emergency-services/register`; the current project flow does not add emergency-service email OTP. Production deployments should add service-organization verification/approval before enabling public registration.
+
+## Trip-time contact immutability
+
+After onboarding verifies the tourist email/contact profile, name, DOB, email, and phone become protected from tourist-side edits whenever a trip is `PLANNED` or `ACTIVE`. This supports the individual blockchain snapshot integrity model. It does not replace normal authentication/email-verification controls before or after the trip.

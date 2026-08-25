@@ -80,3 +80,17 @@ For the complete request-to-database/integration execution model, JavaScript-ori
 ## Emergency service QA additions
 
 Verify Police/Fire/Ambulance registration and login role matching; nearest-unit selection with known coordinates; rejection when incident location is missing or no unit is available; unit location updates; service-owned dispatch authorization; status progression; tourist ownership checks; Socket.IO `dispatch:updated` delivery; migration deployment in Docker.
+
+## Latest-flow QA additions
+
+- [ ] Danger zone notifies tourist + Disaster Management, not responders.
+- [ ] Signal loss uses a persisted 5-minute leader decision case and hourly reminders.
+- [ ] Responder email occurs only after dispatch assignment.
+- [ ] Police/Fire/Ambulance pages use live backend data and browser GPS.
+- [ ] Group QR is an HTTPS deep link readable by generic scanners.
+- [ ] DOB is required before blockchain individual credential creation.
+- [ ] Protected profile fields are locked during planned/active trip.
+- [ ] Individual encrypted blockchain snapshot can be decrypted/verified.
+- [ ] DB tamper simulation is restored from chain and audited.
+- [ ] Group member join appends, rather than overwrites, snapshot history.
+- [ ] Snapshot failure does not invalidate an otherwise confirmed credential.

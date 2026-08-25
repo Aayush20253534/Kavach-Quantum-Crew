@@ -38,7 +38,7 @@ Example request:
 
 Registration creates both the service account and its initial `AVAILABLE` primary emergency unit at the same coordinates. Login uses the existing `POST /api/v1/auth/login` endpoint with the matching selected role (`POLICE`, `FIRE`, or `AMBULANCE`).
 
-## Nearest-unit auto assignment
+## Disaster-Management initiated nearest-unit assignment
 
 Disaster Management can call one of the following backend endpoints:
 
@@ -102,10 +102,9 @@ The internally associated `EmergencyUnit` record is an implementation detail use
 
 ## Dispatch email delivery
 
-Whenever a Police, Ambulance, or Fire fleet is assigned, the backend also sends a Brevo transactional email to the registered emergency-service account email address. This applies to both:
+Responder email is sent **only when a dispatch assignment is actually created by Disaster Management/system dispatch workflow**. Creating an incident, entering a danger zone, or losing signal does **not** directly notify Police, Fire, or Ambulance/Hospital.
 
-- nearest-fleet automatic assignment (`/dispatch/incidents/:incidentId/auto/:serviceType`), and
-- Disaster Management/manual assignment.
+The `/dispatch/incidents/:incidentId/auto/:serviceType` route means **automatic nearest-unit selection after Disaster Management initiates that dispatch action**; it is not automatic incident-to-responder escalation.
 
 The email contains incident summary information and a deep link generated from `PUBLIC_APP_URL`:
 
@@ -128,3 +127,14 @@ The link format is:
 ```
 
 After authentication the frontend should open the exact incident rather than the generic queue.
+
+## Current integrated safety-to-dispatch flow (August 2026)
+
+1. Tourist enters a danger zone: tourist and Disaster Management receive immediate in-app/email safety notifications. No responder is auto-dispatched.
+2. Group member signal loss: after the configured tracking gap (default 5 minutes), the leader and Disaster Management are notified. The leader can mark `FALSE_ALARM` or `CONFIRMED_DANGER`.
+3. If the leader confirms danger, or does not respond within 5 minutes, the signal-loss case escalates into the incident pipeline. While the member remains offline, reminders repeat hourly with a fresh 5-minute response window.
+4. Disaster Management reviews the incident and initiates Police, Fire, or Ambulance/Hospital dispatch. The backend may select the nearest available unit for the requested service type.
+5. Only after assignment does the responder fleet receive the dispatch through in-app/realtime state and email.
+6. Responder browser GPS updates the assigned unit/dispatch. Live responder tracking is authorized for the affected tourist/group, Disaster Management, System Admin, and the assigned emergency-service role.
+
+The responder frontend uses real backend dispatch data; mock fallback dispatches are not part of the current operational flow.

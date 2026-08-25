@@ -56,3 +56,15 @@ When `notificationService.incidentCreated()` runs, all active Disaster Managers 
 When a dispatch reaches `ASSIGNED`, the registered email of the selected emergency-service fleet receives an email. The same behavior is used for automatic nearest assignment and manual Disaster Management assignment.
 
 Email delivery is best-effort. A Brevo outage must never undo a persisted SOS or dispatch; failures are logged for operations while realtime/in-app notification remains available.
+
+## Current notification routing rules
+
+| Trigger | Tourist/member | Group leader | Disaster Management | Police/Fire/Ambulance |
+|---|---|---|---|---|
+| Danger-zone entry | app + email | as applicable | app + email | **none** |
+| Initial group-member signal loss | member context as applicable | app + email | app + email | **none** |
+| Leader confirms danger / 5-min timeout | incident path | app state | escalated incident | **none until dispatch** |
+| Member remains offline for 1 hour | context/reminder | app + email, new 5-min window | case remains visible | **none until dispatch** |
+| Disaster Management assigns responder | incident tracking | incident tracking | realtime/app | app/realtime + email |
+
+Email-provider failure never rolls back persisted safety/dispatch state.

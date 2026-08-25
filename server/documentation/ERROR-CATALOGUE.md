@@ -198,3 +198,12 @@ Clients should branch on `error.code`, not message text.
 ## Emergency dispatch errors
 
 New domain error codes include `EMERGENCY_SERVICE_FORBIDDEN`, `DISPATCH_NOT_OWNED`, `SERVICE_CANCEL_FORBIDDEN`, `INCIDENT_LOCATION_REQUIRED`, `NO_AVAILABLE_EMERGENCY_UNIT`, and existing dispatch transition/unit errors. Tracking also uses `TRACKING_FORBIDDEN` when a tourist attempts to read another incident's dispatch.
+
+## Latest blockchain/signal-loss error semantics
+
+- `DATE_OF_BIRTH_REQUIRED`: individual blockchain trip credential cannot be created without DOB.
+- Immutable-profile validation rejects tourist attempts to change protected identity/contact fields during a planned/active trip.
+- Snapshot decrypt/hash/identity mismatch is treated as an integrity failure and must not be silently used to overwrite PostgreSQL.
+- Blockchain snapshot job failure is independent from the credential's issuance status.
+- `SIGNAL_LOSS_CASE_NOT_FOUND` hides unauthorized/non-owned signal-loss cases as not found.
+- `SIGNAL_LOSS_RESPONSE_INVALID` is returned for responses other than `FALSE_ALARM` / `CONFIRMED_DANGER`.

@@ -60,3 +60,9 @@ The frontend must support these protected destinations:
 Emergency emails point to `/login?redirect=<destination>&role=<role>`. Login must preserve the `redirect` query parameter. If a valid session already exists, skip the form and navigate directly. After successful authentication, navigate to the redirect destination only after validating that the authenticated role is allowed to open it.
 
 For the current responder portal, one account represents one complete Police, Ambulance/Hospital, or Fire fleet. The expected primary tabs are Active Dispatch, Live Tracking, and Dispatch History. A separate Profile or per-vehicle Fleet UI is not required.
+
+## Latest integration handoff
+
+Frontend teams should treat responder dispatch, signal-loss cases, and group QR URLs as server-owned state. Do not re-create timers or derive dispatch authorization in the browser. The server owns the 5-minute/1-hour timing, responder assignment, QR signing, immutable-field enforcement, blockchain snapshot encryption, and database reconciliation.
+
+Blockchain/gateway deployments must expose the latest snapshot append/read ABI before the main backend is rolled out.
