@@ -336,3 +336,8 @@ The current build separates **detection**, **human escalation**, **responder dis
 - During a planned/active trip, tourists cannot edit name, DOB, email, or phone. A periodic integrity worker compares PostgreSQL against the latest individual blockchain snapshot and restores protected fields/destination if database values differ.
 
 Blockchain remains outside the emergency critical path: SOS, tracking, notifications, and dispatch continue even if blockchain anchoring is temporarily unavailable.
+
+
+### Rakshak AI service
+
+`ai-ml/` now contains a standalone TypeScript/Express chatbot service intended for a separate Render deployment. The frontend connects with `VITE_AI_SERVICE_URL`; the service performs lightweight knowledge-base retrieval and Groq inference.

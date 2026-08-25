@@ -4,10 +4,10 @@ import {
   ChatbotRequestBody,
   ChatbotSuccessResponse,
   GroqChatCompletionMessage,
-} from "./types";
-import { selectBestKbFile } from "./kbSelector";
-import { getHistory, appendToHistory } from "./memoryStore";
-import { callGroq } from "./groqClient";
+} from "./types.js";
+import { selectBestKbFile } from "./kbSelector.js";
+import { getHistory, appendToHistory } from "./memoryStore.js";
+import { callGroq } from "./groqClient.js";
 
 const router = Router();
 
@@ -65,6 +65,16 @@ router.post("/v1/chatbot/messages", async (req: Request, res: Response) => {
       });
     }
 
+    const normalizedMessage = message.trim();
+    const maxMessageLength = Number(process.env.CHATBOT_MAX_MESSAGE_LENGTH || 2000);
+    if (normalizedMessage.length > maxMessageLength) {
+      return res.status(400).json({
+        success: false,
+        message: `message must be at most ${maxMessageLength} characters`,
+        code: "MESSAGE_TOO_LONG",
+      });
+    }
+
     // conversationId doubles as the session key for chat memory.
     // Generate a fresh one when the client sends null (new conversation).
     const activeConversationId =
@@ -72,13 +82,13 @@ router.post("/v1/chatbot/messages", async (req: Request, res: Response) => {
         ? conversationId
         : randomUUID();
 
-    const { fileName, content } = selectBestKbFile(message);
+    const { fileName, content } = selectBestKbFile(normalizedMessage);
 
     if (!fileName || !content) {
       const fallbackText =
         "I couldn't find relevant information to answer that question.";
 
-      appendToHistory(activeConversationId, { role: "user", content: message });
+      appendToHistory(activeConversationId, { role: "user", content: normalizedMessage });
       appendToHistory(activeConversationId, { role: "assistant", content: fallbackText });
 
       const body: ChatbotSuccessResponse = {
@@ -102,12 +112,12 @@ router.post("/v1/chatbot/messages", async (req: Request, res: Response) => {
         content: buildSystemPrompt(fileName, content, location, context),
       },
       ...history.map((m) => ({ role: m.role, content: m.content })),
-      { role: "user", content: message },
+      { role: "user", content: normalizedMessage },
     ];
 
     const reply = await callGroq(groqMessages);
 
-    appendToHistory(activeConversationId, { role: "user", content: message });
+    appendToHistory(activeConversationId, { role: "user", content: normalizedMessage });
     appendToHistory(activeConversationId, { role: "assistant", content: reply });
 
     const body: ChatbotSuccessResponse = {

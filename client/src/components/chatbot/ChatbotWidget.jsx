@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { sendChatbotMessage } from '../../services/chatbotClient';
 import {
   MessageSquare,
   X,
@@ -13,6 +14,9 @@ import {
 export function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
+  const [conversationId, setConversationId] = useState(null);
+  const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState('');
 
   const [messages, setMessages] = useState([
     {
@@ -55,50 +59,67 @@ export function ChatbotWidget() {
     }
   }, [messages, isOpen]);
 
-  const handleSend = (event) => {
-    event.preventDefault();
+  const handleSend = async (event, overrideMessage) => {
+    event?.preventDefault?.();
 
-    const trimmedMessage = message.trim();
-
-    if (!trimmedMessage) {
-      return;
-    }
+    const trimmedMessage = (overrideMessage ?? message).trim();
+    if (!trimmedMessage || isSending) return;
 
     const newMessage = {
-      id: Date.now(),
+      id: `user-${Date.now()}`,
       sender: 'user',
       text: trimmedMessage,
-      time: new Date().toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages((previousMessages) => [
-      ...previousMessages,
-      newMessage,
-    ]);
-
+    setMessages((previousMessages) => [...previousMessages, newMessage]);
     setMessage('');
+    setError('');
+    setIsSending(true);
 
-    // Temporary simulated AI response.
-    // Replace this with the real chatbot API later.
-    setTimeout(() => {
-      const aiMessage = {
-        id: Date.now() + 1,
-        sender: 'ai',
-        text: 'Acknowledged. Retrieving relevant data from the municipal grid...',
-        time: new Date().toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-      };
+    try {
+      let location;
+      if (navigator.geolocation) {
+        location = await new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (position) => resolve({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            }),
+            () => resolve(undefined),
+            { enableHighAccuracy: false, timeout: 2500, maximumAge: 60000 },
+          );
+        });
+      }
+
+      const data = await sendChatbotMessage({
+        message: trimmedMessage,
+        conversationId,
+        ...(location ? { location } : {}),
+        context: { client: 'kavach-web' },
+      });
+
+      if (data?.conversationId) setConversationId(data.conversationId);
 
       setMessages((previousMessages) => [
         ...previousMessages,
-        aiMessage,
+        {
+          id: `ai-${Date.now()}`,
+          sender: 'ai',
+          text: data?.message || 'I could not generate a response.',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
       ]);
-    }, 1000);
+    } catch (requestError) {
+      const status = requestError?.response?.status;
+      const apiMessage = requestError?.response?.data?.message;
+      const text = status === 401
+        ? 'Please sign in to use Rakshak AI.'
+        : apiMessage || 'Rakshak AI is temporarily unavailable. Core safety and SOS features still work normally.';
+      setError(text);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleQuickAction = (action) => {
@@ -183,6 +204,14 @@ export function ChatbotWidget() {
               </div>
             ))}
 
+            {isSending && (
+              <div className="mr-auto max-w-[85%] text-[10px] text-slate-500 px-2">Rakshak AI is thinking...</div>
+            )}
+            {error && (
+              <div className="mr-auto max-w-[90%] rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[10px] text-red-700">
+                {error}
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
 
@@ -224,7 +253,7 @@ export function ChatbotWidget() {
 
               <button
                 type="submit"
-                disabled={!message.trim()}
+                disabled={!message.trim() || isSending}
                 className="absolute right-1 w-7 h-7 bg-[#e33636] text-white flex items-center justify-center rounded-md disabled:opacity-60 hover:bg-red-700 transition shadow-sm"
                 aria-label="Send message"
               >
