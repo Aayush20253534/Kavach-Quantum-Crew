@@ -346,3 +346,7 @@ Blockchain remains outside the emergency critical path: SOS, tracking, notificat
 
 Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
 
+
+### Rakshak AI live context
+
+Rakshak AI answers normal conversation even when no static knowledge-base file matches. For grounded Kavach facts it uses the Markdown knowledge base, while location-dependent features may use authenticated live backend data. In particular, **Nearest Safe Zone** forwards the user's access token to the main backend safety-zone endpoint and calculates the closest configured `SAFE` zone from the browser's current location. The AI service requires `KAVACH_API_URL` pointing to the main backend API base URL including `/api/v1`.
