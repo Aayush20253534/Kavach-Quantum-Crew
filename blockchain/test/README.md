@@ -106,3 +106,8 @@ needed if your `hardhat.config.ts` matches the blueprint.
 ## Snapshot tests required for the latest runtime
 
 In addition to the original trust-anchor tests, validate append-only snapshot sequencing, rejection of duplicate/out-of-order sequence numbers, latest/indexed reads, payload-hash round trips, group membership history growth, and separation between snapshot failure and credential issuance state. Encryption/decryption tests belong in the backend integration tests because AES-GCM is performed off-chain.
+
+## Latest Rakshak AI integration
+
+Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+

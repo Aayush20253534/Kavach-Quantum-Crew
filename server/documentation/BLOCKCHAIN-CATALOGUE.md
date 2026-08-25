@@ -127,3 +127,8 @@ Current runtime blockchain integration has two layers:
 2. **Append-only data snapshots**: `appendDataSnapshot`, `getDataSnapshotCount`, `getLatestDataSnapshot`, and `getDataSnapshot`.
 
 Snapshot type `1` is an individual trip identity snapshot; type `2` is a group history snapshot. Payload plaintext is canonicalized, SHA-256 hashed, AES-256-GCM encrypted by the backend, and only the hash/ciphertext/sequence/type are submitted on-chain. The gateway never needs plaintext personal data.
+
+## Latest Rakshak AI integration
+
+Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+

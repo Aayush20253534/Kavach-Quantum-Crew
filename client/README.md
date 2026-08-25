@@ -155,3 +155,8 @@ When the tourist has a `PLANNED` or `ACTIVE` trip, name, date of birth, email, a
 ## Rakshak AI
 
 The floating chatbot calls the separately deployed AI service. Set `VITE_AI_SERVICE_URL` to the Render service origin, for example `https://kavach-ai.onrender.com`. The client sends the existing access token when available; Groq API keys must never be added to Vite variables.
+
+## Latest Rakshak AI integration
+
+Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+

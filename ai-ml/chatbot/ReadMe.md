@@ -35,3 +35,8 @@ VITE_AI_SERVICE_URL=https://your-ai-service.onrender.com
 Files in `ai-ml/kb/*.md` and `*.txt` are scored using keyword overlap. The best matching full file is placed in the Groq system prompt. This is deliberately lightweight RAG: no vector database or embeddings.
 
 Conversation history is in memory and resets when Render restarts or a different instance handles the request.
+
+## Latest Rakshak AI integration
+
+Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+

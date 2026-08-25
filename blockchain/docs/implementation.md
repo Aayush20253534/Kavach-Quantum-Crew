@@ -500,3 +500,8 @@ The Express backend no longer needs to import this TypeScript adapter directly. 
 `TrustAnchor.sol` now has an append-only `mapping(bytes32 => DataSnapshot[])` keyed by the existing credential `idHash`. `appendDataSnapshot` requires non-empty encrypted bytes and exact next sequence; read functions return count, latest, or indexed snapshots. The backend, not Solidity, performs canonicalization, SHA-256 payload hashing, AES-256-GCM encryption/decryption, and integrity reconciliation.
 
 Snapshot type `1` represents an individual trip identity snapshot. Snapshot type `2` represents group state/history. `SNAPSHOT` queue jobs are deliberately isolated from `ISSUE`/`EXTEND`/`REVOKE`: a failed snapshot must not flip a confirmed QR credential to failed or overwrite its issuance transaction hash.
+
+## Latest Rakshak AI integration
+
+Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+

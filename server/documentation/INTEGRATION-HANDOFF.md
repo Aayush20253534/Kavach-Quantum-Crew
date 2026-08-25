@@ -66,3 +66,8 @@ For the current responder portal, one account represents one complete Police, Am
 Frontend teams should treat responder dispatch, signal-loss cases, and group QR URLs as server-owned state. Do not re-create timers or derive dispatch authorization in the browser. The server owns the 5-minute/1-hour timing, responder assignment, QR signing, immutable-field enforcement, blockchain snapshot encryption, and database reconciliation.
 
 Blockchain/gateway deployments must expose the latest snapshot append/read ABI before the main backend is rolled out.
+
+## Latest Rakshak AI integration
+
+Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+

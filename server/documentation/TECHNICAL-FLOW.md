@@ -1102,3 +1102,8 @@ Danger-zone/signal-loss events do not call responder assignment automatically. D
 ### Realtime blockchain integrity status
 
 When reconciliation detects protected PostgreSQL values that differ from the latest trusted individual snapshot, `blockchain.integrity.service.js` publishes `blockchain:integrity` with `DB_TAMPERED` to the tourist account room before applying the repair. After the transaction restores the chain-backed values and records `BLOCKCHAIN_DB_RESTORED`, it publishes `VERIFIED`. This makes the trip credential card reflect the detection/correction lifecycle over Socket.IO while REST/PostgreSQL remain the operational source of truth after reconciliation.
+
+## Latest Rakshak AI integration
+
+Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+

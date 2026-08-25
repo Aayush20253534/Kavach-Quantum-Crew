@@ -1445,3 +1445,8 @@ Group QR rendering uses the backend-provided HTTPS `groupJoinUrl`/`groupJoinQrPa
 `CurrentTripPage.jsx` opens an authenticated Socket.IO connection through `src/services/realtimeClient.js` while an individual trip credential is present. The connection uses the current access token and listens for `blockchain:integrity` events scoped by credential ID and trip ID. `DB_TAMPERED` changes the credential card to a red self-correcting state. The following `VERIFIED` event returns the card to blockchain verified and refreshes current trip data. The client intentionally holds the tamper state for at least 2.5 seconds so an immediate server repair does not make the warning visually disappear between consecutive realtime packets.
 
 `VITE_SOCKET_URL` may override the Socket.IO origin. When omitted, the client derives the origin from `VITE_API_URL` by removing `/api/v1`.
+
+## Latest Rakshak AI integration
+
+Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+

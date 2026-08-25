@@ -125,3 +125,8 @@ Emergency response uses the existing Incident -> Dispatch -> EmergencyUnit archi
 `signal-loss` is a dedicated persisted domain rather than an immediate generic tracking-interruption incident for group members. Its scheduled sweep owns the 5-minute decision deadline and hourly reminders, avoiding duplicate/racing escalation paths. `dispatch` remains a separate Disaster-Management-controlled domain; `/auto/:serviceType` performs nearest-unit assignment only after that action is initiated.
 
 Blockchain is also split into credential state and append-only data snapshots. `ISSUE`/`EXTEND`/`REVOKE` update credential trust state, while `SNAPSHOT` jobs append encrypted individual/group payloads. Snapshot failure does not mark the underlying QR credential as failed. A separate integrity job verifies/decrypts the latest individual snapshot and repairs protected PostgreSQL values when required.
+
+## Latest Rakshak AI integration
+
+Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+

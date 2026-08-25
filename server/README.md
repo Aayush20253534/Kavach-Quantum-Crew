@@ -372,3 +372,8 @@ New SOS/incidents email active Disaster Managers with a protected deep link to t
 - Individual and group blockchain credentials now append AES-256-GCM encrypted snapshots while retaining their existing on-chain `idHash` credential record.
 - `BLOCKCHAIN_DATA_ENCRYPTION_KEY` must be stable and at least 32 characters. Losing/changing it prevents recovery of older encrypted snapshots.
 - `blockchainIntegrity.job.js` runs every minute and can restore protected individual-trip fields in PostgreSQL from the latest verified blockchain snapshot.
+
+## Latest Rakshak AI integration
+
+Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+

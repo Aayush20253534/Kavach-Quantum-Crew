@@ -207,3 +207,8 @@ New domain error codes include `EMERGENCY_SERVICE_FORBIDDEN`, `DISPATCH_NOT_OWNE
 - Blockchain snapshot job failure is independent from the credential's issuance status.
 - `SIGNAL_LOSS_CASE_NOT_FOUND` hides unauthorized/non-owned signal-loss cases as not found.
 - `SIGNAL_LOSS_RESPONSE_INVALID` is returned for responses other than `FALSE_ALARM` / `CONFIRMED_DANGER`.
+
+## Latest Rakshak AI integration
+
+Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+

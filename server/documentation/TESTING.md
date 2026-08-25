@@ -56,3 +56,8 @@ Tests for this feature should cover service registration validation/conflicts, r
 - Keep a non-leader member offline beyond the tracking threshold; assert leader + Disaster Management notifications, 5-minute response window, timeout escalation, and hourly reminder behavior.
 - Assert danger-zone/signal-loss creation does not email responders. Then initiate Disaster Management dispatch and assert responder email/realtime dispatch.
 - Publish responder GPS and verify authorization from tourist, Disaster Management, and assigned responder contexts.
+
+## Latest Rakshak AI integration
+
+Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+

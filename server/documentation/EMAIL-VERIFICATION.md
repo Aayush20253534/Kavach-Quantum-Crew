@@ -135,3 +135,8 @@ Tourist email OTP behavior is unchanged. Police/Fire/Ambulance accounts use the 
 ## Trip-time contact immutability
 
 After onboarding verifies the tourist email/contact profile, name, DOB, email, and phone become protected from tourist-side edits whenever a trip is `PLANNED` or `ACTIVE`. This supports the individual blockchain snapshot integrity model. It does not replace normal authentication/email-verification controls before or after the trip.
+
+## Latest Rakshak AI integration
+
+Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+
