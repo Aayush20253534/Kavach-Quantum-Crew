@@ -13,6 +13,26 @@ import { createRealtimeSocket } from '../../../services/realtimeClient';
 const dateText = (value) => value ? new Date(value).toLocaleString() : '—';
 const MIN_GROUP_MEMBERS_TO_START = 2;
 
+const getStartLocation = () =>
+  new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve({});
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => resolve({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracyM: position.coords.accuracy,
+        capturedAt: new Date(position.timestamp || Date.now()).toISOString(),
+      }),
+      () => resolve({}),
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 15000 },
+    );
+  });
+
+
 export function CurrentTripPage() {
   const { user } = useSelector((state) => state.auth);
   const [trip, setTrip] = useState(null);
@@ -164,7 +184,8 @@ export function CurrentTripPage() {
     }
     await tripService.grantConsent(trip.id, 'LOCATION_TRACKING');
     await tripService.grantConsent(trip.id, 'EMERGENCY_SHARING');
-    await tripService.startTrip(trip.id);
+    const startLocation = await getStartLocation();
+    await tripService.startTrip(trip.id, startLocation);
   });
 
   const extendBy = (minutes) =>

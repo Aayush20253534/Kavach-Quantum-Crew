@@ -1,6 +1,8 @@
 import { ApiError } from "../../common/errors/ApiError.js";
+import { logger } from "../../config/logger.js";
 import { tripRepository } from "./trip.repository.js";
 import { credentialService } from "../credential/credential.service.js";
+import { safetyService } from "../safety/safety.service.js";
 
 const REQUIRED_CONSENTS = ["LOCATION_TRACKING", "EMERGENCY_SHARING"];
 
@@ -116,6 +118,7 @@ const allRequiredConsentsGranted = (trip) => {
 export const createTripService = ({
   repository = tripRepository,
   clock = () => new Date(),
+  safetyEvaluator = safetyService,
 } = {}) =>
   Object.freeze({
     async createTrip(userId, input) {
@@ -237,7 +240,7 @@ export const createTripService = ({
       return credentialService.ensureIndividual(tripId, userId);
     },
 
-    async startTrip(userId, tripId) {
+    async startTrip(userId, tripId, startLocation = {}) {
       const trip = await requireTrip(repository, tripId, userId);
       if (trip.status !== "PLANNED") {
         throw ApiError.conflict("Only a planned trip can be started", {
@@ -266,6 +269,29 @@ export const createTripService = ({
       }
 
       const updated = await repository.startTrip(trip.id, now);
+
+      if (
+        safetyEvaluator &&
+        Number.isFinite(startLocation.latitude) &&
+        Number.isFinite(startLocation.longitude)
+      ) {
+        try {
+          await safetyEvaluator.evaluateLocation({
+            tripId: trip.id,
+            userId,
+            pingId: null,
+            latitude: startLocation.latitude,
+            longitude: startLocation.longitude,
+            capturedAt: startLocation.capturedAt ?? now.toISOString(),
+          });
+        } catch (error) {
+          logger.error(
+            { err: error, tripId: trip.id, userId },
+            "Immediate danger-zone evaluation on trip start failed",
+          );
+        }
+      }
+
       await repository.createAudit({
         actorId: userId,
         action: "TRIP_STARTED",

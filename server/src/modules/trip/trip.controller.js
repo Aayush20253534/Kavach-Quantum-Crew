@@ -57,7 +57,7 @@ export const createTripController = ({ service = tripService } = {}) => ({
   start: async (request, response) =>
     ApiResponse.success(response, {
       message: "Trip started",
-      data: await service.startTrip(request.user.id, request.params.tripId),
+      data: await service.startTrip(request.user.id, request.params.tripId, request.body ?? {}),
     }),
 
   extend: async (request, response) =>

@@ -175,7 +175,13 @@ export const createSafetyService = ({
                 level: alertLevelForZone(zone),
                 sourceId: zone.id,
                 message: `Entered risk zone: ${zone.name}`,
-                details: { zoneId: zone.id, zoneName: zone.name, severity: zone.severity },
+                details: {
+                  zoneId: zone.id,
+                  zoneName: zone.name,
+                  severity: zone.severity,
+                  latitude,
+                  longitude,
+                },
               });
             } else {
               await repository.resolveOpenAlert(tripId, userId, "RISK_ZONE_ENTRY", zone.id, now);
