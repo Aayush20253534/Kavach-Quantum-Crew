@@ -97,12 +97,37 @@ export default function LoginPage() {
   const handleRoleChange = (roleId) => {
     setSelectedRole(roleId);
     setValue('role', roleId);
+    
+    // Auto-fill dummy credentials for responder roles to bypass Zod validation
+    if (['POLICE', 'FIRE', 'AMBULANCE'].includes(roleId)) {
+      setValue('identifier', `demo-${roleId.toLowerCase()}@kavach.local`);
+      setValue('password', 'demo123');
+    } else {
+      setValue('identifier', '');
+      setValue('password', '');
+    }
   };
 
   const onSubmit = async (data) => {
     setLoginError('');
 
     try {
+      // Dummy Login Bypass for Responders
+      if (['POLICE', 'FIRE', 'AMBULANCE'].includes(data.role)) {
+        const dummyUser = {
+          id: `dummy-${data.role.toLowerCase()}-123`,
+          name: `${data.role} Unit (Mock)`,
+          role: data.role,
+        };
+        setAccessToken('mock-responder-token');
+        if (import.meta.env.DEV) {
+          localStorage.setItem('DEV_ROLE', data.role);
+        }
+        dispatch(setAuth({ user: dummyUser }));
+        navigate('/responder/dispatch', { replace: true });
+        return;
+      }
+
       const response = await authService.login({
         identifier: data.identifier.trim(),
         password: data.password,
