@@ -208,3 +208,9 @@ Because snapshots change the contract ABI, redeploy `TrustAnchor.sol` and update
 
 Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
 
+
+## Render liveness and readiness
+
+The gateway binds to Render's injected `PORT` on `0.0.0.0` in production. Use `/health` as the Render health-check path because it is a process-level liveness endpoint and returns immediately without waiting for the blockchain RPC. Use `/ready` when you specifically need to verify RPC connectivity, chain ID, and contract deployment.
+
+Do not set `PORT` manually on Render. A sleeping free-tier service can still cold-start after inactivity; that behavior is separate from HTTP port binding.
