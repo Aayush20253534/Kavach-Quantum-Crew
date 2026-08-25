@@ -55,11 +55,11 @@ export function ResponderLayout() {
     switch (user?.role) {
       case 'POLICE':
         return {
-          color: 'blue',
-          textClass: 'text-blue-600',
-          bgClass: 'bg-blue-600',
-          lightBgClass: 'bg-blue-50',
-          borderClass: 'border-blue-200',
+          color: 'amber',
+          textClass: 'text-amber-700',
+          bgClass: 'bg-amber-600',
+          lightBgClass: 'bg-amber-50',
+          borderClass: 'border-amber-200',
           icon: ShieldAlert,
           label: 'Police Dispatch'
         };
