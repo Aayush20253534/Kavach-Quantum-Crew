@@ -6,6 +6,8 @@ import { realtimePublisher } from "../../realtime/realtimePublisher.js";
 import { emergencyServiceRepository } from "./emergency-service.repository.js";
 
 const SERVICE_ROLES = new Set(EMERGENCY_SERVICE_ROLES);
+const ACCOUNT_CREATORS = new Set(["DISASTER_MANAGER", "SYSTEM_ADMIN"]);
+const SERVICE_LABELS = Object.freeze({ POLICE: "Police", FIRE: "Fire", AMBULANCE: "Ambulance / Hospital" });
 const NEXT = Object.freeze({ ASSIGNED: "DISPATCHED", DISPATCHED: "EN_ROUTE", EN_ROUTE: "ON_SCENE", ON_SCENE: "COMPLETED" });
 const publicAccount = (row) => { const copy = { ...row }; delete copy.passwordHash; return copy; };
 
@@ -34,6 +36,54 @@ export const createEmergencyServiceService = ({ repository = emergencyServiceRep
         contactPhone: input.phone, latitude: input.latitude, longitude: input.longitude, locationUpdatedAt: now,
       });
       return { account: publicAccount({ ...account, role: account.serviceType }), unit, loginPortalRole: account.serviceType };
+    },
+    async provision(actor, input) {
+      if (!ACCOUNT_CREATORS.has(actor.role)) throw ApiError.forbidden("Disaster Management account required", { code: "EMERGENCY_ACCOUNT_CREATE_FORBIDDEN" });
+      const conflict = await repository.findConflict(input);
+      if (conflict) throw ApiError.conflict("Username, email or phone is already in use", { code: "ACCOUNT_ALREADY_EXISTS" });
+
+      const label = SERVICE_LABELS[input.serviceType] || input.serviceType;
+      const displayName = `${label} ${input.username}`;
+      const { account, unit } = await repository.createAccountWithUnit({
+        name: displayName,
+        username: input.username,
+        email: input.email,
+        phone: input.phone,
+        passwordHash: await hashPassword(input.password),
+        serviceType: input.serviceType,
+        organization: null,
+        address: null,
+        jurisdiction: null,
+        latitude: null,
+        longitude: null,
+        locationUpdatedAt: null,
+      }, {
+        name: `${label} Primary Unit`,
+        type: input.serviceType,
+        status: "AVAILABLE",
+        organization: null,
+        jurisdiction: null,
+        contactPhone: input.phone,
+        latitude: null,
+        longitude: null,
+        locationUpdatedAt: null,
+      });
+
+      await repository.createAudit({
+        actorId: actor.id,
+        actorRole: actor.role,
+        action: "EMERGENCY_SERVICE_ACCOUNT_CREATED",
+        entityType: "EmergencyServiceAccount",
+        entityId: account.id,
+        metadata: { serviceType: input.serviceType, username: input.username, email: input.email },
+      });
+
+      return {
+        account: publicAccount({ ...account, role: account.serviceType }),
+        unit,
+        loginPortalRole: account.serviceType,
+        locationRequired: true,
+      };
     },
     async me(actor) { serviceOnly(actor); const account = await repository.findAccount(actor.id); return publicAccount({ ...account, role: actor.role }); },
     async updateLocation(actor, input) {

@@ -25,6 +25,18 @@ export const registerEmergencyServiceBodySchema = z.object({
   if (data.password !== data.confirmPassword) ctx.addIssue({ code: "custom", path: ["confirmPassword"], message: "Passwords do not match" });
 });
 
+
+export const provisionEmergencyServiceBodySchema = z.object({
+  username: z.string().trim().min(6).max(40).regex(/^[a-zA-Z0-9._-]+$/).transform((v) => v.toLowerCase()),
+  email: z.string().trim().email().max(254).transform((v) => v.toLowerCase()),
+  phone: z.string().trim().regex(/^\d{10}$/),
+  password: z.string().min(8).max(128).regex(/[a-z]/).regex(/[A-Z]/).regex(/\d/),
+  confirmPassword: z.string(),
+  serviceType: z.enum(serviceTypes),
+}).superRefine((data, ctx) => {
+  if (data.password !== data.confirmPassword) ctx.addIssue({ code: "custom", path: ["confirmPassword"], message: "Passwords do not match" });
+});
+
 export const emergencyLocationBodySchema = z.object({ ...location });
 export const emergencyDispatchParamsSchema = z.object({ dispatchId: uuid });
 export const emergencyDispatchStatusBodySchema = z.object({

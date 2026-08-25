@@ -11,6 +11,7 @@ export const createEmergencyServiceRepository = ({ db = prisma } = {}) => ({
     ]);
     return rows.find(Boolean) ?? null;
   },
+  createAudit: (data) => db.auditLog.create({ data }),
   createAccountWithUnit: (account, unit) => db.$transaction(async (tx) => {
     const created = await tx.emergencyServiceAccount.create({ data: account });
     const createdUnit = await tx.emergencyUnit.create({ data: { ...unit, serviceAccountId: created.id } });

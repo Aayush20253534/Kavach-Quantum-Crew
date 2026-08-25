@@ -47,6 +47,7 @@ import { AuthorityRiskZonesPage } from '../features/authority/pages/AuthorityRis
 import { AuthorityHazardsPage } from '../features/authority/pages/AuthorityHazardsPage';
 import { AuthorityRespondersPage } from '../features/authority/pages/AuthorityRespondersPage';
 import { AuthorityAnalyticsPage } from '../features/authority/pages/AuthorityAnalyticsPage';
+import { AuthorityAccountCreationPage } from '../features/authority/pages/AuthorityAccountCreationPage';
 
 // Pages - Responder
 import { ActiveDispatchPage } from '../features/emergency-services/pages/ActiveDispatchPage';
@@ -141,6 +142,7 @@ export const router = createBrowserRouter([
                   { path: 'dispatch', element: <AuthorityDispatchPage /> },
                   { path: 'zones', element: <div className="admin-risk-zone-page"><AuthorityRiskZonesPage /></div> },
                   { path: 'responders', element: <AuthorityRespondersPage /> },
+                  { path: 'accounts/create', element: <AuthorityAccountCreationPage /> },
                   { path: 'analytics', element: <AuthorityAnalyticsPage /> },
                   { path: 'response/:dispatchId', element: <SharedDispatchTrackingPage /> },
                 ],
