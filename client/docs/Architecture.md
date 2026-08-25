@@ -1432,3 +1432,9 @@ Socket.IO events MUST NOT duplicate backend data into Redux. Instead, events wil
 ## Blockchain credential flow
 
 Trip credentials are intentionally API-driven. `CurrentTripPage` calls `credentialService`, which reads signed QR payloads from the backend. The browser does not connect to an RPC node or wallet. Scans land on `/verify/:token`, and that page calls the public verification API. This keeps chain access, retries, and signer isolation outside React.
+
+# 41. Latest Integrated Safety and Integrity Architecture
+
+The frontend safety flow no longer equates an incident with an automatic responder notification. Danger-zone and signal-loss events first surface to the tourist/leader and Disaster Management. Disaster Management then initiates Police, Fire, or Ambulance/Hospital dispatch. Responder pages read/write the emergency-service API directly and share browser geolocation during an active dispatch.
+
+Group QR rendering uses the backend-provided HTTPS `groupJoinUrl`/`groupJoinQrPayload`. Profile editing respects `PLANNED`/`ACTIVE` trip locks for name, DOB, email, and phone. Blockchain reconciliation is server-side; the browser must never receive the blockchain snapshot encryption key.

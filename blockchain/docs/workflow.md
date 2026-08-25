@@ -164,7 +164,7 @@ The backend decides when a credential should exist or change. It creates privacy
 
 ### Smart contract
 
-`TrustAnchor.sol` is the durable on-chain state machine. It stores hashes and status metadata, not raw tourist data.
+`TrustAnchor.sol` is the durable on-chain state machine. It stores credential/status hashes and metadata plus append-only encrypted identity/group snapshot ciphertext; it never stores plaintext tourist identity/contact data.
 
 ## 5. What is stored on-chain and what stays off-chain
 
@@ -186,9 +186,9 @@ For the contract's additional anchoring capabilities it can also store evidence 
 
 The following remain in the application/backend systems:
 
-- tourist names
-- email addresses
-- phone numbers
+- plaintext tourist names
+- plaintext email addresses
+- plaintext phone numbers
 - JWTs
 - QR token contents
 - raw trip IDs
@@ -580,7 +580,7 @@ This is **least privilege**: each component receives only the secrets required f
 
 ## 18. Privacy model
 
-Blockchain records are public or at least replicated beyond the application database. KAVACH therefore anchors hashes instead of raw records.
+Blockchain records are public or at least replicated beyond the application database. KAVACH therefore uses hashes for trust anchors and encrypted ciphertext for the new recoverable identity/group snapshots, never plaintext personal records.
 
 Do not add any of the following to contract calls without a serious privacy review:
 
@@ -672,3 +672,29 @@ This order prevents wasting time debugging Solidity when the real problem is an 
 ## 22. One-sentence mental model
 
 **KAVACH keeps private, fast-changing application data in PostgreSQL, hashes the identity of important trip credentials, asynchronously records those hashes and lifecycle states through an isolated gateway into `TrustAnchor.sol`, and consults that trust record during verification without exposing blockchain keys or personal data to the user.**
+
+## 23. Current encrypted snapshot workflow
+
+### Individual trip
+
+```text
+create/obtain individual credential
+ -> existing idHash ISSUE job
+ -> require DOB
+ -> build canonical individual snapshot
+ -> SHA-256 payloadHash
+ -> AES-256-GCM ciphertext
+ -> SNAPSHOT queue job (type 1, sequence 1)
+ -> gateway /v1/snapshots/append
+ -> TrustAnchor.appendDataSnapshot
+```
+
+Protected snapshot fields are name, DOB, destination, phone and email. During a planned/active trip the tourist cannot edit name/DOB/email/phone. Every minute the server can read `getLatestDataSnapshot`, decrypt it, verify `payloadHash` and identity, compare PostgreSQL, and restore differences with an audit event.
+
+### Group history
+
+Group creation appends sequence 1 with group name, current member count, destination and leader contact identity. Each later accepted member appends sequence N+1 containing the new member plus the updated count. Existing snapshots are immutable history and are never rewritten.
+
+### Privacy boundary
+
+Ciphertext, payload hash, sequence, snapshot type, timestamp and sender are public-chain material. The snapshot encryption secret remains only in the main backend environment. Neither frontend nor smart contract can decrypt PII.

@@ -1081,3 +1081,19 @@ If you know JavaScript, reduce the backend to this:
 ## Technical emergency dispatch flow
 
 Auto assignment loads the incident coordinates, fetches available units of the selected type with non-null coordinates, computes Haversine distance, assigns the nearest unit, records a dispatch event/audit entry, and marks the unit unavailable for competing dispatches. Service tracking persists coordinates in PostgreSQL and fans updates out through Socket.IO. See `EMERGENCY-SERVICE-DISPATCH.md` for API details and terminology.
+
+## 40. Latest signal-loss, responder, and blockchain snapshot flow
+
+### Signal-loss state machine
+
+For active group trips, `signalLoss.job.js` periodically checks each non-leader member's latest trusted location. After the configured tracking gap (default 5 minutes), the service creates a persisted `SignalLossCase`, sends leader + Disaster Management notifications/email, and records a 5-minute response deadline. `FALSE_ALARM` resolves the case; `CONFIRMED_DANGER` or deadline expiry creates/escalates a `TRACKING_INTERRUPTION` safety alert into the incident pipeline. If the member remains offline, `nextReminderAt` schedules hourly reminders and resets the 5-minute response window. Returning online resolves the case and linked alert.
+
+### Emergency-service dispatch boundary
+
+Danger-zone/signal-loss events do not call responder assignment automatically. Disaster Management initiates dispatch. `POST /dispatch/incidents/:incidentId/auto/:serviceType` means “select the nearest available unit for this requested service,” not “automatically notify responders when an incident exists.” After assignment, responder email and realtime state are emitted. The responder page writes browser GPS through `/emergency-services/dispatches/:dispatchId/location`; authorized viewers read `/emergency-services/tracking/:dispatchId`.
+
+### Blockchain snapshot pipeline
+
+`credential.service.js` still generates the existing `idHash` and queues `ISSUE`. It additionally queues `SNAPSHOT` jobs. `blockchain.snapshot.js` canonicalizes JSON, computes SHA-256, and encrypts the payload with AES-256-GCM using `BLOCKCHAIN_DATA_ENCRYPTION_KEY`. The queue sends ciphertext/hash/sequence/type to the gateway, which calls `TrustAnchor.appendDataSnapshot`. Snapshot jobs deliberately do not mutate the underlying credential `chainStatus`/issuance transaction state.
+
+`blockchainIntegrity.job.js` runs every minute for confirmed individual credentials on open trips. It reads the latest type-1 snapshot, decrypts it, verifies the hash and credential identity, compares name/DOB/email/phone/destination against PostgreSQL, restores differences, and records `BLOCKCHAIN_DB_RESTORED`. A decrypt/hash/identity mismatch is never trusted as recovery data.

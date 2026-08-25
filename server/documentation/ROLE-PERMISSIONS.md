@@ -58,3 +58,13 @@ Authentication alone never grants arbitrary access to another user's resource.
 ## Emergency service roles
 
 `POLICE`, `FIRE`, and `AMBULANCE` are authenticated roles backed by `EmergencyServiceAccount`. These roles may read their profile/assigned dispatches, update their own/current unit location, and advance their own dispatch status. They cannot cancel a dispatch or operate another service's assignment. Disaster Management performs manual or nearest-unit dispatch.
+
+## Current cross-role safety permissions
+
+- **Tourist:** may view responder tracking only for dispatches connected to their own individual/group incident; protected identity fields are not editable while a planned/active trip exists.
+- **Group leader (Tourist role):** may list relevant signal-loss cases and submit `FALSE_ALARM` or `CONFIRMED_DANGER`.
+- **Disaster Manager:** receives danger/signal-loss incidents and initiates responder dispatch; may view responder tracking.
+- **Police / Fire / Ambulance:** operate the single fleet account, view their dispatches, update dispatch status/location, and view authorized live tracking.
+- **System Admin:** retains administrative visibility/configuration.
+
+No emergency-service role receives an automatic dispatch merely because a danger-zone or signal-loss event exists.

@@ -362,3 +362,13 @@ The backend now includes a unified emergency-service portal for Police, Fire, an
 Police, Ambulance/Hospital, and Fire use a single-account-per-fleet model. The responder-facing product can stay focused on **Active Dispatch**, **Live Tracking**, and **Dispatch History**.
 
 New SOS/incidents email active Disaster Managers with a protected deep link to the exact incident. Auto-assigned and manually assigned dispatches email the selected responder fleet with a protected deep link to the exact dispatch. Links use `PUBLIC_APP_URL` and `/login?redirect=...`; the frontend is responsible for preserving the redirect through authentication.
+
+## Current safety escalation and blockchain integrity rules
+
+- Danger-zone events notify the tourist and Disaster Management immediately through app/realtime state and email; they do not directly dispatch emergency fleets.
+- Group-member signal loss uses a persisted case, a 5-minute leader decision window, Disaster Management escalation on confirmation/timeout, and hourly reminders while offline.
+- Police/Fire/Ambulance-Hospital dispatch happens after Disaster Management initiates assignment. The `/auto/:serviceType` endpoint automates nearest-unit **selection**, not the decision to dispatch.
+- Emergency-service pages consume live backend state and publish responder browser GPS to dispatch tracking.
+- Individual and group blockchain credentials now append AES-256-GCM encrypted snapshots while retaining their existing on-chain `idHash` credential record.
+- `BLOCKCHAIN_DATA_ENCRYPTION_KEY` must be stable and at least 32 characters. Losing/changing it prevents recovery of older encrypted snapshots.
+- `blockchainIntegrity.job.js` runs every minute and can restore protected individual-trip fields in PostgreSQL from the latest verified blockchain snapshot.

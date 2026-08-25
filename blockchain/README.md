@@ -18,7 +18,7 @@ Start with [`docs/workflow.md`](docs/workflow.md) for the current end-to-end flo
 - incident hash anchoring and verification
 - consent hash anchoring and verification
 
-Only hash-derived proofs and minimal metadata are written to the contract. Tourist names, phones, precise locations, medical records, documents, and raw evidence remain off-chain.
+Credential/evidence/incident anchors use hash-derived proofs and minimal metadata. The latest contract also stores AES-GCM encrypted identity/group snapshot ciphertext. Plaintext tourist names, DOBs, emails, phones, precise locations, medical records, documents, and raw evidence are not written directly on-chain.
 
 ## Current server integration
 
@@ -192,3 +192,14 @@ Render injects `PORT`; the gateway binds to `0.0.0.0` by default. Use a public R
 - `docs/implementation.md`
 - `docs/plan.md`
 - `../server/documentation/BLOCKCHAIN-CATALOGUE.md`
+
+## Encrypted append-only trip snapshots
+
+The latest contract keeps the original digital-ID mapping and adds append-only `DataSnapshot[]` history keyed by credential `idHash`. Plaintext PII is **not** stored directly on-chain. The main backend canonicalizes snapshot JSON, hashes it, encrypts it with AES-256-GCM, and submits `{ idHash, payloadHash, ciphertext, sequence, snapshotType }` through the gateway.
+
+- Snapshot type `1`: individual trip identity (`name`, `dateOfBirth`, `destination`, `phone`, `email`, IDs).
+- Snapshot type `2`: group history (`groupName`, `memberCount`, destination, leader contact identity, and the newly added member for membership-change snapshots).
+- Group creation writes sequence 1; every accepted new member appends the next sequence. Previous snapshots are never overwritten.
+- The server runs a periodic integrity job that reads/decrypts the latest individual snapshot and can restore protected PostgreSQL fields if they differ.
+
+Because snapshots change the contract ABI, redeploy `TrustAnchor.sol` and update `CONTRACT_ADDRESS` before enabling this backend version.

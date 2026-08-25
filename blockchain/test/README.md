@@ -102,3 +102,7 @@ npx hardhat test test/idempotency.test.ts   # run a single file
 import the same way Hardhat resolves contract test files — this is already
 covered by `@nomicfoundation/hardhat-toolbox` per config §6, no extra setup
 needed if your `hardhat.config.ts` matches the blueprint.
+
+## Snapshot tests required for the latest runtime
+
+In addition to the original trust-anchor tests, validate append-only snapshot sequencing, rejection of duplicate/out-of-order sequence numbers, latest/indexed reads, payload-hash round trips, group membership history growth, and separation between snapshot failure and credential issuance state. Encryption/decryption tests belong in the backend integration tests because AES-GCM is performed off-chain.

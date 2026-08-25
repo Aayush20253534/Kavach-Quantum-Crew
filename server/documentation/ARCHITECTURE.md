@@ -119,3 +119,9 @@ Never infer access from a resource UUID alone.
 ## Emergency service dispatch extension
 
 Emergency response uses the existing Incident -> Dispatch -> EmergencyUnit architecture. Police, Fire, and Ambulance accounts authenticate through the shared auth/session layer, own emergency units, update their live coordinates, and receive dispatch events. Nearest-unit selection is performed inside the dispatch service using incident and unit coordinates; realtime updates reuse Socket.IO incident/account rooms. See `EMERGENCY-SERVICE-DISPATCH.md`.
+
+## Latest safety orchestration and blockchain integrity
+
+`signal-loss` is a dedicated persisted domain rather than an immediate generic tracking-interruption incident for group members. Its scheduled sweep owns the 5-minute decision deadline and hourly reminders, avoiding duplicate/racing escalation paths. `dispatch` remains a separate Disaster-Management-controlled domain; `/auto/:serviceType` performs nearest-unit assignment only after that action is initiated.
+
+Blockchain is also split into credential state and append-only data snapshots. `ISSUE`/`EXTEND`/`REVOKE` update credential trust state, while `SNAPSHOT` jobs append encrypted individual/group payloads. Snapshot failure does not mark the underlying QR credential as failed. A separate integrity job verifies/decrypts the latest individual snapshot and repairs protected PostgreSQL values when required.

@@ -96,7 +96,7 @@ KAVACH uses two trip-scoped credential types:
 | `INDIVIDUAL` | one active trip participant | prove an individual belongs to an active trip |
 | `GROUP` | one group trip | identify an active group and support QR join discovery |
 
-PostgreSQL stores application state, QR metadata, credential ownership, retry jobs, and lifecycle state. The chain stores only hash-derived identifiers, timestamps, version values, issuer addresses, and revocation state. Names, phone numbers, precise GPS coordinates, medical information, and government IDs are not written on-chain.
+PostgreSQL stores application state, QR metadata, credential ownership, retry jobs, and lifecycle state. The chain stores hash-derived credential identifiers/status metadata plus append-only **encrypted** identity/group snapshot ciphertext and snapshot hashes. Plaintext names, DOBs, emails, phone numbers, precise GPS coordinates, medical information, and government IDs are not written on-chain.
 
 Credential lifecycle:
 
@@ -322,3 +322,17 @@ Some files under `frontend/docs/` and `blockchain/docs/` began as implementation
 ## License
 
 No license file is present in this repository snapshot. Add one before distributing the project under explicit open-source terms.
+
+## Latest integrated safety and blockchain flow
+
+The current build separates **detection**, **human escalation**, **responder dispatch**, and **tamper-evident trip records**:
+
+- Danger-zone entry immediately notifies the tourist and Disaster Management by website/in-app channel and email. It does not automatically contact Police, Fire, or Ambulance/Hospital.
+- A non-leader group member who stops sending trusted location updates for the configured threshold (default 5 minutes) opens a persisted signal-loss case. The leader receives a 5-minute `FALSE_ALARM` / `CONFIRMED_DANGER` decision window. No response or confirmed danger escalates to Disaster Management. While still offline, reminders recur hourly.
+- Disaster Management initiates responder dispatch. Police, Fire, and Ambulance/Hospital use the unified fleet account UI for Active Dispatch, Live Tracking, and Dispatch History. Assigned responders receive email plus realtime/app state.
+- Responder GPS is visible to the affected tourist/group, Disaster Management, and the authorized responder side.
+- Group QR codes contain a standard HTTPS join link and can be opened by ordinary QR scanners.
+- Blockchain credentials retain the existing `idHash` and now also support encrypted append-only snapshots. Individual trip snapshots cover name, date of birth, destination, phone, and email. Group snapshots record group name, member count, destination, leader contact identity, and append a new snapshot when a member joins.
+- During a planned/active trip, tourists cannot edit name, DOB, email, or phone. A periodic integrity worker compares PostgreSQL against the latest individual blockchain snapshot and restores protected fields/destination if database values differ.
+
+Blockchain remains outside the emergency critical path: SOS, tracking, notifications, and dispatch continue even if blockchain anchoring is temporarily unavailable.

@@ -1007,3 +1007,11 @@ The goal is to produce the **smallest correct, maintainable, and scalable implem
 Before installing Map libraries, Socket.IO clients, or any geospatial library:
 * Inspect existing dependencies and determine whether the package is genuinely required.
 * `socket.io-client` may be necessary if the project does not already contain an appropriate Socket.IO client, but do not install dependencies blindly.
+
+## Latest safety-state rules
+
+- Do not ship mock responder dispatches as fallback data in operational pages. Backend failure must surface as an error/empty state.
+- Do not implement the signal-loss 5-minute or hourly timers in React; display server-owned deadlines/state.
+- Do not expose blockchain snapshot ciphertext decryption secrets to the client.
+- Use the backend-provided HTTPS group join URL as the QR payload.
+- Profile field disabling during a trip is UX only; backend rejection remains authoritative.

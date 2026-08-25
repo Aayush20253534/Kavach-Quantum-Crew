@@ -229,3 +229,30 @@ Dispatch persisted as ASSIGNED
 ```
 
 Email is a notification transport, not the source of truth. Incident/dispatch database state is created first and remains valid if Brevo delivery fails.
+
+## Latest end-to-end safety flow
+
+```text
+Danger-zone entry
+  -> tourist notification + tourist email
+  -> Disaster Management notification + email
+  -> review/incident handling
+  -> no automatic responder notification
+
+Group member offline >= tracking-gap threshold (default 5 min)
+  -> create SignalLossCase
+  -> leader + Disaster Management app/email notification
+  -> leader has 5 min: FALSE_ALARM | CONFIRMED_DANGER
+       FALSE_ALARM -> close case
+       CONFIRMED_DANGER -> incident escalation
+       timeout -> incident escalation
+  -> if still offline, remind hourly and open a fresh 5-min response window
+
+Disaster Management initiates dispatch
+  -> optional nearest available unit selection by service type
+  -> responder email + realtime/app dispatch
+  -> responder sends browser GPS
+  -> tourist + Disaster Management + authorized responder see live tracking
+```
+
+Group QR codes use a standard signed HTTPS join URL. Blockchain issuance keeps the credential `idHash`; encrypted append-only snapshots add trip identity/group-history integrity without putting plaintext PII on Sepolia.

@@ -128,3 +128,13 @@ PUBLIC_APP_URL=http://localhost:5173
 ## Emergency service environment impact
 
 No new application secret is required. The feature uses the existing JWT/session, PostgreSQL, and Socket.IO configuration. Container startup now needs a reachable `DATABASE_URL` because committed Prisma migrations are applied before the server starts.
+
+## Encrypted blockchain snapshot configuration
+
+```env
+BLOCKCHAIN_DATA_ENCRYPTION_KEY=replace-with-a-stable-secret-at-least-32-characters
+```
+
+The server derives the AES-256-GCM encryption key from this secret. It must be identical across API/worker instances that encrypt or decrypt snapshots and must remain stable across deployments. Do not expose it to the frontend or blockchain gateway logs. Rotating it without a migration/key-version strategy makes prior snapshots unreadable.
+
+The latest `TrustAnchor.sol` must be deployed and `CONTRACT_ADDRESS` updated because snapshot read/append methods do not exist on the older contract deployment.

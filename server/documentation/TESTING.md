@@ -45,3 +45,14 @@ After automated tests pass, use a fresh real receiving email in Postman:
 ## Emergency dispatch test coverage
 
 Tests for this feature should cover service registration validation/conflicts, role-aware login, geolocation validation, nearest-unit ranking, no-location/no-unit failures, ownership checks, dispatch state transitions, tourist tracking authorization, realtime publishing, and migration startup. Existing Phase 15 dispatch tests should remain valid because manual dispatch APIs are preserved.
+
+## Latest regression scenarios
+
+- Create an individual trip with DOB populated; assert credential issue and encrypted individual snapshot are queued/confirmed.
+- During `PLANNED`/`ACTIVE`, attempt to change name/DOB/email/phone through the tourist API and assert rejection.
+- Modify one protected database field in a controlled test database; run integrity reconciliation and assert it is restored from a valid blockchain snapshot with `BLOCKCHAIN_DB_RESTORED` audit metadata.
+- Create a group and assert snapshot sequence 1. Approve/join a new member and assert a new append-only snapshot with incremented member count and `addedMember`.
+- Scan the group QR with a generic scanner and verify it opens the HTTPS join route.
+- Keep a non-leader member offline beyond the tracking threshold; assert leader + Disaster Management notifications, 5-minute response window, timeout escalation, and hourly reminder behavior.
+- Assert danger-zone/signal-loss creation does not email responders. Then initiate Disaster Management dispatch and assert responder email/realtime dispatch.
+- Publish responder GPS and verify authorization from tourist, Disaster Management, and assigned responder contexts.

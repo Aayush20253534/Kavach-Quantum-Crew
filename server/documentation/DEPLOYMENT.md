@@ -60,3 +60,16 @@ Before starting production, set `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `EMAIL_FROM`
 ## Emergency dispatch deployment requirement
 
 Deployments must apply the Prisma migration that creates `emergency_service_accounts` and emergency-unit location columns. The Docker image now runs `prisma migrate deploy` before the server process. Ensure `DATABASE_URL` is available at container startup and migration permissions are granted.
+
+## Latest contract and migration deployment order
+
+1. Back up PostgreSQL.
+2. Apply the committed Prisma migration adding `User.dateOfBirth` and `TripGroup.name`.
+3. Deploy the updated `TrustAnchor.sol` to the configured chain.
+4. Update the blockchain gateway `CONTRACT_ADDRESS`.
+5. Configure the same stable `BLOCKCHAIN_DATA_ENCRYPTION_KEY` on every backend instance that performs snapshot encryption/reconciliation.
+6. Deploy/restart the blockchain gateway, then the main backend.
+7. Verify `/`/health endpoints, issue a test credential, confirm snapshot append, and confirm latest-snapshot retrieval/decryption.
+8. Test danger-zone notification, signal-loss timeout/reminder, manual Disaster Management dispatch, responder email, and responder live tracking.
+
+Do not deploy the backend snapshot code against the old contract address; credential issuance may still work while snapshot calls fail, creating a misleading partial deployment.
