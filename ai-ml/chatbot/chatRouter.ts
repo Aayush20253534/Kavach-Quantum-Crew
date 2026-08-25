@@ -1,15 +1,33 @@
 import { Router, Request, Response } from "express";
-import { randomUUID } from "crypto";
 import {
   ChatbotRequestBody,
   ChatbotSuccessResponse,
   GroqChatCompletionMessage,
 } from "./types.js";
 import { selectBestKbFile } from "./kbSelector.js";
-import { getHistory, appendToHistory } from "./memoryStore.js";
+import { appendMessage, ensureConversation, getConversationHistory, getVisibleHistory, hideHistoryForUser } from "./historyStore.js";
 import { callGroq } from "./groqClient.js";
 
 const router = Router();
+
+function userIdFromRequest(req: Request): string | null {
+  const user = (req as Request & { user?: { sub?: string } }).user;
+  return typeof user?.sub === "string" ? user.sub : null;
+}
+
+router.get("/v1/chatbot/history", async (req: Request, res: Response) => {
+  const userId = userIdFromRequest(req);
+  if (!userId) return res.status(401).json({ success: false, message: "Authentication required", code: "AUTH_REQUIRED" });
+  const data = await getVisibleHistory(userId);
+  return res.status(200).json({ success: true, message: "Chat history", data });
+});
+
+router.delete("/v1/chatbot/history", async (req: Request, res: Response) => {
+  const userId = userIdFromRequest(req);
+  if (!userId) return res.status(401).json({ success: false, message: "Authentication required", code: "AUTH_REQUIRED" });
+  await hideHistoryForUser(userId);
+  return res.status(200).json({ success: true, message: "Chat history cleared from your view. Stored audit history was retained." });
+});
 
 function buildSystemPrompt(
   fileName: string,
@@ -75,12 +93,15 @@ router.post("/v1/chatbot/messages", async (req: Request, res: Response) => {
       });
     }
 
-    // conversationId doubles as the session key for chat memory.
-    // Generate a fresh one when the client sends null (new conversation).
-    const activeConversationId =
-      conversationId && typeof conversationId === "string"
-        ? conversationId
-        : randomUUID();
+    const userId = userIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Authentication required", code: "AUTH_REQUIRED" });
+    }
+
+    const activeConversationId = await ensureConversation(
+      userId,
+      conversationId && typeof conversationId === "string" ? conversationId : null,
+    );
 
     const { fileName, content } = selectBestKbFile(normalizedMessage);
 
@@ -88,8 +109,8 @@ router.post("/v1/chatbot/messages", async (req: Request, res: Response) => {
       const fallbackText =
         "I couldn't find relevant information to answer that question.";
 
-      appendToHistory(activeConversationId, { role: "user", content: normalizedMessage });
-      appendToHistory(activeConversationId, { role: "assistant", content: fallbackText });
+      await appendMessage(userId, activeConversationId, { role: "user", content: normalizedMessage });
+      await appendMessage(userId, activeConversationId, { role: "assistant", content: fallbackText });
 
       const body: ChatbotSuccessResponse = {
         success: true,
@@ -104,7 +125,7 @@ router.post("/v1/chatbot/messages", async (req: Request, res: Response) => {
       return res.status(200).json(body);
     }
 
-    const history = getHistory(activeConversationId);
+    const history = await getConversationHistory(userId, activeConversationId);
 
     const groqMessages: GroqChatCompletionMessage[] = [
       {
@@ -117,8 +138,8 @@ router.post("/v1/chatbot/messages", async (req: Request, res: Response) => {
 
     const reply = await callGroq(groqMessages);
 
-    appendToHistory(activeConversationId, { role: "user", content: normalizedMessage });
-    appendToHistory(activeConversationId, { role: "assistant", content: reply });
+    await appendMessage(userId, activeConversationId, { role: "user", content: normalizedMessage });
+    await appendMessage(userId, activeConversationId, { role: "assistant", content: reply }, [fileName]);
 
     const body: ChatbotSuccessResponse = {
       success: true,

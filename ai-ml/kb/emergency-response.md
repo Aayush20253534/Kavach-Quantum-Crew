@@ -3,3 +3,8 @@
 Police, Fire and Ambulance/Hospital responder accounts have backend-integrated active dispatch, dispatch history and live tracking views. Disaster Management selects/assigns emergency services; incidents do not automatically dispatch these services merely because they were created.
 
 Once a responder is assigned, live responder location can be visible from authorized tourist, Disaster Management and responder views. The chatbot can explain this workflow, but it cannot create or confirm a dispatch itself.
+
+## Latest Rakshak AI integration
+
+Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+

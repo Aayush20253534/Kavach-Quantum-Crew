@@ -138,3 +138,8 @@ BLOCKCHAIN_DATA_ENCRYPTION_KEY=replace-with-a-stable-secret-at-least-32-characte
 The server derives the AES-256-GCM encryption key from this secret. It must be identical across API/worker instances that encrypt or decrypt snapshots and must remain stable across deployments. Do not expose it to the frontend or blockchain gateway logs. Rotating it without a migration/key-version strategy makes prior snapshots unreadable.
 
 The latest `TrustAnchor.sol` must be deployed and `CONTRACT_ADDRESS` updated because snapshot read/append methods do not exist on the older contract deployment.
+
+## Latest Rakshak AI integration
+
+Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+

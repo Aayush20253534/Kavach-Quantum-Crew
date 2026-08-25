@@ -917,3 +917,8 @@ A tourist should be able to understand their current safety situation and access
 5. Group QR must be a normal HTTPS deep link and work with generic QR scanners.
 6. During a planned/active trip, tourist name, DOB, email, and phone must be immutable from tourist profile controls and backend APIs.
 7. Blockchain must preserve the existing credential `idHash`, append encrypted individual/group snapshots, append a new group snapshot as membership grows, and support server-side restoration of protected individual-trip fields if PostgreSQL differs from the verified chain snapshot.
+
+## Latest Rakshak AI integration
+
+Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+

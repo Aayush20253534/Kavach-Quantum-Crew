@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { sendChatbotMessage } from '../../services/chatbotClient';
+import { clearChatbotHistory, getChatbotHistory, sendChatbotMessage } from '../../services/chatbotClient';
 import {
   MessageSquare,
   X,
@@ -9,6 +9,7 @@ import {
   AlertCircle,
   MapPin,
   Activity,
+  Trash2,
 } from 'lucide-react';
 
 export function ChatbotWidget() {
@@ -17,6 +18,7 @@ export function ChatbotWidget() {
   const [conversationId, setConversationId] = useState(null);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState('');
+  const [historyLoaded, setHistoryLoaded] = useState(false);
 
   const [messages, setMessages] = useState([
     {
@@ -58,6 +60,52 @@ export function ChatbotWidget() {
       scrollToBottom();
     }
   }, [messages, isOpen]);
+
+
+  useEffect(() => {
+    if (!isOpen || historyLoaded) return;
+
+    let cancelled = false;
+    getChatbotHistory()
+      .then((data) => {
+        if (cancelled) return;
+        if (data?.conversationId) setConversationId(data.conversationId);
+        if (Array.isArray(data?.messages) && data.messages.length > 0) {
+          setMessages(data.messages.map((item) => ({
+            id: `history-${item.id}`,
+            sender: item.sender,
+            text: item.text,
+            time: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          })));
+        }
+        setHistoryLoaded(true);
+      })
+      .catch((requestError) => {
+        if (cancelled) return;
+        if (requestError?.response?.status !== 401) {
+          setError(requestError?.response?.data?.message || 'Could not load chat history.');
+        }
+        setHistoryLoaded(true);
+      });
+
+    return () => { cancelled = true; };
+  }, [isOpen, historyLoaded]);
+
+  const handleClearHistory = async () => {
+    try {
+      await clearChatbotHistory();
+      setConversationId(null);
+      setMessages([{
+        id: `welcome-${Date.now()}`,
+        sender: 'ai',
+        text: 'Namaste! I am your Prayagraj safety assistant. How can I help you today?',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }]);
+      setError('');
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || 'Could not clear chat history from your view.');
+    }
+  };
 
   const handleSend = async (event, overrideMessage) => {
     event?.preventDefault?.();
@@ -149,14 +197,25 @@ export function ChatbotWidget() {
               </div>
             </div>
 
-            <button
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={handleClearHistory}
+                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                aria-label="Clear visible chat history"
+                title="Clear chat from this view"
+              >
+                <Trash2 size={14} />
+              </button>
+              <button
               type="button"
               onClick={() => setIsOpen(false)}
               className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-md transition-colors"
               aria-label="Close chatbot"
             >
               <X size={16} />
-            </button>
+              </button>
+            </div>
           </div>
 
           {/* Messages Area */}

@@ -72,3 +72,8 @@ Responder location/status changes publish `dispatch:updated` through incident/ro
 For confirmed individual credentials on `PLANNED` or `ACTIVE` trips, the integrity watcher compares protected PostgreSQL fields against the latest trusted encrypted blockchain snapshot. Direct database writes bypass the API, so detection is performed by a five-second watcher and the result is delivered to the authenticated tourist through Socket.IO.
 
 When a mismatch is found the server first emits `blockchain:integrity` with `status: DB_TAMPERED`, the protected field names, credential ID and trip ID. It then restores the trusted values inside a database transaction, writes `BLOCKCHAIN_DB_RESTORED` to the audit log, and emits a second `blockchain:integrity` event with `status: VERIFIED` and `restored: true`. The Current Trip UI keeps the tamper state visible briefly before rendering the restored verified state so both transitions are observable.
+
+## Latest Rakshak AI integration
+
+Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+

@@ -7,6 +7,7 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import chatbotRouter from "./chatbot/chatRouter.js";
+import { ensureChatSchema } from "./chatbot/db.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,8 +57,8 @@ function authenticateOptional(req: AuthenticatedRequest, res: Response, next: Ne
   try {
     const payload = jwt.verify(token, secret, {
       algorithms: ["HS256"],
-      issuer: process.env.JWT_ISSUER || undefined,
-      audience: process.env.JWT_AUDIENCE || undefined,
+      issuer: process.env.JWT_ISSUER || "smart-tourist-safety",
+      audience: process.env.JWT_AUDIENCE || "smart-tourist-safety-client",
     });
 
     if (typeof payload !== "object" || payload.type !== "access") {
@@ -129,6 +130,13 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   });
 });
 
-app.listen(port, host, () => {
-  console.log(`Kavach AI chatbot service listening on http://${host}:${port}`);
-});
+ensureChatSchema()
+  .then(() => {
+    app.listen(port, host, () => {
+      console.log(`Kavach AI chatbot service listening on http://${host}:${port}`);
+    });
+  })
+  .catch((error) => {
+    console.error("Failed to initialize chatbot database schema:", error);
+    process.exit(1);
+  });
