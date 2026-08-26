@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { DirectionsRendererF, GoogleMap, InfoWindowF, MarkerF, useJsApiLoader } from '@react-google-maps/api';
+import { DirectionsRenderer, GoogleMap, InfoWindowF, MarkerF, useJsApiLoader } from '@react-google-maps/api';
 import { MapPin } from 'lucide-react';
 
 const GOOGLE_MAP_LIBRARIES = ['places'];
@@ -197,7 +197,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
       })}
 
       {routes.map((route) => (
-        <DirectionsRendererF
+        <DirectionsRenderer
           key={`route-${route.unitId}`}
           directions={route.result}
           options={{
