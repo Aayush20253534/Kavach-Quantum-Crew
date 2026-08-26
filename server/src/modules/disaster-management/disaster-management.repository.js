@@ -227,7 +227,7 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
     const userIds = [...new Set(rows.map((row) => row.userId))];
     const tripIds = [...new Set(rows.map((row) => row.tripId))];
     const incidentIds = rows.map((row) => row.id);
-    const [tourists, trips, dispatches] = await Promise.all([
+    const [tourists, trips, dispatches, creationEvents] = await Promise.all([
       db.user.findMany({
         where: { id: { in: userIds } },
         select: { id: true, name: true, username: true, phone: true, email: true, nationality: true, preferredLanguage: true, bloodGroup: true, emergencyPhone: true },
@@ -255,6 +255,11 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
         },
         orderBy: { requestedAt: "desc" },
       }),
+      db.incidentEvent.findMany({
+        where: { incidentId: { in: incidentIds }, type: "CREATED" },
+        select: { incidentId: true, metadata: true, createdAt: true },
+        orderBy: { createdAt: "asc" },
+      }),
     ]);
     const touristById = new Map(tourists.map((tourist) => [tourist.id, tourist]));
     const tripById = new Map(trips.map((trip) => [trip.id, trip]));
@@ -264,12 +269,35 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
       list.push(dispatch);
       dispatchesByIncident.set(dispatch.incidentId, list);
     }
-    return rows.map((row) => {
+
+    // A legacy hazard-backfill race could create more than one Incident for the
+    // same HazardReport. Collapse those rows by their preserved hazardReportId
+    // while leaving genuine repeated SOS incidents untouched.
+    const originByIncident = new Map();
+    for (const event of creationEvents) {
+      if (!originByIncident.has(event.incidentId)) {
+        originByIncident.set(event.incidentId, event.metadata ?? {});
+      }
+    }
+    const seenHazardReports = new Set();
+    const uniqueRows = rows.filter((row) => {
+      const hazardReportId = originByIncident.get(row.id)?.hazardReportId;
+      if (!hazardReportId) return true;
+      if (seenHazardReports.has(hazardReportId)) return false;
+      seenHazardReports.add(hazardReportId);
+      return true;
+    });
+
+    return uniqueRows.map((row) => {
       const activeDispatches = dispatchesByIncident.get(row.id) ?? [];
+      const trip = tripById.get(row.tripId) ?? null;
+      const expired = Boolean(trip && trip.status !== "ACTIVE");
       return {
         ...row,
         tourist: touristById.get(row.userId) ?? null,
-        trip: tripById.get(row.tripId) ?? null,
+        trip,
+        expired,
+        displayStatus: expired && !["RESOLVED", "DISMISSED"].includes(row.status) ? "EXPIRED" : row.status,
         location: { latitude: row.latitude, longitude: row.longitude },
         priority: row.severity,
         activeDispatches,
@@ -307,10 +335,13 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
         orderBy: { requestedAt: "desc" },
       }),
     ]);
+    const expired = Boolean(trip && trip.status !== "ACTIVE");
     return {
       ...incident,
       tourist,
       trip,
+      expired,
+      displayStatus: expired && !["RESOLVED", "DISMISSED"].includes(incident.status) ? "EXPIRED" : incident.status,
       activeDispatches,
       fleetAssigned: activeDispatches.some((dispatch) => Boolean(dispatch.unitId)),
       location: { latitude: incident.latitude, longitude: incident.longitude },

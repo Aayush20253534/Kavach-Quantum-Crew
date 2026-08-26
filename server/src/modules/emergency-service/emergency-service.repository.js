@@ -40,6 +40,40 @@ export const createEmergencyServiceRepository = ({ db = prisma } = {}) => ({
     await tx.dispatchEvent.create({ data: event });
     return dispatch;
   }),
+  resolveIncidentWhenResponsesComplete: (incidentId, actor, now) => db.$transaction(async (tx) => {
+    const remaining = await tx.dispatch.count({
+      where: {
+        incidentId,
+        status: { notIn: ["COMPLETED", "CANCELLED"] },
+      },
+    });
+    if (remaining > 0) return null;
+
+    const incident = await tx.incident.findUnique({ where: { id: incidentId } });
+    if (!incident || ["RESOLVED", "DISMISSED"].includes(incident.status)) return incident;
+
+    const updated = await tx.incident.update({
+      where: { id: incidentId },
+      data: {
+        status: "RESOLVED",
+        resolvedById: actor.id,
+        resolvedByRole: actor.role,
+        resolvedAt: now,
+        resolutionNote: "All assigned emergency fleet responses completed.",
+      },
+    });
+    await tx.incidentEvent.create({
+      data: {
+        incidentId,
+        type: "RESOLVED",
+        actorId: actor.id,
+        actorRole: actor.role,
+        note: "Automatically resolved after all emergency fleet responses completed.",
+        metadata: { automatic: true, source: "FLEET_COMPLETION" },
+      },
+    });
+    return updated;
+  }),
   updateDispatch: (id, data) => db.dispatch.update({ where: { id }, data, include: { incident: true, unit: true } }),
   createEvent: (data) => db.dispatchEvent.create({ data }),
   findTripParticipant: (tripId, userId) => db.trip.findFirst({
