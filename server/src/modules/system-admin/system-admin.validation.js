@@ -1,12 +1,12 @@
 import { z } from "zod";
 
 export const adminAccountParamsSchema = z.object({
-  role: z.enum(["TOURIST", "DISASTER_MANAGER", "SYSTEM_ADMIN"]),
+  role: z.enum(["TOURIST", "DISASTER_MANAGER", "SYSTEM_ADMIN", "POLICE", "FIRE", "AMBULANCE"]),
   accountId: z.string().uuid(),
 });
 
 export const adminAccountListQuerySchema = z.object({
-  role: z.enum(["TOURIST", "DISASTER_MANAGER", "SYSTEM_ADMIN"]).optional(),
+  role: z.enum(["TOURIST", "DISASTER_MANAGER", "SYSTEM_ADMIN", "POLICE", "FIRE", "AMBULANCE"]).optional(),
   status: z.enum(["ACTIVE", "SUSPENDED", "DISABLED"]).optional(),
   search: z.string().trim().min(1).max(120).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),

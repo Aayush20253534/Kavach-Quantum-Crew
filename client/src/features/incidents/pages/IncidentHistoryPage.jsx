@@ -5,6 +5,27 @@ import { safetyService } from '../../safety/api/safetyService';
 
 const asArray = (value) => value?.items || value || [];
 
+const formatDetail = (detail) => {
+  if (!detail) return '';
+  if (typeof detail === 'object') {
+    const zone = detail.zoneName || detail.locationName;
+    return zone ? `Location: ${zone}` : Object.entries(detail).map(([key, value]) => `${key}: ${String(value)}`).join(' · ');
+  }
+  if (typeof detail !== 'string') return String(detail);
+  const trimmed = detail.trim();
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      const zone = parsed.zoneName || parsed.locationName;
+      if (zone) return `Location: ${zone}`;
+      return Object.entries(parsed).map(([key, value]) => `${key.replace(/([A-Z])/g, ' $1')}: ${String(value)}`).join(' · ');
+    } catch {
+      return detail;
+    }
+  }
+  return detail;
+};
+
 export function IncidentHistoryPage() {
   const [hazards, setHazards] = useState([]);
   const [incidents, setIncidents] = useState([]);
@@ -41,7 +62,7 @@ export function IncidentHistoryPage() {
         <h2 className="text-[12px] sm:text-sm font-black uppercase tracking-wider text-slate-500 mb-3">Emergency incidents / SOS</h2>
         <div className="space-y-3">
           {incidents.length === 0 && <Empty text="No SOS incidents." />}
-          {incidents.map((item) => <Card key={item.id} icon={ShieldAlert} title={item.title || 'Emergency incident'} status={item.status} meta={new Date(item.createdAt).toLocaleString()} detail={item.description || item.sourceType} />)}
+          {incidents.map((item) => <Card key={item.id} icon={ShieldAlert} title={item.title || 'Emergency incident'} status={item.status} meta={new Date(item.createdAt).toLocaleString()} detail={formatDetail(item.description || item.sourceType)} />)}
         </div>
       </section>
 
@@ -49,7 +70,7 @@ export function IncidentHistoryPage() {
         <h2 className="text-[12px] sm:text-sm font-black uppercase tracking-wider text-slate-500 mb-3">Safety concern reports</h2>
         <div className="space-y-3">
           {hazards.length === 0 && <Empty text="No hazard reports." />}
-          {hazards.map((item) => <Card key={item.id} icon={AlertTriangle} title={item.title} status={item.status} meta={new Date(item.createdAt).toLocaleString()} detail={item.locationName || item.description} />)}
+          {hazards.map((item) => <Card key={item.id} icon={AlertTriangle} title={item.title} status={item.status} meta={new Date(item.createdAt).toLocaleString()} detail={formatDetail(item.locationName || item.description)} />)}
         </div>
       </section>
     </div>
@@ -63,7 +84,7 @@ function Empty({ text }) {
 function Card({ icon: Icon, title, status, meta, detail }) {
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5">
-      <div className="flex justify-between items-start gap-2 sm:gap-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
         <div className="flex gap-2.5 sm:gap-3 min-w-0">
           <Icon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-rose-600 mt-0.5" />
           <div className="min-w-0">
@@ -72,7 +93,7 @@ function Card({ icon: Icon, title, status, meta, detail }) {
             <p className="text-[10px] text-slate-400 mt-2">{meta}</p>
           </div>
         </div>
-        <span className="shrink-0 text-[9px] sm:text-[10px] font-black uppercase bg-slate-100 rounded-full px-2.5 sm:px-3 py-1 h-fit">{status}</span>
+        <span className="self-start shrink-0 text-[9px] sm:text-[10px] font-black uppercase bg-slate-100 rounded-full px-2.5 sm:px-3 py-1 h-fit">{status}</span>
       </div>
     </div>
   );

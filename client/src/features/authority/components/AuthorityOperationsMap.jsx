@@ -25,9 +25,15 @@ const unitColor = (type) => {
 };
 
 const finitePoint = (latitude, longitude) => {
+  // Number(null) and Number('') become 0, which previously placed missing data
+  // in the Gulf of Guinea and made the command map zoom across half the planet.
+  if (latitude === null || latitude === undefined || latitude === '' || longitude === null || longitude === undefined || longitude === '') return null;
   const lat = Number(latitude);
   const lng = Number(longitude);
-  return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+  if (lat === 0 && lng === 0) return null;
+  return { lat, lng };
 };
 
 export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes = false, onRouteSummary }) {
@@ -146,6 +152,9 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
     const bounds = new window.google.maps.LatLngBounds();
     markers.forEach((marker) => bounds.extend(marker.point));
     map.fitBounds(bounds, 72);
+    window.google.maps.event.addListenerOnce(map, 'idle', () => {
+      if ((map.getZoom?.() ?? 0) > 16) map.setZoom(16);
+    });
   };
 
   useEffect(() => {
@@ -180,7 +189,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
         window.requestAnimationFrame(() => fitVisibleMarkers(map));
       }}
       onUnmount={() => { mapRef.current = null; }}
-      options={{ fullscreenControl: true, streetViewControl: false, mapTypeControl: true, clickableIcons: false }}
+      options={{ fullscreenControl: true, streetViewControl: false, mapTypeControl: true, clickableIcons: false, gestureHandling: 'cooperative', scrollwheel: true }}
     >
       {routes.map((route) => (
         <DirectionsRenderer

@@ -16,7 +16,6 @@ import { authorityService } from '../api/authorityService';
 
 const GOOGLE_MAP_LIBRARIES = ['places'];
 const DEFAULT_CENTER = { lat: 25.4358, lng: 81.8463 };
-const DANGER_RADIUS_M = 500;
 const mapContainerStyle = { width: '100%', height: '100%' };
 
 const unwrap = (value) => value?.data?.data ?? value?.data ?? value;
@@ -43,6 +42,7 @@ export function AuthorityRiskZonesPage() {
   const [autocomplete, setAutocomplete] = useState(null);
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [zoneName, setZoneName] = useState('');
+  const [radiusM, setRadiusM] = useState(500);
 
   const fetchZones = useCallback(async () => {
     try {
@@ -106,9 +106,9 @@ export function AuthorityRiskZonesPage() {
         geometryType: 'CIRCLE',
         latitude: selectedPlace.lat,
         longitude: selectedPlace.lng,
-        radiusM: DANGER_RADIUS_M,
+        radiusM: Number(radiusM),
       });
-      setSuccess('Danger zone created with a 500 m radius.');
+      setSuccess(`Danger zone created with a ${Number(radiusM).toLocaleString()} m radius.`);
       setSelectedPlace(null);
       setZoneName('');
       await fetchZones();
@@ -139,7 +139,7 @@ export function AuthorityRiskZonesPage() {
             <Map className="w-5 h-5 sm:w-6 sm:h-6 text-slate-800" /> Danger Geofences
           </h1>
           <p className="text-[11px] sm:text-[13px] text-slate-500 font-medium mt-1">
-            System admins can select a real place and create a 500 m danger radius that appears on tourist Radar maps.
+            System admins can select a real place and choose the danger-zone coverage area shown on tourist maps.
           </p>
         </div>
       </div>
@@ -149,7 +149,7 @@ export function AuthorityRiskZonesPage() {
 
       {isSystemAdmin && (
         <div className="mb-5 bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-sm">
-          <div className="grid lg:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+          <div className="grid md:grid-cols-2 xl:grid-cols-[1.3fr_1fr_180px_auto] gap-3 items-end">
             <div>
               <label className="block text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Select place</label>
               {isLoaded ? (
@@ -178,13 +178,27 @@ export function AuthorityRiskZonesPage() {
               />
             </div>
 
+            <div>
+              <label className="block text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Area radius (metres)</label>
+              <input
+                type="number"
+                min="50"
+                max="100000"
+                step="50"
+                value={radiusM}
+                onChange={(event) => setRadiusM(Math.max(50, Math.min(100000, Number(event.target.value) || 50)))}
+                className="w-full h-10 sm:h-11 px-3 border border-slate-200 rounded-lg text-[11px] sm:text-xs font-semibold outline-none focus:border-indigo-400"
+              />
+              <p className="mt-1 text-[9px] text-slate-400">50 m to 100 km</p>
+            </div>
+
             <button
               onClick={createDangerZone}
               disabled={!selectedPlace || saving}
               className="h-10 sm:h-11 px-4 bg-red-600 text-white rounded-lg text-[10px] sm:text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Create 500 m Zone
+              Create Zone
             </button>
           </div>
 
@@ -221,7 +235,7 @@ export function AuthorityRiskZonesPage() {
                     <MarkerF position={{ lat: selectedPlace.lat, lng: selectedPlace.lng }} title={selectedPlace.name} />
                     <CircleF
                       center={{ lat: selectedPlace.lat, lng: selectedPlace.lng }}
-                      radius={DANGER_RADIUS_M}
+                      radius={Number(radiusM)}
                       options={{ fillColor: '#ef4444', fillOpacity: 0.2, strokeColor: '#ef4444', strokeWeight: 2 }}
                     />
                   </>
