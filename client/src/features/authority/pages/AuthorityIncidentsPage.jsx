@@ -6,6 +6,7 @@ import {
   CheckCircle2, ShieldCheck, Crosshair, ArrowUpRight, ChevronRight
 } from 'lucide-react';
 import { authorityService } from '../api/authorityService';
+import { createRealtimeSocket } from '../../../services/realtimeClient';
 
 export function AuthorityIncidentsPage() {
   const [incidents, setIncidents] = useState([]);
@@ -25,12 +26,30 @@ export function AuthorityIncidentsPage() {
 
   useEffect(() => {
     setMounted(true);
-    fetchIncidents();
-  }, []);
+    void fetchIncidents();
 
-  const fetchIncidents = async () => {
+    const socket = createRealtimeSocket();
+    const refresh = () => { void fetchIncidents({ background: true }); };
+
+    socket.on('incident:created', refresh);
+    socket.on('incident:updated', refresh);
+    socket.connect();
+
+    // Socket delivery is the primary path. Polling is a fallback for proxies or
+    // deployments where WebSockets are temporarily unavailable.
+    const timer = window.setInterval(refresh, 10_000);
+
+    return () => {
+      window.clearInterval(timer);
+      socket.off('incident:created', refresh);
+      socket.off('incident:updated', refresh);
+      socket.disconnect();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fetchIncidents = async ({ background = false } = {}) => {
     try {
-      setLoading(true);
+      if (!background) setLoading(true);
       setError('');
 
       const to = new Date();
@@ -68,7 +87,7 @@ export function AuthorityIncidentsPage() {
     } catch (err) {
       setError(err.response?.data?.error?.message || err.message || 'Failed to load incidents');
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
     }
   };
 
@@ -82,25 +101,23 @@ export function AuthorityIncidentsPage() {
     }
   };
 
-  const filteredIncidents = incidents.filter(inc => {
-    const status = (inc.status || 'PENDING').toUpperCase();
+  const filteredIncidents = incidents.filter((incident) => {
+    const status = (incident.status || 'OPEN').toUpperCase();
     if (activeTab === 'ALL') return true;
-    if (activeTab === 'UNASSIGNED') return status === 'PENDING' || status === 'UNASSIGNED';
-    if (activeTab === 'ACTIVE') return status === 'ACTIVE' || status === 'IN_PROGRESS';
-    if (activeTab === 'RESOLVED') return status === 'RESOLVED' || status === 'COMPLETED';
+    if (activeTab === 'UNASSIGNED') return !incident.assignedToId && ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes(status);
+    if (activeTab === 'ACTIVE') return ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes(status);
+    if (activeTab === 'RESOLVED') return ['RESOLVED', 'DISMISSED'].includes(status);
     return true;
   });
 
-  // Calculate some stats
-  const activeCount = incidents.filter(i => {
-    const s = (i.status || 'PENDING').toUpperCase();
-    return s === 'ACTIVE' || s === 'IN_PROGRESS';
-  }).length;
+  // Calculate against the actual backend IncidentStatus enum.
+  const activeCount = incidents.filter((incident) =>
+    ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes((incident.status || 'OPEN').toUpperCase()),
+  ).length;
 
-  const unassignedCount = incidents.filter(i => {
-    const s = (i.status || 'PENDING').toUpperCase();
-    return s === 'PENDING' || s === 'UNASSIGNED';
-  }).length;
+  const unassignedCount = incidents.filter((incident) =>
+    !incident.assignedToId && ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes((incident.status || 'OPEN').toUpperCase()),
+  ).length;
 
   return (
     <div className={`space-y-6 font-sans max-w-[1200px] mx-auto pb-10 transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
