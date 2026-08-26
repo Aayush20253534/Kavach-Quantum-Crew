@@ -14,8 +14,8 @@ export const authorityService = {
   getAllAlerts: async () => unwrap(await apiClient.get('/hazards')),
   getMe: async () => unwrap(await apiClient.get('/disaster-management/responders/me')),
   // Phase 1: Incident Loop
-  getIncidentQueue: async () => {
-    const response = await apiClient.get('/disaster-management/incidents');
+  getIncidentQueue: async (params = {}) => {
+    const response = await apiClient.get('/disaster-management/incidents', { params });
     return unwrap(response);
   },
 

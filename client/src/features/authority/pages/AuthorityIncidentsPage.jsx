@@ -62,7 +62,7 @@ export function AuthorityIncidentsPage() {
       from.setUTCDate(from.getUTCDate() - 29);
 
       const [response, responseTimes, units] = await Promise.all([
-        authorityService.getIncidentQueue(),
+        authorityService.getIncidentQueue({ limit: 100 }),
         authorityService.getResponseTimeAnalytics({
           from: from.toISOString(),
           to: to.toISOString(),

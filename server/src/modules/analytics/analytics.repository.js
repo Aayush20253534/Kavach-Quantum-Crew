@@ -43,12 +43,46 @@ export const createAnalyticsRepository = ({ db = prisma } = {}) => ({
           acknowledgedAt: true,
           startedAt: true,
           resolvedAt: true,
+          dispatches: {
+            select: {
+              assignedAt: true,
+              dispatchedAt: true,
+              enRouteAt: true,
+              onSceneAt: true,
+              completedAt: true,
+              status: true,
+            },
+            orderBy: { requestedAt: "asc" },
+          },
         },
         orderBy: { createdAt: "asc" },
       }),
     ]);
 
-    return { byStatus, bySeverity, bySource, timingRows };
+    const normalizedTimingRows = timingRows.map((row) => {
+      const dispatches = Array.isArray(row.dispatches) ? row.dispatches : [];
+      const firstTimestamp = (field) =>
+        dispatches
+          .map((dispatch) => dispatch[field])
+          .filter(Boolean)
+          .map((value) => new Date(value))
+          .sort((a, b) => a - b)[0] ?? null;
+
+      return {
+        id: row.id,
+        createdAt: row.createdAt,
+        // Fleet assignment is a valid acknowledgement signal for operational
+        // analytics when Disaster Management did not manually acknowledge first.
+        acknowledgedAt: row.acknowledgedAt ?? firstTimestamp("assignedAt"),
+        // A responder actually leaving the base is the practical response start.
+        startedAt: row.startedAt ?? firstTimestamp("dispatchedAt") ?? firstTimestamp("enRouteAt"),
+        // Incident resolution remains authoritative; completion is only a fallback
+        // for legacy rows created before fleet completion auto-resolved incidents.
+        resolvedAt: row.resolvedAt ?? firstTimestamp("completedAt"),
+      };
+    });
+
+    return { byStatus, bySeverity, bySource, timingRows: normalizedTimingRows };
   },
 
   async jurisdictionTripIds(jurisdiction) {

@@ -78,8 +78,11 @@ const resolveIncidentScope = async (repository, actor) => {
   }
 
   const jurisdiction = await repository.responderJurisdiction(actor.id);
-  const tripIds = await repository.jurisdictionTripIds(jurisdiction);
-  return { jurisdiction, tripIds };
+
+  // Incident command already treats the queue as a central operational inbox.
+  // Do not scope analytics by comparing a free-form trip destination string with
+  // the responder jurisdiction, otherwise valid incidents disappear from charts.
+  return { jurisdiction, tripIds: null };
 };
 
 export const createAnalyticsService = ({ repository = analyticsRepository } = {}) => {
