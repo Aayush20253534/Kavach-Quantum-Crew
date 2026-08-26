@@ -1,6 +1,7 @@
 import { ApiError } from "../../common/errors/ApiError.js";
 import { ROLES } from "../../constants/roles.js";
 import { realtimePublisher } from "../../realtime/realtimePublisher.js";
+import { notificationService } from "../notification/notification.service.js";
 import { hazardRepository } from "./hazard.repository.js";
 
 const toRadians = (degrees) => degrees * Math.PI / 180;
@@ -24,7 +25,7 @@ const boundsForRadius = (latitude, longitude, radiusKm) => {
   };
 };
 
-export const createHazardService = ({ repository = hazardRepository, publisher = realtimePublisher, clock = () => new Date() } = {}) => {
+export const createHazardService = ({ repository = hazardRepository, publisher = realtimePublisher, notifier = notificationService, clock = () => new Date() } = {}) => {
   const getExisting = async (id) => {
     const hazard = await repository.findById(id);
     if (!hazard) throw ApiError.notFound("Hazard report not found", { code: "HAZARD_NOT_FOUND" });
@@ -72,13 +73,17 @@ export const createHazardService = ({ repository = hazardRepository, publisher =
       if (actor.role !== ROLES.TOURIST) {
         throw ApiError.forbidden("Only tourists can submit hazard reports", { code: "HAZARD_REPORT_FORBIDDEN" });
       }
-      const created = await repository.create({
+      const { hazard: created, incident } = await repository.createWithIncident({
         reporterId: actor.id, reporterRole: actor.role, type: input.type, severity: input.severity,
         title: input.title, description: input.description, latitude: input.latitude, longitude: input.longitude,
         locationName: input.locationName ?? null, occurredAt: input.occurredAt ?? clock(),
       });
-      await repository.createAudit({ actorId: actor.id, actorRole: actor.role, action: "HAZARD_REPORTED", entityId: created.id, metadata: { type: created.type, severity: created.severity } });
+      await repository.createAudit({ actorId: actor.id, actorRole: actor.role, action: "HAZARD_REPORTED", entityId: created.id, metadata: { type: created.type, severity: created.severity, incidentId: incident?.id ?? null } });
       publisher.publishHazardCreated(created);
+      if (incident) {
+        await notifier.incidentCreated(incident);
+        publisher.publishIncidentCreated(incident);
+      }
       return created;
     },
 

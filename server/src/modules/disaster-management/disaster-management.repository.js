@@ -116,25 +116,18 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
           ? { assignedToId: null }
           : {};
 
-    const jurisdictionTripIds = jurisdiction
-      ? (
-          await db.trip.findMany({
-            where: {
-              locationName: {
-                contains: jurisdiction,
-                mode: "insensitive",
-              },
-            },
-            select: { id: true },
-          })
-        ).map((trip) => trip.id)
-      : null;
+    // The command queue is a central emergency inbox. Do not hide incidents by
+    // comparing a free-form trip destination (for example "Triveni Sangam")
+    // with a responder jurisdiction string (for example "Prayagraj"). That
+    // brittle text comparison caused valid SOS incidents to disappear entirely.
+    // Jurisdiction remains available for dashboard/fleet scoping, while every
+    // active incident is indexed in the disaster-management queue.
+    void jurisdiction;
 
     const rows = await db.incident.findMany({
       where: {
         ...(status ? { status } : { status: { in: ACTIVE_INCIDENT_STATUSES } }),
         ...(severity ? { severity } : {}),
-        ...(jurisdictionTripIds ? { tripId: { in: jurisdictionTripIds } } : {}),
         ...assignmentFilter,
       },
       orderBy: [{ severity: "desc" }, { createdAt: "asc" }],

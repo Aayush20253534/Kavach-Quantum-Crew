@@ -13,6 +13,9 @@ export const useCurrentTrip = () => {
     queryKey: tripKeys.current(),
     queryFn: tripService.getCurrentTrip,
     retry: false, // Don't retry if no current trip exists (404)
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 };
 
