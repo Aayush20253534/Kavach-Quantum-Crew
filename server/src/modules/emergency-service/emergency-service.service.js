@@ -111,7 +111,17 @@ export const createEmergencyServiceService = ({ repository = emergencyServiceRep
       if (NEXT[current.status] !== status) throw ApiError.conflict("Invalid dispatch transition", { code: "DISPATCH_INVALID_TRANSITION", details: { current: current.status, requested: status } });
       const now = clock();
       const data = { status, ...(status === "DISPATCHED" ? { dispatchedAt: now } : {}), ...(status === "EN_ROUTE" ? { enRouteAt: now } : {}), ...(status === "ON_SCENE" ? { onSceneAt: now } : {}), ...(status === "COMPLETED" ? { completedAt: now } : {}) };
-      const updated = await repository.updateDispatch(id, data);
+      const event = {
+        dispatchId: id,
+        type: status,
+        actorId: actor.id,
+        actorRole: actor.role,
+        note: note ?? null,
+        metadata: { servicePortal: true },
+      };
+      // Keep the status change and timeline event atomic. This also ensures the
+      // response contains the unit relation required by realtime room routing.
+      const updated = await repository.transitionDispatch(id, data, event);
       if (status === "COMPLETED") {
         await repository.updateUnit(current.unit.id, {
           status: "AVAILABLE",
@@ -120,7 +130,6 @@ export const createEmergencyServiceService = ({ repository = emergencyServiceRep
           locationUpdatedAt: actor.locationUpdatedAt ?? now,
         });
       }
-      await repository.createEvent({ dispatchId: id, type: status, actorId: actor.id, actorRole: actor.role, note: note ?? null, metadata: { servicePortal: true } });
       publisher.publishDispatchUpdated?.(updated, { type: status, actorId: actor.id });
       return updated;
     },
