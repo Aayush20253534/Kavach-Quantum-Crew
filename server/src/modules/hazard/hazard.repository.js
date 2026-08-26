@@ -11,24 +11,31 @@ export const createHazardRepository = ({ db = prisma } = {}) => ({
     return db.$transaction(async (tx) => {
       const hazard = await tx.hazardReport.create({ data });
 
-      const trip = await tx.trip.findFirst({
-        where: {
-          status: "ACTIVE",
-          OR: [
-            { touristId: data.reporterId },
-            {
-              group: {
-                is: {
-                  status: "ACTIVE",
-                  members: { some: { userId: data.reporterId, leftAt: null } },
-                },
-              },
+      // A safety concern belongs in the same operational incident queue as SOS
+      // and automated safety alerts. Prefer the active trip, but fall back to the
+      // reporter's most recent trip so a report submitted just after a trip state
+      // transition is not silently stranded as a HazardReport only.
+      const ownershipFilter = [
+        { touristId: data.reporterId },
+        {
+          group: {
+            is: {
+              members: { some: { userId: data.reporterId } },
             },
-          ],
+          },
         },
-        orderBy: { createdAt: "desc" },
-        select: { id: true },
-      });
+      ];
+      const trip =
+        await tx.trip.findFirst({
+          where: { status: "ACTIVE", OR: ownershipFilter },
+          orderBy: { createdAt: "desc" },
+          select: { id: true },
+        }) ||
+        await tx.trip.findFirst({
+          where: { OR: ownershipFilter },
+          orderBy: { createdAt: "desc" },
+          select: { id: true },
+        });
 
       if (!trip) return { hazard, incident: null };
 

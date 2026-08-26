@@ -108,7 +108,91 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
     });
   },
 
+  async indexUnlinkedHazardReports() {
+    // Older safety concern reports may predate the HazardReport -> Incident bridge.
+    // Backfill them before serving the command queue so existing reports become
+    // actionable incidents too, not a separate dead-end list.
+    const hazards = await db.hazardReport.findMany({
+      where: { status: { in: ["PENDING", "VERIFIED"] } },
+      orderBy: { createdAt: "desc" },
+      take: 250,
+    });
+    if (!hazards.length) return 0;
+
+    const hazardIds = hazards.map((hazard) => hazard.id);
+    const linkedEvents = await db.incidentEvent.findMany({
+      where: { type: "CREATED" },
+      select: { metadata: true },
+      orderBy: { createdAt: "desc" },
+      take: 2000,
+    });
+    const linkedIds = new Set(
+      linkedEvents
+        .map((event) => event.metadata?.hazardReportId)
+        .filter((id) => hazardIds.includes(id)),
+    );
+
+    let indexed = 0;
+    for (const hazard of hazards) {
+      if (linkedIds.has(hazard.id)) continue;
+
+      const ownershipFilter = [
+        { touristId: hazard.reporterId },
+        { group: { is: { members: { some: { userId: hazard.reporterId } } } } },
+      ];
+      const trip =
+        await db.trip.findFirst({
+          where: { status: "ACTIVE", OR: ownershipFilter },
+          orderBy: { createdAt: "desc" },
+          select: { id: true },
+        }) ||
+        await db.trip.findFirst({
+          where: { OR: ownershipFilter },
+          orderBy: { createdAt: "desc" },
+          select: { id: true },
+        });
+      if (!trip) continue;
+
+      const incident = await db.incident.create({
+        data: {
+          tripId: trip.id,
+          userId: hazard.reporterId,
+          sourceType: "SAFETY_ALERT",
+          severity:
+            hazard.severity === "CRITICAL"
+              ? "CRITICAL"
+              : hazard.severity === "HIGH"
+                ? "DANGER"
+                : "WARNING",
+          title: hazard.title,
+          description: hazard.description,
+          latitude: hazard.latitude,
+          longitude: hazard.longitude,
+        },
+      });
+      await db.incidentEvent.create({
+        data: {
+          incidentId: incident.id,
+          type: "CREATED",
+          actorId: hazard.reporterId,
+          actorRole: hazard.reporterRole,
+          metadata: {
+            hazardReportId: hazard.id,
+            hazardType: hazard.type,
+            hazardSeverity: hazard.severity,
+            locationName: hazard.locationName,
+            backfilled: true,
+          },
+        },
+      });
+      indexed += 1;
+    }
+    return indexed;
+  },
+
   async listIncidentQueue({ status, severity, scope, actorId, jurisdiction, limit }) {
+    await this.indexUnlinkedHazardReports();
+
     const assignmentFilter =
       scope === "MINE"
         ? { assignedToId: actorId, assignedToRole: "DISASTER_MANAGER" }
