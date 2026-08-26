@@ -266,7 +266,7 @@ export function AuthorityIncidentDetailsPage() {
                 </div>
               </div>
               <div className="h-[320px]">
-                <AuthorityOperationsMap incidents={[incident]} units={tacticalUnits} />
+                <AuthorityOperationsMap incidents={[incident]} units={tacticalUnits} showRoutes />
               </div>
               {activeDispatches.length > 0 && (
                 <div className="grid gap-2 border-t border-slate-100 bg-white p-3 sm:grid-cols-2">

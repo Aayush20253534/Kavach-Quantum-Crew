@@ -26,6 +26,10 @@ export const createEmergencyServiceRepository = ({ db = prisma } = {}) => ({
     orderBy: { requestedAt: "desc" },
   }),
   findDispatch: (id) => db.dispatch.findUnique({ where: { id }, include: { incident: true, unit: true, events: { orderBy: { createdAt: "asc" } } } }),
+  findLatestTouristLocation: (tripId, userId) => db.latestTrustedLocation.findUnique({
+    where: { tripId_userId: { tripId, userId } },
+    select: { latitude: true, longitude: true, accuracyM: true, capturedAt: true, updatedAt: true },
+  }),
   updateUnit: (id, data) => db.emergencyUnit.update({ where: { id }, data }),
   transitionDispatch: (id, data, event) => db.$transaction(async (tx) => {
     const dispatch = await tx.dispatch.update({

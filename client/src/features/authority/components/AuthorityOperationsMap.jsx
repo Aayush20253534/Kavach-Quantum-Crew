@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { GoogleMap, InfoWindowF, MarkerF, useJsApiLoader } from '@react-google-maps/api';
+import { DirectionsRendererF, GoogleMap, InfoWindowF, MarkerF, useJsApiLoader } from '@react-google-maps/api';
 import { MapPin } from 'lucide-react';
 
 const GOOGLE_MAP_LIBRARIES = ['places'];
@@ -30,10 +30,11 @@ const finitePoint = (latitude, longitude) => {
   return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
 };
 
-export function AuthorityOperationsMap({ incidents = [], units = [] }) {
+export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes = false, onRouteSummary }) {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const mapRef = useRef(null);
   const [selected, setSelected] = useState(null);
+  const [routes, setRoutes] = useState([]);
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
@@ -58,6 +59,82 @@ export function AuthorityOperationsMap({ incidents = [], units = [] }) {
 
     return [...incidentMarkers, ...unitMarkers];
   }, [incidents, units]);
+
+  useEffect(() => {
+    if (!isLoaded || !showRoutes || !window.google?.maps || incidents.length !== 1) {
+      setRoutes([]);
+      onRouteSummary?.([]);
+      return undefined;
+    }
+
+    const destination = finitePoint(
+      incidents[0].latitude ?? incidents[0].location?.latitude,
+      incidents[0].longitude ?? incidents[0].location?.longitude,
+    );
+    if (!destination) {
+      setRoutes([]);
+      onRouteSummary?.([]);
+      return undefined;
+    }
+
+    const routeUnits = units
+      .map((unit) => {
+        const origin = finitePoint(unit.latitude, unit.longitude);
+        return origin ? { unit, origin } : null;
+      })
+      .filter(Boolean);
+
+    if (!routeUnits.length) {
+      setRoutes([]);
+      onRouteSummary?.([]);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const service = new window.google.maps.DirectionsService();
+
+    Promise.all(
+      routeUnits.map(({ unit, origin }) =>
+        new Promise((resolve) => {
+          service.route(
+            {
+              origin,
+              destination,
+              travelMode: window.google.maps.TravelMode.DRIVING,
+              provideRouteAlternatives: false,
+            },
+            (result, status) => {
+              if (status !== window.google.maps.DirectionsStatus.OK || !result) {
+                resolve(null);
+                return;
+              }
+              const leg = result.routes?.[0]?.legs?.[0];
+              resolve({
+                unitId: unit.id,
+                unitName: unit.name,
+                result,
+                distanceText: leg?.distance?.text ?? null,
+                distanceM: leg?.distance?.value ?? null,
+                durationText: leg?.duration?.text ?? null,
+                durationSeconds: leg?.duration?.value ?? null,
+              });
+            },
+          );
+        }),
+      ),
+    ).then((resolved) => {
+      if (cancelled) return;
+      const successful = resolved.filter(Boolean);
+      setRoutes(successful);
+      onRouteSummary?.(
+        successful.map(({ result, ...summary }) => summary),
+      );
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [incidents, isLoaded, onRouteSummary, showRoutes, units]);
 
   useEffect(() => {
     if (!isLoaded || !mapRef.current || markers.length === 0 || !window.google?.maps) return;
@@ -97,7 +174,11 @@ export function AuthorityOperationsMap({ incidents = [], units = [] }) {
     >
       {markers.map((marker) => {
         const isIncident = marker.kind === 'incident';
-        const color = isIncident ? incidentColor(marker.data.severity || marker.data.priority) : unitColor(marker.data.type);
+        // In response-routing mode the visual language is intentionally fixed:
+        // tourist/incident = red, responding fleet = green.
+        const color = showRoutes
+          ? (isIncident ? '#dc2626' : '#16a34a')
+          : (isIncident ? incidentColor(marker.data.severity || marker.data.priority) : unitColor(marker.data.type));
         return (
           <MarkerF
             key={`${marker.kind}-${marker.id}`}
@@ -115,19 +196,35 @@ export function AuthorityOperationsMap({ incidents = [], units = [] }) {
         );
       })}
 
+      {routes.map((route) => (
+        <DirectionsRendererF
+          key={`route-${route.unitId}`}
+          directions={route.result}
+          options={{
+            suppressMarkers: true,
+            preserveViewport: true,
+            polylineOptions: {
+              strokeColor: '#16a34a',
+              strokeOpacity: 0.9,
+              strokeWeight: 6,
+            },
+          }}
+        />
+      ))}
+
       {selected && (
         <InfoWindowF position={selected.point} onCloseClick={() => setSelected(null)}>
           <div className="max-w-[260px] pr-2 font-sans">
             {selected.kind === 'incident' ? (
               <>
-                <p className="text-[11px] font-black uppercase tracking-wide text-red-600">Incident</p>
+                <p className="text-[11px] font-black uppercase tracking-wide text-red-600">{showRoutes ? 'Tourist / Incident' : 'Incident'}</p>
                 <p className="mt-1 text-[13px] font-black text-slate-900">{selected.data.title || selected.data.type || 'Emergency Incident'}</p>
                 <p className="mt-1 text-[11px] text-slate-600">{selected.data.description || 'No description provided.'}</p>
                 <p className="mt-2 text-[10px] font-bold text-slate-500">{selected.data.status} · {selected.data.severity || selected.data.priority}</p>
               </>
             ) : (
               <>
-                <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">{selected.data.type} Fleet</p>
+                <p className={`text-[11px] font-black uppercase tracking-wide ${showRoutes ? 'text-emerald-600' : 'text-slate-500'}`}>{selected.data.type} Fleet</p>
                 <p className="mt-1 text-[13px] font-black text-slate-900">{selected.data.name}</p>
                 <p className="mt-1 text-[11px] text-slate-600">{selected.data.organization || selected.data.jurisdiction || 'Emergency unit'}</p>
                 <p className="mt-2 text-[10px] font-bold text-slate-500">Status: {selected.data.status}</p>
