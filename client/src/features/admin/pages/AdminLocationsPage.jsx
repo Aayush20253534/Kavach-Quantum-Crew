@@ -249,7 +249,7 @@ export function AdminLocationsPage() {
           />
 
           <div className="md:col-span-2">
-            <label className="admin-field-label">Description</label>
+            <label className="block mb-1.5 text-[10px] font-black uppercase tracking-wider text-slate-500">Description</label>
             <textarea
               rows={3}
               maxLength={500}
@@ -260,7 +260,7 @@ export function AdminLocationsPage() {
                   description: event.target.value,
                 }))
               }
-              className="admin-field-control min-h-24 py-3 resize-y"
+              className="w-full min-h-24 rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 resize-y"
               placeholder="Short tourist-facing description"
             />
           </div>
@@ -431,14 +431,14 @@ function AdminField({
 }) {
   return (
     <div>
-      <label className="admin-field-label">{label}</label>
+      <label className="block mb-1.5 text-[10px] font-black uppercase tracking-wider text-slate-500">{label}</label>
       <input
         type={type}
         step={step}
         value={value}
         required={required}
         onChange={(event) => onChange(event.target.value)}
-        className="admin-field-control"
+        className="w-full h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
       />
     </div>
   );

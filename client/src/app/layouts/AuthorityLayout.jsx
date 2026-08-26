@@ -73,9 +73,7 @@ export function AuthorityLayout() {
   const navItems = [
     { name: 'Live Command Map', path: '/authority/dashboard', icon: Activity },
     { name: 'Incident Queue', path: '/authority/incidents', icon: AlertTriangle },
-    { name: 'Hazard Triage', path: '/authority/hazards', icon: ShieldAlert },
     { name: 'Fleet Dispatch', path: '/authority/dispatch', icon: Car },
-    { name: 'Personnel Roster', path: '/authority/responders', icon: Users2 },
     { name: 'Account Creation', path: '/authority/accounts/create', icon: UserPlus },
     { name: 'Risk Zones', path: '/authority/zones', icon: Map },
     { name: 'Analytics', path: '/authority/analytics', icon: BarChart4 },

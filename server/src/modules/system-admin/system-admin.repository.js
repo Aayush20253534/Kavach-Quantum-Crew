@@ -5,6 +5,7 @@ const accountDelegate = (db, role) => {
   if (role === ROLES.TOURIST) return db.user;
   if (role === ROLES.DISASTER_MANAGER) return db.disasterManager;
   if (role === ROLES.SYSTEM_ADMIN) return db.systemAdmin;
+  if ([ROLES.POLICE, ROLES.FIRE, ROLES.AMBULANCE].includes(role)) return db.emergencyServiceAccount;
   return null;
 };
 
@@ -47,31 +48,42 @@ export const createSystemAdminRepository = ({ db = prisma } = {}) => ({
   },
 
   async listAccounts({ role, status, search, limit }) {
-    const roles = role ? [role] : [ROLES.TOURIST, ROLES.DISASTER_MANAGER, ROLES.SYSTEM_ADMIN];
+    const roles = role ? [role] : [ROLES.TOURIST, ROLES.DISASTER_MANAGER, ROLES.SYSTEM_ADMIN, ROLES.POLICE, ROLES.FIRE, ROLES.AMBULANCE];
     const results = await Promise.all(roles.map(async (currentRole) => {
       const delegate = accountDelegate(db, currentRole);
+      const emergencyRole = [ROLES.POLICE, ROLES.FIRE, ROLES.AMBULANCE].includes(currentRole);
       const rows = await delegate.findMany({
         where: {
+          ...(emergencyRole ? { serviceType: currentRole } : {}),
           ...(status ? { status } : {}),
           ...(search ? { OR: [
             { name: { contains: search, mode: "insensitive" } },
             { username: { contains: search, mode: "insensitive" } },
             { email: { contains: search, mode: "insensitive" } },
             { phone: { contains: search, mode: "insensitive" } },
+            ...(emergencyRole ? [{ organization: { contains: search, mode: "insensitive" } }] : []),
           ] } : {}),
         },
-        select: accountSelect,
+        select: emergencyRole
+          ? { ...accountSelect, organization: true, serviceType: true, address: true, jurisdiction: true }
+          : accountSelect,
         orderBy: { createdAt: "desc" },
         take: limit,
       });
-      return rows.map((row) => ({ ...row, role: currentRole }));
+      return rows.map((row) => ({ ...row, role: emergencyRole ? row.serviceType : currentRole }));
     }));
     return results.flat().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, limit);
   },
 
-  findAccount(role, id) {
+  async findAccount(role, id) {
     const delegate = accountDelegate(db, role);
-    return delegate?.findUnique({ where: { id }, select: accountSelect });
+    if (!delegate) return null;
+    const emergencyRole = [ROLES.POLICE, ROLES.FIRE, ROLES.AMBULANCE].includes(role);
+    const row = await delegate.findUnique({
+      where: { id },
+      select: emergencyRole ? { ...accountSelect, serviceType: true, organization: true, address: true, jurisdiction: true } : accountSelect,
+    });
+    return emergencyRole && row?.serviceType !== role ? null : row;
   },
 
   async updateAccountStatus(role, id, status) {

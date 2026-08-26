@@ -17,11 +17,17 @@ export const createIncidentRepository = ({ db = prisma } = {}) => ({
   },
   async createFromSafetyAlert(alert, location) {
     return db.$transaction(async (tx) => {
+      const isDangerZoneEntry = alert.type === "RISK_ZONE_ENTRY" && alert.level === "DANGER";
+      const zoneName = alert.details?.zoneName || null;
       const incident = await tx.incident.create({ data: {
         tripId: alert.tripId, userId: alert.userId, sourceType: "SAFETY_ALERT", sourceSafetyAlertId: alert.id,
-        severity: alert.level === "DANGER" ? "DANGER" : "WARNING", title: alert.message,
-        description: alert.details ? JSON.stringify(alert.details).slice(0, 1000) : null,
-        latitude: location?.latitude ?? null, longitude: location?.longitude ?? null,
+        severity: alert.level === "DANGER" ? "DANGER" : "WARNING",
+        title: isDangerZoneEntry ? "Danger" : alert.message,
+        description: isDangerZoneEntry
+          ? `Tourist entered an active danger zone${zoneName ? `: ${zoneName}` : ""}.`
+          : (alert.details ? JSON.stringify(alert.details).slice(0, 1000) : null),
+        latitude: location?.latitude ?? alert.details?.latitude ?? null,
+        longitude: location?.longitude ?? alert.details?.longitude ?? null,
       } });
       await tx.incidentEvent.create({ data: { incidentId: incident.id, type: "CREATED", metadata: { safetyAlertId: alert.id } } });
       return incident;

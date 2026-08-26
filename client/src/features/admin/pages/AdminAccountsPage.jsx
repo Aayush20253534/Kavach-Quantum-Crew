@@ -13,6 +13,7 @@ import { adminService } from '../api/adminService';
 const filters = [
   ['ALL', 'All Accounts'],
   ['DISASTER_MANAGER', 'Authorities'],
+  ['FLEETS', 'Fleet Accounts'],
   ['SUSPENDED', 'Suspended'],
 ];
 
@@ -34,8 +35,10 @@ export function AdminAccountsPage() {
       if (filter === 'DISASTER_MANAGER') params.role = filter;
       if (filter === 'SUSPENDED') params.status = filter;
 
-      const result = await adminService.getAccounts(params);
-      setAccounts(Array.isArray(result) ? result : []);
+      const result = filter === 'FLEETS'
+        ? (await Promise.all(['POLICE', 'AMBULANCE', 'FIRE'].map((role) => adminService.getAccounts({ ...params, role })))).flat()
+        : await adminService.getAccounts(params);
+      setAccounts(Array.isArray(result) ? result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : []);
     } catch (requestError) {
       setError(
         requestError?.response?.data?.error?.message ||
@@ -81,7 +84,7 @@ export function AdminAccountsPage() {
           <Users className="w-6 h-6" /> Account Management
         </h1>
         <p className="text-xs text-slate-500 mt-1">
-          Real tourist, disaster-manager and system-admin accounts from PostgreSQL.
+          Real tourist, disaster-manager, emergency-fleet and system-admin accounts from PostgreSQL.
         </p>
       </div>
 
@@ -151,6 +154,7 @@ export function AdminAccountsPage() {
                     <p className="text-[11px] text-slate-500 mt-1">
                       {account.email || account.phone}
                     </p>
+                    {account.organization && <p className="text-[10px] text-slate-400 mt-1">{account.organization}</p>}
                   </td>
                   <td className="px-5 py-4">
                     <span className="text-[10px] font-black uppercase bg-slate-100 px-2 py-1 rounded inline-flex items-center gap-1">
