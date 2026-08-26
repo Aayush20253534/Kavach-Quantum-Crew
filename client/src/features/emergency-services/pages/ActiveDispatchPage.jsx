@@ -64,8 +64,7 @@ export function ActiveDispatchPage() {
       await fetchDispatches();
     } catch (err) {
       console.error('Failed to update status', err);
-      // Optimistic update for mock
-      setDispatches(prev => prev.map(d => d.id === dispatchId ? { ...d, status: newStatus } : d));
+      setError(err?.response?.data?.error?.message || 'Unable to update dispatch status.');
     } finally {
       setUpdating(null);
     }

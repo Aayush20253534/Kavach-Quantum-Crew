@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { authorityService } from '../api/authorityService';
 import { createRealtimeSocket } from '../../../services/realtimeClient';
+import { AuthorityOperationsMap } from '../components/AuthorityOperationsMap';
 
 export function AuthorityIncidentsPage() {
   const [incidents, setIncidents] = useState([]);
@@ -14,6 +15,8 @@ export function AuthorityIncidentsPage() {
   const [error, setError] = useState('');
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState('ALL');
+  const [viewMode, setViewMode] = useState('LIST');
+  const [units, setUnits] = useState([]);
   const [responseMetrics, setResponseMetrics] = useState({
     averageMinutes: null,
     respondedCount: 0,
@@ -75,6 +78,7 @@ export function AuthorityIncidentsPage() {
       ).length;
 
       setIncidents(Array.isArray(data) ? data : []);
+      setUnits(unitList);
       setResponseMetrics({
         averageMinutes: responseTimes?.incidents?.responseStartMinutes ?? null,
         respondedCount: responseTimes?.incidents?.respondedCount ?? 0,
@@ -146,8 +150,11 @@ export function AuthorityIncidentsPage() {
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radio className="w-4 h-4" />}
             Refresh
           </button>
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-lg shadow-sm hover:bg-slate-800 transition-all active:scale-95 cursor-pointer font-bold text-[11px] uppercase tracking-wider">
-            <Crosshair className="w-4 h-4" /> Map View
+          <button
+            onClick={() => setViewMode((current) => current === 'MAP' ? 'LIST' : 'MAP')}
+            className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-lg shadow-sm hover:bg-slate-800 transition-all active:scale-95 cursor-pointer font-bold text-[11px] uppercase tracking-wider"
+          >
+            <Crosshair className="w-4 h-4" /> {viewMode === 'MAP' ? 'List View' : 'Map View'}
           </button>
         </div>
       </div>
@@ -200,8 +207,26 @@ export function AuthorityIncidentsPage() {
         </div>
       </div>
 
+      {viewMode === 'MAP' && (
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-2 border-b border-slate-100 bg-slate-50/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-[13px] font-black uppercase tracking-wide text-slate-900">Operational Map</h2>
+              <p className="mt-0.5 text-[10px] font-semibold text-slate-500">Live incidents and registered Police, Ambulance/Hospital and Fire fleet coordinates.</p>
+            </div>
+            <div className="flex flex-wrap gap-2 text-[10px] font-bold">
+              <span className="rounded-md bg-red-50 px-2 py-1 text-red-700">Incidents {filteredIncidents.length}</span>
+              <span className="rounded-md bg-slate-100 px-2 py-1 text-slate-700">Fleets {units.length}</span>
+            </div>
+          </div>
+          <div className="h-[560px]">
+            <AuthorityOperationsMap incidents={filteredIncidents} units={units} />
+          </div>
+        </div>
+      )}
+
       {/* Main Queue Interface */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className={`${viewMode === 'MAP' ? 'hidden' : ''} bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden`}>
         
         {/* Filters / Toolbar */}
         <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/50">
