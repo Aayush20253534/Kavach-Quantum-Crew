@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AlertTriangle, Loader2, MapPin, Navigation } from 'lucide-react';
 import { emergencyServicesApi } from '../api/emergencyServicesApi';
-import { MapComponent } from '../../tracking/components/MapComponent';
+import { AuthorityOperationsMap } from '../../authority/components/AuthorityOperationsMap';
 
 export function SharedDispatchTrackingPage() {
   const { dispatchId } = useParams();
@@ -24,7 +24,38 @@ export function SharedDispatchTrackingPage() {
     return () => { cancelled = true; window.clearInterval(timer); };
   }, [dispatchId]);
 
-  const unitLocation = useMemo(() => tracking?.unit?.location ? ({ lat: tracking.unit.location.latitude, lng: tracking.unit.location.longitude }) : null, [tracking]);
+  const unitLocation = useMemo(
+    () => tracking?.unit?.location
+      ? ({ lat: Number(tracking.unit.location.latitude), lng: Number(tracking.unit.location.longitude) })
+      : null,
+    [tracking],
+  );
+
+  const routeIncident = useMemo(() => {
+    if (!tracking?.destination) return null;
+    return {
+      id: tracking.incidentId || 'incident',
+      title: 'Tourist / incident location',
+      status: tracking.status,
+      severity: 'CRITICAL',
+      latitude: Number(tracking.destination.latitude),
+      longitude: Number(tracking.destination.longitude),
+      description: 'Emergency destination for this dispatch.',
+    };
+  }, [tracking]);
+
+  const routeUnit = useMemo(() => {
+    if (!tracking?.unit || !unitLocation) return null;
+    return {
+      id: tracking.unit.id,
+      name: tracking.unit.name,
+      type: tracking.serviceType,
+      status: tracking.status,
+      organization: tracking.unit.organization,
+      latitude: unitLocation.lat,
+      longitude: unitLocation.lng,
+    };
+  }, [tracking, unitLocation]);
 
   if (!tracking && !error) return <div className="py-24 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>;
 
@@ -43,8 +74,24 @@ export function SharedDispatchTrackingPage() {
             <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-[10px] font-black uppercase text-slate-400">Unit</p><p className="mt-1 font-black">{tracking.unit?.name || 'Awaiting assignment'}</p></div>
             <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-[10px] font-black uppercase text-slate-400">Distance</p><p className="mt-1 font-black">{tracking.distanceRemainingM == null ? '—' : `${tracking.distanceRemainingM} m`}</p></div>
           </div>
-          <div className="rounded-3xl border border-slate-200 bg-white p-2 shadow-sm">
-            <MapComponent currentLocation={unitLocation} className="h-[500px] w-full rounded-2xl" />
+          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-4 py-3">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-widest text-slate-900">Live response route</p>
+                <p className="mt-1 text-[10px] font-semibold text-slate-500">Road route from the responding fleet to the tourist / incident location.</p>
+              </div>
+              <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-wider">
+                <span className="flex items-center gap-1.5 text-emerald-700"><span className="h-2.5 w-2.5 rounded-full bg-emerald-600" /> Fleet</span>
+                <span className="flex items-center gap-1.5 text-red-700"><span className="h-2.5 w-2.5 rounded-full bg-red-600" /> Tourist</span>
+              </div>
+            </div>
+            <div className="h-[500px] w-full">
+              <AuthorityOperationsMap
+                incidents={routeIncident ? [routeIncident] : []}
+                units={routeUnit ? [routeUnit] : []}
+                showRoutes
+              />
+            </div>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white p-4 text-xs text-slate-600 flex items-center gap-2"><MapPin className="h-4 w-4" />Last unit update: {tracking.unit?.location?.updatedAt ? new Date(tracking.unit.location.updatedAt).toLocaleString() : 'Waiting for GPS'}</div>
         </>

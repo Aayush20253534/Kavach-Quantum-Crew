@@ -155,17 +155,32 @@ export const createEmergencyServiceService = ({ repository = emergencyServiceRep
       const unitLocation = dispatch.unit?.latitude != null && dispatch.unit?.longitude != null
         ? { latitude: dispatch.unit.latitude, longitude: dispatch.unit.longitude, updatedAt: dispatch.unit.locationUpdatedAt }
         : null;
+      const latestTouristLocation = await repository.findLatestTouristLocation(
+        dispatch.incident.tripId,
+        dispatch.incident.userId,
+      );
       const incidentLocation = dispatch.incident.latitude != null && dispatch.incident.longitude != null
         ? { latitude: dispatch.incident.latitude, longitude: dispatch.incident.longitude }
         : null;
-      const distanceM = unitLocation && incidentLocation ? Math.round(haversineDistanceM(unitLocation, incidentLocation)) : null;
+      const destination = latestTouristLocation
+        ? {
+            latitude: latestTouristLocation.latitude,
+            longitude: latestTouristLocation.longitude,
+            accuracyM: latestTouristLocation.accuracyM,
+            updatedAt: latestTouristLocation.capturedAt ?? latestTouristLocation.updatedAt,
+            source: "LIVE_TOURIST",
+          }
+        : incidentLocation
+          ? { ...incidentLocation, source: "INCIDENT_LOCATION" }
+          : null;
+      const distanceM = unitLocation && destination ? Math.round(haversineDistanceM(unitLocation, destination)) : null;
       return {
         dispatchId: dispatch.id,
         incidentId: dispatch.incidentId,
         serviceType: dispatch.requestedUnitType,
         status: dispatch.status,
         unit: dispatch.unit ? { id: dispatch.unit.id, name: dispatch.unit.name, organization: dispatch.unit.organization, location: unitLocation } : null,
-        destination: incidentLocation,
+        destination,
         distanceRemainingM: distanceM,
         timeline: dispatch.events,
       };
