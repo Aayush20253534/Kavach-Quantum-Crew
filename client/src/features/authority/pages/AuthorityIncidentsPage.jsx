@@ -36,6 +36,7 @@ export function AuthorityIncidentsPage() {
 
     socket.on('incident:created', refresh);
     socket.on('incident:updated', refresh);
+    socket.on('dispatch:updated', refresh);
     socket.connect();
 
     // Socket delivery is the primary path. Polling is a fallback for proxies or
@@ -46,6 +47,7 @@ export function AuthorityIncidentsPage() {
       window.clearInterval(timer);
       socket.off('incident:created', refresh);
       socket.off('incident:updated', refresh);
+      socket.off('dispatch:updated', refresh);
       socket.disconnect();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -108,7 +110,7 @@ export function AuthorityIncidentsPage() {
   const filteredIncidents = incidents.filter((incident) => {
     const status = (incident.status || 'OPEN').toUpperCase();
     if (activeTab === 'ALL') return true;
-    if (activeTab === 'UNASSIGNED') return !incident.assignedToId && ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes(status);
+    if (activeTab === 'UNASSIGNED') return !incident.assignedToId && !incident.fleetAssigned && ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes(status);
     if (activeTab === 'ACTIVE') return ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes(status);
     if (activeTab === 'RESOLVED') return ['RESOLVED', 'DISMISSED'].includes(status);
     return true;
@@ -120,7 +122,7 @@ export function AuthorityIncidentsPage() {
   ).length;
 
   const unassignedCount = incidents.filter((incident) =>
-    !incident.assignedToId && ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes((incident.status || 'OPEN').toUpperCase()),
+    !incident.assignedToId && !incident.fleetAssigned && ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes((incident.status || 'OPEN').toUpperCase()),
   ).length;
 
   return (

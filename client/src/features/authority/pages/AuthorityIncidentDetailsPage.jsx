@@ -6,6 +6,8 @@ import {
   Send, MoreHorizontal, Radio, ShieldAlert, User, Loader2, Play
 } from 'lucide-react';
 import { authorityService } from '../api/authorityService';
+import { createRealtimeSocket } from '../../../services/realtimeClient';
+import { AuthorityOperationsMap } from '../components/AuthorityOperationsMap';
 
 export function AuthorityIncidentDetailsPage() {
   const { id } = useParams();
@@ -20,23 +22,40 @@ export function AuthorityIncidentDetailsPage() {
 
   useEffect(() => {
     setMounted(true);
-    fetchIncidentData();
-    const interval = setInterval(fetchMessages, 5000);
-    return () => clearInterval(interval);
-  }, [id]);
+    void fetchIncidentData();
 
-  const fetchIncidentData = async () => {
+    const socket = createRealtimeSocket();
+    const refreshIncident = () => { void fetchIncidentData({ background: true }); };
+    socket.on('incident:updated', refreshIncident);
+    socket.on('dispatch:updated', refreshIncident);
+    socket.on('emergency-unit:updated', refreshIncident);
+    socket.connect();
+
+    const messageInterval = window.setInterval(fetchMessages, 5000);
+    const incidentInterval = window.setInterval(refreshIncident, 10_000);
+
+    return () => {
+      window.clearInterval(messageInterval);
+      window.clearInterval(incidentInterval);
+      socket.off('incident:updated', refreshIncident);
+      socket.off('dispatch:updated', refreshIncident);
+      socket.off('emergency-unit:updated', refreshIncident);
+      socket.disconnect();
+    };
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fetchIncidentData = async ({ background = false } = {}) => {
     try {
-      setLoading(true);
+      if (!background) setLoading(true);
       setError('');
       const response = await authorityService.getIncidentDetails(id);
       const data = response?.data || response;
       setIncident(data);
-      await fetchMessages();
+      if (!background) await fetchMessages();
     } catch (err) {
-      setError(err.response?.data?.error?.message || 'Failed to load incident details');
+      if (!background) setError(err.response?.data?.error?.message || 'Failed to load incident details');
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
     }
   };
 
@@ -105,12 +124,14 @@ export function AuthorityIncidentDetailsPage() {
 
   if (!incident) return null;
 
-  const status = (incident.status || 'PENDING').toUpperCase();
-  const priority = (incident.priority || 'HIGH').toUpperCase();
+  const status = (incident.status || 'OPEN').toUpperCase();
+  const priority = (incident.priority || incident.severity || 'HIGH').toUpperCase();
+  const activeDispatches = Array.isArray(incident.activeDispatches) ? incident.activeDispatches : [];
+  const tacticalUnits = activeDispatches.map((dispatch) => dispatch.unit).filter(Boolean);
 
   const getStatusStyles = (s) => {
     switch (s) {
-      case 'PENDING': return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'OPEN': return 'bg-amber-100 text-amber-700 border-amber-200';
       case 'ACKNOWLEDGED': return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'IN_PROGRESS': return 'bg-purple-100 text-purple-700 border-purple-200';
       case 'RESOLVED': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
@@ -226,14 +247,45 @@ export function AuthorityIncidentDetailsPage() {
               </p>
             </div>
             
-            <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-sm overflow-hidden h-[250px] relative flex flex-col items-center justify-center mt-6">
-              {/* Geo-Spatial Map Placeholder */}
-              <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(#475569 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
-              <div className="absolute w-32 h-32 bg-red-500/20 border-2 border-red-500/50 rounded-full flex items-center justify-center animate-ping opacity-75"></div>
-              <div className="absolute w-4 h-4 bg-red-500 rounded-full shadow-[0_0_15px_rgba(239,68,68,1)]"></div>
-              <div className="absolute bottom-4 left-4 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/20 text-white text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                <Crosshair className="w-3 h-3" /> Live Tactical View
+            <div className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50 px-4 py-3">
+                <div>
+                  <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-900">
+                    <Crosshair className="h-3.5 w-3.5 text-red-600" /> Live Tactical View
+                  </p>
+                  <p className="mt-1 text-[10px] font-semibold text-slate-500">
+                    Incident location and currently assigned emergency fleets.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`rounded-md px-2 py-1 text-[9px] font-black uppercase tracking-widest ${
+                    incident.fleetAssigned ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                  }`}>
+                    {incident.fleetAssigned ? `${tacticalUnits.length} fleet${tacticalUnits.length === 1 ? '' : 's'} assigned` : 'No fleet assigned'}
+                  </span>
+                </div>
               </div>
+              <div className="h-[320px]">
+                <AuthorityOperationsMap incidents={[incident]} units={tacticalUnits} />
+              </div>
+              {activeDispatches.length > 0 && (
+                <div className="grid gap-2 border-t border-slate-100 bg-white p-3 sm:grid-cols-2">
+                  {activeDispatches.map((dispatch) => (
+                    <Link
+                      key={dispatch.id}
+                      to={`/authority/response/${dispatch.id}`}
+                      className="rounded-lg border border-slate-200 px-3 py-2 hover:border-slate-400 hover:bg-slate-50"
+                    >
+                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-900">
+                        {dispatch.unit?.name || dispatch.requestedUnitType}
+                      </p>
+                      <p className="mt-1 text-[9px] font-bold uppercase tracking-widest text-blue-600">
+                        {dispatch.status} · Open live tracking →
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
