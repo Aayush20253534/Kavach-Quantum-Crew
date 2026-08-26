@@ -110,19 +110,24 @@ export function AuthorityIncidentsPage() {
   const filteredIncidents = incidents.filter((incident) => {
     const status = (incident.status || 'OPEN').toUpperCase();
     if (activeTab === 'ALL') return true;
-    if (activeTab === 'UNASSIGNED') return !incident.assignedToId && !incident.fleetAssigned && ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes(status);
-    if (activeTab === 'ACTIVE') return ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes(status);
+    if (activeTab === 'UNASSIGNED') return !incident.expired && !incident.assignedToId && !incident.fleetAssigned && ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes(status);
+    if (activeTab === 'ACTIVE') return !incident.expired && ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes(status);
     if (activeTab === 'RESOLVED') return ['RESOLVED', 'DISMISSED'].includes(status);
+    if (activeTab === 'EXPIRED') return incident.expired && !['RESOLVED', 'DISMISSED'].includes(status);
     return true;
   });
 
   // Calculate against the actual backend IncidentStatus enum.
   const activeCount = incidents.filter((incident) =>
+    !incident.expired &&
     ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes((incident.status || 'OPEN').toUpperCase()),
   ).length;
 
   const unassignedCount = incidents.filter((incident) =>
-    !incident.assignedToId && !incident.fleetAssigned && ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes((incident.status || 'OPEN').toUpperCase()),
+    !incident.expired &&
+    !incident.assignedToId &&
+    !incident.fleetAssigned &&
+    ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes((incident.status || 'OPEN').toUpperCase()),
   ).length;
 
   return (
@@ -233,7 +238,7 @@ export function AuthorityIncidentsPage() {
         {/* Filters / Toolbar */}
         <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/50">
           <div className="flex bg-slate-100 p-1 rounded-lg w-full md:w-auto">
-            {['ALL', 'UNASSIGNED', 'ACTIVE', 'RESOLVED'].map(tab => (
+            {['ALL', 'UNASSIGNED', 'ACTIVE', 'EXPIRED', 'RESOLVED'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -301,11 +306,14 @@ export function AuthorityIncidentsPage() {
                   <Link to={`/authority/incidents/${incident.id}`} className="text-[13px] font-black text-slate-900 hover:text-red-600 transition-colors uppercase font-mono">
                     {incident.referenceId || incident.id.slice(0, 8)}
                   </Link>
-                  <div className={`text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1`}>
-                    {(incident.status || 'PENDING') === 'PENDING' && <AlertTriangle className="w-3 h-3" />}
-                    {(incident.status || 'PENDING') === 'ACTIVE' && <Crosshair className="w-3 h-3" />}
-                    {(incident.status || 'PENDING') === 'RESOLVED' && <CheckCircle2 className="w-3 h-3" />}
-                    {incident.status || 'PENDING'}
+                  <div className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 ${
+                    incident.expired ? 'text-slate-400' : 'text-slate-500'
+                  }`}>
+                    {incident.expired && <Clock className="w-3 h-3" />}
+                    {!incident.expired && (incident.status || 'OPEN') === 'OPEN' && <AlertTriangle className="w-3 h-3" />}
+                    {(incident.status || 'OPEN') === 'IN_PROGRESS' && <Crosshair className="w-3 h-3" />}
+                    {(incident.status || 'OPEN') === 'RESOLVED' && <CheckCircle2 className="w-3 h-3" />}
+                    {incident.displayStatus || incident.status || 'OPEN'}
                   </div>
                 </div>
 

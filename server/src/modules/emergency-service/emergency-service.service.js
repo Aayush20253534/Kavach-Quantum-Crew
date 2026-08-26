@@ -122,6 +122,7 @@ export const createEmergencyServiceService = ({ repository = emergencyServiceRep
       // Keep the status change and timeline event atomic. This also ensures the
       // response contains the unit relation required by realtime room routing.
       const updated = await repository.transitionDispatch(id, data, event);
+      let resolvedIncident = null;
       if (status === "COMPLETED") {
         await repository.updateUnit(current.unit.id, {
           status: "AVAILABLE",
@@ -129,8 +130,22 @@ export const createEmergencyServiceService = ({ repository = emergencyServiceRep
           longitude: actor.longitude ?? current.unit.longitude,
           locationUpdatedAt: actor.locationUpdatedAt ?? now,
         });
+        // Disaster Management follows Incident state, not Dispatch state. Resolve
+        // the incident only after the final active fleet response is completed.
+        resolvedIncident = await repository.resolveIncidentWhenResponsesComplete(
+          current.incidentId,
+          actor,
+          now,
+        );
       }
       publisher.publishDispatchUpdated?.(updated, { type: status, actorId: actor.id });
+      if (resolvedIncident?.status === "RESOLVED") {
+        publisher.publishIncidentUpdated?.(resolvedIncident, {
+          type: "RESOLVED",
+          actorId: actor.id,
+          source: "FLEET_COMPLETION",
+        });
+      }
       return updated;
     },
     async listTouristDispatches(actor) {

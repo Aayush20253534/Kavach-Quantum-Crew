@@ -41,7 +41,12 @@ export function AuthorityDispatchPage() {
       const fleet = Array.isArray(unitRows) ? unitRows : [];
       const active = Array.isArray(dispatchRows) ? dispatchRows : [];
       const allIncidents = Array.isArray(incidentRows) ? incidentRows : incidentRows?.items || incidentRows?.data || [];
-      const assignable = allIncidents.filter((incident) => !['RESOLVED', 'DISMISSED'].includes(incident.status));
+      const assignable = allIncidents.filter(
+        (incident) =>
+          !incident.expired &&
+          incident.trip?.status === 'ACTIVE' &&
+          !['RESOLVED', 'DISMISSED'].includes(incident.status),
+      );
       setUnits(fleet);
       setActiveDispatches(active);
       setIncidents(assignable);

@@ -125,6 +125,7 @@ export function AuthorityIncidentDetailsPage() {
   if (!incident) return null;
 
   const status = (incident.status || 'OPEN').toUpperCase();
+  const displayStatus = (incident.displayStatus || (incident.expired ? 'EXPIRED' : status)).toUpperCase();
   const priority = (incident.priority || incident.severity || 'HIGH').toUpperCase();
   const activeDispatches = Array.isArray(incident.activeDispatches) ? incident.activeDispatches : [];
   const tacticalUnits = activeDispatches.map((dispatch) => dispatch.unit).filter(Boolean);
@@ -135,6 +136,7 @@ export function AuthorityIncidentDetailsPage() {
       case 'ACKNOWLEDGED': return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'IN_PROGRESS': return 'bg-purple-100 text-purple-700 border-purple-200';
       case 'RESOLVED': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      case 'EXPIRED': return 'bg-slate-200 text-slate-600 border-slate-300';
       default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
@@ -160,8 +162,8 @@ export function AuthorityIncidentDetailsPage() {
           </Link>
           <div>
             <div className="flex items-center gap-2 mb-0.5">
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest border ${getStatusStyles(status)}`}>
-                {status}
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest border ${getStatusStyles(displayStatus)}`}>
+                {displayStatus}
               </span>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest border ${getSeverityStyles(priority)}`}>
                 {priority}
@@ -174,7 +176,7 @@ export function AuthorityIncidentDetailsPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {status === 'PENDING' && (
+          {!incident.expired && status === 'OPEN' && (
             <button 
               onClick={() => handleAction('ACKNOWLEDGE')}
               disabled={actionLoading}
@@ -183,7 +185,7 @@ export function AuthorityIncidentDetailsPage() {
               Acknowledge Receipt
             </button>
           )}
-          {status === 'ACKNOWLEDGED' && (
+          {!incident.expired && status === 'ACKNOWLEDGED' && (
             <button 
               onClick={() => handleAction('START')}
               disabled={actionLoading}
@@ -192,7 +194,7 @@ export function AuthorityIncidentDetailsPage() {
               <Play className="w-4 h-4" /> Start Response
             </button>
           )}
-          {status === 'IN_PROGRESS' && (
+          {!incident.expired && status === 'IN_PROGRESS' && (
             <button 
               onClick={() => handleAction('RESOLVE')}
               disabled={actionLoading}
@@ -206,6 +208,12 @@ export function AuthorityIncidentDetailsPage() {
           </button>
         </div>
       </div>
+
+      {incident.expired && (
+        <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-[12px] font-bold text-slate-600">
+          This incident belongs to a {incident.trip?.status?.toLowerCase() || 'non-active'} trip and is expired. New fleet dispatches are disabled.
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
