@@ -66,6 +66,10 @@ export const authorityService = {
     const response = await apiClient.post(`/dispatch/${dispatchId}/assign`, data);
     return unwrap(response);
   },
+  dispatchUnitToIncident: async (incidentId, data) => {
+    const response = await apiClient.post(`/dispatch/incidents/${incidentId}`, data);
+    return unwrap(response);
+  },
   
   getRiskZones: async () => {
     const response = await apiClient.get('/risk-zones');

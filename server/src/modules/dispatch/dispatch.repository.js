@@ -15,6 +15,7 @@ export const createDispatchRepository = ({ db = prisma } = {}) => ({
           }
         : {}),
     },
+    include: { serviceAccount: { select: { id: true, name: true, email: true, address: true, latitude: true, longitude: true } } },
     orderBy: [{ status: "asc" }, { name: "asc" }],
     take: limit,
   }),

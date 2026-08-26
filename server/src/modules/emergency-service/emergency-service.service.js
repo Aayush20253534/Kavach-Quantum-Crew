@@ -43,7 +43,8 @@ export const createEmergencyServiceService = ({ repository = emergencyServiceRep
       if (conflict) throw ApiError.conflict("Username, email or phone is already in use", { code: "ACCOUNT_ALREADY_EXISTS" });
 
       const label = SERVICE_LABELS[input.serviceType] || input.serviceType;
-      const displayName = `${label} ${input.username}`;
+      const now = clock();
+      const displayName = input.fleetName;
       const { account, unit } = await repository.createAccountWithUnit({
         name: displayName,
         username: input.username,
@@ -51,22 +52,22 @@ export const createEmergencyServiceService = ({ repository = emergencyServiceRep
         phone: input.phone,
         passwordHash: await hashPassword(input.password),
         serviceType: input.serviceType,
-        organization: null,
-        address: null,
-        jurisdiction: null,
-        latitude: null,
-        longitude: null,
-        locationUpdatedAt: null,
+        organization: input.fleetName,
+        address: input.address,
+        jurisdiction: input.jurisdiction ?? null,
+        latitude: input.latitude,
+        longitude: input.longitude,
+        locationUpdatedAt: now,
       }, {
-        name: `${label} Primary Unit`,
+        name: input.fleetName,
         type: input.serviceType,
         status: "AVAILABLE",
-        organization: null,
-        jurisdiction: null,
+        organization: input.fleetName,
+        jurisdiction: input.jurisdiction ?? null,
         contactPhone: input.phone,
-        latitude: null,
-        longitude: null,
-        locationUpdatedAt: null,
+        latitude: input.latitude,
+        longitude: input.longitude,
+        locationUpdatedAt: now,
       });
 
       await repository.createAudit({
@@ -75,14 +76,14 @@ export const createEmergencyServiceService = ({ repository = emergencyServiceRep
         action: "EMERGENCY_SERVICE_ACCOUNT_CREATED",
         entityType: "EmergencyServiceAccount",
         entityId: account.id,
-        metadata: { serviceType: input.serviceType, username: input.username, email: input.email },
+        metadata: { serviceType: input.serviceType, username: input.username, email: input.email, fleetName: input.fleetName, address: input.address },
       });
 
       return {
         account: publicAccount({ ...account, role: account.serviceType }),
         unit,
         loginPortalRole: account.serviceType,
-        locationRequired: true,
+        locationRequired: false,
       };
     },
     async me(actor) { serviceOnly(actor); const account = await repository.findAccount(actor.id); return publicAccount({ ...account, role: actor.role }); },
@@ -95,8 +96,9 @@ export const createEmergencyServiceService = ({ repository = emergencyServiceRep
     async dispatches(actor) { serviceOnly(actor); return repository.listDispatches(actor.id); },
     async updateDispatchLocation(actor, id, input) {
       serviceOnly(actor); const dispatch = await ownedDispatch(actor, id); const now = clock();
+      // Dispatch GPS belongs to the deployed unit only. The service account keeps
+      // its fixed/base coordinates so live tracking never overwrites the fleet base.
       const unit = await repository.updateUnit(dispatch.unit.id, { ...input, locationUpdatedAt: now });
-      await repository.updateAccount(actor.id, { ...input, locationUpdatedAt: now });
       const fresh = { ...dispatch, unit };
       publisher.publishDispatchUpdated?.(fresh, { type: "LOCATION_UPDATED", location: input });
       publisher.publishEmergencyUnitUpdated?.(unit, { type: "LOCATION_UPDATED" });
@@ -110,7 +112,14 @@ export const createEmergencyServiceService = ({ repository = emergencyServiceRep
       const now = clock();
       const data = { status, ...(status === "DISPATCHED" ? { dispatchedAt: now } : {}), ...(status === "EN_ROUTE" ? { enRouteAt: now } : {}), ...(status === "ON_SCENE" ? { onSceneAt: now } : {}), ...(status === "COMPLETED" ? { completedAt: now } : {}) };
       const updated = await repository.updateDispatch(id, data);
-      if (status === "COMPLETED") await repository.updateUnit(current.unit.id, { status: "AVAILABLE" });
+      if (status === "COMPLETED") {
+        await repository.updateUnit(current.unit.id, {
+          status: "AVAILABLE",
+          latitude: actor.latitude ?? current.unit.latitude,
+          longitude: actor.longitude ?? current.unit.longitude,
+          locationUpdatedAt: actor.locationUpdatedAt ?? now,
+        });
+      }
       await repository.createEvent({ dispatchId: id, type: status, actorId: actor.id, actorRole: actor.role, note: note ?? null, metadata: { servicePortal: true } });
       publisher.publishDispatchUpdated?.(updated, { type: status, actorId: actor.id });
       return updated;
