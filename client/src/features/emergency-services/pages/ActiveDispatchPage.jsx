@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { emergencyServicesApi } from '../api/emergencyServicesApi';
 import { Loader } from '../../../components/ui/Loader';
 import { MapPin, Navigation, Radio, CheckCircle, Clock } from 'lucide-react';
 
 export function ActiveDispatchPage() {
   const { theme } = useOutletContext();
+  const [searchParams] = useSearchParams();
+  const requestedDispatchId = searchParams.get('dispatch') || '';
   const ThemeIcon = theme.icon;
   const [dispatches, setDispatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +35,27 @@ export function ActiveDispatchPage() {
     const interval = setInterval(fetchDispatches, 15000); // poll every 15s
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!navigator.geolocation || dispatches.length === 0) return undefined;
+    const tracked = dispatches.find((dispatch) => dispatch.id === requestedDispatchId) || dispatches[0];
+    if (!tracked) return undefined;
+
+    const watchId = navigator.geolocation.watchPosition(
+      ({ coords }) => {
+        emergencyServicesApi.updateDispatchLocation(tracked.id, {
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+        }).catch((err) => {
+          setError(err?.response?.data?.error?.message || 'Unable to transmit live dispatch location.');
+        });
+      },
+      () => setError('Location permission is required for live dispatch tracking.'),
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [dispatches, requestedDispatchId]);
 
   const handleUpdateStatus = async (dispatchId, newStatus) => {
     setUpdating(dispatchId);

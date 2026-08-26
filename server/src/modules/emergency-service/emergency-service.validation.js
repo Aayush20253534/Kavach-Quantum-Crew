@@ -27,6 +27,11 @@ export const registerEmergencyServiceBodySchema = z.object({
 
 
 export const provisionEmergencyServiceBodySchema = z.object({
+  fleetName: z.string().trim().min(2).max(120),
+  address: z.string().trim().min(3).max(240),
+  jurisdiction: z.string().trim().max(160).optional(),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
   username: z.string().trim().min(6).max(40).regex(/^[a-zA-Z0-9._-]+$/).transform((v) => v.toLowerCase()),
   email: z.string().trim().email().max(254).transform((v) => v.toLowerCase()),
   phone: z.string().trim().regex(/^\d{10}$/),
