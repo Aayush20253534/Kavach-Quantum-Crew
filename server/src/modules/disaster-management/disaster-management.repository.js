@@ -197,7 +197,12 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
       scope === "MINE"
         ? { assignedToId: actorId, assignedToRole: "DISASTER_MANAGER" }
         : scope === "UNASSIGNED"
-          ? { assignedToId: null }
+          ? {
+              assignedToId: null,
+              dispatches: {
+                none: { status: { notIn: ["COMPLETED", "CANCELLED"] } },
+              },
+            }
           : {};
 
     // The command queue is a central emergency inbox. Do not hide incidents by
@@ -221,32 +226,96 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
     if (!rows.length) return [];
     const userIds = [...new Set(rows.map((row) => row.userId))];
     const tripIds = [...new Set(rows.map((row) => row.tripId))];
-    const [tourists, trips] = await Promise.all([
+    const incidentIds = rows.map((row) => row.id);
+    const [tourists, trips, dispatches] = await Promise.all([
       db.user.findMany({
         where: { id: { in: userIds } },
         select: { id: true, name: true, username: true, phone: true, email: true, nationality: true, preferredLanguage: true, bloodGroup: true, emergencyPhone: true },
       }),
       db.trip.findMany({ where: { id: { in: tripIds } }, select: { id: true, locationName: true, status: true } }),
+      db.dispatch.findMany({
+        where: {
+          incidentId: { in: incidentIds },
+          status: { notIn: ["COMPLETED", "CANCELLED"] },
+        },
+        include: {
+          unit: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              status: true,
+              organization: true,
+              latitude: true,
+              longitude: true,
+              locationUpdatedAt: true,
+              serviceAccountId: true,
+            },
+          },
+        },
+        orderBy: { requestedAt: "desc" },
+      }),
     ]);
     const touristById = new Map(tourists.map((tourist) => [tourist.id, tourist]));
     const tripById = new Map(trips.map((trip) => [trip.id, trip]));
-    return rows.map((row) => ({
-      ...row,
-      tourist: touristById.get(row.userId) ?? null,
-      trip: tripById.get(row.tripId) ?? null,
-      location: { latitude: row.latitude, longitude: row.longitude },
-      priority: row.severity,
-    }));
+    const dispatchesByIncident = new Map();
+    for (const dispatch of dispatches) {
+      const list = dispatchesByIncident.get(dispatch.incidentId) ?? [];
+      list.push(dispatch);
+      dispatchesByIncident.set(dispatch.incidentId, list);
+    }
+    return rows.map((row) => {
+      const activeDispatches = dispatchesByIncident.get(row.id) ?? [];
+      return {
+        ...row,
+        tourist: touristById.get(row.userId) ?? null,
+        trip: tripById.get(row.tripId) ?? null,
+        location: { latitude: row.latitude, longitude: row.longitude },
+        priority: row.severity,
+        activeDispatches,
+        fleetAssigned: activeDispatches.some((dispatch) => Boolean(dispatch.unitId)),
+      };
+    });
   },
 
   async getIncidentContext(id) {
     const incident = await db.incident.findUnique({ where: { id } });
     if (!incident) return null;
-    const [tourist, trip] = await Promise.all([
+    const [tourist, trip, activeDispatches] = await Promise.all([
       db.user.findUnique({ where: { id: incident.userId }, select: { id: true, name: true, username: true, phone: true, email: true, nationality: true, preferredLanguage: true, bloodGroup: true, emergencyPhone: true } }),
       db.trip.findUnique({ where: { id: incident.tripId }, select: { id: true, locationName: true, status: true } }),
+      db.dispatch.findMany({
+        where: {
+          incidentId: id,
+          status: { notIn: ["COMPLETED", "CANCELLED"] },
+        },
+        include: {
+          unit: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              status: true,
+              organization: true,
+              latitude: true,
+              longitude: true,
+              locationUpdatedAt: true,
+              serviceAccountId: true,
+            },
+          },
+        },
+        orderBy: { requestedAt: "desc" },
+      }),
     ]);
-    return { ...incident, tourist, trip, location: { latitude: incident.latitude, longitude: incident.longitude }, priority: incident.severity };
+    return {
+      ...incident,
+      tourist,
+      trip,
+      activeDispatches,
+      fleetAssigned: activeDispatches.some((dispatch) => Boolean(dispatch.unitId)),
+      location: { latitude: incident.latitude, longitude: incident.longitude },
+      priority: incident.severity,
+    };
   },
 
   async dashboard(responderId, jurisdiction = null) {
@@ -314,7 +383,15 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
     ] = await Promise.all([
       db.incident.count({ where: activeFilter }),
       db.incident.count({ where: { ...activeFilter, severity: "CRITICAL" } }),
-      db.incident.count({ where: { ...activeFilter, assignedToId: null } }),
+      db.incident.count({
+        where: {
+          ...activeFilter,
+          assignedToId: null,
+          dispatches: {
+            none: { status: { notIn: ["COMPLETED", "CANCELLED"] } },
+          },
+        },
+      }),
       db.incident.count({
         where: {
           ...activeFilter,
