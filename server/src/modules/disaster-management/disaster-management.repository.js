@@ -103,7 +103,7 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
         ...(status ? { status } : { status: { in: ACTIVE_INCIDENT_STATUSES } }),
         ...(severity ? { severity } : {}),
       },
-      orderBy: [{ severity: "desc" }, { createdAt: "asc" }],
+      orderBy: [{ updatedAt: "desc" }, { severity: "desc" }, { createdAt: "desc" }],
       take: limit,
     });
   },
@@ -215,7 +215,7 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
 
     const rows = await db.incident.findMany({
       where: {
-        ...(status ? { status } : { status: { in: ACTIVE_INCIDENT_STATUSES } }),
+        ...(status ? { status } : {}),
         ...(severity ? { severity } : {}),
         ...assignmentFilter,
       },

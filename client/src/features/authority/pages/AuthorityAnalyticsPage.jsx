@@ -38,6 +38,12 @@ export function AuthorityAnalyticsPage() {
       setData({
         jurisdiction: incidentAnalytics?.jurisdiction || responseTimes?.jurisdiction || null,
         totalIncidents,
+        byStatus: incidentAnalytics?.byStatus || {},
+        resolvedIncidents: Number(incidentAnalytics?.byStatus?.RESOLVED || 0),
+        activeIncidents:
+          Number(incidentAnalytics?.byStatus?.OPEN || 0) +
+          Number(incidentAnalytics?.byStatus?.ACKNOWLEDGED || 0) +
+          Number(incidentAnalytics?.byStatus?.IN_PROGRESS || 0),
         dailyVolume: incidentAnalytics?.dailyVolume || [],
         responseTimes: {
           average: responseTimes?.incidents?.responseStartMinutes ?? null,
@@ -48,7 +54,7 @@ export function AuthorityAnalyticsPage() {
         },
       });
     } catch (err) {
-      setError(err.message || 'Failed to fetch analytics');
+      setError(err.response?.data?.error?.message || err.message || 'Failed to fetch analytics');
     } finally {
       setLoading(false);
     }
@@ -95,7 +101,7 @@ export function AuthorityAnalyticsPage() {
         <div className="space-y-6">
           
           {/* Top KPIs */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-5">
                 <AlertOctagon className="w-24 h-24 text-slate-900" />
@@ -104,6 +110,17 @@ export function AuthorityAnalyticsPage() {
               <div className="flex items-end gap-3 relative z-10">
                 <span className="text-[40px] font-black text-slate-900 leading-none tracking-tighter">{data.totalIncidents}</span>
                 <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded mb-1.5">Live DB</span>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-5">
+                <AlertOctagon className="w-24 h-24 text-emerald-900" />
+              </div>
+              <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1 relative z-10">Resolved Incidents</h3>
+              <div className="flex items-end gap-3 relative z-10">
+                <span className="text-[40px] font-black text-emerald-700 leading-none tracking-tighter">{data.resolvedIncidents}</span>
+                <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded mb-1.5">{data.activeIncidents} active</span>
               </div>
             </div>
 
