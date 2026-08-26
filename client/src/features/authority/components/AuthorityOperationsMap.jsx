@@ -136,17 +136,22 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
     };
   }, [incidents, isLoaded, onRouteSummary, showRoutes, units]);
 
-  useEffect(() => {
-    if (!isLoaded || !mapRef.current || markers.length === 0 || !window.google?.maps) return;
+  const fitVisibleMarkers = (map) => {
+    if (!map || markers.length === 0 || !window.google?.maps) return;
     if (markers.length === 1) {
-      mapRef.current.panTo(markers[0].point);
-      mapRef.current.setZoom(14);
+      map.panTo(markers[0].point);
+      map.setZoom(14);
       return;
     }
     const bounds = new window.google.maps.LatLngBounds();
     markers.forEach((marker) => bounds.extend(marker.point));
-    mapRef.current.fitBounds(bounds, 64);
-  }, [isLoaded, markers]);
+    map.fitBounds(bounds, 72);
+  };
+
+  useEffect(() => {
+    if (!isLoaded || !mapRef.current) return;
+    fitVisibleMarkers(mapRef.current);
+  }, [isLoaded, markers]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!apiKey) {
     return (
@@ -168,34 +173,15 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
       mapContainerStyle={containerStyle}
       center={markers[0]?.point || defaultCenter}
       zoom={markers.length ? 12 : 6}
-      onLoad={(map) => { mapRef.current = map; }}
+      onLoad={(map) => {
+        mapRef.current = map;
+        // The markers may already exist before the GoogleMap instance mounts.
+        // Fit once here as well so the fleet origin is never left off-screen.
+        window.requestAnimationFrame(() => fitVisibleMarkers(map));
+      }}
       onUnmount={() => { mapRef.current = null; }}
       options={{ fullscreenControl: true, streetViewControl: false, mapTypeControl: true, clickableIcons: false }}
     >
-      {markers.map((marker) => {
-        const isIncident = marker.kind === 'incident';
-        // In response-routing mode the visual language is intentionally fixed:
-        // tourist/incident = red, responding fleet = green.
-        const color = showRoutes
-          ? (isIncident ? '#dc2626' : '#16a34a')
-          : (isIncident ? incidentColor(marker.data.severity || marker.data.priority) : unitColor(marker.data.type));
-        return (
-          <MarkerF
-            key={`${marker.kind}-${marker.id}`}
-            position={marker.point}
-            onClick={() => setSelected(marker)}
-            icon={{
-              path: isIncident ? window.google.maps.SymbolPath.BACKWARD_CLOSED_ARROW : window.google.maps.SymbolPath.CIRCLE,
-              scale: isIncident ? 6 : 8,
-              fillColor: color,
-              fillOpacity: 1,
-              strokeColor: '#ffffff',
-              strokeWeight: 2,
-            }}
-          />
-        );
-      })}
-
       {routes.map((route) => (
         <DirectionsRenderer
           key={`route-${route.unitId}`}
@@ -211,6 +197,33 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
           }}
         />
       ))}
+
+
+      {markers.map((marker) => {
+        const isIncident = marker.kind === 'incident';
+        // In response-routing mode the visual language is intentionally fixed:
+        // tourist/incident = red, responding fleet = green.
+        const color = showRoutes
+          ? (isIncident ? '#dc2626' : '#16a34a')
+          : (isIncident ? incidentColor(marker.data.severity || marker.data.priority) : unitColor(marker.data.type));
+        return (
+          <MarkerF
+            key={`${marker.kind}-${marker.id}`}
+            position={marker.point}
+            onClick={() => setSelected(marker)}
+            title={isIncident ? 'Tourist / incident location' : `${marker.data.name || marker.data.type || 'Emergency'} fleet`}
+            zIndex={isIncident ? 1000 : 1100}
+            icon={{
+              path: isIncident ? window.google.maps.SymbolPath.BACKWARD_CLOSED_ARROW : window.google.maps.SymbolPath.CIRCLE,
+              scale: isIncident ? 7 : 10,
+              fillColor: color,
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 2,
+            }}
+          />
+        );
+      })}
 
       {selected && (
         <InfoWindowF position={selected.point} onCloseClick={() => setSelected(null)}>
