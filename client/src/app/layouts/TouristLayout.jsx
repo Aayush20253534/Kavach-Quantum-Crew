@@ -449,8 +449,16 @@ export function TouristLayout() {
             <NotificationsDropdown />
 
             <Link to="/tourist/profile" className="hidden sm:flex items-center gap-3 pl-4 border-l border-slate-200 cursor-pointer group hover:opacity-80 transition-opacity">
-              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-700 border border-slate-200 group-hover:border-slate-300 transition-colors">
-                {initial}
+              <div className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center text-sm font-bold text-slate-700 border border-slate-200 group-hover:border-slate-300 transition-colors">
+                {profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt={`${userName} profile`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  initial
+                )}
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-[12px] font-bold uppercase tracking-wider text-slate-700">{userName}</span>
