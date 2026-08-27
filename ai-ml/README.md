@@ -41,3 +41,14 @@ npm start
 ```
 
 See `.env.example` before starting.
+
+## 2026-08-27 Rakshak AI sync
+
+Rakshak AI currently combines four context sources for an authenticated conversation:
+
+1. recent history scoped to the authenticated user and conversation;
+2. selected static KAVACH knowledge-base material;
+3. live application context such as safe-zone lookup results;
+4. minimized private authenticated-user context fetched from the verified account identity.
+
+Private user context is not written into the shared knowledge base and is not treated as cross-user knowledge. Sensitive fields such as password hashes, password-reset/session tokens, government ID numbers, medical history, emergency contacts, and stored precise account coordinates are excluded from AI profile enrichment.

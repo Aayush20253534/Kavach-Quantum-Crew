@@ -510,3 +510,7 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 `TrustAnchor.sol` owns only append-only encrypted bytes and hashes. Canonicalization, SHA-256 snapshot hashing, AES-256-GCM encryption/decryption, retry policy, PostgreSQL repair and realtime status all live outside Solidity. This keeps contract logic small and prevents plaintext PII from being modeled as Solidity fields.
 
 The current API uses a short timeout for gateway reads and a longer timeout for Sepolia writes that wait for a mined receipt. Snapshot jobs remain isolated from credential issuance state.
+
+## 2026-08-27 implementation note
+
+The current trust-layer boundary remains intentionally narrow: blockchain verifies explicit credential/integrity records; PostgreSQL/services own live trip, incident, alert, fleet, GPS, notification, and AI context state. Preserve this separation when extending contracts or reconciliation jobs.

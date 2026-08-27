@@ -708,3 +708,7 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 Credential issuance and snapshot anchoring are separate queue operations. `ISSUE` creates the `DigitalId`; only then can `SNAPSHOT` append under that `idHash`. Individual snapshots use type `1`; group snapshots use type `2`. Group membership changes append a new sequence rather than replacing history.
 
 Every five seconds the main API reconciles open confirmed individual and group credentials. The API reads the latest encrypted snapshot through the gateway, decrypts it locally, verifies `payloadHash` and identity, compares PostgreSQL, performs only safe repairs, records audit state, and publishes Socket.IO integrity updates. See `data-storage-and-integrity.md` for exact payload fields.
+
+## 2026-08-27 workflow boundary
+
+Incident dispatch, live responder routing, trip-end alert cleanup, and chatbot personalization are off-chain application workflows. Blockchain interaction occurs only where the credential/integrity workflow explicitly invokes the gateway. This separation prevents transient operational failures from being mistaken for immutable trust records.

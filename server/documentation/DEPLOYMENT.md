@@ -78,3 +78,14 @@ Do not deploy the backend snapshot code against the old contract address; creden
 
 Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
 
+
+## 2026-08-27 deployment verification
+
+After backend deployment, verify more than health checks:
+
+- CORS accepts the deployed Vercel frontend origin for login/refresh and other authenticated requests;
+- email OTP password reset works end to end;
+- responder status/location updates reach Disaster Management;
+- a completed/cancelled trip leaves no trip-derived active alerts/incidents;
+- AI authentication uses the same JWT contract and preserves user isolation;
+- Google Maps/Directions API configuration exists on the frontend deployment.

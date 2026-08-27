@@ -19,3 +19,9 @@ Only pass context needed to answer the current request. Location-aware answers s
 ## Model boundary
 
 Model output is advisory/informational. It does not directly mutate trips, incidents, responder dispatches or blockchain state.
+
+## 2026-08-27 private-context policy
+
+Rakshak AI may use a minimized profile for the **currently authenticated account only**. The lookup key is the verified JWT subject, never an arbitrary account ID in the request body.
+
+Do not include password hashes, OTP/reset state, auth sessions, government ID numbers, medical history/documents, emergency contacts, audit records, or fixed precise account coordinates in model context. Conversation lookup and history mutation remain user-scoped. Private context may help answer self-referential questions but must not be volunteered unnecessarily or described as information available to other users.

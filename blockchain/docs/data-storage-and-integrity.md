@@ -225,3 +225,7 @@ Main API requires a stable `BLOCKCHAIN_DATA_ENCRYPTION_KEY`. Gateway requires it
 - hash mismatch/decryption failure/identity mismatch: never use the payload for DB repair.
 
 Snapshot failure is intentionally independent of credential issuance status. A QR can remain blockchain-confirmed while its richer integrity snapshot is temporarily unavailable.
+
+## 2026-08-27 integrity note
+
+Operational cleanup of trips/incidents/dispatches is an application-database concern unless an explicit blockchain workflow records a corresponding credential/integrity event. Do not mirror rapidly changing GPS, dashboard counters, chatbot context, or other ephemeral UI state onto chain.

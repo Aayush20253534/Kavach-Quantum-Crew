@@ -22,3 +22,9 @@ For Kavach-specific questions, a matching knowledge-base document is supplied as
 The **Nearest Safe Zone** request is a live-data operation. The browser sends the user's current location to the AI service. The AI service forwards the same authenticated access token to the main Kavach API and reads `GET /api/v1/safety/zones?type=SAFE&active=true`. It calculates distance to configured safe zones and gives the nearest live result to Rakshak AI as authoritative context. If browser location is unavailable, the chatbot asks the user to enable location access rather than guessing.
 
 The AI Render service therefore needs `KAVACH_API_URL` set to the main backend API base URL including `/api/v1`, for example `https://your-backend.onrender.com/api/v1`.
+
+## Current implementation note — 2026-08-27
+
+Rakshak AI can understand the currently logged-in user's own basic account/role context when the authenticated runtime provides it. That context is private to the authenticated request and is not shared with other users or stored in the static knowledge base.
+
+Emergency-service accounts have a fixed configured base location. Police uses a blue service identity, Ambulance/Hospital uses green, and Fire uses red in the responder interface.

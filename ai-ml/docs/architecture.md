@@ -26,3 +26,11 @@ Normal greetings and general conversation still go to the model when no KB file 
 ## Human control
 
 AI does not auto-dispatch Police, Fire or Ambulance/Hospital. Danger-zone and signal-loss behavior are deterministic backend workflows. Disaster Management controls responder dispatch.
+
+## 2026-08-27 architecture sync
+
+The chatbot request path is now conceptually:
+
+`verified JWT -> user-scoped conversation -> private user context -> optional live Kavach context -> KB selection -> system prompt -> Groq -> user-scoped history persistence`.
+
+Private account enrichment is deliberately separated from KB selection. Shared KB files describe platform behavior; per-user data is resolved at request time and must not become shared knowledge.

@@ -167,3 +167,20 @@ The Current Trip screen opens the authenticated Socket.IO connection from `src/s
 For a healthy snapshot the visible lifecycle is `CHECKING -> APPROVED`. A recoverable database mismatch is shown as `TAMPERED -> FIXING -> FIXED -> APPROVED`. `INTEGRITY UNAVAILABLE` means the credential itself may be confirmed but a trusted encrypted snapshot cannot currently be read and therefore must not be used for recovery.
 
 The browser never receives `BLOCKCHAIN_DATA_ENCRYPTION_KEY`, issuer private keys, RPC secrets, or decrypted blockchain snapshots.
+
+## 2026-08-27 frontend implementation sync
+
+The current frontend is no longer a single visual system applied to every role. It uses role-appropriate operational shells:
+
+| Surface | Current UI direction |
+| --- | --- |
+| Tourist | mobile-first tourist safety network |
+| Disaster Management | silvery/graphite emergency command center with red urgency accents |
+| System Admin | neutral enterprise administration with white panels and dense data tables |
+| Police | responder operations with blue service accent |
+| Ambulance / Hospital | responder operations with green service accent |
+| Fire | responder operations with red service accent |
+
+The responder map uses custom Map/Satellite controls, a persistent fixed-base reference marker, live responder GPS, road-route rendering, preserved user zoom/pan, and ETA/distance summaries derived from Google Directions when available.
+
+Navigation under `/responder` is shared across all emergency-service roles and remounts routed page content on pathname changes to prevent stale responder-page state from leaking across route transitions.

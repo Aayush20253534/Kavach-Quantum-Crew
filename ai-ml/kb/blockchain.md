@@ -13,3 +13,7 @@ The API canonicalizes the snapshot JSON, SHA-256 hashes it, encrypts it using AE
 A five-second integrity worker verifies both individual and group snapshots. The Current Trip UI can show CHECKING/APPROVED and, for recoverable tampering, TAMPERED -> FIXING -> FIXED -> APPROVED. INTEGRITY UNAVAILABLE means the credential can still be blockchain-confirmed but a trusted snapshot is not currently safe/readable enough for approval or repair.
 
 Blockchain does not run GPS tracking, danger-zone calculations, signal-loss timers, email, chatbot history or responder dispatch. Those remain normal backend workflows.
+
+## Current implementation note — 2026-08-27
+
+Blockchain remains a trust/integrity subsystem rather than the source of live UI state. Operational incident, trip, fleet, and chatbot views use the application database/services; blockchain verification is used where a credential/integrity workflow explicitly calls for it.

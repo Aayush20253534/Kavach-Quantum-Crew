@@ -212,3 +212,9 @@ New domain error codes include `EMERGENCY_SERVICE_FORBIDDEN`, `DISPATCH_NOT_OWNE
 
 Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
 
+
+## 2026-08-27 operational error notes
+
+Treat browser `Network Error` during login/refresh as a likely CORS/preflight or unreachable-backend problem before treating it as invalid credentials. A backend `500` during dispatch status progression is an application/server failure and must not be hidden behind optimistic frontend status changes.
+
+Blockchain `ID_NOT_FOUND` / `SNAPSHOT_NOT_FOUND` contract reverts indicate missing on-chain state and should be surfaced/reconciled as such rather than silently inventing a trusted snapshot.

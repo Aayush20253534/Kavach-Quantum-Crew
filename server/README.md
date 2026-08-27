@@ -384,3 +384,16 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 Individual recovery compares the trusted decrypted snapshot with protected tourist identity/contact fields and destination. Group recovery validates the latest type-2 snapshot and compares recoverable group/leader/trip fields. Integrity state is pushed over Socket.IO to the affected tourist or active group members. A membership-count mismatch is detected but is not repaired by inventing/deleting membership rows; the service reports integrity unavailable for that unsafe automatic-repair case.
 
 Snapshot jobs are separate from credential issuance jobs. A failed snapshot does not invalidate an otherwise confirmed QR credential.
+
+## 2026-08-27 backend implementation sync
+
+The current backend supports the full multi-role operational lifecycle: Tourist, Disaster Manager, System Admin, and emergency-service accounts (`POLICE`, `AMBULANCE`, `FIRE`).
+
+Important current behavior:
+
+- fixed emergency-service account locations are stored separately from live dispatch GPS;
+- dispatch lifecycle is validated server-side and progresses through assigned/dispatch/en-route/on-scene/completed states;
+- completing/cancelling a trip expires or closes trip-derived active safety state;
+- signal-loss escalation gives the leader a verification window before authority escalation except when confirmed immediately;
+- password reset uses email OTP verification before accepting a new password;
+- realtime/notification/email integrations are side effects of operational state changes rather than mock frontend behavior.

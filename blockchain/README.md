@@ -226,3 +226,9 @@ Credential `idHash` is SHA-256 of the canonical application string:
 For snapshots, the main API creates canonical JSON, computes SHA-256 over that plaintext JSON as `payloadHash`, encrypts the same canonical JSON using AES-256-GCM, and sends the ciphertext plus hash to the gateway. The Solidity contract stores `payloadHash`, encrypted bytes, timestamp, sequence and snapshot type. Plaintext name, DOB, email, phone and destination are not directly written to Sepolia.
 
 See [`docs/data-storage-and-integrity.md`](docs/data-storage-and-integrity.md) for exact individual/group payloads, append history, reconciliation, deployment compatibility and failure cases.
+
+## 2026-08-27 integration sync
+
+The latest KAVACH UI, incident-lifecycle, responder, and chatbot changes do **not** change the blockchain trust layer's core responsibility. Live operational state remains in the application backend/database; the blockchain gateway is used for explicit credential/integrity workflows.
+
+A contract revert such as `ID_NOT_FOUND` or `SNAPSHOT_NOT_FOUND` means the requested on-chain identity/snapshot is absent. Reconciliation code must not treat that as a valid trusted snapshot or silently manufacture one.

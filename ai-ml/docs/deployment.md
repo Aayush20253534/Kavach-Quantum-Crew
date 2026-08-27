@@ -32,3 +32,9 @@ The frontend receives only `VITE_AI_SERVICE_URL`. Never put Groq keys, DB URLs, 
 ## Main backend dependency
 
 `KAVACH_API_URL` must include `/api/v1` and points to the normal Kavach backend. It is used only for approved live context. The AI service does not connect directly to the blockchain contract.
+
+## 2026-08-27 deployment sync
+
+The AI service requires database connectivity for persisted user-scoped history and private authenticated-context enrichment. Production authentication must use the same access-token issuer, audience, algorithm, and secret contract as the main backend.
+
+After deployment, validate: authenticated history isolation, safe-zone live context, self-profile questions for each supported role, rejection of invalid/expired access tokens, and absence of sensitive fields in application logs/model context.

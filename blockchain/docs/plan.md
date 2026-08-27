@@ -504,3 +504,7 @@ The emergency critical path remains off-chain. Danger-zone detection, signal-los
 
 Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
 
+
+## 2026-08-27 plan status
+
+The wider KAVACH application now has mature operational lifecycle handling and responder tracking. Future blockchain work should continue to prioritize verifiable, stable artifacts rather than pushing ephemeral operational telemetry onto chain. Missing contract state must remain distinguishable from trusted/verified state.

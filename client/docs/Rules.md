@@ -1020,3 +1020,13 @@ Before installing Map libraries, Socket.IO clients, or any geospatial library:
 
 Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
 
+
+## 2026-08-27 UI and state rules
+
+1. **Do not reset an operator's map viewport on each GPS update.** Auto-fit is allowed when the selected operational context changes, not simply because a marker moved.
+2. **Fleet base and live response location are different concepts.** Fixed account location is a blue reference marker; live responder GPS is the moving route origin during dispatch.
+3. **Responder pages share one implementation.** Service differences belong in configuration/theme data, not duplicated Police/Fire/Ambulance page forks.
+4. **Use service accent only where it communicates identity/action.** Police blue, Ambulance green, Fire red. Incident/tourist destination remains red and active road route is black.
+5. **A completed/cancelled trip cannot contribute to active alert counts.** Active UI queries and derived dashboard metrics must respect trip lifecycle.
+6. **Disaster Management and System Admin are visually distinct products.** Do not reapply one portal's palette wholesale to the other.
+7. **Private chatbot user context is not client-authored truth.** Identity enrichment must be derived server-side from the verified authenticated account, never trusted from arbitrary client `context` fields.

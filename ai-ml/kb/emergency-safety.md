@@ -10,3 +10,9 @@ For group travel, loss of a non-leader member's trusted signal for the default f
 
 Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
 
+
+## Current implementation note — 2026-08-27
+
+Trip-derived alerts are active only while the related trip remains active. Completing or cancelling a trip expires/clears its active safety state from current Tourist, Disaster Management, and System Admin active views.
+
+For group signal loss, the leader gets the initial verification opportunity. Confirmed danger or no response after five minutes escalates urgently; a false alarm does not immediately become a Disaster Management incident.

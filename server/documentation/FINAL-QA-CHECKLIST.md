@@ -107,3 +107,17 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 - [ ] Safe recoverable group-field tamper produces the same realtime lifecycle for active group members.
 - [ ] Snapshot unreadable/hash mismatch never reports approval.
 - [ ] New contract deployment is tested with fresh credentials; old-contract jobs are not mistaken for migrated state.
+
+## 2026-08-27 release additions
+
+Before release, additionally verify:
+
+- [ ] completed/cancelled trips leave zero trip-derived records in active-alert views;
+- [ ] signal-loss false alarm does not notify Disaster Management immediately and recheck timing is correct;
+- [ ] no-response/confirmed signal loss escalates after the intended verification window;
+- [ ] fleet fixed base location is returned independently of live dispatch GPS;
+- [ ] Police/Fire/Ambulance can progress valid dispatch states and cannot skip invalid transitions;
+- [ ] responder GPS and status changes appear in Disaster Management;
+- [ ] password reset OTP works end to end;
+- [ ] production CORS allows deployed frontend login and refresh;
+- [ ] chatbot history/private context is isolated by authenticated user.
