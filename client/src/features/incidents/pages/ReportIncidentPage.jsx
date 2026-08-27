@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, CheckCircle2, Loader2, MapPin } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ChevronDown, Loader2, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { useGeolocation } from '../../tracking/hooks/useGeolocation';
@@ -72,8 +72,32 @@ export function ReportIncidentPage() {
 
           <label className="block">
             <span className="text-xs font-bold text-slate-500">Category</span>
-            <select value={type} onChange={(e) => setType(e.target.value)} className="mt-1 w-full border rounded-lg px-3 py-2.5 text-[13px] sm:text-sm">
-              {TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+
+            {/* Mobile uses one compact native dropdown instead of consuming
+                vertical space with category choices. Native select also gives
+                iOS/Android users the platform picker and keyboard behavior. */}
+            <div className="relative mt-1 sm:hidden">
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white px-3.5 pr-10 text-[13px] font-semibold text-slate-800 outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
+              >
+                {TYPES.map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            </div>
+
+            {/* Preserve the existing desktop control. */}
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className="mt-1 hidden w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 sm:block"
+            >
+              {TYPES.map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
             </select>
           </label>
 
