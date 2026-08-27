@@ -7,12 +7,12 @@ import { safetyService } from "../safety/safety.service.js";
 import { trackingRepository } from "./tracking.repository.js";
 
 export const TRACKING_LIMITS = Object.freeze({
-  maxAccuracyM: 100,
-  maxAgeMs: 120_000,
+  maxAccuracyM: 250,
+  maxAgeMs: 300_000,
   maxFutureSkewMs: 30_000,
   minIntervalMs: 2_000,
   maxCalculatedSpeedMps: 80,
-  staleAfterMs: 120_000,
+  staleAfterMs: 300_000,
 });
 
 const isParticipant = (trip, userId) =>

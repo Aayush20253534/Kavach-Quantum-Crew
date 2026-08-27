@@ -60,13 +60,39 @@ export const useGeolocation = (tripId, active = false) => {
       if (err.code === 1) setPermission('denied');
     };
 
+    const requestFreshLocation = () => {
+      navigator.geolocation.getCurrentPosition(
+        successHandler,
+        errorHandler,
+        {
+          enableHighAccuracy: true,
+          maximumAge: 15000,
+          timeout: 20000,
+        },
+      );
+    };
+
+    // Ask once immediately instead of waiting for watchPosition to decide when
+    // the first mobile GPS callback is worth delivering.
+    requestFreshLocation();
+
     watchId.current = navigator.geolocation.watchPosition(successHandler, errorHandler, {
       enableHighAccuracy: true,
-      maximumAge: 3000,
-      timeout: 10000,
+      maximumAge: 15000,
+      timeout: 20000,
     });
 
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') requestFreshLocation();
+    };
+    const handleFocus = () => requestFreshLocation();
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleFocus);
+
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleFocus);
       if (watchId.current !== null) {
         navigator.geolocation.clearWatch(watchId.current);
         watchId.current = null;

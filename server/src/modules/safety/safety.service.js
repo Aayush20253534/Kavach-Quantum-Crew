@@ -1,10 +1,10 @@
 import { ApiError } from "../../common/errors/ApiError.js";
-import { zoneContainsPoint, zoneIsEffective } from "../../common/utils/geofence.js";
+import { zoneContainsPoint, zoneIntersectsCircle, zoneIsEffective } from "../../common/utils/geofence.js";
 import { incidentService } from "../incident/incident.service.js";
 import { safetyRepository } from "./safety.repository.js";
 
 export const SAFETY_LIMITS = Object.freeze({
-  staleLocationAfterMs: 120_000,
+  staleLocationAfterMs: 300_000,
   minCheckInLeadMs: 60_000,
   maxCheckInLeadMs: 24 * 60 * 60 * 1000,
 });
@@ -141,6 +141,59 @@ export const createSafetyService = ({
       await requireTrip(repository, tripId, userId, ["ACTIVE", "COMPLETED"]);
       await processDueCheckIns(tripId);
       return repository.listCheckIns(tripId, userId);
+    },
+
+    async evaluateGroupBoundary({
+      tripId,
+      userId,
+      latitude,
+      longitude,
+      radiusM = 500,
+      capturedAt,
+    }) {
+      await requireTrip(repository, tripId, userId, ["ACTIVE"]);
+
+      const now = clock();
+      const center = { latitude, longitude };
+      const zones = (await repository.listActiveZones()).filter(
+        (zone) => zoneIsEffective(zone, now) && zone.type === "RISK",
+      );
+
+      const intersectingZones = zones.filter((zone) =>
+        zoneIntersectsCircle(zone, center, radiusM),
+      );
+
+      for (const zone of intersectingZones) {
+        await ensureAlert({
+          tripId,
+          userId,
+          type: "RISK_ZONE_ENTRY",
+          level: alertLevelForZone(zone),
+          sourceId: `${zone.id}:GROUP_BOUNDARY`,
+          message: `Group safety area intersects risk zone: ${zone.name}`,
+          details: {
+            zoneId: zone.id,
+            zoneName: zone.name,
+            severity: zone.severity,
+            latitude,
+            longitude,
+            groupRadiusM: radiusM,
+            source: "GROUP_BOUNDARY",
+            capturedAt: capturedAt ?? now.toISOString(),
+          },
+        });
+      }
+
+      return {
+        level: intersectingZones.some((zone) =>
+          ["HIGH", "CRITICAL"].includes(zone.severity),
+        )
+          ? "DANGER"
+          : intersectingZones.length
+            ? "WARNING"
+            : "SAFE",
+        activeRiskZones: intersectingZones,
+      };
     },
 
     async evaluateLocation({ tripId, userId, pingId, latitude, longitude, capturedAt }) {
