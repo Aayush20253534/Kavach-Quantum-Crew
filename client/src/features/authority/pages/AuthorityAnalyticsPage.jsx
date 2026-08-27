@@ -80,7 +80,7 @@ export function AuthorityAnalyticsPage() {
           <button className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-[11px] font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-slate-50 transition-colors">
             <Calendar className="w-4 h-4" /> Last 30 Days
           </button>
-          <button className="px-4 py-2 bg-[#0b1728] text-white rounded-lg text-[11px] font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-[#07111f] transition-colors">
+          <button className="px-4 py-2 bg-slate-800 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-slate-900 transition-colors">
             <Download className="w-4 h-4" /> Export Report
           </button>
         </div>

@@ -159,7 +159,7 @@ export function AuthorityIncidentsPage() {
           </button>
           <button
             onClick={() => setViewMode((current) => current === 'MAP' ? 'LIST' : 'MAP')}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#0b1728] text-white rounded-lg  hover:bg-[#07111f] transition-all active:scale-95 cursor-pointer font-bold text-[11px] uppercase tracking-wider"
+            className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-white rounded-lg  hover:bg-slate-900 transition-all active:scale-95 cursor-pointer font-bold text-[11px] uppercase tracking-wider"
           >
             <Crosshair className="w-4 h-4" /> {viewMode === 'MAP' ? 'List View' : 'Map View'}
           </button>
@@ -348,7 +348,7 @@ export function AuthorityIncidentsPage() {
                     className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors ${
                       ['RESOLVED', 'DISMISSED'].includes((incident.status || '').toUpperCase()) || incident.expired
                         ? 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                        : 'bg-slate-900 hover:bg-[#07111f] text-white'
+                        : 'bg-slate-900 hover:bg-slate-900 text-white'
                     }`}
                   >
                     {['RESOLVED', 'DISMISSED'].includes((incident.status || '').toUpperCase()) || incident.expired
