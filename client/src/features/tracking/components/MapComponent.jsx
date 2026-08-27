@@ -14,6 +14,8 @@ const SERVICE_TYPES = [
 
 export function MapComponent({
   currentLocation,
+  currentMarkerColor = '#2563eb',
+  currentMarkerTitle = 'Your live location',
   groupLocations = [],
   groupGeofenceRadiusM = 0,
   riskZones = [],
@@ -56,6 +58,19 @@ export function MapComponent({
       strokeColor: '#ffffff',
       strokeOpacity: 1,
       strokeWeight: 2,
+    };
+  }, []);
+
+  const participantMarkerIcon = useCallback((color, stale = false) => {
+    if (!window.google?.maps) return undefined;
+    return {
+      path: window.google.maps.SymbolPath.CIRCLE,
+      scale: 11,
+      fillColor: color || '#2563eb',
+      fillOpacity: stale ? 0.45 : 1,
+      strokeColor: '#ffffff',
+      strokeOpacity: 1,
+      strokeWeight: 2.5,
     };
   }, []);
 
@@ -221,7 +236,12 @@ export function MapComponent({
       >
         {currentLocation && (
           <>
-            <MarkerF position={center} title="Your live location" />
+            <MarkerF
+              position={center}
+              title={currentMarkerTitle}
+              icon={participantMarkerIcon(currentMarkerColor, false)}
+              zIndex={1200}
+            />
             {showEmergencyServicesOnly && (
               <CircleF
                 center={center}
@@ -300,8 +320,10 @@ export function MapComponent({
               <MarkerF
                 key={loc.userId || loc.id}
                 position={{ lat: loc.lat, lng: loc.lng }}
-                label={{ text: loc.userName?.[0]?.toUpperCase() || 'G', color: 'white', fontWeight: 'bold' }}
-                title={`${loc.userName || 'Group member'}${loc.stale ? ' (last known location)' : ''}`}
+                icon={participantMarkerIcon(loc.color, loc.stale)}
+                label={{ text: loc.userName?.[0]?.toUpperCase() || 'G', color: 'white', fontWeight: '800', fontSize: '10px' }}
+                title={`${loc.userName || 'Group member'} · ${loc.role === 'LEADER' ? 'Leader · ' : ''}${loc.stale ? 'Offline / last known location' : 'Active'}`}
+                zIndex={loc.role === 'LEADER' ? 1190 : 1180}
               />
             ))}
             {riskZones.map((zone) => {

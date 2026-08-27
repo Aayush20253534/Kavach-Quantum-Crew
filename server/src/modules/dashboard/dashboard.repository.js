@@ -11,10 +11,17 @@ export const createDashboardRepository = ({ db = prisma } = {}) => ({
     });
   },
 
-  activeAlerts(userId) {
+  async activeAlerts(userId) {
+    const activeTrips = await db.trip.findMany({
+      where: { status: "ACTIVE" },
+      select: { id: true },
+    });
+    const tripIds = activeTrips.map((trip) => trip.id);
+    if (!tripIds.length) return 0;
     return db.safetyAlert.count({
       where: {
         userId,
+        tripId: { in: tripIds },
         status: { in: ["OPEN", "ACKNOWLEDGED"] },
       },
     });

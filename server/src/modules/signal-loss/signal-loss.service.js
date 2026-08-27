@@ -6,7 +6,7 @@ import { signalLossRepository } from "./signal-loss.repository.js";
 const MINUTE = 60_000;
 const DEFAULT_GAP_MINUTES = 5;
 const RESPONSE_WINDOW_MS = 5 * MINUTE;
-const REMINDER_COOLDOWN_MS = 5 * MINUTE;
+const FALSE_ALARM_RECHECK_MS = 2 * 60 * MINUTE;
 
 export const createSignalLossService = ({
   repository = signalLossRepository,
@@ -71,7 +71,7 @@ export const createSignalLossService = ({
               detectedAt: now,
               lastNotifiedAt: now,
               responseDeadlineAt: new Date(now.getTime() + RESPONSE_WINDOW_MS),
-              nextReminderAt: new Date(now.getTime() + REMINDER_COOLDOWN_MS),
+              nextReminderAt: new Date(now.getTime() + FALSE_ALARM_RECHECK_MS),
             });
             await notifier.signalLoss({ signalCase, trip, member: member.user, leader: trip.group.leader, reminder: false });
             result.opened += 1;
@@ -81,9 +81,17 @@ export const createSignalLossService = ({
           if (signalCase.status === "WAITING_FOR_LEADER" && now >= new Date(signalCase.responseDeadlineAt)) {
             signalCase = await escalateCase(signalCase, now);
             result.escalated += 1;
+            continue;
           }
 
-          if (now >= new Date(signalCase.nextReminderAt)) {
+          // A leader-confirmed false alarm is intentionally quiet for two hours.
+          // If the member is still offline after that cooldown, open a fresh
+          // 5-minute verification window and notify only the group leader again.
+          if (
+            signalCase.status === "FALSE_ALARM" &&
+            signalCase.nextReminderAt &&
+            now >= new Date(signalCase.nextReminderAt)
+          ) {
             const updated = await repository.updateCase(signalCase.id, {
               status: "WAITING_FOR_LEADER",
               leaderResponse: null,
@@ -91,9 +99,15 @@ export const createSignalLossService = ({
               resolvedAt: null,
               lastNotifiedAt: now,
               responseDeadlineAt: new Date(now.getTime() + RESPONSE_WINDOW_MS),
-              nextReminderAt: new Date(now.getTime() + REMINDER_COOLDOWN_MS),
+              nextReminderAt: new Date(now.getTime() + FALSE_ALARM_RECHECK_MS),
             });
-            await notifier.signalLoss({ signalCase: updated, trip, member: member.user, leader: trip.group.leader, reminder: true });
+            await notifier.signalLoss({
+              signalCase: updated,
+              trip,
+              member: member.user,
+              leader: trip.group.leader,
+              reminder: true,
+            });
             result.reminded += 1;
           }
         }
@@ -110,6 +124,10 @@ export const createSignalLossService = ({
       if (!signalCase || signalCase.leaderId !== userId) {
         throw ApiError.notFound("Signal-loss case not found", { code: "SIGNAL_LOSS_CASE_NOT_FOUND" });
       }
+      const trip = await repository.findTripStatus(signalCase.tripId);
+      if (!trip || trip.status !== "ACTIVE") {
+        throw ApiError.conflict("This trip is no longer active", { code: "SIGNAL_LOSS_TRIP_ENDED" });
+      }
       if (signalCase.status !== "WAITING_FOR_LEADER") {
         throw ApiError.conflict("This signal-loss response window is already closed", { code: "SIGNAL_LOSS_RESPONSE_WINDOW_CLOSED" });
       }
@@ -122,7 +140,7 @@ export const createSignalLossService = ({
           leaderResponse: "FALSE_ALARM",
           leaderRespondedAt: now,
           resolvedAt: now,
-          nextReminderAt: new Date(now.getTime() + REMINDER_COOLDOWN_MS),
+          nextReminderAt: new Date(now.getTime() + FALSE_ALARM_RECHECK_MS),
         });
         await repository.createAudit({ actorId: userId, action: "SIGNAL_LOSS_FALSE_ALARM", entityId: caseId, metadata: { tripId: signalCase.tripId, userId: signalCase.userId } });
         return updated;
@@ -132,7 +150,7 @@ export const createSignalLossService = ({
         const updated = await repository.updateCase(signalCase.id, {
           leaderResponse: "CONFIRMED_DANGER",
           leaderRespondedAt: now,
-          nextReminderAt: new Date(now.getTime() + REMINDER_COOLDOWN_MS),
+          nextReminderAt: null,
         });
         const escalated = await escalateCase(updated, now);
         await repository.createAudit({ actorId: userId, action: "SIGNAL_LOSS_CONFIRMED_DANGER", entityId: caseId, metadata: { tripId: signalCase.tripId, userId: signalCase.userId } });

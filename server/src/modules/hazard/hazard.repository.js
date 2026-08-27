@@ -25,17 +25,11 @@ export const createHazardRepository = ({ db = prisma } = {}) => ({
           },
         },
       ];
-      const trip =
-        await tx.trip.findFirst({
-          where: { status: "ACTIVE", OR: ownershipFilter },
-          orderBy: { createdAt: "desc" },
-          select: { id: true },
-        }) ||
-        await tx.trip.findFirst({
-          where: { OR: ownershipFilter },
-          orderBy: { createdAt: "desc" },
-          select: { id: true },
-        });
+      const trip = await tx.trip.findFirst({
+        where: { status: "ACTIVE", OR: ownershipFilter },
+        orderBy: { createdAt: "desc" },
+        select: { id: true },
+      });
 
       if (!trip) return { hazard, incident: null };
 

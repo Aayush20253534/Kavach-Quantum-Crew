@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { BatteryMedium, Loader2, Navigation, ShieldCheck, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 import { groupService } from '../../groups/api/groupService';
 import { useCurrentTrip } from '../../trips/api/tripQueries';
@@ -10,23 +11,30 @@ import { findDangerZoneForTrip, GROUP_GEOFENCE_RADIUS_M } from '../utils/geofenc
 import { useGeolocation } from '../hooks/useGeolocation';
 
 
+const MEMBER_COLORS = ['#2563eb', '#16a34a', '#d97706', '#7c3aed', '#0891b2', '#db2777', '#4f46e5'];
+
+const memberColor = (member, index) =>
+  member?.role === 'LEADER' ? '#dc2626' : MEMBER_COLORS[index % MEMBER_COLORS.length];
+
 const normalizeGroupLocations = (payload) => {
   const members = payload?.members || payload?.items || (Array.isArray(payload) ? payload : []);
   return members
-    .filter((member) => member?.location)
-    .map((member) => ({
+    .map((member, index) => ({
       id: member.memberId || member.id,
       userId: member.userId,
       userName: member.user?.name || member.user?.username || 'Group member',
-      lat: member.location.latitude,
-      lng: member.location.longitude,
-      stale: Boolean(member.location.stale),
-      capturedAt: member.location.capturedAt,
+      role: member.role,
+      color: memberColor(member, index),
+      lat: member.location?.latitude,
+      lng: member.location?.longitude,
+      stale: !member.location || Boolean(member.location.stale),
+      capturedAt: member.location?.capturedAt ?? null,
     }))
     .filter((member) => Number.isFinite(member.lat) && Number.isFinite(member.lng));
 };
 
 export function LiveTrackingPage() {
+  const { user } = useSelector((state) => state.auth);
   const { data: trip, isLoading } = useCurrentTrip();
   const isActive = trip?.status === 'ACTIVE';
   const { location, isTracking, permission, error: geoError } = useGeolocation(trip?.id, isActive);
@@ -104,6 +112,29 @@ export function LiveTrackingPage() {
   );
   const totalMemberCount = group?.members?.length || 0;
 
+  const memberStatuses = useMemo(() => {
+    if (!group?.members?.length) return [];
+    const locationByUser = new Map(memberLocations.map((member) => [member.userId, member]));
+    return group.members.map((member, index) => {
+      const live = locationByUser.get(member.userId);
+      return {
+        userId: member.userId,
+        name: member.user?.name || member.user?.username || 'Group member',
+        role: member.role,
+        color: live?.color || memberColor(member, index),
+        active: Boolean(live && !live.stale),
+        capturedAt: live?.capturedAt ?? null,
+      };
+    });
+  }, [group?.members, memberLocations]);
+
+  const currentMemberStyle = useMemo(() => {
+    const index = group?.members?.findIndex((member) => member.userId === user?.id) ?? -1;
+    if (index < 0) return { color: '#2563eb', role: null };
+    const member = group.members[index];
+    return { color: memberColor(member, index), role: member.role };
+  }, [group?.members, user?.id]);
+
   if (isLoading) return <div className="py-24 flex justify-center"><Loader2 className="animate-spin" /></div>;
 
   if (!trip || trip.status !== 'ACTIVE') {
@@ -175,7 +206,9 @@ export function LiveTrackingPage() {
         {location ? (
           <MapComponent
             currentLocation={location}
-            groupLocations={memberLocations}
+            currentMarkerColor={currentMemberStyle.color}
+            currentMarkerTitle={currentMemberStyle.role === 'LEADER' ? 'Team leader · Active' : 'Your live location · Active'}
+            groupLocations={memberLocations.filter((member) => member.userId !== user?.id)}
             groupGeofenceRadiusM={trip.tripType === 'GROUP' ? GROUP_GEOFENCE_RADIUS_M : 0}
             riskZones={zones}
             mapGestureHandling="cooperative"
@@ -188,6 +221,33 @@ export function LiveTrackingPage() {
           </div>
         )}
       </div>
+
+      {trip.tripType === 'GROUP' && memberStatuses.length > 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-wider text-slate-800">Live group status</p>
+              <p className="mt-0.5 text-[10px] text-slate-500">Each member keeps a distinct map color; the team leader is always red.</p>
+            </div>
+            <span className="text-[10px] font-black text-slate-500">{onlineMemberCount}/{totalMemberCount} active</span>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {memberStatuses.map((member) => (
+              <div key={member.userId} className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
+                <span className="h-3 w-3 shrink-0 rounded-full ring-2 ring-white" style={{ backgroundColor: member.color }} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[11px] font-black text-slate-900">
+                    {member.name}{member.role === 'LEADER' ? ' · Leader' : ''}
+                  </p>
+                  <p className={`mt-0.5 text-[9px] font-black uppercase tracking-wider ${member.active ? 'text-emerald-600' : 'text-slate-400'}`}>
+                    {member.active ? 'Active' : 'Offline / stale'}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

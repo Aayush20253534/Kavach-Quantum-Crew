@@ -31,6 +31,7 @@ export const createSignalLossRepository = ({ db = prisma } = {}) => ({
   createCase(data) { return db.signalLossCase.create({ data }); },
   updateCase(id, data) { return db.signalLossCase.update({ where: { id }, data }); },
   findCase(id) { return db.signalLossCase.findUnique({ where: { id } }); },
+  findTripStatus(tripId) { return db.trip.findUnique({ where: { id: tripId }, select: { status: true } }); },
   listForLeader(leaderId, tripId) {
     return db.signalLossCase.findMany({
       where: { leaderId, ...(tripId ? { tripId } : {}), status: "WAITING_FOR_LEADER" },

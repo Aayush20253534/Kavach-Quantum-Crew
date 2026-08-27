@@ -13,10 +13,17 @@ const requestedAtWhere = ({ from, to } = {}) => {
 export const createAnalyticsRepository = ({ db = prisma } = {}) => ({
   async overview(range) {
     const created = createdAtWhere(range);
+    const activeTripRows = await db.trip.findMany({
+      where: { status: "ACTIVE" },
+      select: { id: true },
+    });
+    const activeTripIds = activeTripRows.map((trip) => trip.id);
     const [tourists, activeTrips, openIncidents, criticalIncidents, pendingHazards, activeDispatches, sosRequests] = await Promise.all([
       db.user.count({ where: { status: "ACTIVE" } }),
       db.trip.count({ where: { status: "ACTIVE", ...created } }),
-      db.incident.count({ where: { status: { in: ["OPEN", "ACKNOWLEDGED", "IN_PROGRESS"] }, ...created } }),
+      activeTripIds.length
+        ? db.incident.count({ where: { tripId: { in: activeTripIds }, status: { in: ["OPEN", "ACKNOWLEDGED", "IN_PROGRESS"] }, ...created } })
+        : Promise.resolve(0),
       db.incident.count({ where: { severity: "CRITICAL", ...created } }),
       db.hazardReport.count({ where: { status: "PENDING", ...created } }),
       db.dispatch.count({ where: { status: { in: ["REQUESTED", "ASSIGNED", "DISPATCHED", "EN_ROUTE", "ON_SCENE"] }, ...requestedAtWhere(range) } }),
