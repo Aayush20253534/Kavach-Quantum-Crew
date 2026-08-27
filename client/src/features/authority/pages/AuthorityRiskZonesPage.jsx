@@ -144,12 +144,12 @@ export function AuthorityRiskZonesPage() {
         </div>
       </div>
 
-      {error && <div className="mb-4 p-3 rounded-none-none bg-red-50 border border-red-200 text-[11px] sm:text-xs font-semibold text-red-700">{error}</div>}
-      {success && <div className="mb-4 p-3 rounded-none-none bg-emerald-50 border border-emerald-200 text-[11px] sm:text-xs font-semibold text-emerald-700">{success}</div>}
+      {error && <div className="mb-4 p-3 rounded-md-none bg-red-50 border border-red-200 text-[11px] sm:text-xs font-semibold text-red-700">{error}</div>}
+      {success && <div className="mb-4 p-3 rounded-md-none bg-emerald-50 border border-emerald-200 text-[11px] sm:text-xs font-semibold text-emerald-700">{success}</div>}
 
       {isSystemAdmin && (
-        <div className="mb-5 bg-white border border-slate-200 rounded-none-none p-4 sm:p-5 ">
-          <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
+        <div className="mb-5 bg-white border border-slate-200 rounded-md-none p-4 sm:p-5 ">
+          <div className="grid gap-x-5 gap-y-5 md:grid-cols-2 lg:grid-cols-[1.35fr_1fr_210px_220px] lg:items-end">
             <div>
               <label className="block text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Location search</label>
               {isLoaded ? (
@@ -159,12 +159,12 @@ export function AuthorityRiskZonesPage() {
                     <input
                       type="text"
                       placeholder="Search a building, landmark or area"
-                      className="w-full h-10 sm:h-11 pl-9 pr-3 border border-slate-200 rounded-none-none text-[11px] sm:text-xs font-semibold outline-none focus:border-slate-500"
+                      className="w-full h-10 sm:h-11 pl-9 pr-3 border border-slate-200 rounded-md-none text-[11px] sm:text-xs font-semibold outline-none focus:border-slate-500"
                     />
                   </div>
                 </Autocomplete>
               ) : (
-                <div className="h-10 sm:h-11 rounded-none-none bg-slate-100 animate-pulse" />
+                <div className="h-10 sm:h-11 rounded-md-none bg-slate-100 animate-pulse" />
               )}
             </div>
 
@@ -174,7 +174,7 @@ export function AuthorityRiskZonesPage() {
                 value={zoneName}
                 onChange={(event) => setZoneName(event.target.value)}
                 placeholder="Danger zone name"
-                className="w-full h-10 sm:h-11 px-3 border border-slate-200 rounded-none-none text-[11px] sm:text-xs font-semibold outline-none focus:border-slate-500"
+                className="w-full h-10 sm:h-11 px-3 border border-slate-200 rounded-md-none text-[11px] sm:text-xs font-semibold outline-none focus:border-slate-500"
               />
             </div>
 
@@ -187,7 +187,7 @@ export function AuthorityRiskZonesPage() {
                 step="50"
                 value={radiusM}
                 onChange={(event) => setRadiusM(Math.max(50, Math.min(100000, Number(event.target.value) || 50)))}
-                className="w-full h-10 sm:h-11 px-3 border border-slate-200 rounded-none-none text-[11px] sm:text-xs font-semibold outline-none focus:border-slate-500"
+                className="w-full h-10 sm:h-11 px-3 border border-slate-200 rounded-md-none text-[11px] sm:text-xs font-semibold outline-none focus:border-slate-500"
               />
               <p className="mt-1 text-[9px] text-slate-400">50 m to 100 km</p>
             </div>
@@ -195,7 +195,7 @@ export function AuthorityRiskZonesPage() {
             <button
               onClick={createDangerZone}
               disabled={!selectedPlace || saving}
-              className="h-10 sm:h-11 px-4 bg-red-600 text-white rounded-none-none text-[10px] sm:text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="h-10 sm:h-11 px-4 bg-red-600 text-white rounded-md-none text-[10px] sm:text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               Create risk zone
@@ -203,7 +203,7 @@ export function AuthorityRiskZonesPage() {
           </div>
 
           {selectedPlace && (
-            <div className="mt-3 flex items-start gap-2 p-3 rounded-none-none bg-slate-50 border border-slate-100 text-[10px] sm:text-[11px] text-slate-600">
+            <div className="mt-3 flex items-start gap-2 p-3 rounded-md-none bg-slate-50 border border-slate-100 text-[10px] sm:text-[11px] text-slate-600">
               <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0 text-red-500" />
               <span><strong>{selectedPlace.name}</strong>{selectedPlace.address ? ` · ${selectedPlace.address}` : ''}</span>
             </div>
@@ -213,7 +213,7 @@ export function AuthorityRiskZonesPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <div className="lg:col-span-2">
-          <div className="bg-slate-100 rounded-none-none border border-slate-200  overflow-hidden h-[430px] sm:h-[500px] relative">
+          <div className="bg-slate-100 rounded-md-none border border-slate-200  overflow-hidden h-[430px] sm:h-[500px] relative">
             {loadError ? (
               <div className="h-full flex items-center justify-center text-xs font-semibold text-red-600">Google Maps failed to load.</div>
             ) : !isLoaded ? (
@@ -260,13 +260,13 @@ export function AuthorityRiskZonesPage() {
               </GoogleMap>
             )}
 
-            <div className="absolute left-3 bottom-3 z-10 px-3 py-2 rounded-none-none bg-white/95 border border-slate-200  text-[9px] sm:text-[10px] font-semibold text-slate-600">
+            <div className="absolute left-3 bottom-3 z-10 px-3 py-2 rounded-md-none bg-white/95 border border-slate-200  text-[9px] sm:text-[10px] font-semibold text-slate-600">
               Use two fingers to move the map on mobile.
             </div>
           </div>
         </div>
 
-        <div className="lg:col-span-1 flex flex-col bg-white rounded-none-none border border-slate-200  overflow-hidden h-[430px] sm:h-[500px]">
+        <div className="lg:col-span-1 flex flex-col bg-white rounded-md-none border border-slate-200  overflow-hidden h-[430px] sm:h-[500px]">
           <div className="p-3.5 sm:p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
             <h2 className="text-[10px] sm:text-[12px] font-bold text-slate-900 uppercase tracking-widest flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 text-slate-400" /> Registered Risk Zones
@@ -288,10 +288,10 @@ export function AuthorityRiskZonesPage() {
               <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-10">No risk zones configured</p>
             ) : (
               zones.map((zone) => (
-                <div key={zone.id} className="p-3 sm:p-4 rounded-none-none border border-slate-200 bg-white">
+                <div key={zone.id} className="p-3 sm:p-4 rounded-md-none border border-slate-200 bg-white">
                   <div className="flex justify-between items-start gap-2 mb-2">
                     <h3 className="text-[11px] sm:text-[13px] font-bold text-slate-900 leading-snug">{zone.name}</h3>
-                    <span className={`px-2 py-0.5 rounded-none text-[8px] sm:text-[9px] font-bold uppercase tracking-widest border ${
+                    <span className={`px-2 py-0.5 rounded-md text-[8px] sm:text-[9px] font-bold uppercase tracking-widest border ${
                       zone.active ? 'bg-white text-red-700 border-red-200' : 'bg-white text-slate-500 border-slate-200'
                     }`}>
                       {zone.active ? 'ACTIVE' : 'INACTIVE'}
@@ -307,7 +307,7 @@ export function AuthorityRiskZonesPage() {
                   {isSystemAdmin && (
                     <button
                       onClick={() => handleToggleZone(zone)}
-                      className={`mt-3 w-full py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider rounded-none border transition-colors ${
+                      className={`mt-3 w-full py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider rounded-md border transition-colors ${
                         zone.active
                           ? 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                           : 'bg-white text-red-700 border-red-200 hover:bg-red-100'

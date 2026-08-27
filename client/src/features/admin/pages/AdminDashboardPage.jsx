@@ -94,11 +94,11 @@ export function AdminDashboardPage() {
             </h2>
             <span className="text-[10px] font-semibold text-slate-400">Current totals</span>
           </div>
-          <div className="grid grid-cols-2 border-l border-t border-slate-200 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {metrics.map(([label, key, Icon, group]) => (
               <div
                 key={key}
-                className="min-h-[132px] border-b border-r border-slate-200 bg-white p-5"
+                className="min-h-[108px] rounded-lg border border-slate-200 bg-white p-4"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -111,7 +111,7 @@ export function AdminDashboardPage() {
                   </div>
                   <Icon className="h-4 w-4 shrink-0 text-slate-400" />
                 </div>
-                <p className="mt-5 text-3xl font-black tracking-tight text-slate-950">
+                <p className="mt-3 text-2xl font-black tracking-tight text-slate-950">
                   {summary[key] ?? 0}
                 </p>
               </div>
@@ -121,7 +121,7 @@ export function AdminDashboardPage() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1.65fr_1fr]">
-        <section className="border border-slate-200 bg-white">
+        <section className="rounded-lg border border-slate-200 bg-white">
           <div className="border-b border-slate-200 px-5 py-4">
             <h2 className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-800">
               Administration Workspace
@@ -152,7 +152,7 @@ export function AdminDashboardPage() {
           </div>
         </section>
 
-        <section className="border border-slate-200 bg-white">
+        <section className="rounded-lg border border-slate-200 bg-white">
           <div className="border-b border-slate-200 px-5 py-4">
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
               Platform Diagnostics
@@ -200,7 +200,7 @@ function Shortcut({ to, icon: Icon, title, text }) {
   return (
     <Link
       to={to}
-      className="group min-h-[174px] border-b border-slate-200 p-5 transition-colors hover:bg-slate-50 sm:border-b-0 sm:border-r last:border-r-0"
+      className="group min-h-[148px] border-b border-slate-200 p-4 transition-colors hover:bg-slate-50 sm:border-b-0 sm:border-r last:border-r-0"
     >
       <Icon className="h-5 w-5 text-slate-700 transition-colors group-hover:text-slate-950" />
       <p className="mt-5 text-sm font-black text-slate-950">{title}</p>

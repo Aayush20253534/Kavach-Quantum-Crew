@@ -166,7 +166,7 @@ export function AdminLocationsPage() {
 
       {(error || success) && (
         <div
-          className={`rounded-none-none border p-4 text-xs ${
+          className={`rounded-md-none border p-4 text-xs ${
             error
               ? 'border-red-200 bg-red-50 text-red-700'
               : 'border-emerald-200 bg-emerald-50 text-emerald-700'
@@ -178,7 +178,7 @@ export function AdminLocationsPage() {
 
       <form
         onSubmit={submit}
-        className="bg-white border border-slate-200 rounded-none-none  overflow-hidden"
+        className="bg-white border border-slate-200 rounded-md-none  overflow-hidden"
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
           <div>
@@ -193,7 +193,7 @@ export function AdminLocationsPage() {
             <button
               type="button"
               onClick={reset}
-              className="w-9 h-9 rounded-none-none border border-slate-200 flex items-center justify-center"
+              className="w-9 h-9 rounded-md-none border border-slate-200 flex items-center justify-center"
             >
               <X className="w-4 h-4" />
             </button>
@@ -260,13 +260,13 @@ export function AdminLocationsPage() {
                   description: event.target.value,
                 }))
               }
-              className="w-full min-h-24 rounded-none-none border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-100 resize-y"
+              className="w-full min-h-24 rounded-md-none rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-100 resize-y"
               placeholder="Short tourist-facing description"
             />
           </div>
 
-          <label className="md:col-span-2 rounded-none-none border border-dashed border-slate-300 bg-slate-50 p-4 cursor-pointer flex items-center gap-3">
-            <div className="w-10 h-10 rounded-none-none bg-white border border-slate-200 flex items-center justify-center">
+          <label className="md:col-span-2 rounded-md-none border border-dashed border-slate-300 bg-slate-50 p-4 cursor-pointer flex items-center gap-3">
+            <div className="w-10 h-10 rounded-md-none bg-white border border-slate-200 flex items-center justify-center">
               <ImagePlus className="w-5 h-5 text-slate-800" />
             </div>
             <div className="flex-1">
@@ -306,7 +306,7 @@ export function AdminLocationsPage() {
         <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-5 py-4">
           <button
             disabled={saving}
-            className="px-5 py-2.5 rounded-none-none bg-slate-950 text-white text-[11px] font-black uppercase tracking-wider flex items-center gap-2 disabled:opacity-60"
+            className="px-5 py-2.5 rounded-md-none bg-slate-950 text-white text-[11px] font-black uppercase tracking-wider flex items-center gap-2 disabled:opacity-60"
           >
             {saving ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -320,7 +320,7 @@ export function AdminLocationsPage() {
         </div>
       </form>
 
-      <div className="bg-white border border-slate-200 rounded-none-none  overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-md-none  overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="relative max-w-sm w-full">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -328,13 +328,13 @@ export function AdminLocationsPage() {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search destinations"
-              className="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-none-none text-xs outline-none"
+              className="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-md-none text-xs outline-none"
             />
           </div>
           <button
             type="button"
             onClick={load}
-            className="px-3 py-2 border border-slate-200 rounded-none-none text-[11px] font-bold flex items-center gap-2"
+            className="px-3 py-2 border border-slate-200 rounded-md-none text-[11px] font-bold flex items-center gap-2"
           >
             <RefreshCw className="w-4 h-4" /> Refresh
           </button>
@@ -356,7 +356,7 @@ export function AdminLocationsPage() {
                 key={destination.id}
                 className="p-4 flex flex-col sm:flex-row sm:items-center gap-4"
               >
-                <div className="w-full sm:w-24 h-20 rounded-none-none overflow-hidden bg-slate-100 shrink-0">
+                <div className="w-full sm:w-24 h-20 rounded-md-none overflow-hidden bg-slate-100 shrink-0">
                   {destination.imageUrl ? (
                     <img
                       src={destination.imageUrl}
@@ -374,12 +374,12 @@ export function AdminLocationsPage() {
                   <div className="flex flex-wrap gap-2 items-center">
                     <h3 className="font-black">{destination.name}</h3>
                     {destination.featured && (
-                      <span className="text-[9px] uppercase font-black bg-slate-100 text-slate-900 px-2 py-0.5 rounded-none">
+                      <span className="text-[9px] uppercase font-black bg-slate-100 text-slate-900 px-2 py-0.5 rounded-md">
                         Featured
                       </span>
                     )}
                     <span
-                      className={`text-[9px] uppercase font-black px-2 py-0.5 rounded-none ${
+                      className={`text-[9px] uppercase font-black px-2 py-0.5 rounded-md ${
                         destination.active
                           ? 'bg-emerald-50 text-emerald-700'
                           : 'bg-slate-100 text-slate-500'
@@ -400,14 +400,14 @@ export function AdminLocationsPage() {
                   <button
                     type="button"
                     onClick={() => edit(destination)}
-                    className="w-9 h-9 rounded-none-none border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-800"
+                    className="w-9 h-9 rounded-md-none border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-800"
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
                   <button
                     type="button"
                     onClick={() => remove(destination)}
-                    className="w-9 h-9 rounded-none-none border border-red-200 flex items-center justify-center text-red-600"
+                    className="w-9 h-9 rounded-md-none border border-red-200 flex items-center justify-center text-red-600"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -438,7 +438,7 @@ function AdminField({
         value={value}
         required={required}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full h-11 rounded-none-none border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-100"
+        className="w-full h-11 rounded-md-none rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-100"
       />
     </div>
   );
