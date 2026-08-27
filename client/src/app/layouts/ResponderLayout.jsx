@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   ShieldAlert,
@@ -194,7 +194,7 @@ export function ResponderLayout() {
               const isActive = location.pathname.startsWith(item.path);
 
               return (
-                <Link
+                <NavLink
                   key={item.name}
                   to={item.path}
                   className={`flex items-center gap-3 py-3 rounded-lg text-[12px] font-bold transition-all ${isCollapsed ? 'justify-center px-0' : 'px-4'} ${
@@ -206,7 +206,7 @@ export function ResponderLayout() {
                 >
                   <Icon className="w-4 h-4 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
                   {!isCollapsed && <span>{item.name}</span>}
-                </Link>
+                </NavLink>
               );
             })}
           </div>
@@ -273,7 +273,7 @@ export function ResponderLayout() {
         </header>
 
         <main className="flex-1 p-4 lg:p-8 mt-16 pb-24 lg:pb-8 max-w-[1500px] w-full mx-auto">
-          <Outlet context={{ theme, responderProfile }} />
+          <Outlet key={location.pathname} context={{ theme, responderProfile }} />
         </main>
       </div>
     </div>

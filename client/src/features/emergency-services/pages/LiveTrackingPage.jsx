@@ -126,6 +126,17 @@ export function LiveTrackingPage() {
       : null;
   }, [location, tracking]);
 
+  const basePoint = useMemo(() => {
+    const latitude = Number(responderProfile?.latitude);
+    const longitude = Number(responderProfile?.longitude);
+
+    return Number.isFinite(latitude) &&
+      Number.isFinite(longitude) &&
+      !(latitude === 0 && longitude === 0)
+      ? { lat: latitude, lng: longitude }
+      : null;
+  }, [responderProfile]);
+
   const incidentPoint = useMemo(() => {
     const source = tracking?.destination || selectedDispatch?.incident;
     if (!source) return null;
@@ -155,7 +166,7 @@ export function LiveTrackingPage() {
   }, [incidentPoint, selectedDispatch, selectedId, tracking]);
 
   const routeUnit = useMemo(() => {
-    if (!currentPoint) return null;
+    if (!selectedId || !currentPoint) return null;
 
     return {
       id: tracking?.unit?.id || responderProfile?.id || 'current-unit',
@@ -174,7 +185,27 @@ export function LiveTrackingPage() {
       latitude: currentPoint.lat,
       longitude: currentPoint.lng,
     };
-  }, [currentPoint, responderProfile, selectedDispatch, theme, tracking]);
+  }, [currentPoint, responderProfile, selectedDispatch, selectedId, theme, tracking]);
+
+  const referencePoints = useMemo(
+    () =>
+      basePoint
+        ? [
+            {
+              id: 'fleet-base',
+              name:
+                responderProfile?.organization ||
+                responderProfile?.name ||
+                `${theme.unitLabel} Base`,
+              label: 'Fleet Base',
+              latitude: basePoint.lat,
+              longitude: basePoint.lng,
+              color: '#2563eb',
+            },
+          ]
+        : [],
+    [basePoint, responderProfile, theme.unitLabel],
+  );
 
   const primaryRoute = routeSummary[0] || null;
   const lastUpdated =
@@ -206,7 +237,7 @@ export function LiveTrackingPage() {
               Live Response Tracking
             </h1>
             <p className="mt-2 max-w-2xl text-xs leading-5 text-slate-500">
-              Live responder position, tourist / incident destination and road route are synchronized with Disaster Management.
+              The blue reference marker is the fleet's fixed registered base. During an active dispatch, the live responder position becomes the route origin and is synchronized with Disaster Management.
             </p>
           </div>
 
@@ -274,13 +305,19 @@ export function LiveTrackingPage() {
           </div>
 
           <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-wider">
-            <span className={`flex items-center gap-1.5 ${theme.textClass}`}>
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: theme.markerColor }}
-              />
-              {theme.unitLabel}
+            <span className="flex items-center gap-1.5 text-blue-700">
+              <span className="h-2.5 w-2.5 rounded-full bg-blue-600" />
+              Fleet Base
             </span>
+            {selectedId && (
+              <span className={`flex items-center gap-1.5 ${theme.textClass}`}>
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: theme.markerColor }}
+                />
+                Live Unit
+              </span>
+            )}
             <span className="flex items-center gap-1.5 text-red-700">
               <span className="h-2.5 w-2.5 rounded-full bg-red-600" />
               Tourist / Incident
@@ -292,8 +329,10 @@ export function LiveTrackingPage() {
           <AuthorityOperationsMap
             incidents={routeIncident ? [routeIncident] : []}
             units={routeUnit ? [routeUnit] : []}
-            showRoutes
+            showRoutes={Boolean(selectedId)}
             routeUnitColor={theme.markerColor}
+            routeLineColor="#111827"
+            referencePoints={referencePoints}
             onRouteSummary={setRouteSummary}
           />
         </div>
