@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Calendar, Compass, Loader2, MapPin, Search, ShieldCheck, Users } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { destinationService } from '../../destinations/api/destinationService';
 import { groupService } from '../../groups/api/groupService';
@@ -10,10 +10,15 @@ const toIso = (value) => new Date(value).toISOString();
 
 export function CreateTripPage() {
   const navigate = useNavigate();
+  const routeLocation = useLocation();
+  const preselectedDestination = routeLocation.state?.destination || null;
+  const initialDestinationName = String(preselectedDestination?.name || '').trim();
+  const initialTripType = routeLocation.state?.tripType === 'GROUP' ? 'GROUP' : 'SOLO';
+
   const [destinations, setDestinations] = useState([]);
-  const [search, setSearch] = useState('');
-  const [locationName, setLocationName] = useState('');
-  const [tripType, setTripType] = useState('SOLO');
+  const [search, setSearch] = useState(initialDestinationName);
+  const [locationName, setLocationName] = useState(initialDestinationName);
+  const [tripType, setTripType] = useState(initialTripType);
   const [plannedStartAt, setStart] = useState('');
   const [plannedEndAt, setEnd] = useState('');
   const [loading, setLoading] = useState(false);
@@ -70,6 +75,13 @@ export function CreateTripPage() {
       </div>
 
       {error && <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}
+
+      {initialDestinationName && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-800">
+          Destination preselected: <span className="font-black">{initialDestinationName}</span>
+          {initialTripType === 'GROUP' ? ' · Group trip' : ''}
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-5 gap-6">
         <div className="lg:col-span-3 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">

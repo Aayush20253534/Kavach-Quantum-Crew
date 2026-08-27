@@ -342,6 +342,16 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
               longitude: true,
               locationUpdatedAt: true,
               serviceAccountId: true,
+              serviceAccount: {
+                select: {
+                  id: true,
+                  name: true,
+                  organization: true,
+                  address: true,
+                  latitude: true,
+                  longitude: true,
+                },
+              },
             },
           },
         },
@@ -407,7 +417,7 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
   async getIncidentContext(id) {
     const incident = await db.incident.findUnique({ where: { id } });
     if (!incident) return null;
-    const [tourist, trip, activeDispatches] = await Promise.all([
+    const [tourist, trip, activeDispatches, latestTouristLocation] = await Promise.all([
       db.user.findUnique({ where: { id: incident.userId }, select: { id: true, name: true, username: true, phone: true, email: true, nationality: true, preferredLanguage: true, bloodGroup: true, emergencyPhone: true } }),
       db.trip.findUnique({ where: { id: incident.tripId }, select: { id: true, locationName: true, status: true } }),
       db.dispatch.findMany({
@@ -427,10 +437,35 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
               longitude: true,
               locationUpdatedAt: true,
               serviceAccountId: true,
+              serviceAccount: {
+                select: {
+                  id: true,
+                  name: true,
+                  organization: true,
+                  address: true,
+                  latitude: true,
+                  longitude: true,
+                },
+              },
             },
           },
         },
         orderBy: { requestedAt: "desc" },
+      }),
+      db.latestTrustedLocation.findUnique({
+        where: {
+          tripId_userId: {
+            tripId: incident.tripId,
+            userId: incident.userId,
+          },
+        },
+        select: {
+          latitude: true,
+          longitude: true,
+          accuracyM: true,
+          capturedAt: true,
+          updatedAt: true,
+        },
       }),
     ]);
     const expired = Boolean(trip && trip.status !== "ACTIVE");
@@ -443,6 +478,19 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
       activeDispatches,
       fleetAssigned: activeDispatches.some((dispatch) => Boolean(dispatch.unitId)),
       location: { latitude: incident.latitude, longitude: incident.longitude },
+      trackingLocation: latestTouristLocation
+        ? {
+            latitude: latestTouristLocation.latitude,
+            longitude: latestTouristLocation.longitude,
+            accuracyM: latestTouristLocation.accuracyM,
+            updatedAt: latestTouristLocation.capturedAt ?? latestTouristLocation.updatedAt,
+            source: "LIVE_TOURIST",
+          }
+        : {
+            latitude: incident.latitude,
+            longitude: incident.longitude,
+            source: "INCIDENT_LOCATION",
+          },
       priority: incident.severity,
     };
   },

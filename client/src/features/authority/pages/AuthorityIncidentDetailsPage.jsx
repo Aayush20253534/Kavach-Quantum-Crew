@@ -128,7 +128,40 @@ export function AuthorityIncidentDetailsPage() {
   const displayStatus = (incident.displayStatus || (incident.expired ? 'EXPIRED' : status)).toUpperCase();
   const priority = (incident.priority || incident.severity || 'HIGH').toUpperCase();
   const activeDispatches = Array.isArray(incident.activeDispatches) ? incident.activeDispatches : [];
-  const tacticalUnits = activeDispatches.map((dispatch) => dispatch.unit).filter(Boolean);
+  const tacticalUnits = activeDispatches
+    .map((dispatch) => {
+      const unit = dispatch.unit;
+      if (!unit) return null;
+      return {
+        ...unit,
+        baseLatitude: unit.serviceAccount?.latitude ?? null,
+        baseLongitude: unit.serviceAccount?.longitude ?? null,
+      };
+    })
+    .filter(Boolean);
+  const tacticalBasePoints = activeDispatches
+    .map((dispatch) => {
+      const account = dispatch.unit?.serviceAccount;
+      if (account?.latitude == null || account?.longitude == null) return null;
+      return {
+        id: `base-${dispatch.unit.id}`,
+        name: account.organization || account.name || `${dispatch.requestedUnitType} Base`,
+        label: 'Fleet Base',
+        latitude: account.latitude,
+        longitude: account.longitude,
+        color: '#2563eb',
+      };
+    })
+    .filter(Boolean);
+  const tacticalIncident = {
+    ...incident,
+    latitude: incident.trackingLocation?.latitude ?? incident.latitude ?? incident.location?.latitude,
+    longitude: incident.trackingLocation?.longitude ?? incident.longitude ?? incident.location?.longitude,
+    description:
+      incident.trackingLocation?.source === 'LIVE_TOURIST'
+        ? `${incident.description || 'Emergency incident'} · Route target uses the tourist's latest trusted location.`
+        : incident.description,
+  };
 
   const getStatusStyles = (s) => {
     switch (s) {
@@ -274,7 +307,7 @@ export function AuthorityIncidentDetailsPage() {
                 </div>
               </div>
               <div className="h-[320px]">
-                <AuthorityOperationsMap incidents={[incident]} units={tacticalUnits} showRoutes />
+                <AuthorityOperationsMap incidents={[tacticalIncident]} units={tacticalUnits} referencePoints={tacticalBasePoints} showRoutes />
               </div>
               {activeDispatches.length > 0 && (
                 <div className="grid gap-2 border-t border-slate-100 bg-white p-3 sm:grid-cols-2">
