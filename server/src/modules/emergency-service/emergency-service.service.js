@@ -189,12 +189,23 @@ export const createEmergencyServiceService = ({ repository = emergencyServiceRep
           ? { ...incidentLocation, source: "INCIDENT_LOCATION" }
           : null;
       const distanceM = unitLocation && destination ? Math.round(haversineDistanceM(unitLocation, destination)) : null;
+      const serviceAccount = dispatch.unit?.serviceAccount ?? null;
+      const baseLocation =
+        serviceAccount?.latitude != null && serviceAccount?.longitude != null
+          ? {
+              latitude: serviceAccount.latitude,
+              longitude: serviceAccount.longitude,
+              address: serviceAccount.address ?? null,
+              name: serviceAccount.organization || serviceAccount.name || dispatch.unit?.organization || dispatch.unit?.name || null,
+            }
+          : null;
       return {
         dispatchId: dispatch.id,
         incidentId: dispatch.incidentId,
         serviceType: dispatch.requestedUnitType,
         status: dispatch.status,
         unit: dispatch.unit ? { id: dispatch.unit.id, name: dispatch.unit.name, organization: dispatch.unit.organization, location: unitLocation } : null,
+        baseLocation,
         destination,
         distanceRemainingM: distanceM,
         timeline: dispatch.events,

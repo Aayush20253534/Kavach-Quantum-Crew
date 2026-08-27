@@ -222,8 +222,10 @@ export function LiveTrackingPage() {
         theme.unitLabel,
       latitude: currentPoint.lat,
       longitude: currentPoint.lng,
+      baseLatitude: basePoint?.lat ?? null,
+      baseLongitude: basePoint?.lng ?? null,
     };
-  }, [currentPoint, responderProfile, selectedDispatch, selectedId, theme, tracking]);
+  }, [basePoint, currentPoint, responderProfile, selectedDispatch, selectedId, theme, tracking]);
 
   const referencePoints = useMemo(
     () =>
@@ -348,13 +350,20 @@ export function LiveTrackingPage() {
               Fleet Base
             </span>
             {selectedId && (
-              <span className={`flex items-center gap-1.5 ${theme.textClass}`}>
-                <span
-                  className="h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: theme.markerColor }}
-                />
-                Live Unit
-              </span>
+              <>
+                <span className="flex items-center gap-1.5 text-emerald-700">
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-600" />
+                  Live Unit
+                </span>
+                <span className="flex items-center gap-1.5 text-slate-600">
+                  <span className="h-1 w-5 rounded-full bg-slate-500" />
+                  Travelled
+                </span>
+                <span className="flex items-center gap-1.5 text-blue-700">
+                  <span className="h-1 w-5 rounded-full bg-blue-600" />
+                  Remaining
+                </span>
+              </>
             )}
             <span className="flex items-center gap-1.5 text-red-700">
               <span className="h-2.5 w-2.5 rounded-full bg-red-600" />
@@ -369,7 +378,6 @@ export function LiveTrackingPage() {
             units={routeUnit ? [routeUnit] : []}
             showRoutes={Boolean(selectedId)}
             routeUnitColor={theme.markerColor}
-            routeLineColor="#111827"
             referencePoints={referencePoints}
             onRouteSummary={setRouteSummary}
           />

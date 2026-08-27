@@ -36,7 +36,36 @@ const finitePoint = (latitude, longitude) => {
   return { lat, lng };
 };
 
-export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes = false, onRouteSummary, routeUnitColor = '#16a34a', routeLineColor = '#111827', referencePoints = [] }) {
+
+const routeOriginForUnit = (unit) =>
+  finitePoint(
+    unit.baseLatitude ?? unit.baseLocation?.latitude ?? unit.latitude,
+    unit.baseLongitude ?? unit.baseLocation?.longitude ?? unit.longitude,
+  );
+
+const nearestOverviewPathIndex = (overviewPath, point) => {
+  if (!overviewPath?.length || !point) return -1;
+
+  let bestIndex = -1;
+  let bestDistance = Number.POSITIVE_INFINITY;
+
+  overviewPath.forEach((pathPoint, index) => {
+    const lat = typeof pathPoint.lat === 'function' ? pathPoint.lat() : Number(pathPoint.lat);
+    const lng = typeof pathPoint.lng === 'function' ? pathPoint.lng() : Number(pathPoint.lng);
+    const latDelta = lat - point.lat;
+    const lngDelta = lng - point.lng;
+    const distance = (latDelta * latDelta) + (lngDelta * lngDelta);
+
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestIndex = index;
+    }
+  });
+
+  return bestIndex;
+};
+
+export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes = false, onRouteSummary, routeUnitColor = '#16a34a', referencePoints = [] }) {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const mapRef = useRef(null);
   const fittedContextRef = useRef('');
@@ -87,6 +116,26 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
     [incidents, referencePoints, showRoutes, units],
   );
 
+  const routeRequestKey = useMemo(
+    () =>
+      JSON.stringify({
+        showRoutes,
+        destination:
+          incidents.length === 1
+            ? [
+                incidents[0].latitude ?? incidents[0].location?.latitude ?? null,
+                incidents[0].longitude ?? incidents[0].location?.longitude ?? null,
+              ]
+            : null,
+        origins: units.map((unit) => ({
+          id: unit.id,
+          latitude: unit.baseLatitude ?? unit.baseLocation?.latitude ?? unit.latitude ?? null,
+          longitude: unit.baseLongitude ?? unit.baseLocation?.longitude ?? unit.longitude ?? null,
+        })),
+      }),
+    [incidents, showRoutes, units],
+  );
+
   useEffect(() => {
     const requestId = ++routeRequestRef.current;
 
@@ -108,7 +157,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
 
     const routeUnits = units
       .map((unit) => {
-        const origin = finitePoint(unit.latitude, unit.longitude);
+        const origin = routeOriginForUnit(unit);
         return origin ? { unit, origin } : null;
       })
       .filter(Boolean);
@@ -146,6 +195,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
                 distanceM: leg?.distance?.value ?? null,
                 durationText: leg?.duration?.text ?? null,
                 durationSeconds: leg?.duration?.value ?? null,
+                overviewPath: result.routes?.[0]?.overview_path ?? [],
               });
             },
           );
@@ -164,7 +214,45 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
       cancelled = true;
       routeRequestRef.current += 1;
     };
-  }, [incidents, isLoaded, onRouteSummary, routeLineColor, showRoutes, units]);
+  }, [isLoaded, onRouteSummary, routeRequestKey, showRoutes]); // route is anchored to fleet base; live GPS only advances progress
+
+  useEffect(() => {
+    travelledPolylineRefs.current.forEach((polyline) => polyline.setMap(null));
+    travelledPolylineRefs.current = [];
+
+    if (!isLoaded || !mapRef.current || !window.google?.maps || !showRoutes) return undefined;
+
+    const polylines = routes
+      .map((route) => {
+        const unit = units.find((candidate) => candidate.id === route.unitId);
+        const livePoint = unit ? finitePoint(unit.latitude, unit.longitude) : null;
+        const overviewPath = route.overviewPath || route.result?.routes?.[0]?.overview_path || [];
+        const nearestIndex = nearestOverviewPathIndex(overviewPath, livePoint);
+
+        if (!livePoint || nearestIndex < 1) return null;
+
+        const travelledPath = overviewPath.slice(0, nearestIndex + 1);
+        travelledPath.push(livePoint);
+
+        return new window.google.maps.Polyline({
+          map: mapRef.current,
+          path: travelledPath,
+          strokeColor: '#64748b',
+          strokeOpacity: 0.95,
+          strokeWeight: 7,
+          clickable: false,
+          zIndex: 25,
+        });
+      })
+      .filter(Boolean);
+
+    travelledPolylineRefs.current = polylines;
+
+    return () => {
+      polylines.forEach((polyline) => polyline.setMap(null));
+      travelledPolylineRefs.current = [];
+    };
+  }, [isLoaded, routes, showRoutes, units]);
 
   const fitVisibleMarkers = (map) => {
     if (!map || markers.length === 0 || !window.google?.maps) return;
@@ -277,8 +365,8 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
             suppressMarkers: true,
             preserveViewport: true,
             polylineOptions: {
-              strokeColor: routeLineColor,
-              strokeOpacity: 0.9,
+              strokeColor: '#2563eb',
+              strokeOpacity: 0.92,
               strokeWeight: 6,
             },
           }}
@@ -294,7 +382,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
         const color = isReference
           ? (marker.data.color || '#2563eb')
           : showRoutes
-            ? (isIncident ? '#dc2626' : routeUnitColor)
+            ? (isIncident ? '#dc2626' : '#16a34a')
             : (isIncident ? incidentColor(marker.data.severity || marker.data.priority) : unitColor(marker.data.type));
         return (
           <MarkerF

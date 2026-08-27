@@ -16,10 +16,8 @@ import {
 
 import { useTouristDashboardSummary } from '../../dashboard/api/dashboardQueries';
 import { destinationService } from '../../destinations/api/destinationService';
-import { groupService } from '../../groups/api/groupService';
 import { MapComponent } from '../../tracking/components/MapComponent';
-import { useCreateTrip, useCurrentTrip } from '../../trips/api/tripQueries';
-import { tripService } from '../../trips/api/tripService';
+import { useCurrentTrip } from '../../trips/api/tripQueries';
 
 const unwrap = (value) => {
   if (value && Object.prototype.hasOwnProperty.call(value, 'data')) {
@@ -42,13 +40,11 @@ export function TouristDashboardPage() {
   } = useOutletContext();
   const locationError = permission === 'denied' ? 'Location permission denied' : '';
   const { data: summary, isLoading: summaryLoading } = useTouristDashboardSummary(location);
-  const createTrip = useCreateTrip();
 
   const [featuredDestinations, setFeaturedDestinations] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
-  const [creatingLocation, setCreatingLocation] = useState(null);
   const [actionError, setActionError] = useState('');
   const [mounted, setMounted] = useState(false);
   const [emergencyCounts, setEmergencyCounts] = useState({
@@ -86,65 +82,30 @@ export function TouristDashboardPage() {
     return () => clearTimeout(timer);
   }, [searchText]);
 
-  const createGroupForDestination = async (destination) => {
+  const createGroupForDestination = (destination) => {
     setActionError('');
-    setCreatingLocation(destination.id);
 
-    try {
-      const destinationName = String(destination?.name ?? '').trim();
-      if (!destinationName) {
-        throw new Error('The selected destination is missing a valid name.');
-      }
-
-      // Never decide from a possibly stale React Query snapshot. The backend/database
-      // is authoritative for whether this tourist currently has an open trip.
-      const refreshedTrip = await tripService.getCurrentTrip();
-      let trip = refreshedTrip || null;
-
-      if (trip) {
-        const tripLocation = String(trip?.locationName ?? '').trim();
-        const tripType = String(trip?.tripType ?? 'trip');
-        const sameDestination =
-          tripLocation.toLocaleLowerCase() === destinationName.toLocaleLowerCase();
-
-        if (!sameDestination || tripType !== 'GROUP') {
-          throw new Error(
-            `You already have an open ${tripType.toLocaleLowerCase()} trip${
-              tripLocation ? ` for ${tripLocation}` : ''
-            }. Complete or cancel it before creating or joining another trip.`,
-          );
-        }
-      } else {
-        const plannedStartAt = new Date(Date.now() + 5 * 60 * 1000);
-        const plannedEndAt = new Date(plannedStartAt.getTime() + 24 * 60 * 60 * 1000);
-        const created = await createTrip.mutateAsync({
-          locationName: destinationName,
-          tripType: 'GROUP',
-          plannedStartAt: plannedStartAt.toISOString(),
-          plannedEndAt: plannedEndAt.toISOString(),
-        });
-        trip = unwrap(created);
-      }
-
-      try {
-        await groupService.createGroupForTrip(trip.id);
-      } catch (error) {
-        // If the group already exists, the location selection is still valid.
-        if (error.response?.data?.error?.code !== 'GROUP_ALREADY_EXISTS') throw error;
-      }
-
-      navigate('/tourist/groups/create', {
-        state: { tripId: trip.id, destination: destinationName },
-      });
-    } catch (error) {
-      setActionError(
-        error.response?.data?.error?.message || error.message || 'Unable to create a group for this location.',
-      );
-    } finally {
-      setCreatingLocation(null);
-      setSearchText('');
-      setSearchResults([]);
+    const destinationName = String(destination?.name ?? '').trim();
+    if (!destinationName) {
+      setActionError('The selected destination is missing a valid name.');
+      return;
     }
+
+    navigate('/tourist/trips/create', {
+      state: {
+        destination: {
+          id: destination.id ?? null,
+          name: destinationName,
+          state: destination.state ?? null,
+          country: destination.country ?? null,
+        },
+        tripType: 'GROUP',
+        source: 'dashboard-search',
+      },
+    });
+
+    setSearchText('');
+    setSearchResults([]);
   };
 
   useEffect(() => {
@@ -229,7 +190,7 @@ export function TouristDashboardPage() {
                 <button
                   key={destination.id}
                   type="button"
-                  disabled={Boolean(creatingLocation)}
+
                   onClick={() => createGroupForDestination(destination)}
                   className="w-full p-4 flex items-center justify-between gap-4 text-left hover:bg-slate-50 border-b border-slate-100 last:border-0 disabled:opacity-60"
                 >
@@ -240,7 +201,7 @@ export function TouristDashboardPage() {
                       <p className="text-[11px] text-slate-500">{destination.state}, {destination.country}</p>
                     </div>
                   </div>
-                  {creatingLocation === destination.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <span className="text-[10px] font-bold uppercase tracking-wider text-red-600">Create group</span>}
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-red-600">Plan group trip</span>
                 </button>
               ))}
             </div>
@@ -289,7 +250,7 @@ export function TouristDashboardPage() {
               key={destination.id}
               type="button"
               onClick={() => createGroupForDestination(destination)}
-              disabled={Boolean(creatingLocation)}
+
               className="group text-left h-40 rounded-2xl border border-slate-200 bg-slate-900 relative overflow-hidden shadow-sm hover:-translate-y-1 hover:shadow-lg transition-all disabled:opacity-60"
               style={
                 destination.imageUrl

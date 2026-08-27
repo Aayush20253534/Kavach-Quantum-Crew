@@ -54,8 +54,25 @@ export function SharedDispatchTrackingPage() {
       organization: tracking.unit.organization,
       latitude: unitLocation.lat,
       longitude: unitLocation.lng,
+      baseLatitude: tracking?.baseLocation?.latitude ?? null,
+      baseLongitude: tracking?.baseLocation?.longitude ?? null,
     };
   }, [tracking, unitLocation]);
+
+  const referencePoints = useMemo(() => {
+    if (tracking?.baseLocation?.latitude == null || tracking?.baseLocation?.longitude == null) {
+      return [];
+    }
+
+    return [{
+      id: `base-${tracking.dispatchId}`,
+      name: tracking.baseLocation.name || tracking.unit?.organization || 'Fleet Base',
+      label: 'Fleet Base',
+      latitude: Number(tracking.baseLocation.latitude),
+      longitude: Number(tracking.baseLocation.longitude),
+      color: '#2563eb',
+    }];
+  }, [tracking]);
 
   if (!tracking && !error) return <div className="py-24 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>;
 
@@ -81,7 +98,9 @@ export function SharedDispatchTrackingPage() {
                 <p className="mt-1 text-[10px] font-semibold text-slate-500">Road route from the responding fleet to the tourist / incident location.</p>
               </div>
               <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-wider">
-                <span className="flex items-center gap-1.5 text-emerald-700"><span className="h-2.5 w-2.5 rounded-full bg-emerald-600" /> Fleet</span>
+                <span className="flex items-center gap-1.5 text-emerald-700"><span className="h-2.5 w-2.5 rounded-full bg-emerald-600" /> Live Fleet</span>
+                <span className="flex items-center gap-1.5 text-slate-600"><span className="h-1 w-4 rounded-full bg-slate-500" /> Travelled</span>
+                <span className="flex items-center gap-1.5 text-blue-700"><span className="h-1 w-4 rounded-full bg-blue-600" /> Remaining</span>
                 <span className="flex items-center gap-1.5 text-red-700"><span className="h-2.5 w-2.5 rounded-full bg-red-600" /> Tourist</span>
               </div>
             </div>
@@ -89,6 +108,7 @@ export function SharedDispatchTrackingPage() {
               <AuthorityOperationsMap
                 incidents={routeIncident ? [routeIncident] : []}
                 units={routeUnit ? [routeUnit] : []}
+                referencePoints={referencePoints}
                 showRoutes
               />
             </div>
