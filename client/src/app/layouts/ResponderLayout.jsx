@@ -29,11 +29,16 @@ export function ResponderLayout() {
   const [logoutBusy, setLogoutBusy] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const [responderProfile, setResponderProfile] = useState(null);
+  const [navigatingTo, setNavigatingTo] = useState('');
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    setNavigatingTo('');
+  }, [location.pathname]);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,16 +71,27 @@ export function ResponderLayout() {
   };
 
   const handleResponderNavigation = (path) => {
-    if (location.pathname === path) return;
+    if (location.pathname === path || navigatingTo) return;
 
-    // Blur any active Google Maps control/select before changing routes.
-    // This prevents the map surface from retaining interaction focus while
-    // React Router is replacing the responder page.
+    setNavigatingTo(path);
+
+    // Release focus before leaving Google Maps. Some Maps controls retain
+    // pointer/focus state while their internal panes are being destroyed.
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
 
     navigate(path);
+
+    // React Router should complete synchronously, but Live Tracking owns
+    // geolocation, DirectionsService and Google Maps listeners. If a browser
+    // ever leaves the old location mounted, fall back to a real navigation so
+    // the operator is never trapped on the tracking screen.
+    window.setTimeout(() => {
+      if (window.location.pathname !== path) {
+        window.location.assign(path);
+      }
+    }, 180);
   };
 
   const getTheme = () => {
@@ -169,7 +185,7 @@ export function ResponderLayout() {
       />
 
       {/* DESKTOP SIDEBAR */}
-      <aside className={`hidden lg:flex flex-col bg-white border-r border-slate-300 fixed top-0 left-0 h-screen z-[100] pointer-events-auto transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[280px]'}`}>
+      <aside className={`hidden lg:flex flex-col bg-white border-r border-slate-300 fixed top-0 left-0 h-screen isolate z-[10000] pointer-events-auto transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[280px]'}`}>
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="absolute -right-3 top-8 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 shadow-sm z-40 cursor-pointer transition-transform hover:scale-110"
@@ -210,8 +226,14 @@ export function ResponderLayout() {
                 <button
                   key={item.name}
                   type="button"
+                  onPointerDown={(event) => {
+                    if (event.button !== 0) return;
+                    event.preventDefault();
+                    handleResponderNavigation(item.path);
+                  }}
                   onClick={() => handleResponderNavigation(item.path)}
-                  className={`relative z-[110] flex w-full items-center gap-3 py-3 rounded-lg text-[12px] font-bold transition-all cursor-pointer ${isCollapsed ? 'justify-center px-0' : 'px-4'} ${
+                  disabled={Boolean(navigatingTo) && navigatingTo !== item.path}
+                  className={`relative z-[10010] flex w-full touch-manipulation items-center gap-3 py-3 rounded-lg text-[12px] font-bold transition-all cursor-pointer disabled:cursor-wait disabled:opacity-60 ${isCollapsed ? 'justify-center px-0' : 'px-4'} ${
                     isActive
                       ? `${theme.lightBgClass} ${theme.textClass} after:absolute after:left-0 after:top-2 after:bottom-2 after:w-1 after:${theme.bgClass} after:rounded-r-sm`
                       : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -219,8 +241,8 @@ export function ResponderLayout() {
                   title={isCollapsed ? item.name : undefined}
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  <Icon className="w-4 h-4 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
-                  {!isCollapsed && <span>{item.name}</span>}
+                  <Icon className={`w-4 h-4 shrink-0 ${navigatingTo === item.path ? 'animate-pulse' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
+                  {!isCollapsed && <span>{navigatingTo === item.path ? 'Opening…' : item.name}</span>}
                 </button>
               );
             })}

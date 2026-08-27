@@ -26,11 +26,22 @@ export function LiveTrackingPage() {
   const [sending, setSending] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const mountedRef = useRef(true);
+  const gpsWatchRef = useRef(null);
 
   useEffect(() => {
     mountedRef.current = true;
-    return () => {
+    const stopLiveTracking = () => {
       mountedRef.current = false;
+      if (gpsWatchRef.current != null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(gpsWatchRef.current);
+        gpsWatchRef.current = null;
+      }
+    };
+
+    window.addEventListener('pagehide', stopLiveTracking);
+    return () => {
+      window.removeEventListener('pagehide', stopLiveTracking);
+      stopLiveTracking();
     };
   }, []);
 
@@ -127,9 +138,12 @@ export function LiveTrackingPage() {
       },
     );
 
+    gpsWatchRef.current = watchId;
+
     return () => {
       cancelled = true;
       navigator.geolocation.clearWatch(watchId);
+      if (gpsWatchRef.current === watchId) gpsWatchRef.current = null;
     };
   }, [selectedId]);
 
