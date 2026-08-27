@@ -39,6 +39,7 @@ const finitePoint = (latitude, longitude) => {
 export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes = false, onRouteSummary, routeUnitColor = '#16a34a', routeLineColor = '#111827', referencePoints = [] }) {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const mapRef = useRef(null);
+  const fittedContextRef = useRef('');
   const [selected, setSelected] = useState(null);
   const [routes, setRoutes] = useState([]);
   const [mapTypeId, setMapTypeId] = useState('roadmap');
@@ -73,6 +74,17 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
 
     return [...incidentMarkers, ...unitMarkers, ...referenceMarkers];
   }, [incidents, referencePoints, units]);
+
+  const viewportContextKey = useMemo(
+    () =>
+      [
+        incidents.map((incident) => `incident:${incident.id}`).join(','),
+        units.map((unit) => `unit:${unit.id}`).join(','),
+        referencePoints.map((reference) => `reference:${reference.id}`).join(','),
+        showRoutes ? 'routes:on' : 'routes:off',
+      ].join('|'),
+    [incidents, referencePoints, showRoutes, units],
+  );
 
   useEffect(() => {
     if (!isLoaded || !showRoutes || !window.google?.maps || incidents.length !== 1) {
@@ -166,9 +178,17 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
   };
 
   useEffect(() => {
-    if (!isLoaded || !mapRef.current) return;
+    if (!isLoaded || !mapRef.current || markers.length === 0) return;
+
+    // Live responder GPS updates change marker coordinates every few seconds.
+    // Do not re-fit on those updates or the map will fight manual zoom/pan.
+    // Re-fit only when the actual operational context changes, such as
+    // selecting a different dispatch or adding/removing a route marker.
+    if (fittedContextRef.current === viewportContextKey) return;
+
+    fittedContextRef.current = viewportContextKey;
     fitVisibleMarkers(mapRef.current);
-  }, [isLoaded, markers]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isLoaded, markers.length, viewportContextKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!apiKey) {
     return (
@@ -214,12 +234,29 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
       mapTypeId={mapTypeId}
       onLoad={(map) => {
         mapRef.current = map;
-        // The markers may already exist before the GoogleMap instance mounts.
-        // Fit once here as well so the fleet origin is never left off-screen.
-        window.requestAnimationFrame(() => fitVisibleMarkers(map));
+        // Establish the initial viewport once. Subsequent GPS updates preserve
+        // the operator's chosen zoom and pan.
+        window.requestAnimationFrame(() => {
+          fittedContextRef.current = viewportContextKey;
+          fitVisibleMarkers(map);
+        });
       }}
-      onUnmount={() => { mapRef.current = null; }}
-      options={{ fullscreenControl: true, streetViewControl: false, mapTypeControl: false, clickableIcons: false, gestureHandling: 'cooperative', scrollwheel: true, controlSize: 28 }}
+      onUnmount={() => {
+        mapRef.current = null;
+        fittedContextRef.current = '';
+      }}
+      options={{
+        fullscreenControl: true,
+        streetViewControl: false,
+        mapTypeControl: false,
+        zoomControl: true,
+        clickableIcons: false,
+        gestureHandling: 'greedy',
+        scrollwheel: true,
+        controlSize: 28,
+        minZoom: 3,
+        maxZoom: 20,
+      }}
     >
       {routes.map((route) => (
         <DirectionsRenderer
