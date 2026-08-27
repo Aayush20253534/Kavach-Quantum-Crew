@@ -40,6 +40,31 @@ export const authService = {
   },
 
   /**
+   * Start the password-reset flow. The backend intentionally returns a generic
+   * accepted response so account existence is not disclosed.
+   */
+  requestPasswordReset: async (data) => {
+    const response = await apiClient.post('/auth/password-reset/request', data);
+    return response.data?.data ?? response.data;
+  },
+
+  /**
+   * Confirm the six-digit password-reset OTP and receive a short-lived reset token.
+   */
+  verifyPasswordResetOtp: async (data) => {
+    const response = await apiClient.post('/auth/password-reset/verify', data);
+    return response.data?.data ?? response.data;
+  },
+
+  /**
+   * Replace the password after OTP verification.
+   */
+  resetPassword: async (data) => {
+    const response = await apiClient.post('/auth/password-reset/reset', data);
+    return response.data?.data ?? response.data;
+  },
+
+  /**
    * Login using identifier and password.
    */
   login: async (credentials) => {

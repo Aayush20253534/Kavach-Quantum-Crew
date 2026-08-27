@@ -67,6 +67,24 @@ export const createAuthController = ({ service = authService } = {}) => ({
       data: await service.resendEmailVerification(request.body),
     }),
 
+  requestPasswordReset: async (request, response) =>
+    ApiResponse.success(response, {
+      message: "If an account exists for this email, a reset code has been sent",
+      data: await service.requestPasswordReset(request.body),
+    }),
+
+  verifyPasswordResetOtp: async (request, response) =>
+    ApiResponse.success(response, {
+      message: "Password reset code verified",
+      data: await service.verifyPasswordResetOtp(request.body),
+    }),
+
+  resetPassword: async (request, response) =>
+    ApiResponse.success(response, {
+      message: "Password reset successfully",
+      data: await service.resetPassword(request.body),
+    }),
+
   login: async (request, response) => {
     const result = await service.login(request.body, requestContext(request));
     return sendAuth(response, result, { message: "Signed in successfully" });

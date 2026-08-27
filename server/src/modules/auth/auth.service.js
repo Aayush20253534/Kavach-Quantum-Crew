@@ -1,4 +1,4 @@
-import { randomInt, randomUUID, timingSafeEqual } from "node:crypto";
+import { randomBytes, randomInt, randomUUID, timingSafeEqual } from "node:crypto";
 
 import { ApiError } from "../../common/errors/ApiError.js";
 import { sha256 } from "../../common/utils/hash.js";
@@ -49,6 +49,11 @@ const generateOtp = () => String(randomInt(100000, 1000000));
 
 const otpHash = (userId, otp, config) =>
   sha256(`${userId}:${otp}:${config.EMAIL_OTP_SECRET}`);
+
+const passwordResetOtpHash = (accountId, role, otp, config) =>
+  sha256(`password-reset:${accountId}:${role}:${otp}:${config.EMAIL_OTP_SECRET}`);
+
+const generateResetToken = () => randomBytes(32).toString("hex");
 
 const hashMatches = (actual, expected) => {
   const left = Buffer.from(actual, "hex");
@@ -107,6 +112,36 @@ export const createAuthService = ({
       });
     } catch (error) {
       await repository.deleteEmailVerificationOtp(user.id);
+      throw error;
+    }
+
+    return { expiresAt };
+  };
+
+  const sendPasswordResetOtp = async (account) => {
+    const now = clock();
+    const otp = generateOtp();
+    const expiresAt = addMinutes(now, config.EMAIL_OTP_TTL_MINUTES);
+
+    await repository.upsertPasswordResetOtp(account.id, account.role, {
+      codeHash: passwordResetOtpHash(account.id, account.role, otp, config),
+      expiresAt,
+      attempts: 0,
+      lastSentAt: now,
+      verifiedAt: null,
+      resetTokenHash: null,
+      tokenExpiresAt: null,
+    });
+
+    try {
+      await mailer.sendPasswordResetOtp({
+        to: account.email,
+        name: account.name,
+        otp,
+        expiresInMinutes: config.EMAIL_OTP_TTL_MINUTES,
+      });
+    } catch (error) {
+      await repository.deletePasswordResetOtp(account.id, account.role);
       throw error;
     }
 
@@ -242,6 +277,116 @@ export const createAuthService = ({
 
       await sendOtp(user);
       return { accepted: true };
+    },
+
+    async requestPasswordReset({ email }) {
+      const account = await repository.findAccountByEmail(email);
+
+      // Do not disclose whether the email belongs to an account.
+      if (!account || account.status !== "ACTIVE") {
+        return { accepted: true };
+      }
+
+      const existing = await repository.findPasswordResetOtp(account.id, account.role);
+      if (existing) {
+        const retryAt = new Date(
+          existing.lastSentAt.getTime() +
+            config.EMAIL_OTP_RESEND_COOLDOWN_SECONDS * 1000,
+        );
+        if (retryAt > clock()) return { accepted: true };
+      }
+
+      await sendPasswordResetOtp(account);
+      return { accepted: true };
+    },
+
+    async verifyPasswordResetOtp({ email, otp }) {
+      const account = await repository.findAccountByEmail(email);
+      if (!account || account.status !== "ACTIVE") {
+        throw ApiError.badRequest("Reset code is invalid or expired", {
+          code: "PASSWORD_RESET_OTP_INVALID",
+        });
+      }
+
+      const record = await repository.findPasswordResetOtp(account.id, account.role);
+      const now = clock();
+
+      if (!record || record.expiresAt <= now) {
+        if (record) {
+          await repository.deletePasswordResetOtp(account.id, account.role);
+        }
+        throw ApiError.badRequest("Reset code is invalid or expired", {
+          code: "PASSWORD_RESET_OTP_EXPIRED",
+        });
+      }
+
+      if (record.attempts >= config.EMAIL_OTP_MAX_ATTEMPTS) {
+        await repository.deletePasswordResetOtp(account.id, account.role);
+        throw ApiError.tooManyRequests("Too many invalid reset attempts", {
+          code: "PASSWORD_RESET_OTP_ATTEMPTS_EXCEEDED",
+        });
+      }
+
+      const suppliedHash = passwordResetOtpHash(
+        account.id,
+        account.role,
+        otp,
+        config,
+      );
+      if (!hashMatches(suppliedHash, record.codeHash)) {
+        const next = await repository.incrementPasswordResetAttempts(
+          account.id,
+          account.role,
+        );
+        if (next.attempts >= config.EMAIL_OTP_MAX_ATTEMPTS) {
+          await repository.deletePasswordResetOtp(account.id, account.role);
+        }
+        throw ApiError.badRequest("Reset code is invalid or expired", {
+          code: "PASSWORD_RESET_OTP_INVALID",
+        });
+      }
+
+      const resetToken = generateResetToken();
+      await repository.markPasswordResetVerified(account.id, account.role, {
+        verifiedAt: now,
+        resetTokenHash: sha256(resetToken),
+        tokenExpiresAt: addMinutes(now, config.EMAIL_OTP_TTL_MINUTES),
+      });
+
+      return { resetToken };
+    },
+
+    async resetPassword({ email, resetToken, password }) {
+      const account = await repository.findAccountByEmail(email);
+      if (!account || account.status !== "ACTIVE") {
+        throw ApiError.badRequest("Password reset session is invalid or expired", {
+          code: "PASSWORD_RESET_SESSION_INVALID",
+        });
+      }
+
+      const record = await repository.findPasswordResetOtp(account.id, account.role);
+      const now = clock();
+      const tokenValid =
+        record?.verifiedAt &&
+        record?.resetTokenHash &&
+        record?.tokenExpiresAt > now &&
+        hashMatches(sha256(resetToken), record.resetTokenHash);
+
+      if (!tokenValid) {
+        throw ApiError.badRequest("Password reset session is invalid or expired", {
+          code: "PASSWORD_RESET_SESSION_INVALID",
+        });
+      }
+
+      await repository.updateAccountPassword(
+        account.id,
+        account.role,
+        await hashPassword(password),
+      );
+      await repository.revokeAllSessions(account.id, account.role, now);
+      await repository.deletePasswordResetOtp(account.id, account.role);
+
+      return { reset: true };
     },
 
     async login({ identifier, password, role }, context = {}) {
