@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   ShieldAlert,
@@ -63,6 +63,19 @@ export function ResponderLayout() {
       setLogoutOpen(false);
       navigate('/', { replace: true });
     }
+  };
+
+  const handleResponderNavigation = (path) => {
+    if (location.pathname === path) return;
+
+    // Blur any active Google Maps control/select before changing routes.
+    // This prevents the map surface from retaining interaction focus while
+    // React Router is replacing the responder page.
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+
+    navigate(path);
   };
 
   const getTheme = () => {
@@ -156,7 +169,7 @@ export function ResponderLayout() {
       />
 
       {/* DESKTOP SIDEBAR */}
-      <aside className={`hidden lg:flex flex-col bg-white border-r border-slate-300 fixed top-0 left-0 h-screen z-30 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[280px]'}`}>
+      <aside className={`hidden lg:flex flex-col bg-white border-r border-slate-300 fixed top-0 left-0 h-screen z-[100] pointer-events-auto transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[280px]'}`}>
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="absolute -right-3 top-8 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 shadow-sm z-40 cursor-pointer transition-transform hover:scale-110"
@@ -194,19 +207,21 @@ export function ResponderLayout() {
               const isActive = location.pathname.startsWith(item.path);
 
               return (
-                <NavLink
+                <button
                   key={item.name}
-                  to={item.path}
-                  className={`flex items-center gap-3 py-3 rounded-lg text-[12px] font-bold transition-all ${isCollapsed ? 'justify-center px-0' : 'px-4'} ${
+                  type="button"
+                  onClick={() => handleResponderNavigation(item.path)}
+                  className={`relative z-[110] flex w-full items-center gap-3 py-3 rounded-lg text-[12px] font-bold transition-all cursor-pointer ${isCollapsed ? 'justify-center px-0' : 'px-4'} ${
                     isActive
-                      ? `${theme.lightBgClass} ${theme.textClass} relative after:absolute after:left-0 after:top-2 after:bottom-2 after:w-1 after:${theme.bgClass} after:rounded-r-sm`
+                      ? `${theme.lightBgClass} ${theme.textClass} after:absolute after:left-0 after:top-2 after:bottom-2 after:w-1 after:${theme.bgClass} after:rounded-r-sm`
                       : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                   title={isCollapsed ? item.name : undefined}
+                  aria-current={isActive ? 'page' : undefined}
                 >
                   <Icon className="w-4 h-4 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
                   {!isCollapsed && <span>{item.name}</span>}
-                </NavLink>
+                </button>
               );
             })}
           </div>
@@ -236,7 +251,7 @@ export function ResponderLayout() {
       </aside>
 
       {/* MAIN APPLICATION AREA */}
-      <div className={`flex min-h-screen min-w-0 flex-1 flex-col transition-[margin,width] duration-300 ease-out ${isCollapsed ? 'lg:ml-20 lg:w-[calc(100%-5rem)]' : 'lg:ml-[280px] lg:w-[calc(100%-280px)]'}`} >
+      <div className={`relative z-0 flex min-h-screen min-w-0 flex-1 flex-col transition-[margin,width] duration-300 ease-out ${isCollapsed ? 'lg:ml-20 lg:w-[calc(100%-5rem)]' : 'lg:ml-[280px] lg:w-[calc(100%-280px)]'}`} >
         
         <header className={`fixed top-0 right-0 z-[60] h-16 bg-white border-b border-slate-300 px-4 lg:px-8 flex items-center justify-between transition-[width] duration-300 w-full ${isCollapsed ? 'lg:w-[calc(100%-5rem)]' : 'lg:w-[calc(100%-280px)]'}`}>
           <div className="flex items-center gap-2 sm:gap-3">
