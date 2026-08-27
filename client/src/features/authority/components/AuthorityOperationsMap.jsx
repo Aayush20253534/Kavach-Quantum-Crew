@@ -83,7 +83,87 @@ const plainOverviewPath = (overviewPath = []) =>
 
 
 
-export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes = false, onRouteSummary, routeUnitColor = '#16a34a', referencePoints = [] }) {
+
+const EARTH_RADIUS_M = 6378137;
+
+const pointOffsetMeters = (point, northM, eastM) => {
+  const latRadians = (point.lat * Math.PI) / 180;
+
+  return {
+    lat: point.lat + ((northM / EARTH_RADIUS_M) * 180) / Math.PI,
+    lng:
+      point.lng +
+      (((eastM / EARTH_RADIUS_M) * 180) / Math.PI) /
+        Math.max(0.2, Math.cos(latRadians)),
+  };
+};
+
+const routeDestinationCandidates = (destination) => {
+  // Exact tourist point first, then progressively wider probes around it.
+  // The first candidate Google can actually drive to becomes the road endpoint.
+  const radii = [35, 70, 120, 200, 320];
+  const directions = [
+    [1, 0],
+    [0.7071, 0.7071],
+    [0, 1],
+    [-0.7071, 0.7071],
+    [-1, 0],
+    [-0.7071, -0.7071],
+    [0, -1],
+    [0.7071, -0.7071],
+  ];
+
+  const candidates = [{ point: destination, offsetM: 0 }];
+
+  radii.forEach((radius) => {
+    directions.forEach(([northFactor, eastFactor]) => {
+      candidates.push({
+        point: pointOffsetMeters(
+          destination,
+          radius * northFactor,
+          radius * eastFactor,
+        ),
+        offsetM: radius,
+      });
+    });
+  });
+
+  return candidates;
+};
+
+const pointDistanceSquared = (left, right) => {
+  if (!left || !right) return Number.POSITIVE_INFINITY;
+
+  const latDelta = Number(left.lat) - Number(right.lat);
+  const lngDelta = Number(left.lng) - Number(right.lng);
+
+  return (latDelta * latDelta) + (lngDelta * lngDelta);
+};
+
+const roadEndpointFromDirections = (result, fallbackPoint) => {
+  const route = result?.routes?.[0];
+  const leg = route?.legs?.[route.legs.length - 1];
+  const endLocation = leg?.end_location;
+
+  if (endLocation) {
+    return {
+      lat:
+        typeof endLocation.lat === 'function'
+          ? endLocation.lat()
+          : Number(endLocation.lat),
+      lng:
+        typeof endLocation.lng === 'function'
+          ? endLocation.lng()
+          : Number(endLocation.lng),
+    };
+  }
+
+  const overview = plainOverviewPath(route?.overview_path ?? []);
+  return overview[overview.length - 1] || fallbackPoint;
+};
+
+
+export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes = false, onRouteSummary, referencePoints = [] }) {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const mapRef = useRef(null);
   const fittedContextRef = useRef('');
@@ -189,51 +269,89 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
     let cancelled = false;
     const service = new window.google.maps.DirectionsService();
 
+    const requestRoute = ({ origin, candidateDestination }) =>
+      new Promise((resolve) => {
+        service.route(
+          {
+            origin,
+            destination: candidateDestination,
+            travelMode: window.google.maps.TravelMode.DRIVING,
+            provideRouteAlternatives: false,
+          },
+          (result, status) => {
+            if (status !== window.google.maps.DirectionsStatus.OK || !result) {
+              resolve(null);
+              return;
+            }
+
+            const route = result.routes?.[0];
+            const leg = route?.legs?.[0];
+            const overviewPath = plainOverviewPath(route?.overview_path ?? []);
+
+            resolve({
+              result,
+              distanceText: leg?.distance?.text ?? null,
+              distanceM: leg?.distance?.value ?? null,
+              durationText: leg?.duration?.text ?? null,
+              durationSeconds: leg?.duration?.value ?? null,
+              overviewPath,
+              roadEndpoint: roadEndpointFromDirections(
+                result,
+                overviewPath[overviewPath.length - 1] || candidateDestination,
+              ),
+            });
+          },
+        );
+      });
+
+    const findNearestRoadRoute = async ({ unit, origin }) => {
+      const candidates = routeDestinationCandidates(destination);
+
+      for (const candidate of candidates) {
+        if (cancelled || requestId !== routeRequestRef.current) return null;
+
+        // eslint-disable-next-line no-await-in-loop
+        const routed = await requestRoute({
+          origin,
+          candidateDestination: candidate.point,
+        });
+
+        if (!routed) continue;
+
+        return {
+          unitId: unit.id,
+          unitName: unit.name,
+          ...routed,
+          exactDestination: destination,
+          endpointOffsetM: candidate.offsetM,
+          fallback: false,
+        };
+      }
+
+      // No nearby road point was routable. In that rare case the client will
+      // show only a dotted indication rather than pretending a direct line is
+      // a drivable road.
+      return {
+        unitId: unit.id,
+        unitName: unit.name,
+        result: null,
+        distanceText: null,
+        distanceM: null,
+        durationText: null,
+        durationSeconds: null,
+        overviewPath: [],
+        roadEndpoint: null,
+        exactDestination: destination,
+        endpointOffsetM: null,
+        fallback: true,
+      };
+    };
+
     Promise.all(
       routeUnits.map(({ unit, origin }) =>
-        new Promise((resolve) => {
-          service.route(
-            {
-              origin,
-              destination,
-              travelMode: window.google.maps.TravelMode.DRIVING,
-              provideRouteAlternatives: false,
-            },
-            (result, status) => {
-              if (status !== window.google.maps.DirectionsStatus.OK || !result) {
-                // Google could not produce a driving route. Never pretend
-                // the direct line is a road. The UI renders this fallback as a
-                // dotted connector until a real Directions result is available.
-                resolve({
-                  unitId: unit.id,
-                  unitName: unit.name,
-                  result: null,
-                  distanceText: null,
-                  distanceM: null,
-                  durationText: null,
-                  durationSeconds: null,
-                  overviewPath: [origin, destination],
-                  fallback: true,
-                });
-                return;
-              }
-
-              const leg = result.routes?.[0]?.legs?.[0];
-              resolve({
-                unitId: unit.id,
-                unitName: unit.name,
-                result,
-                distanceText: leg?.distance?.text ?? null,
-                distanceM: leg?.distance?.value ?? null,
-                durationText: leg?.duration?.text ?? null,
-                durationSeconds: leg?.duration?.value ?? null,
-                overviewPath: plainOverviewPath(result.routes?.[0]?.overview_path ?? []),
-                fallback: false,
-              });
-            },
-          );
-        }),
+        findNearestRoadRoute({ unit, origin }),
       ),
+
     ).then((resolved) => {
       if (cancelled || requestId !== routeRequestRef.current) return;
       const successful = resolved.filter(Boolean);
@@ -257,67 +375,64 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
         const unit = units.find((candidate) => candidate.id === route.unitId);
         const livePoint = unit ? finitePoint(unit.latitude, unit.longitude) : null;
         const fullPath = plainOverviewPath(route.overviewPath);
+        const exactDestination = finitePoint(
+          route.exactDestination?.lat,
+          route.exactDestination?.lng,
+        );
+        const roadEndpoint = finitePoint(
+          route.roadEndpoint?.lat,
+          route.roadEndpoint?.lng,
+        );
 
-        if (!fullPath.length) {
+        if (route.fallback || !fullPath.length) {
           return {
             ...route,
             travelledPath: [],
             remainingPath: [],
-            connectorPath: [],
-            fallbackPath: [],
+            liveConnectorPath: [],
+            destinationConnectorPath:
+              livePoint && exactDestination ? [livePoint, exactDestination] : [],
           };
         }
 
-        // If Google Directions itself failed there is no trustworthy road
-        // geometry. Show only a dotted base -> destination indication.
-        if (route.fallback) {
-          return {
-            ...route,
-            travelledPath: [],
-            remainingPath: [],
-            connectorPath: [],
-            fallbackPath: fullPath,
-          };
+        let travelledPath = [];
+        let remainingPath = fullPath;
+        let liveConnectorPath = [];
+
+        if (livePoint) {
+          const nearest = nearestOverviewPathPoint(fullPath, livePoint);
+
+          if (nearest) {
+            travelledPath =
+              nearest.index > 0
+                ? fullPath.slice(0, nearest.index + 1)
+                : [fullPath[0]];
+
+            remainingPath = fullPath.slice(nearest.index);
+
+            // A GPS fix may be inside a compound/field instead of exactly on
+            // the road polyline. Only that small local gap is dotted.
+            if (pointDistanceSquared(livePoint, nearest.point) > 0.00000001) {
+              liveConnectorPath = [livePoint, nearest.point];
+            }
+          }
         }
 
-        if (!livePoint) {
-          return {
-            ...route,
-            travelledPath: [],
-            remainingPath: fullPath,
-            connectorPath: [],
-            fallbackPath: [],
-          };
-        }
-
-        const nearest = nearestOverviewPathPoint(fullPath, livePoint);
-        if (!nearest) {
-          return {
-            ...route,
-            travelledPath: [],
-            remainingPath: fullPath,
-            connectorPath: [],
-            fallbackPath: [],
-          };
-        }
-
-        const travelledPath =
-          nearest.index > 0
-            ? fullPath.slice(0, nearest.index + 1)
-            : [fullPath[0]];
-
-        const remainingPath = fullPath.slice(nearest.index);
-        const connectorPath = [
-          livePoint,
-          nearest.point,
-        ];
+        // Google road route ends at the closest drivable point. From there to
+        // the exact tourist/incident coordinate we deliberately draw dots.
+        const destinationConnectorPath =
+          roadEndpoint &&
+          exactDestination &&
+          pointDistanceSquared(roadEndpoint, exactDestination) > 0.00000001
+            ? [roadEndpoint, exactDestination]
+            : [];
 
         return {
           ...route,
           travelledPath,
           remainingPath,
-          connectorPath,
-          fallbackPath: [],
+          liveConnectorPath,
+          destinationConnectorPath,
         };
       }),
     [routes, units],
@@ -454,11 +569,10 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
             />
           )}
 
-          {route.connectorPath.length >= 2 && (
+          {route.liveConnectorPath.length >= 2 && (
             <PolylineF
-              path={route.connectorPath}
+              path={route.liveConnectorPath}
               options={{
-                strokeColor: '#475569',
                 strokeOpacity: 0,
                 strokeWeight: 2,
                 clickable: false,
@@ -466,10 +580,10 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
                 icons: [{
                   icon: {
                     path: window.google.maps.SymbolPath.CIRCLE,
-                    fillColor: '#475569',
+                    fillColor: '#64748b',
                     fillOpacity: 1,
                     strokeOpacity: 0,
-                    scale: 2.2,
+                    scale: 2.1,
                   },
                   offset: '0',
                   repeat: '10px',
@@ -478,25 +592,24 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
             />
           )}
 
-          {route.fallbackPath.length >= 2 && (
+          {route.destinationConnectorPath.length >= 2 && (
             <PolylineF
-              path={route.fallbackPath}
+              path={route.destinationConnectorPath}
               options={{
-                strokeColor: '#2563eb',
                 strokeOpacity: 0,
                 strokeWeight: 2,
                 clickable: false,
-                zIndex: 19,
+                zIndex: 23,
                 icons: [{
                   icon: {
                     path: window.google.maps.SymbolPath.CIRCLE,
                     fillColor: '#2563eb',
-                    fillOpacity: 0.85,
+                    fillOpacity: 0.95,
                     strokeOpacity: 0,
-                    scale: 2.1,
+                    scale: 2.2,
                   },
                   offset: '0',
-                  repeat: '12px',
+                  repeat: '10px',
                 }],
               }}
             />
