@@ -3,6 +3,7 @@ import { logger } from "../../config/logger.js";
 import { tripRepository } from "./trip.repository.js";
 import { credentialService } from "../credential/credential.service.js";
 import { safetyService } from "../safety/safety.service.js";
+import { realtimePublisher } from "../../realtime/realtimePublisher.js";
 
 const REQUIRED_CONSENTS = ["LOCATION_TRACKING", "EMERGENCY_SHARING"];
 
@@ -119,6 +120,7 @@ export const createTripService = ({
   repository = tripRepository,
   clock = () => new Date(),
   safetyEvaluator = safetyService,
+  publisher = realtimePublisher,
 } = {}) =>
   Object.freeze({
     async createTrip(userId, input) {
@@ -355,7 +357,14 @@ export const createTripService = ({
         });
       }
       const now = clock();
+      const expired = await repository.expireSafetyState(trip.id, now, "completed");
       const updated = await repository.completeTrip(trip.id, now);
+      for (const incidentId of expired.incidentIds) {
+        publisher.publishIncidentUpdated?.({ id: incidentId, tripId: trip.id, userId }, {
+          type: "EXPIRED",
+          source: "TRIP_COMPLETED",
+        });
+      }
       await credentialService.revokeTrip(trip.id, 1);
       await repository.createAudit({
         actorId: userId,
@@ -374,7 +383,14 @@ export const createTripService = ({
         });
       }
       const now = clock();
+      const expired = await repository.expireSafetyState(trip.id, now, "cancelled");
       const updated = await repository.cancelTrip(trip.id, now);
+      for (const incidentId of expired.incidentIds) {
+        publisher.publishIncidentUpdated?.({ id: incidentId, tripId: trip.id, userId }, {
+          type: "EXPIRED",
+          source: "TRIP_CANCELLED",
+        });
+      }
       await credentialService.revokeTrip(trip.id, 3);
       await repository.createAudit({
         actorId: userId,
