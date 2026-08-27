@@ -88,14 +88,14 @@ export function AdminAccountsPage() {
         </p>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-md-none p-4  flex flex-col sm:flex-row gap-3 justify-between mb-5">
-        <div className="flex overflow-x-auto bg-slate-100 rounded-md-none p-1">
+      <div className="bg-white border border-slate-950 rounded-lg p-4  flex flex-col sm:flex-row gap-3 justify-between mb-5">
+        <div className="flex overflow-x-auto bg-slate-100 rounded-md p-1">
           {filters.map(([value, label]) => (
             <button
               key={value}
               type="button"
               onClick={() => setFilter(value)}
-              className={`whitespace-nowrap px-4 py-2 rounded-md-none text-[10px] font-black uppercase tracking-wider ${
+              className={`whitespace-nowrap px-4 py-2 rounded-md text-[10px] font-black uppercase tracking-wider ${
                 filter === value
                   ? 'bg-white  text-slate-900'
                   : 'text-slate-500'
@@ -112,25 +112,25 @@ export function AdminAccountsPage() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search name, username, email or phone"
-            className="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-md-none text-xs outline-none"
+            className="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-md text-xs outline-none"
           />
         </div>
       </div>
 
       {error && (
-        <div className="mb-5 bg-red-50 border border-red-200 rounded-md-none p-5 text-red-700 text-xs flex gap-3">
+        <div className="mb-5 bg-red-50 border border-red-200 rounded-md p-5 text-red-700 text-xs flex gap-3">
           <ServerCrash className="w-5 h-5 shrink-0" /> {error}
         </div>
       )}
 
-      <div className="bg-white border border-slate-200 rounded-md-none  overflow-x-auto">
+      <div className="bg-white border border-slate-950 rounded-lg  overflow-x-auto">
         {loading ? (
           <div className="py-20 flex justify-center">
             <Loader2 className="w-7 h-7 animate-spin" />
           </div>
         ) : (
           <table className="w-full min-w-[760px] text-left">
-            <thead className="bg-slate-50 border-b border-slate-200">
+            <thead className="rounded-lg bg-slate-50 border-b border-slate-950">
               <tr>
                 {['Account', 'Role', 'Status', 'Last Sign-in', 'Created', 'Actions'].map(
                   (heading) => (
@@ -181,7 +181,7 @@ export function AdminAccountsPage() {
                     <button
                       type="button"
                       onClick={() => changeStatus(account)}
-                      className={`px-3 py-2 rounded-md-none text-[10px] font-black uppercase ${
+                      className={`px-3 py-2 rounded-md text-[10px] font-black uppercase ${
                         account.status === 'ACTIVE'
                           ? 'border-red-200 bg-white text-red-700 hover:bg-red-50'
                           : 'border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50'

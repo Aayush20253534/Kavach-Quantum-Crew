@@ -98,7 +98,7 @@ export function AdminDashboardPage() {
             {metrics.map(([label, key, Icon, group]) => (
               <div
                 key={key}
-                className="min-h-[108px] rounded-lg border border-slate-200 bg-white p-4"
+                className="min-h-[108px] rounded-lg border border-slate-950 bg-white p-4"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -121,7 +121,7 @@ export function AdminDashboardPage() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1.65fr_1fr]">
-        <section className="rounded-lg border border-slate-200 bg-white">
+        <section className="rounded-lg border border-slate-950 bg-white">
           <div className="border-b border-slate-200 px-5 py-4">
             <h2 className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-800">
               Administration Workspace
@@ -152,7 +152,7 @@ export function AdminDashboardPage() {
           </div>
         </section>
 
-        <section className="rounded-lg border border-slate-200 bg-white">
+        <section className="rounded-lg border border-slate-950 bg-white">
           <div className="border-b border-slate-200 px-5 py-4">
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
               Platform Diagnostics
@@ -200,7 +200,7 @@ function Shortcut({ to, icon: Icon, title, text }) {
   return (
     <Link
       to={to}
-      className="group min-h-[148px] border-b border-slate-200 p-4 transition-colors hover:bg-slate-50 sm:border-b-0 sm:border-r last:border-r-0"
+      className="rounded-lg group min-h-[148px] border-b border-slate-950 p-4 transition-colors hover:bg-slate-50 sm:border-b-0 sm:border-r last:border-r-0"
     >
       <Icon className="h-5 w-5 text-slate-700 transition-colors group-hover:text-slate-950" />
       <p className="mt-5 text-sm font-black text-slate-950">{title}</p>

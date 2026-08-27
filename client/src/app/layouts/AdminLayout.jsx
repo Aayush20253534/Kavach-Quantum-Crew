@@ -69,7 +69,7 @@ export function AdminLayout() {
         {/* Collapse Toggle Button (Desktop Only) */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute -right-3 top-8 w-6 h-6 bg-white border border-slate-200 rounded-none-none flex items-center justify-center text-slate-500 hover:text-slate-900  z-40 cursor-pointer transition-transform hover:scale-110"
+          className="absolute -right-3 top-8 w-6 h-6 bg-white border border-slate-950 rounded-lg-none flex items-center justify-center text-slate-500 hover:text-slate-900  z-40 cursor-pointer transition-transform hover:scale-110"
         >
           <ChevronLeft className={`w-3.5 h-3.5 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
         </button>
@@ -170,7 +170,7 @@ export function AdminLayout() {
             <button
               type="button"
               onClick={requestLogout}
-              className="inline-flex h-8 items-center justify-center gap-2 rounded-none-none border border-slate-200 bg-white px-2.5 text-slate-600  transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 md:h-9 md:px-3"
+              className="inline-flex h-8 items-center justify-center gap-2 rounded-lg-none border border-slate-950 bg-white px-2.5 text-slate-600  transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 md:h-9 md:px-3"
               aria-label="Sign out"
               title="Sign out"
             >
@@ -185,7 +185,7 @@ export function AdminLayout() {
         </main>
 
         {/* Mobile Bottom Navigation */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 w-full h-16 bg-white border-t border-slate-200 z-50 flex items-center justify-around px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 w-full h-16 bg-white border-t border-slate-950 z-50 flex items-center justify-around px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname.startsWith(item.path);
