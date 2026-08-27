@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  BarChart4, Clock, AlertOctagon, 
+import {
+  BarChart4, Clock, AlertOctagon,
   Loader2, ServerCrash, Calendar, Download, Target
 } from 'lucide-react';
 import { authorityService } from '../api/authorityService';
@@ -62,47 +62,47 @@ export function AuthorityAnalyticsPage() {
 
   return (
     <div className="font-sans max-w-[1200px] mx-auto pb-10">
-      
+
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">Command Center</span>
           </div>
           <h1 className="text-[24px] font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
-            <BarChart4 className="w-6 h-6 text-indigo-600" /> Operational Analytics
+            <BarChart4 className="w-6 h-6 text-[#0b1728]" /> Response Intelligence
           </h1>
           <p className="text-[13px] text-slate-500 font-medium mt-1">
             Backend-derived incident volume and response performance{data?.jurisdiction ? ` for ${data.jurisdiction}` : ''}.
           </p>
         </div>
-        
+
         <div className="flex gap-2">
           <button className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-[11px] font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-slate-50 transition-colors">
             <Calendar className="w-4 h-4" /> Last 30 Days
           </button>
-          <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-indigo-700 transition-colors">
+          <button className="px-4 py-2 bg-[#0b1728] text-white rounded-lg text-[11px] font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-[#07111f] transition-colors">
             <Download className="w-4 h-4" /> Export Report
           </button>
         </div>
       </div>
 
       {error ? (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-10 flex flex-col items-center justify-center text-center">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-10 flex flex-col items-center justify-center text-center">
           <ServerCrash className="w-8 h-8 text-red-400 mb-3" />
-          <p className="text-red-800 font-bold text-sm mb-1">Analytics Engine Error</p>
+          <p className="text-red-800 font-bold text-sm mb-1">Response analytics unavailable</p>
           <p className="text-red-600 text-xs">{error}</p>
         </div>
       ) : loading ? (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-20 flex flex-col items-center justify-center">
+        <div className="bg-white rounded-lg border border-slate-200  p-20 flex flex-col items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-slate-300 mb-4" />
-          <p className="text-sm font-semibold text-slate-500">Aggregating operational data...</p>
+          <p className="text-sm font-semibold text-slate-500">Calculating operational performance...</p>
         </div>
       ) : (
         <div className="space-y-6">
-          
+
           {/* Top KPIs */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+            <div className="bg-white p-6 rounded-lg border border-slate-200  relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-5">
                 <AlertOctagon className="w-24 h-24 text-slate-900" />
               </div>
@@ -113,7 +113,7 @@ export function AuthorityAnalyticsPage() {
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+            <div className="bg-white p-6 rounded-lg border border-slate-200  relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-5">
                 <AlertOctagon className="w-24 h-24 text-emerald-900" />
               </div>
@@ -124,7 +124,7 @@ export function AuthorityAnalyticsPage() {
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+            <div className="bg-white p-6 rounded-lg border border-slate-200  relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-5">
                 <Clock className="w-24 h-24 text-indigo-900" />
               </div>
@@ -135,21 +135,21 @@ export function AuthorityAnalyticsPage() {
               </div>
             </div>
 
-            <div className="bg-indigo-600 p-6 rounded-xl border border-indigo-700 shadow-sm text-white relative overflow-hidden">
+            <div className="bg-white p-5 rounded-lg border border-slate-200 text-slate-900 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-10">
                 <Target className="w-24 h-24 text-white" />
               </div>
-              <h3 className="text-[11px] font-bold text-indigo-200 uppercase tracking-widest mb-1 relative z-10">SLA Compliance</h3>
+              <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1 relative z-10">SLA Compliance</h3>
               <div className="flex items-end gap-3 relative z-10">
-                <span className="text-[40px] font-black text-white leading-none tracking-tighter">{data.responseTimes.slaUnderFiveMinutesPercent}%</span>
-                <span className="text-[12px] font-bold text-white/80 bg-white/10 px-2 py-0.5 rounded mb-1.5">Target: 95%</span>
+                <span className="text-[40px] font-black text-slate-950 leading-none tracking-tighter">{data.responseTimes.slaUnderFiveMinutesPercent}%</span>
+                <span className="text-[12px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded mb-1.5">Target: 95%</span>
               </div>
             </div>
           </div>
 
           {/* Backend-integrated charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-80 flex flex-col">
+            <div className="bg-white p-6 rounded-lg border border-slate-200  h-80 flex flex-col">
               <div className="flex items-start justify-between gap-3 mb-5">
                 <div>
                   <h3 className="text-[12px] font-bold text-slate-900 uppercase tracking-widest">
@@ -159,7 +159,7 @@ export function AuthorityAnalyticsPage() {
                     Last 30 days from incident records
                   </p>
                 </div>
-                <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
+                <span className="text-[10px] font-black text-[#0b1728] bg-slate-50 px-2 py-1 rounded">
                   {data.totalIncidents} incidents
                 </span>
               </div>
@@ -192,7 +192,7 @@ export function AuthorityAnalyticsPage() {
                           className="group relative flex h-full min-w-0 flex-1 items-end"
                         >
                           <div
-                            className="w-full rounded-t-sm bg-indigo-200 transition-colors hover:bg-indigo-500"
+                            className="w-full rounded-t-sm bg-slate-300 transition-colors hover:bg-slate-500"
                             style={{ height: `${height}%` }}
                           />
 
@@ -213,7 +213,7 @@ export function AuthorityAnalyticsPage() {
               )}
             </div>
 
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-80 flex flex-col">
+            <div className="bg-white p-6 rounded-lg border border-slate-200  h-80 flex flex-col">
               <div className="mb-5">
                 <h3 className="text-[12px] font-bold text-slate-900 uppercase tracking-widest">
                   Response Time Distribution
@@ -229,7 +229,7 @@ export function AuthorityAnalyticsPage() {
                     bucket.key === 'UNDER_2'
                       ? 'bg-emerald-500'
                       : bucket.key === 'TWO_TO_FIVE'
-                        ? 'bg-indigo-500'
+                        ? 'bg-slate-500'
                         : bucket.key === 'FIVE_TO_TEN'
                           ? 'bg-amber-500'
                           : 'bg-red-500';

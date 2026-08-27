@@ -170,13 +170,13 @@ export function AuthorityAccountCreationPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <section className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <section className="bg-white border border-slate-200 rounded-lg  overflow-hidden">
         <div className="px-5 sm:px-7 py-6 border-b border-slate-200 bg-slate-50/70">
           <div className="flex items-start gap-4">
-            <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center shrink-0"><UserPlus className="w-5 h-5" /></div>
+            <div className="w-11 h-11 rounded-lg bg-rose-50 text-rose-700 flex items-center justify-center shrink-0"><UserPlus className="w-5 h-5" /></div>
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-rose-700">Disaster Management</p>
-              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 mt-1">Emergency Fleet Account Creation</h1>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 mt-1">Emergency Fleet Fleet Account Provisioning</h1>
               <p className="text-xs sm:text-sm text-slate-500 mt-2 max-w-2xl leading-6">Create one Police, Hospital/Ambulance, or Fire fleet login with a fixed base address. The base is stored once; live GPS is transmitted only while that fleet has an active dispatch.</p>
             </div>
           </div>
@@ -190,7 +190,7 @@ export function AuthorityAccountCreationPage() {
                 const Icon = service.icon;
                 const active = form.serviceType === service.value;
                 return (
-                  <button key={service.value} type="button" onClick={() => setForm((current) => ({ ...current, serviceType: service.value }))} className={`rounded-xl border p-4 flex items-center gap-3 text-left transition ${active ? 'border-rose-300 bg-rose-50 ring-2 ring-rose-100' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'}`}>
+                  <button key={service.value} type="button" onClick={() => setForm((current) => ({ ...current, serviceType: service.value }))} className={`rounded-lg border p-4 flex items-center gap-3 text-left transition ${active ? 'border-rose-300 bg-rose-50 ring-2 ring-rose-100' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'}`}>
                     <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${active ? 'bg-white text-rose-700' : 'bg-slate-100 text-slate-500'}`}><Icon className="w-4 h-4" /></div>
                     <div><p className="text-xs font-black text-slate-900">{service.label}</p><p className="text-[10px] text-slate-500 mt-0.5">{service.value}</p></div>
                   </button>
@@ -206,10 +206,10 @@ export function AuthorityAccountCreationPage() {
               <Field label="Fixed Fleet Base Address" hint="Type the address, then resolve it to coordinates. This is not continuously refreshed.">
                 <div className="flex flex-col sm:flex-row gap-2">
                   <input required maxLength={240} value={form.address} onChange={update('address')} className="field-input flex-1" placeholder="Civil Lines, Prayagraj, Uttar Pradesh" />
-                  <button type="button" onClick={resolveAddress} disabled={geocoding} className="px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-100 disabled:opacity-50 flex items-center justify-center gap-2">
+                  <button type="button" onClick={resolveAddress} disabled={geocoding} className="px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-100 disabled:opacity-50 flex items-center justify-center gap-2">
                     {geocoding ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />} Geocode
                   </button>
-                  <button type="button" onClick={useCurrentLocation} disabled={geocoding} className="px-4 py-3 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50 disabled:opacity-50 flex items-center justify-center gap-2"><Crosshair className="w-4 h-4" /> Use GPS</button>
+                  <button type="button" onClick={useCurrentLocation} disabled={geocoding} className="px-4 py-3 rounded-lg border border-slate-200 bg-white text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50 disabled:opacity-50 flex items-center justify-center gap-2"><Crosshair className="w-4 h-4" /> Use GPS</button>
                 </div>
               </Field>
               {form.latitude !== '' && form.longitude !== '' && <p className="mt-2 text-[10px] font-bold text-emerald-700">Location fixed at {Number(form.latitude).toFixed(6)}, {Number(form.longitude).toFixed(6)}</p>}
@@ -224,10 +224,10 @@ export function AuthorityAccountCreationPage() {
             <Field label="Confirm Password"><input required minLength={8} maxLength={128} type={showPassword ? 'text' : 'password'} value={form.confirmPassword} onChange={update('confirmPassword')} autoComplete="new-password" className="field-input" placeholder="Repeat password" /></Field>
           </div>
 
-          {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-700">{error}</div>}
-          {created && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 flex items-start gap-3"><CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" /><div><p className="text-xs font-black text-emerald-900">{selected.label} fleet created successfully.</p><p className="text-[11px] text-emerald-800 mt-1 leading-5">Fleet: <strong>{created.account?.organization || created.account?.name}</strong>. Login: <strong>{created.account?.username}</strong>. Its fixed base location is immediately available for dispatch selection.</p></div></div>}
+          {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-700">{error}</div>}
+          {created && <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 flex items-start gap-3"><CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" /><div><p className="text-xs font-black text-emerald-900">{selected.label} fleet created successfully.</p><p className="text-[11px] text-emerald-800 mt-1 leading-5">Fleet: <strong>{created.account?.organization || created.account?.name}</strong>. Login: <strong>{created.account?.username}</strong>. Its fixed base location is immediately available for dispatch selection.</p></div></div>}
 
-          <div className="flex justify-end pt-1"><button type="submit" disabled={submitting || geocoding} className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-rose-600 text-white text-xs font-black uppercase tracking-wider hover:bg-rose-700 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm">{submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}{submitting ? 'Creating Fleet' : `Create ${selected.label} Fleet`}</button></div>
+          <div className="flex justify-end pt-1"><button type="submit" disabled={submitting || geocoding} className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-rose-600 text-white text-xs font-black uppercase tracking-wider hover:bg-rose-700 disabled:opacity-60 disabled:cursor-not-allowed ">{submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}{submitting ? 'Creating Fleet' : `Create ${selected.label} Fleet`}</button></div>
         </form>
       </section>
       <style>{`.field-input{width:100%;border:1px solid rgb(226 232 240);border-radius:.75rem;padding:.75rem .875rem;font-size:.75rem;outline:none;background:white}.field-input:focus{border-color:rgb(251 113 133);box-shadow:0 0 0 3px rgb(255 228 230)}`}</style>
