@@ -296,6 +296,20 @@ export function ResponderLayout() {
     { name: 'Live Tracking', path: '/responder/tracking', icon: MapPin },
     { name: 'Dispatch History', path: '/responder/history', icon: History },
   ];
+  const handleResponderNavigation = useCallback(
+    (event, path) => {
+      // Force the route transition to commit before map/geolocation work can
+      // enqueue another render. The layout stays mounted, so GPS tracking and
+      // dispatch polling continue while the responder views another page.
+      event.preventDefault();
+      event.stopPropagation();
+
+      navigate(path, {
+        flushSync: true,
+      });
+    },
+    [navigate],
+  );
 
   const userName = user?.organization || user?.name || 'Responder Unit';
   const initial = userName.charAt(0).toUpperCase();
@@ -350,6 +364,8 @@ export function ResponderLayout() {
                 <NavLink
                   key={item.name}
                   to={item.path}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={(event) => handleResponderNavigation(event, item.path)}
                   className={({ isActive }) =>
                     `relative z-[10010] flex w-full touch-manipulation items-center gap-3 py-3 rounded-lg text-[12px] font-bold transition-all cursor-pointer ${isCollapsed ? 'justify-center px-0' : 'px-4'} ${
                       isActive
