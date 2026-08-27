@@ -81,7 +81,7 @@ export function AuthorityDashboardPage() {
     <div className="space-y-4 max-w-[1320px] mx-auto pb-8 font-sans">
 
       {/* Top Banner Ticker */}
-      <div className="flex flex-col justify-between gap-4 rounded-lg border border-slate-700 bg-[#0b1728] p-5 sm:flex-row sm:items-center sm:p-6">
+      <div className="flex flex-col justify-between gap-4 rounded-lg border border-slate-400 bg-gradient-to-r from-slate-800 via-slate-700 to-slate-600 p-5 sm:flex-row sm:items-center sm:p-6">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="bg-[#e11d48] text-white text-[10px] font-black px-2.5 py-1 uppercase tracking-widest rounded-md ">
@@ -246,7 +246,7 @@ export function AuthorityDashboardPage() {
                     <div className="flex flex-wrap gap-3 pt-3 border-t border-slate-100">
                       <button
                         onClick={() => alert(`Connecting radio channel...`)}
-                        className="px-5 py-2.5 bg-slate-900 hover:bg-[#07111f] text-white text-[11px] font-bold uppercase tracking-widest rounded cursor-pointer  transition-colors"
+                        className="px-5 py-2.5 bg-slate-900 hover:bg-slate-900 text-white text-[11px] font-bold uppercase tracking-widest rounded cursor-pointer  transition-colors"
                       >
                         Radio Connect PCR
                       </button>

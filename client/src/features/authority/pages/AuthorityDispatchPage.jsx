@@ -145,7 +145,7 @@ export function AuthorityDispatchPage() {
                       <p><strong>Jurisdiction:</strong> {unit.jurisdiction || 'Not specified'}</p>
                       {unit.serviceAccount?.email && <p><strong>Email:</strong> {unit.serviceAccount.email}</p>}
                     </div>
-                    <button onClick={() => assign(unit)} disabled={unit.status !== 'AVAILABLE' || assigning === unit.id || !selectedIncidentId} className="mt-4 w-full rounded-lg bg-slate-900 px-4 py-3 text-[10px] font-black uppercase tracking-wider text-white hover:bg-[#07111f] disabled:opacity-40 disabled:cursor-not-allowed">
+                    <button onClick={() => assign(unit)} disabled={unit.status !== 'AVAILABLE' || assigning === unit.id || !selectedIncidentId} className="mt-4 w-full rounded-lg bg-slate-900 px-4 py-3 text-[10px] font-black uppercase tracking-wider text-white hover:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed">
                       {assigning === unit.id ? 'Assigning…' : unit.status === 'AVAILABLE' ? 'Assign to selected incident' : 'Currently unavailable'}
                     </button>
                   </article>
