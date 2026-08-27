@@ -3,6 +3,7 @@ import { Camera, CheckCircle2, Clock3, ImageUp, Loader2, ShieldCheck, Users, X, 
 import { Html5Qrcode } from 'html5-qrcode';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { groupService } from '../api/groupService';
+import { trackingService } from '../../tracking/api/trackingService';
 
 const READER_ID = 'kavach-group-qr-reader';
 
@@ -52,7 +53,27 @@ export function JoinGroupPage() {
         if (cancelled) return;
         setJoinRequest(next);
         if (next.status === 'APPROVED') {
-          window.setTimeout(() => navigate('/tourist/trips/current', { replace: true }), 700);
+          // Group membership and location-sharing consent are separate backend
+          // records. Without this, the phone can draw its local GPS marker
+          // while every POST /tracking/pings request is rejected with
+          // LOCATION_TRACKING_CONSENT_REQUIRED, so other members never see it.
+          try {
+            await trackingService.grantConsent(next.tripId);
+          } catch (error) {
+            // If consent was already granted this is harmless. For a genuine
+            // failure, keep the user on this screen instead of navigating into
+            // an active trip whose location can never become trusted.
+            setError(
+              error?.response?.data?.error?.message ||
+                'Unable to enable live location sharing for this group trip.',
+            );
+            return;
+          }
+
+          window.setTimeout(
+            () => navigate('/tourist/trips/current', { replace: true }),
+            350,
+          );
         }
       } catch {}
     };

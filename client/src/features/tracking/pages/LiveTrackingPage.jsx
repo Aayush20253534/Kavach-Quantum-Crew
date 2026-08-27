@@ -37,16 +37,44 @@ export function LiveTrackingPage() {
   const { user } = useSelector((state) => state.auth);
   const { data: trip, isLoading } = useCurrentTrip();
   const isActive = trip?.status === 'ACTIVE';
-  const { location, isTracking, permission, error: geoError } = useGeolocation(trip?.id, isActive);
+  const { location, isTracking, permission, error: geoError, pingError } = useGeolocation(trip?.id, isActive);
 
   const [zones, setZones] = useState([]);
   const [group, setGroup] = useState(null);
   const [memberLocations, setMemberLocations] = useState([]);
   const [battery, setBattery] = useState(null);
+  const [trackingConsentReady, setTrackingConsentReady] = useState(false);
 
   useEffect(() => {
     trackingService.getRiskZones().then((data) => setZones(data?.items || data || [])).catch(() => setZones([]));
   }, []);
+
+  useEffect(() => {
+    if (!trip?.id || trip.status !== 'ACTIVE') {
+      setTrackingConsentReady(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    // Existing members who joined before tracking-consent synchronization was
+    // added are repaired here. This is idempotent on the backend.
+    trackingService
+      .grantConsent(trip.id)
+      .then(() => {
+        if (!cancelled) setTrackingConsentReady(true);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setTrackingConsentReady(false);
+          console.error('Unable to enable group location sharing', error);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [trip?.id, trip?.status]);
 
   useEffect(() => {
     if (!trip || trip.tripType !== 'GROUP') {
@@ -77,7 +105,7 @@ export function LiveTrackingPage() {
     };
 
     loadGroup();
-    if (trip.status === 'ACTIVE') timer = window.setInterval(loadGroup, 10000);
+    if (trip.status === 'ACTIVE') timer = window.setInterval(loadGroup, 5000);
 
     return () => {
       cancelled = true;
@@ -106,10 +134,6 @@ export function LiveTrackingPage() {
     [zones, location, trip],
   );
 
-  const onlineMemberCount = useMemo(
-    () => memberLocations.filter((member) => !member.stale).length,
-    [memberLocations],
-  );
   const totalMemberCount = group?.members?.length || 0;
 
   const memberStatuses = useMemo(() => {
@@ -117,16 +141,30 @@ export function LiveTrackingPage() {
     const locationByUser = new Map(memberLocations.map((member) => [member.userId, member]));
     return group.members.map((member, index) => {
       const live = locationByUser.get(member.userId);
+      const isCurrentUser = member.userId === user?.id;
+      const active =
+        isCurrentUser && trackingConsentReady && isTracking
+          ? true
+          : Boolean(live && !live.stale);
+
       return {
         userId: member.userId,
         name: member.user?.name || member.user?.username || 'Group member',
         role: member.role,
         color: live?.color || memberColor(member, index),
-        active: Boolean(live && !live.stale),
-        capturedAt: live?.capturedAt ?? null,
+        active,
+        capturedAt:
+          isCurrentUser && location?.timestamp
+            ? new Date(location.timestamp).toISOString()
+            : live?.capturedAt ?? null,
       };
     });
-  }, [group?.members, memberLocations]);
+  }, [group?.members, isTracking, location?.timestamp, memberLocations, trackingConsentReady, user?.id]);
+
+  const onlineMemberCount = useMemo(
+    () => memberStatuses.filter((member) => member.active).length,
+    [memberStatuses],
+  );
 
   const currentMemberStyle = useMemo(() => {
     const index = group?.members?.findIndex((member) => member.userId === user?.id) ?? -1;
@@ -164,7 +202,19 @@ export function LiveTrackingPage() {
   return (
     <div className="space-y-3 sm:space-y-4 pb-8 sm:pb-10">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
-        <Metric label="Tracking" value={isTracking && isActive ? 'Active' : isActive ? 'Waiting GPS' : 'Trip not started'} icon={Navigation} />
+        <Metric
+          label="Tracking"
+          value={
+            !isActive
+              ? 'Trip not started'
+              : !trackingConsentReady
+                ? 'Enabling sharing'
+                : isTracking
+                  ? 'Active'
+                  : 'Waiting GPS'
+          }
+          icon={Navigation}
+        />
         <Metric
           label="Current zone"
           value={currentZone ? `Danger Zone · ${currentZone.name}` : 'Outside danger zones'}
@@ -179,9 +229,9 @@ export function LiveTrackingPage() {
         <Metric label="Battery" value={battery == null ? 'Unavailable' : `${battery}%`} icon={BatteryMedium} />
       </div>
 
-      {(geoError || permission === 'denied') && (
+      {(geoError || pingError || permission === 'denied') && (
         <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-xs sm:text-sm">
-          {geoError || 'Location permission denied'}
+          {geoError || pingError || 'Location permission denied'}
         </div>
       )}
 
