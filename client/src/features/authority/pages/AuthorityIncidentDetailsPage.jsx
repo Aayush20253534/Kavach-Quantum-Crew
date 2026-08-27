@@ -132,10 +132,10 @@ export function AuthorityIncidentDetailsPage() {
 
   const getStatusStyles = (s) => {
     switch (s) {
-      case 'OPEN': return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'ACKNOWLEDGED': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'OPEN': return 'bg-amber-100 text-slate-950 border-amber-200';
+      case 'ACKNOWLEDGED': return 'bg-blue-100 text-slate-950 border-blue-200';
       case 'IN_PROGRESS': return 'bg-purple-100 text-purple-700 border-purple-200';
-      case 'RESOLVED': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      case 'RESOLVED': return 'bg-emerald-100 text-slate-950 border-emerald-200';
       case 'EXPIRED': return 'bg-slate-200 text-slate-600 border-slate-300';
       default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
@@ -228,17 +228,17 @@ export function AuthorityIncidentDetailsPage() {
 
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Incident Type</p>
+                <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Incident Type</p>
                 <p className="text-[14px] font-black text-slate-900">{incident.type || incident.title || 'Emergency'}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Reported Time</p>
+                <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Reported Time</p>
                 <p className="text-[14px] font-black text-slate-900">{incident.createdAt ? new Date(incident.createdAt).toLocaleString() : 'Just now'}</p>
               </div>
             </div>
 
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Location</p>
+              <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Location</p>
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
                 <div>
@@ -249,7 +249,7 @@ export function AuthorityIncidentDetailsPage() {
             </div>
 
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Initial Description</p>
+              <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Initial Description</p>
               <p className="text-[13px] text-slate-700 font-medium leading-relaxed bg-slate-50 p-4 rounded-lg border border-slate-200">
                 {incident.description || 'No detailed description provided.'}
               </p>
@@ -267,7 +267,7 @@ export function AuthorityIncidentDetailsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`rounded-md px-2 py-1 text-[9px] font-black uppercase tracking-widest ${
-                    incident.fleetAssigned ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                    incident.fleetAssigned ? 'bg-emerald-50 text-slate-950' : 'bg-amber-50 text-slate-950'
                   }`}>
                     {incident.fleetAssigned ? `${tacticalUnits.length} fleet${tacticalUnits.length === 1 ? '' : 's'} assigned` : 'Awaiting fleet assignment'}
                   </span>
@@ -319,7 +319,7 @@ export function AuthorityIncidentDetailsPage() {
                 const isAuthority = msg.senderRole === 'DISASTER_MANAGER' || msg.senderRole === 'SYSTEM_ADMIN';
                 return (
                   <div key={msg.id || idx} className={`flex flex-col ${isAuthority ? 'items-end' : 'items-start'}`}>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 mx-1">
+                    <span className="text-[9px] font-bold text-slate-600 uppercase tracking-wider mb-1 mx-1">
                       {isAuthority ? 'Command Center' : 'Tourist'} • {new Date(msg.createdAt).toLocaleTimeString()}
                     </span>
                     <div className={`max-w-[85%] px-4 py-2.5 rounded-lg  text-[13px] font-medium leading-relaxed ${

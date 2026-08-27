@@ -214,7 +214,7 @@ export function AuthorityLayout() {
         }`}
       >
         <header
-          className={`fixed top-0 right-0 z-20 h-16 border-b border-slate-400 bg-slate-100/95 px-4 backdrop-blur-xl transition-[width] duration-300 ease-out md:px-6 ${
+          className={`fixed top-0 right-0 z-20 h-16 border-b border-slate-400 bg-gradient-to-r from-slate-200/95 via-slate-100/95 to-slate-200/95 px-4 backdrop-blur-xl transition-[width] duration-300 ease-out md:px-6 ${
             isCollapsed
               ? 'md:w-[calc(100%-5rem)]'
               : 'md:w-[calc(100%-16rem)]'

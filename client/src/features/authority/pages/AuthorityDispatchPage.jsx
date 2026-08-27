@@ -82,8 +82,8 @@ export function AuthorityDispatchPage() {
   };
 
   const statusClass = (status) => {
-    if (status === 'AVAILABLE') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    if (status === 'DISPATCHED') return 'bg-blue-50 text-blue-700 border-blue-200';
+    if (status === 'AVAILABLE') return 'bg-emerald-50 text-slate-950 border-emerald-200';
+    if (status === 'DISPATCHED') return 'bg-blue-50 text-slate-950 border-blue-200';
     if (status === 'OUT_OF_SERVICE') return 'bg-red-50 text-red-700 border-red-200';
     return 'bg-slate-50 text-slate-700 border-slate-200';
   };
@@ -92,7 +92,7 @@ export function AuthorityDispatchPage() {
     <div className="font-sans max-w-[1200px] mx-auto pb-10 space-y-7">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-[24px] font-black text-slate-900 uppercase tracking-tight flex items-center gap-2"><Car className="w-6 h-6" /> Emergency Fleet Dispatch</h1>
+          <h1 className="text-[22px] font-black text-slate-900 uppercase tracking-tight flex items-center gap-2"><Car className="w-6 h-6" /> Emergency Fleet Dispatch</h1>
           <p className="text-[13px] text-slate-500 font-medium mt-1">Choose an incident, then assign a fixed-base Police, Hospital/Ambulance, or Fire fleet.</p>
         </div>
         <button onClick={fetchData} disabled={loading} className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold text-[11px] uppercase tracking-wider hover:bg-slate-50  disabled:opacity-50">
@@ -110,7 +110,7 @@ export function AuthorityDispatchPage() {
       </section>
 
       {error && <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm font-semibold text-red-700 flex gap-2"><ServerCrash className="w-5 h-5 shrink-0" />{error}</div>}
-      {notice && <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-sm font-semibold text-emerald-800">{notice}</div>}
+      {notice && <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-sm font-semibold text-slate-950">{notice}</div>}
 
       {activeDispatches.length > 0 && (
         <section>

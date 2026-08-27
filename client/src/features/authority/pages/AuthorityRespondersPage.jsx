@@ -30,8 +30,8 @@ export function AuthorityRespondersPage() {
 
   const getStatusColor = (status) => {
     switch (status?.toUpperCase()) {
-      case 'AVAILABLE': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      case 'BUSY': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'AVAILABLE': return 'bg-emerald-50 text-slate-950 border-emerald-200';
+      case 'BUSY': return 'bg-amber-50 text-slate-950 border-amber-200';
       case 'OFF_DUTY': return 'bg-slate-50 text-slate-600 border-slate-200';
       default: return 'bg-slate-50 text-slate-600 border-slate-200';
     }
@@ -52,9 +52,9 @@ export function AuthorityRespondersPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">Command Center</span>
+            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded">Command Center</span>
           </div>
-          <h1 className="text-[24px] font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+          <h1 className="text-[22px] font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
             <Users className="w-6 h-6 text-slate-800" /> Personnel Roster
           </h1>
           <p className="text-[13px] text-slate-500 font-medium mt-1">
@@ -66,7 +66,7 @@ export function AuthorityRespondersPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center h-24">
           <span className="text-3xl font-black text-slate-900">{responders.length}</span>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total Personnel</span>
+          <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mt-1">Total Personnel</span>
         </div>
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center h-24">
           <span className="text-3xl font-black text-emerald-600">{responders.filter(r => (r.status || 'AVAILABLE') === 'AVAILABLE').length}</span>
@@ -78,7 +78,7 @@ export function AuthorityRespondersPage() {
         </div>
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center h-24">
           <span className="text-3xl font-black text-slate-400">{responders.filter(r => r.status === 'OFF_DUTY').length}</span>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Off Duty</span>
+          <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mt-1">Off Duty</span>
         </div>
       </div>
 

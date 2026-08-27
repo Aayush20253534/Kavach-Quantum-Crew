@@ -212,7 +212,7 @@ export function AuthorityAccountCreationPage() {
                   <button type="button" onClick={useCurrentLocation} disabled={geocoding} className="px-4 py-3 rounded-lg border border-slate-200 bg-white text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50 disabled:opacity-50 flex items-center justify-center gap-2"><Crosshair className="w-4 h-4" /> Use GPS</button>
                 </div>
               </Field>
-              {form.latitude !== '' && form.longitude !== '' && <p className="mt-2 text-[10px] font-bold text-emerald-700">Location fixed at {Number(form.latitude).toFixed(6)}, {Number(form.longitude).toFixed(6)}</p>}
+              {form.latitude !== '' && form.longitude !== '' && <p className="mt-2 text-[10px] font-bold text-slate-950">Location fixed at {Number(form.latitude).toFixed(6)}, {Number(form.longitude).toFixed(6)}</p>}
             </div>
             <Field label="Username" hint="6-40 characters"><input required minLength={6} maxLength={40} value={form.username} onChange={update('username')} autoComplete="off" className="field-input" placeholder="police.central01" /></Field>
             <Field label="Email"><input required type="email" value={form.email} onChange={update('email')} autoComplete="off" className="field-input" placeholder="dispatch@example.com" /></Field>
@@ -225,7 +225,7 @@ export function AuthorityAccountCreationPage() {
           </div>
 
           {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-700">{error}</div>}
-          {created && <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 flex items-start gap-3"><CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" /><div><p className="text-xs font-black text-emerald-900">{selected.label} fleet created successfully.</p><p className="text-[11px] text-emerald-800 mt-1 leading-5">Fleet: <strong>{created.account?.organization || created.account?.name}</strong>. Login: <strong>{created.account?.username}</strong>. Its fixed base location is immediately available for dispatch selection.</p></div></div>}
+          {created && <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 flex items-start gap-3"><CheckCircle2 className="w-5 h-5 text-slate-950 shrink-0 mt-0.5" /><div><p className="text-xs font-black text-emerald-900">{selected.label} fleet created successfully.</p><p className="text-[11px] text-slate-950 mt-1 leading-5">Fleet: <strong>{created.account?.organization || created.account?.name}</strong>. Login: <strong>{created.account?.username}</strong>. Its fixed base location is immediately available for dispatch selection.</p></div></div>}
 
           <div className="flex justify-end pt-1"><button type="submit" disabled={submitting || geocoding} className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-rose-600 text-white text-xs font-black uppercase tracking-wider hover:bg-rose-700 disabled:opacity-60 disabled:cursor-not-allowed ">{submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}{submitting ? 'Creating Fleet' : `Create ${selected.label} Fleet`}</button></div>
         </form>

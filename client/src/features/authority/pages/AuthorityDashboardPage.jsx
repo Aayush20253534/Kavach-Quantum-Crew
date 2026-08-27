@@ -87,9 +87,9 @@ export function AuthorityDashboardPage() {
             <span className="bg-[#e11d48] text-white text-[10px] font-black px-2.5 py-1 uppercase tracking-widest rounded-md ">
               {jurisdiction.toUpperCase()} COMMAND
             </span>
-            <span className="text-[11px] text-slate-300 font-bold tracking-widest uppercase">JURISDICTION-AWARE EMERGENCY GRID</span>
+            <span className="text-[11px] text-slate-600 font-bold tracking-widest uppercase">JURISDICTION-AWARE EMERGENCY GRID</span>
           </div>
-          <h1 className="text-[22px] sm:text-[24px] font-black text-white tracking-tight">
+          <h1 className="text-[22px] sm:text-[22px] font-black text-white tracking-tight">
             Emergency Operations Command
           </h1>
         </div>
@@ -109,7 +109,7 @@ export function AuthorityDashboardPage() {
             <span>Active Tourists</span>
             <Users className="w-4 h-4 text-slate-400" />
           </div>
-          <p className="text-[24px] font-black text-slate-900">{activeTourists}</p>
+          <p className="text-[22px] font-black text-slate-900">{activeTourists}</p>
           <span className="text-[11px] text-[#16a34a] font-bold">{commandStats?.activeTrips ?? 0} active trips</span>
         </div>
 
@@ -118,7 +118,7 @@ export function AuthorityDashboardPage() {
             <span>Active Emergencies</span>
             <Radio className="w-4 h-4 text-[#e11d48] animate-pulse" />
           </div>
-          <p className="text-[24px] font-black text-[#e11d48]">{activeIncidents.length} Active</p>
+          <p className="text-[22px] font-black text-[#e11d48]">{activeIncidents.length} Active</p>
           <span className="text-[11px] text-[#991b1b] font-bold">{commandStats?.criticalIncidents ?? 0} critical incidents</span>
         </div>
 
@@ -127,7 +127,7 @@ export function AuthorityDashboardPage() {
             <span>Police Stations</span>
             <Building2 className="w-4 h-4 text-[#2563eb]" />
           </div>
-          <p className="text-[24px] font-black text-[#2563eb]">{policeCount}</p>
+          <p className="text-[22px] font-black text-[#2563eb]">{policeCount}</p>
           <span className="text-[10px] text-slate-500 font-bold">Google Places · {jurisdiction}</span>
         </div>
 
@@ -136,7 +136,7 @@ export function AuthorityDashboardPage() {
             <span>Fire Response Stations</span>
             <Flame className="w-4 h-4 text-[#dc2626]" />
           </div>
-          <p className="text-[24px] font-black text-[#dc2626]">{fireCount}</p>
+          <p className="text-[22px] font-black text-[#dc2626]">{fireCount}</p>
           <span className="text-[10px] text-slate-500 font-bold">Google Places · {jurisdiction}</span>
         </div>
       </div>
@@ -154,7 +154,7 @@ export function AuthorityDashboardPage() {
                   <p className="mt-0.5 text-[10px] font-semibold text-slate-500">{jurisdiction}</p>
                 </div>
                 <div className="flex flex-wrap justify-end gap-1.5 text-[9px] font-bold">
-                  <span className="rounded-md bg-blue-50 px-2 py-1 text-blue-700">Police {policeCount}</span>
+                  <span className="rounded-md bg-blue-50 px-2 py-1 text-slate-950">Police {policeCount}</span>
                   <span className="rounded-md bg-red-50 px-2 py-1 text-red-700">Fire {fireCount}</span>
                   <span className="rounded-md bg-green-50 px-2 py-1 text-green-700">
                     Hospitals {nearbyServices.hospitals?.length || 0}
@@ -200,7 +200,7 @@ export function AuthorityDashboardPage() {
                 </div>
               ) : activeIncidents.length === 0 ? (
                 <div className="text-center py-10 bg-white border border-slate-200 rounded-md">
-                   <ShieldCheck className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                   <ShieldCheck className="w-10 h-10 text-slate-600 mx-auto mb-3" />
                    <p className="text-[13px] font-bold text-slate-500 uppercase tracking-widest">No Active Incidents</p>
                 </div>
               ) : (

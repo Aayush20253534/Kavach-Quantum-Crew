@@ -56,9 +56,9 @@ export function AuthorityHazardsPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">Command Center</span>
+            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded">Command Center</span>
           </div>
-          <h1 className="text-[24px] font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+          <h1 className="text-[22px] font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
             <AlertTriangle className="w-6 h-6 text-amber-500" /> Hazard Triage Queue
           </h1>
           <p className="text-[13px] text-slate-500 font-medium mt-1">
@@ -116,9 +116,9 @@ export function AuthorityHazardsPage() {
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-2">
                     <span className={`px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest border ${
-                      hazard.status === 'PENDING' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                      hazard.status === 'PENDING' ? 'bg-amber-50 text-slate-950 border-amber-200' :
                       hazard.status === 'VERIFIED' ? 'bg-red-50 text-red-700 border-red-200' :
-                      hazard.status === 'RESOLVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                      hazard.status === 'RESOLVED' ? 'bg-emerald-50 text-slate-950 border-emerald-200' :
                       'bg-slate-50 text-slate-600 border-slate-200'
                     }`}>
                       {hazard.status || 'PENDING'}
