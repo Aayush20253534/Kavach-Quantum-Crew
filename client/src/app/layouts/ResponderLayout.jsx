@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -29,16 +29,18 @@ export function ResponderLayout() {
   const [logoutBusy, setLogoutBusy] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const [responderProfile, setResponderProfile] = useState(null);
-  const [navigatingTo, setNavigatingTo] = useState('');
+  const [trackingDispatches, setTrackingDispatches] = useState([]);
+  const [trackingDispatchId, setTrackingDispatchId] = useState('');
+  const [trackingSnapshot, setTrackingSnapshot] = useState(null);
+  const [trackingLocation, setTrackingLocation] = useState(null);
+  const [trackingSending, setTrackingSending] = useState(false);
+  const [trackingError, setTrackingError] = useState('');
+  const [trackingLoading, setTrackingLoading] = useState(true);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    setNavigatingTo('');
-  }, [location.pathname]);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,6 +53,154 @@ export function ResponderLayout() {
       });
     return () => { cancelled = true; };
   }, []);
+
+  const loadTrackingDispatches = useCallback(async () => {
+    try {
+      const response = await emergencyServicesApi.getDispatches();
+      const rows = response?.data?.data || [];
+      const active = rows.filter(
+        (currentDispatch) =>
+          !['COMPLETED', 'CANCELLED'].includes(
+            String(currentDispatch.status || '').toUpperCase(),
+          ),
+      );
+
+      setTrackingDispatches(active);
+      setTrackingDispatchId((current) =>
+        active.some((currentDispatch) => currentDispatch.id === current)
+          ? current
+          : active[0]?.id || '',
+      );
+      setTrackingError('');
+    } catch (error) {
+      setTrackingError(
+        error?.response?.data?.error?.message ||
+          'Unable to synchronize active fleet dispatches.',
+      );
+    } finally {
+      setTrackingLoading(false);
+    }
+  }, []);
+
+  const loadTrackingSnapshot = useCallback(async () => {
+    if (!trackingDispatchId) {
+      setTrackingSnapshot(null);
+      return;
+    }
+
+    try {
+      const response = await emergencyServicesApi.getTracking(trackingDispatchId);
+      setTrackingSnapshot(response?.data?.data || null);
+      setTrackingError('');
+    } catch (error) {
+      setTrackingError(
+        error?.response?.data?.error?.message ||
+          'Unable to synchronize live fleet tracking.',
+      );
+    }
+  }, [trackingDispatchId]);
+
+  useEffect(() => {
+    loadTrackingDispatches();
+    const timer = window.setInterval(loadTrackingDispatches, 15000);
+    return () => window.clearInterval(timer);
+  }, [loadTrackingDispatches]);
+
+  useEffect(() => {
+    if (!trackingDispatchId) {
+      setTrackingSnapshot(null);
+      return undefined;
+    }
+
+    loadTrackingSnapshot();
+    const timer = window.setInterval(loadTrackingSnapshot, 10000);
+
+    return () => window.clearInterval(timer);
+  }, [loadTrackingSnapshot, trackingDispatchId]);
+
+  useEffect(() => {
+    if (!trackingDispatchId || !navigator.geolocation) return undefined;
+
+    let cancelled = false;
+
+    const watchId = navigator.geolocation.watchPosition(
+      async ({ coords }) => {
+        if (cancelled) return;
+
+        const nextLocation = {
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+        };
+
+        setTrackingLocation(nextLocation);
+        setTrackingSending(true);
+
+        try {
+          await emergencyServicesApi.updateDispatchLocation(
+            trackingDispatchId,
+            nextLocation,
+          );
+
+          if (!cancelled) setTrackingError('');
+        } catch (error) {
+          if (!cancelled) {
+            setTrackingError(
+              error?.response?.data?.error?.message ||
+                'Unable to transmit live fleet GPS.',
+            );
+          }
+        } finally {
+          if (!cancelled) setTrackingSending(false);
+        }
+      },
+      () => {
+        if (!cancelled) {
+          setTrackingError(
+            'Location permission is required for continuous fleet tracking.',
+          );
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+        timeout: 15000,
+      },
+    );
+
+    return () => {
+      cancelled = true;
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, [trackingDispatchId]);
+
+  const refreshBackgroundTracking = useCallback(async () => {
+    await loadTrackingDispatches();
+    await loadTrackingSnapshot();
+  }, [loadTrackingDispatches, loadTrackingSnapshot]);
+
+  const backgroundTracking = useMemo(
+    () => ({
+      dispatches: trackingDispatches,
+      selectedId: trackingDispatchId,
+      setSelectedId: setTrackingDispatchId,
+      tracking: trackingSnapshot,
+      location: trackingLocation,
+      sending: trackingSending,
+      error: trackingError,
+      loading: trackingLoading,
+      refresh: refreshBackgroundTracking,
+    }),
+    [
+      refreshBackgroundTracking,
+      trackingDispatches,
+      trackingDispatchId,
+      trackingSnapshot,
+      trackingLocation,
+      trackingSending,
+      trackingError,
+      trackingLoading,
+    ],
+  );
 
   const timeLabel = now.toLocaleTimeString([], { hour12: true, hour: '2-digit', minute: '2-digit' });
   const dateLabel = now.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric', weekday: 'long' });
@@ -71,27 +221,13 @@ export function ResponderLayout() {
   };
 
   const handleResponderNavigation = (path) => {
-    if (location.pathname === path || navigatingTo) return;
+    if (location.pathname === path) return;
 
-    setNavigatingTo(path);
-
-    // Release focus before leaving Google Maps. Some Maps controls retain
-    // pointer/focus state while their internal panes are being destroyed.
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
 
     navigate(path);
-
-    // React Router should complete synchronously, but Live Tracking owns
-    // geolocation, DirectionsService and Google Maps listeners. If a browser
-    // ever leaves the old location mounted, fall back to a real navigation so
-    // the operator is never trapped on the tracking screen.
-    window.setTimeout(() => {
-      if (window.location.pathname !== path) {
-        window.location.assign(path);
-      }
-    }, 180);
   };
 
   const getTheme = () => {
@@ -226,14 +362,8 @@ export function ResponderLayout() {
                 <button
                   key={item.name}
                   type="button"
-                  onPointerDown={(event) => {
-                    if (event.button !== 0) return;
-                    event.preventDefault();
-                    handleResponderNavigation(item.path);
-                  }}
                   onClick={() => handleResponderNavigation(item.path)}
-                  disabled={Boolean(navigatingTo) && navigatingTo !== item.path}
-                  className={`relative z-[10010] flex w-full touch-manipulation items-center gap-3 py-3 rounded-lg text-[12px] font-bold transition-all cursor-pointer disabled:cursor-wait disabled:opacity-60 ${isCollapsed ? 'justify-center px-0' : 'px-4'} ${
+                  className={`relative z-[10010] flex w-full touch-manipulation items-center gap-3 py-3 rounded-lg text-[12px] font-bold transition-all cursor-pointer ${isCollapsed ? 'justify-center px-0' : 'px-4'} ${
                     isActive
                       ? `${theme.lightBgClass} ${theme.textClass} after:absolute after:left-0 after:top-2 after:bottom-2 after:w-1 after:${theme.bgClass} after:rounded-r-sm`
                       : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -241,8 +371,8 @@ export function ResponderLayout() {
                   title={isCollapsed ? item.name : undefined}
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  <Icon className={`w-4 h-4 shrink-0 ${navigatingTo === item.path ? 'animate-pulse' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
-                  {!isCollapsed && <span>{navigatingTo === item.path ? 'Opening…' : item.name}</span>}
+                  <Icon className="w-4 h-4 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
+                  {!isCollapsed && <span>{item.name}</span>}
                 </button>
               );
             })}
@@ -274,7 +404,7 @@ export function ResponderLayout() {
 
       {/* MAIN APPLICATION AREA */}
       <div className={`relative z-0 flex min-h-screen min-w-0 flex-1 flex-col transition-[margin,width] duration-300 ease-out ${isCollapsed ? 'lg:ml-20 lg:w-[calc(100%-5rem)]' : 'lg:ml-[280px] lg:w-[calc(100%-280px)]'}`} >
-        
+
         <header className={`fixed top-0 right-0 z-[60] h-16 bg-white border-b border-slate-300 px-4 lg:px-8 flex items-center justify-between transition-[width] duration-300 w-full ${isCollapsed ? 'lg:w-[calc(100%-5rem)]' : 'lg:w-[calc(100%-280px)]'}`}>
           <div className="flex items-center gap-2 sm:gap-3">
             <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg ${theme.lightBgClass} flex items-center justify-center shrink-0`}>
@@ -310,7 +440,7 @@ export function ResponderLayout() {
         </header>
 
         <main className="flex-1 p-4 lg:p-8 mt-16 pb-24 lg:pb-8 max-w-[1500px] w-full mx-auto">
-          <Outlet key={location.pathname} context={{ theme, responderProfile }} />
+          <Outlet context={{ theme, responderProfile, backgroundTracking }} />
         </main>
       </div>
     </div>
