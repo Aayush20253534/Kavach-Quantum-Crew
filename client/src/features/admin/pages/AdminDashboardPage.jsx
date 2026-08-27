@@ -13,15 +13,15 @@ import { Link } from 'react-router-dom';
 
 import { adminService } from '../api/adminService';
 
-const cards = [
-  ['Tourists', 'tourists', Users],
-  ['Disaster Managers', 'disasterManagers', ShieldAlert],
-  ['Active Trips', 'activeTrips', Route],
-  ['Open Incidents', 'openIncidents', AlertTriangle],
-  ['Critical Incidents', 'criticalIncidents', ShieldAlert],
-  ['Pending Hazards', 'pendingHazards', AlertTriangle],
-  ['Emergency Units', 'availableEmergencyUnits', Activity],
-  ['Destinations', 'activeDestinations', MapPinned],
+const metrics = [
+  ['Registered Tourists', 'tourists', Users, 'Identity'],
+  ['Disaster Management Accounts', 'disasterManagers', ShieldAlert, 'Access'],
+  ['Active Trips', 'activeTrips', Route, 'Operations'],
+  ['Active Incidents', 'openIncidents', AlertTriangle, 'Operations'],
+  ['Critical Incidents', 'criticalIncidents', ShieldAlert, 'Operations'],
+  ['Open Safety Reports', 'pendingHazards', AlertTriangle, 'Safety'],
+  ['Available Fleet Units', 'availableEmergencyUnits', Activity, 'Response'],
+  ['Managed Destinations', 'activeDestinations', MapPinned, 'Content'],
 ];
 
 export function AdminDashboardPage() {
@@ -42,118 +42,155 @@ export function AdminDashboardPage() {
         setError(
           requestError?.response?.data?.error?.message ||
             requestError?.message ||
-            'Unable to load system administration dashboard.',
+            'Unable to load the administration overview.',
         );
       });
   }, []);
 
   if (!summary && !error) {
     return (
-      <div className="py-24 flex justify-center">
-        <Loader2 className="w-7 h-7 animate-spin text-slate-400" />
+      <div className="flex justify-center py-24">
+        <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
       </div>
     );
   }
 
+  const health = diagnostics?.status || 'unknown';
+  const healthLabel =
+    health === 'healthy' ? 'Operational' : health === 'unknown' ? 'Unavailable' : 'Degraded';
+
   return (
-    <div className="max-w-[1200px] mx-auto pb-10 space-y-6">
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">
-          System Admin
+    <div className="mx-auto max-w-[1360px] space-y-8 pb-12">
+      <header className="border-b border-slate-200 pb-5">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+          Administration
         </p>
-        <h1 className="mt-1 text-xl font-black uppercase tracking-tight">
-          Platform Overview
-        </h1>
-        <p className="text-xs text-slate-500 mt-1">
-          Live platform totals, operational health and tourist destination management.
-        </p>
-      </div>
+        <div className="mt-2 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-slate-950">
+              Platform Overview
+            </h1>
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+              Platform access, live operations, emergency response capacity and managed tourist content.
+            </p>
+          </div>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            Live administrative data
+          </p>
+        </div>
+      </header>
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-700">
+        <div className="border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">
           {error}
         </div>
       )}
 
       {summary && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {cards.map(([label, key, Icon]) => (
-            <div key={key} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-              <div className="flex justify-between gap-3">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                  {label}
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-700">
+              Operational Summary
+            </h2>
+            <span className="text-[10px] font-semibold text-slate-400">Current totals</span>
+          </div>
+          <div className="grid grid-cols-2 border-l border-t border-slate-200 lg:grid-cols-4">
+            {metrics.map(([label, key, Icon, group]) => (
+              <div
+                key={key}
+                className="min-h-[132px] border-b border-r border-slate-200 bg-white p-5"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                      {group}
+                    </p>
+                    <p className="mt-1 text-[11px] font-bold leading-4 text-slate-700">
+                      {label}
+                    </p>
+                  </div>
+                  <Icon className="h-4 w-4 shrink-0 text-slate-400" />
+                </div>
+                <p className="mt-5 text-3xl font-black tracking-tight text-slate-950">
+                  {summary[key] ?? 0}
                 </p>
-                <Icon className="w-4 h-4 text-slate-400" />
               </div>
-              <p className="mt-3 text-xl font-black text-slate-900">
-                {summary[key] ?? 0}
-              </p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </section>
       )}
 
-      <div className="grid lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-          <h2 className="font-black text-xs uppercase tracking-wide">
-            Administrative shortcuts
-          </h2>
-          <div className="grid sm:grid-cols-3 gap-3 mt-5">
+      <div className="grid gap-6 lg:grid-cols-[1.65fr_1fr]">
+        <section className="border border-slate-200 bg-white">
+          <div className="border-b border-slate-200 px-5 py-4">
+            <h2 className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-800">
+              Administration Workspace
+            </h2>
+            <p className="mt-1 text-[11px] text-slate-500">
+              Frequently used platform controls.
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-3">
             <Shortcut
               to="/admin/locations"
               icon={MapPinned}
-              title="Destinations"
-              text="Add locations and dashboard images."
+              title="Destination Registry"
+              text="Manage tourist-facing locations, coordinates and imagery."
             />
             <Shortcut
               to="/admin/accounts"
               icon={Users}
-              title="Accounts"
-              text="Manage tourist and staff access."
+              title="Identity & Access"
+              text="Review tourist, authority, fleet and administrative accounts."
             />
             <Shortcut
               to="/admin/audit"
               icon={Database}
-              title="Audit"
-              text="Inspect system activity and diagnostics."
+              title="Audit & Diagnostics"
+              text="Review administrative actions and backend health information."
             />
           </div>
-        </div>
+        </section>
 
-        <div className="bg-slate-950 text-white rounded-xl p-6 shadow-sm">
-          <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
-            Backend health
-          </p>
-          <p
-            className={`mt-3 text-lg font-black ${
-              diagnostics?.status === 'healthy'
-                ? 'text-emerald-400'
-                : 'text-amber-400'
-            }`}
-          >
-            {(diagnostics?.status || 'unknown').toUpperCase()}
-          </p>
-          <div className="mt-5 space-y-2 text-[11px]">
-            <p className="flex justify-between gap-3">
-              <span className="text-slate-400">Database</span>
-              <span>{diagnostics?.database?.status || 'unknown'}</span>
-            </p>
-            <p className="flex justify-between gap-3">
-              <span className="text-slate-400">Uptime</span>
-              <span>{Math.floor((diagnostics?.uptimeSeconds || 0) / 60)} min</span>
-            </p>
-            <p className="flex justify-between gap-3">
-              <span className="text-slate-400">Heap used</span>
-              <span>
-                {diagnostics?.memory?.heapUsedBytes
-                  ? `${Math.round(
-                      diagnostics.memory.heapUsedBytes / 1024 / 1024,
-                    )} MB`
-                  : '—'}
-              </span>
+        <section className="border border-slate-200 bg-white">
+          <div className="border-b border-slate-200 px-5 py-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+              Platform Diagnostics
             </p>
           </div>
-        </div>
+          <div className="p-5">
+            <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Service state
+                </p>
+                <p className="mt-1 text-lg font-black text-slate-950">{healthLabel}</p>
+              </div>
+              <span
+                className={`h-2.5 w-2.5 ${
+                  health === 'healthy' ? 'bg-emerald-500' : health === 'unknown' ? 'bg-slate-400' : 'bg-amber-500'
+                }`}
+                aria-hidden="true"
+              />
+            </div>
+
+            <dl className="divide-y divide-slate-100 text-[11px]">
+              <DiagnosticRow label="Database" value={diagnostics?.database?.status || 'unknown'} />
+              <DiagnosticRow
+                label="Backend uptime"
+                value={`${Math.floor((diagnostics?.uptimeSeconds || 0) / 60)} min`}
+              />
+              <DiagnosticRow
+                label="Heap memory used"
+                value={
+                  diagnostics?.memory?.heapUsedBytes
+                    ? `${Math.round(diagnostics.memory.heapUsedBytes / 1024 / 1024)} MB`
+                    : 'Not available'
+                }
+              />
+            </dl>
+          </div>
+        </section>
       </div>
     </div>
   );
@@ -163,11 +200,20 @@ function Shortcut({ to, icon: Icon, title, text }) {
   return (
     <Link
       to={to}
-      className="p-4 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40 transition"
+      className="group min-h-[174px] border-b border-slate-200 p-5 transition-colors hover:bg-slate-50 sm:border-b-0 sm:border-r last:border-r-0"
     >
-      <Icon className="w-5 h-5 text-indigo-600" />
-      <p className="mt-3 text-xs font-black">{title}</p>
-      <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">{text}</p>
+      <Icon className="h-5 w-5 text-slate-700 transition-colors group-hover:text-slate-950" />
+      <p className="mt-5 text-sm font-black text-slate-950">{title}</p>
+      <p className="mt-2 text-[11px] leading-5 text-slate-500">{text}</p>
     </Link>
+  );
+}
+
+function DiagnosticRow({ label, value }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-3">
+      <dt className="font-medium text-slate-500">{label}</dt>
+      <dd className="font-bold capitalize text-slate-800">{value}</dd>
+    </div>
   );
 }
