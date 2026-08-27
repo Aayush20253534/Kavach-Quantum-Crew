@@ -101,8 +101,8 @@ export function AuthorityIncidentsPage() {
     switch (priority?.toUpperCase()) {
       case 'CRITICAL': return 'bg-red-50 text-red-700 border-red-200';
       case 'HIGH': return 'bg-orange-50 text-orange-700 border-orange-200';
-      case 'MEDIUM': return 'bg-amber-50 text-amber-700 border-amber-200';
-      case 'LOW': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'MEDIUM': return 'bg-amber-50 text-slate-950 border-amber-200';
+      case 'LOW': return 'bg-blue-50 text-slate-950 border-blue-200';
       default: return 'bg-slate-50 text-slate-700 border-slate-200';
     }
   };
@@ -137,10 +137,10 @@ export function AuthorityIncidentsPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">Emergency Operations</span>
+            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded">Emergency Operations</span>
             <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
           </div>
-          <h1 className="text-[24px] font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+          <h1 className="text-[22px] font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
             Incident Command Queue
           </h1>
           <p className="text-[13px] text-slate-500 font-medium mt-1">
@@ -169,7 +169,7 @@ export function AuthorityIncidentsPage() {
       {/* Metrics Row */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="bg-white p-4 rounded-lg border border-slate-200 bg-white flex flex-col justify-between min-h-[92px]">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Incidents</span>
+          <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Active Incidents</span>
           <div className="flex items-end justify-between">
             <span className="text-3xl font-black text-slate-900">{activeCount}</span>
             {activeCount > 0 && <span className="text-[10px] font-bold text-red-500 mb-1 flex items-center"><ArrowUpRight className="w-3 h-3" /> Live</span>}
@@ -186,7 +186,7 @@ export function AuthorityIncidentsPage() {
           </div>
         </div>
         <div className="bg-white p-4 rounded-lg border border-slate-200 bg-white flex flex-col justify-between min-h-[92px]">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Avg Response Time</span>
+          <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Avg Response Time</span>
           <div className="flex items-end justify-between">
             <span className="text-3xl font-black text-slate-900">
               {responseMetrics.averageMinutes == null ? '—' : responseMetrics.averageMinutes}
@@ -204,7 +204,7 @@ export function AuthorityIncidentsPage() {
           </div>
         </div>
         <div className="bg-white p-4 rounded-lg border border-slate-200 bg-white flex flex-col justify-between min-h-[92px]">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Units Deployed</span>
+          <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Units Deployed</span>
           <div className="flex items-end justify-between">
             <span className="text-3xl font-black text-slate-900">{unitMetrics.deployed}</span>
             <span className="text-[10px] font-bold text-slate-400 mb-1">

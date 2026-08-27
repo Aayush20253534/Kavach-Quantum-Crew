@@ -135,7 +135,7 @@ export function AuthorityRiskZonesPage() {
     <div className="font-sans max-w-[1200px] mx-auto pb-8 sm:pb-10">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-5 sm:mb-8">
         <div>
-          <h1 className="text-[20px] sm:text-[24px] font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+          <h1 className="text-[20px] sm:text-[22px] font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
             <Map className="w-5 h-5 sm:w-6 sm:h-6 text-slate-800" /> Risk Zone Registry
           </h1>
           <p className="text-[11px] sm:text-[13px] text-slate-500 font-medium mt-1">
@@ -145,7 +145,7 @@ export function AuthorityRiskZonesPage() {
       </div>
 
       {error && <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-200 text-[11px] sm:text-xs font-semibold text-red-700">{error}</div>}
-      {success && <div className="mb-4 p-3 rounded-md bg-emerald-50 border border-emerald-200 text-[11px] sm:text-xs font-semibold text-emerald-700">{success}</div>}
+      {success && <div className="mb-4 p-3 rounded-md bg-emerald-50 border border-emerald-200 text-[11px] sm:text-xs font-semibold text-slate-950">{success}</div>}
 
       {isSystemAdmin && (
         <div className="mb-5 bg-white border border-slate-950 rounded-lg p-4 sm:p-5 ">

@@ -61,15 +61,15 @@ export function AuthorityAnalyticsPage() {
   };
 
   return (
-    <div className="font-sans max-w-[1200px] mx-auto pb-10">
+    <div className="font-sans max-w-[1400px] mx-auto pb-10">
 
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">Command Center</span>
+            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded">Command Center</span>
           </div>
-          <h1 className="text-[24px] font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
-            <BarChart4 className="w-6 h-6 text-[#0b1728]" /> Response Intelligence
+          <h1 className="text-[20px] font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+            <BarChart4 className="w-5 h-5 text-slate-950" /> Response Intelligence
           </h1>
           <p className="text-[13px] text-slate-500 font-medium mt-1">
             Backend-derived incident volume and response performance{data?.jurisdiction ? ` for ${data.jurisdiction}` : ''}.
@@ -101,55 +101,55 @@ export function AuthorityAnalyticsPage() {
         <div className="space-y-6">
 
           {/* Top KPIs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-lg border border-slate-200  relative overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-lg border border-slate-300 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-5">
-                <AlertOctagon className="w-24 h-24 text-slate-900" />
+                <AlertOctagon className="w-16 h-16 text-slate-900" />
               </div>
-              <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1 relative z-10">Total Incidents (30d)</h3>
+              <h3 className="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1 relative z-10">Total Incidents (30d)</h3>
               <div className="flex items-end gap-3 relative z-10">
-                <span className="text-[40px] font-black text-slate-900 leading-none tracking-tighter">{data.totalIncidents}</span>
+                <span className="text-[30px] font-black text-slate-900 leading-none tracking-tighter">{data.totalIncidents}</span>
                 <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded mb-1.5">Live DB</span>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-lg border border-slate-200  relative overflow-hidden">
+            <div className="bg-white p-4 rounded-lg border border-slate-300 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-5">
-                <AlertOctagon className="w-24 h-24 text-emerald-900" />
+                <AlertOctagon className="w-16 h-16 text-emerald-900" />
               </div>
-              <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1 relative z-10">Resolved Incidents</h3>
+              <h3 className="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1 relative z-10">Resolved Incidents</h3>
               <div className="flex items-end gap-3 relative z-10">
-                <span className="text-[40px] font-black text-emerald-700 leading-none tracking-tighter">{data.resolvedIncidents}</span>
+                <span className="text-[30px] font-black text-slate-950 leading-none tracking-tighter">{data.resolvedIncidents}</span>
                 <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded mb-1.5">{data.activeIncidents} active</span>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-lg border border-slate-200  relative overflow-hidden">
+            <div className="bg-white p-4 rounded-lg border border-slate-300 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-5">
-                <Clock className="w-24 h-24 text-indigo-900" />
+                <Clock className="w-16 h-16 text-slate-950" />
               </div>
-              <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1 relative z-10">Avg Response Time</h3>
+              <h3 className="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1 relative z-10">Avg Response Time</h3>
               <div className="flex items-end gap-3 relative z-10">
-                <span className="text-[40px] font-black text-slate-900 leading-none tracking-tighter">{data.responseTimes.average ?? '—'}{data.responseTimes.average != null && <span className="text-[20px] ml-1 text-slate-500">m</span>}</span>
+                <span className="text-[30px] font-black text-slate-900 leading-none tracking-tighter">{data.responseTimes.average ?? '—'}{data.responseTimes.average != null && <span className="text-[14px] ml-1 text-slate-500">m</span>}</span>
                 <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded mb-1.5">{data.responseTimes.respondedCount} responded</span>
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-lg border border-slate-200 text-slate-900 relative overflow-hidden">
+            <div className="bg-white p-4 rounded-lg border border-slate-300 text-slate-900 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-10">
-                <Target className="w-24 h-24 text-white" />
+                <Target className="w-16 h-16 text-white" />
               </div>
-              <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1 relative z-10">SLA Compliance</h3>
+              <h3 className="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1 relative z-10">SLA Compliance</h3>
               <div className="flex items-end gap-3 relative z-10">
-                <span className="text-[40px] font-black text-slate-950 leading-none tracking-tighter">{data.responseTimes.slaUnderFiveMinutesPercent}%</span>
-                <span className="text-[12px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded mb-1.5">Target: 95%</span>
+                <span className="text-[30px] font-black text-slate-950 leading-none tracking-tighter">{data.responseTimes.slaUnderFiveMinutesPercent}%</span>
+                <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded mb-1.5">Target: 95%</span>
               </div>
             </div>
           </div>
 
           {/* Backend-integrated charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-lg border border-slate-200  h-80 flex flex-col">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-white p-5 rounded-lg border border-slate-300 h-72 flex flex-col">
               <div className="flex items-start justify-between gap-3 mb-5">
                 <div>
                   <h3 className="text-[12px] font-bold text-slate-900 uppercase tracking-widest">
@@ -159,7 +159,7 @@ export function AuthorityAnalyticsPage() {
                     Last 30 days from incident records
                   </p>
                 </div>
-                <span className="text-[10px] font-black text-[#0b1728] bg-slate-50 px-2 py-1 rounded">
+                <span className="text-[10px] font-black text-slate-950 bg-slate-50 px-2 py-1 rounded">
                   {data.totalIncidents} incidents
                 </span>
               </div>
@@ -213,7 +213,7 @@ export function AuthorityAnalyticsPage() {
               )}
             </div>
 
-            <div className="bg-white p-6 rounded-lg border border-slate-200  h-80 flex flex-col">
+            <div className="bg-white p-5 rounded-lg border border-slate-300 h-72 flex flex-col">
               <div className="mb-5">
                 <h3 className="text-[12px] font-bold text-slate-900 uppercase tracking-widest">
                   Response Time Distribution
@@ -227,12 +227,12 @@ export function AuthorityAnalyticsPage() {
                 {data.responseTimes.distribution.map((bucket) => {
                   const barClass =
                     bucket.key === 'UNDER_2'
-                      ? 'bg-emerald-500'
+                      ? 'bg-slate-900'
                       : bucket.key === 'TWO_TO_FIVE'
-                        ? 'bg-slate-500'
+                        ? 'bg-slate-700'
                         : bucket.key === 'FIVE_TO_TEN'
-                          ? 'bg-amber-500'
-                          : 'bg-red-500';
+                          ? 'bg-slate-500'
+                          : 'bg-slate-400';
 
                   return (
                     <div key={bucket.key}>
