@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
-  ChevronLeft, AlertTriangle, MapPin, Clock, ShieldCheck, 
-  PhoneCall, MessageSquare, Crosshair, CheckCircle2, Paperclip, 
+  ChevronLeft, AlertTriangle, MapPin, Clock, ShieldCheck,
+  PhoneCall, MessageSquare, Crosshair, CheckCircle2, Paperclip,
   Send, MoreHorizontal, Radio, ShieldAlert, User, Loader2, Play
 } from 'lucide-react';
 import { authorityService } from '../api/authorityService';
@@ -15,7 +15,7 @@ export function AuthorityIncidentDetailsPage() {
   const [incident, setIncident] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  
+
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
@@ -90,7 +90,7 @@ export function AuthorityIncidentDetailsPage() {
   const handleSendMessage = async (e) => {
     if (e?.preventDefault) e.preventDefault();
     if (!newMessage.trim()) return;
-    
+
     try {
       await authorityService.sendIncidentMessage(id, { content: newMessage });
       setNewMessage('');
@@ -151,12 +151,12 @@ export function AuthorityIncidentDetailsPage() {
 
   return (
     <div className={`font-sans max-w-[1200px] mx-auto pb-8 transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-      
+
       {/* Top Breadcrumb & Action Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
           <Link to="/authority/incidents">
-            <button className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 shadow-sm transition-all active:scale-95 cursor-pointer">
+            <button className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900  transition-all active:scale-95 cursor-pointer">
               <ChevronLeft className="w-5 h-5" />
             </button>
           </Link>
@@ -177,55 +177,55 @@ export function AuthorityIncidentDetailsPage() {
 
         <div className="flex items-center gap-2">
           {!incident.expired && status === 'OPEN' && (
-            <button 
+            <button
               onClick={() => handleAction('ACKNOWLEDGE')}
               disabled={actionLoading}
-              className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
+              className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50  cursor-pointer"
             >
               Acknowledge Receipt
             </button>
           )}
           {!incident.expired && status === 'ACKNOWLEDGED' && (
-            <button 
+            <button
               onClick={() => handleAction('START')}
               disabled={actionLoading}
-              className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
+              className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50  cursor-pointer"
             >
               <Play className="w-4 h-4" /> Start Response
             </button>
           )}
           {!incident.expired && status === 'IN_PROGRESS' && (
-            <button 
+            <button
               onClick={() => handleAction('RESOLVE')}
               disabled={actionLoading}
-              className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
+              className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50  cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" /> Mark Resolved
             </button>
           )}
-          <button className="w-10 h-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-900 shadow-sm transition-colors cursor-pointer shrink-0">
+          <button className="w-10 h-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-900  transition-colors cursor-pointer shrink-0">
             <MoreHorizontal className="w-5 h-5" />
           </button>
         </div>
       </div>
 
       {incident.expired && (
-        <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-[12px] font-bold text-slate-600">
+        <div className="mb-5 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-[12px] font-bold text-slate-600">
           This incident belongs to a {incident.trip?.status?.toLowerCase() || 'non-active'} trip and is expired. New fleet dispatches are disabled.
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* LEFT COLUMN: Details */}
         <div className="lg:col-span-2 space-y-6">
-          
+
           {/* Situation Brief */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
+          <div className="bg-white rounded-lg border border-slate-200  p-6 space-y-4">
             <h2 className="text-[12px] font-bold text-slate-900 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-3">
-              <AlertTriangle className="w-4 h-4 text-slate-400" /> Incident Context
+              <AlertTriangle className="w-4 h-4 text-slate-400" /> Incident Command Record
             </h2>
-            
+
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Incident Type</p>
@@ -250,26 +250,26 @@ export function AuthorityIncidentDetailsPage() {
 
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Initial Description</p>
-              <p className="text-[13px] text-slate-700 font-medium leading-relaxed bg-slate-50 p-4 rounded-lg border border-slate-100">
+              <p className="text-[13px] text-slate-700 font-medium leading-relaxed bg-slate-50 p-4 rounded-lg border border-slate-200">
                 {incident.description || 'No detailed description provided.'}
               </p>
             </div>
-            
-            <div className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+
+            <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white ">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50 px-4 py-3">
                 <div>
                   <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-900">
-                    <Crosshair className="h-3.5 w-3.5 text-red-600" /> Live Tactical View
+                    <Crosshair className="h-3.5 w-3.5 text-red-600" /> Live Response Picture
                   </p>
                   <p className="mt-1 text-[10px] font-semibold text-slate-500">
-                    Incident location and currently assigned emergency fleets.
+                    Incident position, assigned response units and current operational movement.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`rounded-md px-2 py-1 text-[9px] font-black uppercase tracking-widest ${
                     incident.fleetAssigned ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
                   }`}>
-                    {incident.fleetAssigned ? `${tacticalUnits.length} fleet${tacticalUnits.length === 1 ? '' : 's'} assigned` : 'No fleet assigned'}
+                    {incident.fleetAssigned ? `${tacticalUnits.length} fleet${tacticalUnits.length === 1 ? '' : 's'} assigned` : 'Awaiting fleet assignment'}
                   </span>
                 </div>
               </div>
@@ -288,7 +288,7 @@ export function AuthorityIncidentDetailsPage() {
                         {dispatch.unit?.name || dispatch.requestedUnitType}
                       </p>
                       <p className="mt-1 text-[9px] font-bold uppercase tracking-widest text-blue-600">
-                        {dispatch.status} · Open live tracking →
+                        {dispatch.status} · Open response tracking →
                       </p>
                     </Link>
                   ))}
@@ -299,8 +299,8 @@ export function AuthorityIncidentDetailsPage() {
         </div>
 
         {/* RIGHT COLUMN: Live Incident Chat / Timeline */}
-        <div className="lg:col-span-1 flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-[600px] lg:h-auto lg:min-h-[600px]">
-          
+        <div className="lg:col-span-1 flex flex-col bg-white rounded-lg border border-slate-200  overflow-hidden h-[600px] lg:h-auto lg:min-h-[600px]">
+
           <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
             <h2 className="text-[12px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-slate-400" /> Communication Log
@@ -322,9 +322,9 @@ export function AuthorityIncidentDetailsPage() {
                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 mx-1">
                       {isAuthority ? 'Command Center' : 'Tourist'} • {new Date(msg.createdAt).toLocaleTimeString()}
                     </span>
-                    <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl shadow-sm text-[13px] font-medium leading-relaxed ${
-                      isAuthority 
-                        ? 'bg-slate-900 text-white rounded-tr-sm' 
+                    <div className={`max-w-[85%] px-4 py-2.5 rounded-lg  text-[13px] font-medium leading-relaxed ${
+                      isAuthority
+                        ? 'bg-[#0b1728] text-white rounded-tr-sm'
                         : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm'
                     }`}>
                       {msg.content}
@@ -346,10 +346,10 @@ export function AuthorityIncidentDetailsPage() {
                 disabled={status === 'RESOLVED'}
                 className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[13px] font-medium text-slate-900 focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 disabled:opacity-50"
               />
-              <button 
+              <button
                 type="submit"
                 disabled={status === 'RESOLVED' || !newMessage.trim()}
-                className="w-10 h-10 flex items-center justify-center bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg transition-colors shrink-0 shadow-sm cursor-pointer"
+                className="w-10 h-10 flex items-center justify-center bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg transition-colors shrink-0  cursor-pointer"
               >
                 <Send className="w-4 h-4 ml-0.5" />
               </button>

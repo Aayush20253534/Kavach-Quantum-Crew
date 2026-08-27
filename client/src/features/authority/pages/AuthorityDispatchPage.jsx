@@ -92,32 +92,32 @@ export function AuthorityDispatchPage() {
     <div className="font-sans max-w-[1200px] mx-auto pb-10 space-y-7">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-[24px] font-black text-slate-900 uppercase tracking-tight flex items-center gap-2"><Car className="w-6 h-6" /> Fleet Dispatch</h1>
+          <h1 className="text-[24px] font-black text-slate-900 uppercase tracking-tight flex items-center gap-2"><Car className="w-6 h-6" /> Emergency Fleet Dispatch</h1>
           <p className="text-[13px] text-slate-500 font-medium mt-1">Choose an incident, then assign a fixed-base Police, Hospital/Ambulance, or Fire fleet.</p>
         </div>
-        <button onClick={fetchData} disabled={loading} className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold text-[11px] uppercase tracking-wider hover:bg-slate-50 shadow-sm disabled:opacity-50">
+        <button onClick={fetchData} disabled={loading} className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold text-[11px] uppercase tracking-wider hover:bg-slate-50  disabled:opacity-50">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Sync Fleet
         </button>
       </div>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-lg border border-slate-200 bg-white p-5 ">
         <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500">Incident to assign</label>
-        <select value={selectedIncidentId} onChange={(e) => setSelectedIncidentId(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-900">
+        <select value={selectedIncidentId} onChange={(e) => setSelectedIncidentId(e.target.value)} className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-bold text-slate-900">
           <option value="">Select an active incident</option>
           {incidents.map((incident) => <option key={incident.id} value={incident.id}>{incident.title || incident.type || 'Emergency'} · {incident.severity || incident.priority || 'Unknown'} · {incident.id.slice(0, 8)}</option>)}
         </select>
         <p className="mt-2 text-[11px] text-slate-500">Assigning a fleet creates the dispatch, marks that unit deployed, emails its login-aware dispatch link, and exposes the dispatch in live tracking.</p>
       </section>
 
-      {error && <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm font-semibold text-red-700 flex gap-2"><ServerCrash className="w-5 h-5 shrink-0" />{error}</div>}
-      {notice && <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm font-semibold text-emerald-800">{notice}</div>}
+      {error && <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm font-semibold text-red-700 flex gap-2"><ServerCrash className="w-5 h-5 shrink-0" />{error}</div>}
+      {notice && <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-sm font-semibold text-emerald-800">{notice}</div>}
 
       {activeDispatches.length > 0 && (
         <section>
           <div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-black uppercase tracking-wider text-slate-900">Active response tracking</h2><span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{activeDispatches.length} active</span></div>
           <div className="grid gap-3 md:grid-cols-2">
             {activeDispatches.map((dispatch) => (
-              <Link key={dispatch.id} to={`/authority/response/${dispatch.id}`} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-slate-400 hover:shadow-md">
+              <Link key={dispatch.id} to={`/authority/response/${dispatch.id}`} className="rounded-lg border border-slate-200 bg-white p-4  hover:border-slate-400 hover:">
                 <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black text-slate-900">{dispatch.unit?.name || dispatch.requestedUnitType} · {dispatch.status}</p><p className="mt-1 text-[11px] text-slate-500">{dispatch.incident?.title || 'Emergency incident'}</p></div><Crosshair className="h-4 w-4 text-slate-500" /></div>
                 <p className="mt-3 text-[10px] font-bold uppercase tracking-widest text-blue-600">Open live tracking →</p>
               </Link>
@@ -135,7 +135,7 @@ export function AuthorityDispatchPage() {
             {grouped[type]?.length ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {grouped[type].map((unit) => (
-                  <article key={unit.id} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+                  <article key={unit.id} className="bg-white rounded-lg border border-slate-200 p-5 ">
                     <div className="flex justify-between items-start gap-3">
                       <div><h3 className="text-[14px] font-black text-slate-900">{unit.name}</h3><p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">{unit.organization || unit.serviceAccount?.name || label}</p></div>
                       <span className={`px-2 py-1 rounded text-[9px] font-bold uppercase tracking-widest border ${statusClass(unit.status)}`}>{unit.status}</span>
@@ -145,13 +145,13 @@ export function AuthorityDispatchPage() {
                       <p><strong>Jurisdiction:</strong> {unit.jurisdiction || 'Not specified'}</p>
                       {unit.serviceAccount?.email && <p><strong>Email:</strong> {unit.serviceAccount.email}</p>}
                     </div>
-                    <button onClick={() => assign(unit)} disabled={unit.status !== 'AVAILABLE' || assigning === unit.id || !selectedIncidentId} className="mt-4 w-full rounded-xl bg-slate-900 px-4 py-3 text-[10px] font-black uppercase tracking-wider text-white hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <button onClick={() => assign(unit)} disabled={unit.status !== 'AVAILABLE' || assigning === unit.id || !selectedIncidentId} className="mt-4 w-full rounded-lg bg-slate-900 px-4 py-3 text-[10px] font-black uppercase tracking-wider text-white hover:bg-[#07111f] disabled:opacity-40 disabled:cursor-not-allowed">
                       {assigning === unit.id ? 'Assigning…' : unit.status === 'AVAILABLE' ? 'Assign to selected incident' : 'Currently unavailable'}
                     </button>
                   </article>
                 ))}
               </div>
-            ) : <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">No {label.toLowerCase()} fleet accounts created yet.</div>}
+            ) : <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">No {label.toLowerCase()} fleet accounts created yet.</div>}
           </section>
         ))
       )}

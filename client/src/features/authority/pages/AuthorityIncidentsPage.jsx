@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  AlertTriangle, ShieldAlert, Radio, Search, 
+import {
+  AlertTriangle, ShieldAlert, Radio, Search,
   Filter, MapPin, Clock, ArrowRight, Loader2, ServerCrash,
   CheckCircle2, ShieldCheck, Crosshair, ArrowUpRight, ChevronRight
 } from 'lucide-react';
@@ -132,34 +132,34 @@ export function AuthorityIncidentsPage() {
 
   return (
     <div className={`space-y-6 font-sans max-w-[1200px] mx-auto pb-10 transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-      
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">Command Center</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">Emergency Operations</span>
             <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
           </div>
           <h1 className="text-[24px] font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
-            Incident Dispatch Queue
+            Incident Command Queue
           </h1>
           <p className="text-[13px] text-slate-500 font-medium mt-1">
-            Live feed of SOS emergencies and verified hazards requiring immediate response.
+            Prioritize, assign and monitor active emergencies from a single operational queue.
           </p>
         </div>
-        
+
         <div className="flex gap-2">
-          <button 
+          <button
             onClick={fetchIncidents}
             disabled={loading}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold text-[11px] uppercase tracking-wider hover:bg-slate-50 transition-all shadow-sm"
+            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold text-[11px] uppercase tracking-wider hover:bg-slate-50 transition-all "
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radio className="w-4 h-4" />}
             Refresh
           </button>
           <button
             onClick={() => setViewMode((current) => current === 'MAP' ? 'LIST' : 'MAP')}
-            className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-lg shadow-sm hover:bg-slate-800 transition-all active:scale-95 cursor-pointer font-bold text-[11px] uppercase tracking-wider"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#0b1728] text-white rounded-lg  hover:bg-[#07111f] transition-all active:scale-95 cursor-pointer font-bold text-[11px] uppercase tracking-wider"
           >
             <Crosshair className="w-4 h-4" /> {viewMode === 'MAP' ? 'List View' : 'Map View'}
           </button>
@@ -167,15 +167,15 @@ export function AuthorityIncidentsPage() {
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-24">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="bg-white p-4 rounded-lg border border-slate-200 bg-white flex flex-col justify-between min-h-[92px]">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Incidents</span>
           <div className="flex items-end justify-between">
             <span className="text-3xl font-black text-slate-900">{activeCount}</span>
             {activeCount > 0 && <span className="text-[10px] font-bold text-red-500 mb-1 flex items-center"><ArrowUpRight className="w-3 h-3" /> Live</span>}
           </div>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-24 relative overflow-hidden">
+        <div className="bg-white p-4 rounded-lg border border-slate-200 bg-white flex flex-col justify-between min-h-[92px] relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <AlertTriangle className="w-12 h-12 text-amber-500" />
           </div>
@@ -185,7 +185,7 @@ export function AuthorityIncidentsPage() {
             <span className="text-[10px] font-bold text-amber-600 mb-1">Needs Dispatch</span>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-24">
+        <div className="bg-white p-4 rounded-lg border border-slate-200 bg-white flex flex-col justify-between min-h-[92px]">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Avg Response Time</span>
           <div className="flex items-end justify-between">
             <span className="text-3xl font-black text-slate-900">
@@ -203,7 +203,7 @@ export function AuthorityIncidentsPage() {
             </span>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-24">
+        <div className="bg-white p-4 rounded-lg border border-slate-200 bg-white flex flex-col justify-between min-h-[92px]">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Units Deployed</span>
           <div className="flex items-end justify-between">
             <span className="text-3xl font-black text-slate-900">{unitMetrics.deployed}</span>
@@ -215,10 +215,10 @@ export function AuthorityIncidentsPage() {
       </div>
 
       {viewMode === 'MAP' && (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white ">
           <div className="flex flex-col gap-2 border-b border-slate-100 bg-slate-50/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-[13px] font-black uppercase tracking-wide text-slate-900">Operational Map</h2>
+              <h2 className="text-[13px] font-black uppercase tracking-wide text-slate-900">Live Command Map</h2>
               <p className="mt-0.5 text-[10px] font-semibold text-slate-500">Live incidents and registered Police, Ambulance/Hospital and Fire fleet coordinates.</p>
             </div>
             <div className="flex flex-wrap gap-2 text-[10px] font-bold">
@@ -232,17 +232,17 @@ export function AuthorityIncidentsPage() {
         </div>
       )}
 
-      {/* Main Queue Interface */}
-      <div className={`${viewMode === 'MAP' ? 'hidden' : ''} bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden`}>
-        
+      {/* Incident Operations Workspace */}
+      <div className={`${viewMode === 'MAP' ? 'hidden' : ''} bg-white rounded-lg border border-slate-200 overflow-hidden`}>
+
         {/* Filters / Toolbar */}
         <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/50">
-          <div className="flex bg-slate-100 p-1 rounded-lg w-full md:w-auto">
+          <div className="flex border border-slate-200 bg-white rounded-md w-full md:w-auto">
             {['ALL', 'UNASSIGNED', 'ACTIVE', 'EXPIRED', 'RESOLVED'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`flex-1 md:flex-none px-4 py-2 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${activeTab === tab ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`flex-1 md:flex-none px-4 py-2 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${activeTab === tab ? 'bg-white text-slate-900 ' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 {tab}
               </button>
@@ -268,7 +268,7 @@ export function AuthorityIncidentsPage() {
         {error && (
           <div className="p-10 flex flex-col items-center justify-center text-center">
             <ServerCrash className="w-8 h-8 text-red-400 mb-3" />
-            <p className="text-red-800 font-bold text-sm mb-1">Failed to connect to Command Backend</p>
+            <p className="text-red-800 font-bold text-sm mb-1">Command network unavailable</p>
             <p className="text-red-600 text-xs">{error}</p>
           </div>
         )}
@@ -276,13 +276,13 @@ export function AuthorityIncidentsPage() {
         {!error && loading && incidents.length === 0 ? (
           <div className="py-20 flex flex-col items-center justify-center">
             <Loader2 className="w-8 h-8 animate-spin text-slate-300 mb-4" />
-            <p className="text-sm font-semibold text-slate-500">Syncing with dispatch...</p>
+            <p className="text-sm font-semibold text-slate-500">Synchronizing incident operations...</p>
           </div>
         ) : !error && (
           <div className="divide-y divide-slate-100">
             {!loading && filteredIncidents.length === 0 && (
                <div className="p-12 flex flex-col items-center justify-center text-center">
-                 <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
+                 <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-200">
                    <CheckCircle2 className="w-8 h-8 text-emerald-400" />
                  </div>
                  <h3 className="text-[15px] font-black text-slate-900 tracking-tight">Queue Empty</h3>
@@ -292,7 +292,7 @@ export function AuthorityIncidentsPage() {
 
             {filteredIncidents.map((incident) => (
               <div key={incident.id} className="p-4 hover:bg-slate-50/80 transition-colors group relative flex flex-col md:flex-row md:items-center gap-4">
-                
+
                 {/* Critical indicator bar */}
                 {incident.priority === 'CRITICAL' && (
                   <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.8)]"></div>
@@ -335,7 +335,7 @@ export function AuthorityIncidentsPage() {
                       {incident.latitude != null && incident.longitude != null ? `${Number(incident.latitude).toFixed(5)}, ${Number(incident.longitude).toFixed(5)}` : 'Location unavailable'}
                     </span>
                     <span className="flex items-center gap-1 shrink-0">
-                      <Clock className="w-3 h-3" /> 
+                      <Clock className="w-3 h-3" />
                       {incident.createdAt ? new Date(incident.createdAt).toLocaleTimeString() : 'Just now'}
                     </span>
                   </div>
@@ -348,7 +348,7 @@ export function AuthorityIncidentsPage() {
                     className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors ${
                       ['RESOLVED', 'DISMISSED'].includes((incident.status || '').toUpperCase()) || incident.expired
                         ? 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                        : 'bg-slate-900 hover:bg-slate-800 text-white'
+                        : 'bg-slate-900 hover:bg-[#07111f] text-white'
                     }`}
                   >
                     {['RESOLVED', 'DISMISSED'].includes((incident.status || '').toUpperCase()) || incident.expired
