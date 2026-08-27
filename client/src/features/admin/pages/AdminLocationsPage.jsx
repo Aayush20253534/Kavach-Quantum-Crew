@@ -153,20 +153,20 @@ export function AdminLocationsPage() {
   return (
     <div className="max-w-[1200px] mx-auto pb-10 space-y-6">
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">
-          System Admin
+        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600">
+          Content Management
         </p>
         <h1 className="mt-1 text-xl font-black uppercase tracking-tight flex items-center gap-2">
-          <MapPinned className="w-6 h-6" /> Tourist Destinations
+          <MapPinned className="w-6 h-6" /> Destination Registry
         </h1>
         <p className="mt-1 text-xs text-slate-500">
-          Add and maintain the locations shown in tourist search and Top Destinations.
+          Maintain approved tourist destinations, map coordinates, publishing status and dashboard media.
         </p>
       </div>
 
       {(error || success) && (
         <div
-          className={`rounded-xl border p-4 text-xs ${
+          className={`rounded-none-none border p-4 text-xs ${
             error
               ? 'border-red-200 bg-red-50 text-red-700'
               : 'border-emerald-200 bg-emerald-50 text-emerald-700'
@@ -178,31 +178,31 @@ export function AdminLocationsPage() {
 
       <form
         onSubmit={submit}
-        className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden"
+        className="bg-white border border-slate-200 rounded-none-none  overflow-hidden"
       >
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
           <div>
             <h2 className="font-black text-xs uppercase tracking-wide">
-              {editingId ? 'Edit destination' : 'Add destination'}
+              {editingId ? 'Update destination' : 'Create destination'}
             </h2>
             <p className="text-[11px] text-slate-500 mt-1">
-              Coordinates are stored for trip and map workflows. Upload an image for the tourist dashboard card.
+              Define destination identity, geography and publishing details. Changes are reflected in tourist-facing destination experiences.
             </p>
           </div>
           {editingId && (
             <button
               type="button"
               onClick={reset}
-              className="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center"
+              className="w-9 h-9 rounded-none-none border border-slate-200 flex items-center justify-center"
             >
               <X className="w-4 h-4" />
             </button>
           )}
         </div>
 
-        <div className="p-5 grid md:grid-cols-2 gap-4">
+        <div className="grid gap-x-6 gap-y-5 p-5 md:grid-cols-2 lg:p-6">
           <AdminField
-            label="Location name"
+            label="Destination name"
             value={form.name}
             onChange={(value) => setForm((current) => ({ ...current, name: value }))}
             required
@@ -220,7 +220,7 @@ export function AdminLocationsPage() {
             required
           />
           <AdminField
-            label="Sort order"
+            label="Display order"
             type="number"
             value={form.sortOrder}
             onChange={(value) =>
@@ -260,21 +260,21 @@ export function AdminLocationsPage() {
                   description: event.target.value,
                 }))
               }
-              className="w-full min-h-24 rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 resize-y"
+              className="w-full min-h-24 rounded-none-none border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-100 resize-y"
               placeholder="Short tourist-facing description"
             />
           </div>
 
-          <label className="md:col-span-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 cursor-pointer flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center">
-              <ImagePlus className="w-5 h-5 text-indigo-600" />
+          <label className="md:col-span-2 rounded-none-none border border-dashed border-slate-300 bg-slate-50 p-4 cursor-pointer flex items-center gap-3">
+            <div className="w-10 h-10 rounded-none-none bg-white border border-slate-200 flex items-center justify-center">
+              <ImagePlus className="w-5 h-5 text-slate-800" />
             </div>
             <div className="flex-1">
               <p className="text-xs font-black">
-                {image ? image.name : editingId ? 'Replace destination image' : 'Destination image'}
+                {image ? image.name : editingId ? 'Replace destination media' : 'Destination media'}
               </p>
               <p className="text-[10px] text-slate-500 mt-1">
-                JPEG, PNG or WebP, maximum 5 MB.
+                JPEG, PNG or WebP. Maximum file size: 5 MB.
               </p>
             </div>
             <input
@@ -303,10 +303,10 @@ export function AdminLocationsPage() {
           </div>
         </div>
 
-        <div className="px-5 py-4 border-t border-slate-100 flex justify-end">
+        <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-5 py-4">
           <button
             disabled={saving}
-            className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-[11px] font-black uppercase tracking-wider flex items-center gap-2 disabled:opacity-60"
+            className="px-5 py-2.5 rounded-none-none bg-slate-950 text-white text-[11px] font-black uppercase tracking-wider flex items-center gap-2 disabled:opacity-60"
           >
             {saving ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -315,12 +315,12 @@ export function AdminLocationsPage() {
             ) : (
               <Plus className="w-4 h-4" />
             )}
-            {editingId ? 'Save changes' : 'Add destination'}
+            {editingId ? 'Save changes' : 'Create destination'}
           </button>
         </div>
       </form>
 
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-none-none  overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="relative max-w-sm w-full">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -328,13 +328,13 @@ export function AdminLocationsPage() {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search destinations"
-              className="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-xs outline-none"
+              className="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-none-none text-xs outline-none"
             />
           </div>
           <button
             type="button"
             onClick={load}
-            className="px-3 py-2 border border-slate-200 rounded-lg text-[11px] font-bold flex items-center gap-2"
+            className="px-3 py-2 border border-slate-200 rounded-none-none text-[11px] font-bold flex items-center gap-2"
           >
             <RefreshCw className="w-4 h-4" /> Refresh
           </button>
@@ -356,7 +356,7 @@ export function AdminLocationsPage() {
                 key={destination.id}
                 className="p-4 flex flex-col sm:flex-row sm:items-center gap-4"
               >
-                <div className="w-full sm:w-24 h-20 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+                <div className="w-full sm:w-24 h-20 rounded-none-none overflow-hidden bg-slate-100 shrink-0">
                   {destination.imageUrl ? (
                     <img
                       src={destination.imageUrl}
@@ -374,12 +374,12 @@ export function AdminLocationsPage() {
                   <div className="flex flex-wrap gap-2 items-center">
                     <h3 className="font-black">{destination.name}</h3>
                     {destination.featured && (
-                      <span className="text-[9px] uppercase font-black bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">
+                      <span className="text-[9px] uppercase font-black bg-slate-100 text-slate-900 px-2 py-0.5 rounded-none">
                         Featured
                       </span>
                     )}
                     <span
-                      className={`text-[9px] uppercase font-black px-2 py-0.5 rounded ${
+                      className={`text-[9px] uppercase font-black px-2 py-0.5 rounded-none ${
                         destination.active
                           ? 'bg-emerald-50 text-emerald-700'
                           : 'bg-slate-100 text-slate-500'
@@ -400,14 +400,14 @@ export function AdminLocationsPage() {
                   <button
                     type="button"
                     onClick={() => edit(destination)}
-                    className="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:text-indigo-600"
+                    className="w-9 h-9 rounded-none-none border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-800"
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
                   <button
                     type="button"
                     onClick={() => remove(destination)}
-                    className="w-9 h-9 rounded-lg border border-red-200 flex items-center justify-center text-red-600"
+                    className="w-9 h-9 rounded-none-none border border-red-200 flex items-center justify-center text-red-600"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -438,7 +438,7 @@ function AdminField({
         value={value}
         required={required}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+        className="w-full h-11 rounded-none-none border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-100"
       />
     </div>
   );
@@ -451,7 +451,7 @@ function Toggle({ label, checked, onChange }) {
         type="checkbox"
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
-        className="w-4 h-4 accent-indigo-600"
+        className="w-4 h-4 accent-slate-950"
       />
       {label}
     </label>

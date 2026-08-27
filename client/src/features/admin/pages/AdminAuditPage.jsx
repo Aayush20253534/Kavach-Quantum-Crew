@@ -32,100 +32,133 @@ export function AdminAuditPage() {
         setError(
           requestError?.response?.data?.error?.message ||
             requestError?.message ||
-            'Unable to read administrative diagnostics.',
+            'Unable to load audit and diagnostics data.',
         );
       })
       .finally(() => setLoading(false));
   }, []);
 
   return (
-    <div className="max-w-[1200px] mx-auto pb-10 space-y-6">
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">
-          System Admin
+    <div className="mx-auto max-w-[1360px] space-y-7 pb-12">
+      <header className="border-b border-slate-200 pb-5">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+          Governance
         </p>
-        <h1 className="mt-1 text-xl font-black uppercase tracking-tight flex items-center gap-2">
-          <Activity className="w-6 h-6" /> Audit & Diagnostics
+        <h1 className="mt-2 flex items-center gap-2 text-2xl font-black tracking-tight text-slate-950">
+          <Activity className="h-5 w-5" />
+          Audit & Diagnostics
         </h1>
-        <p className="text-xs text-slate-500 mt-1">
-          Live audit records and backend diagnostics. No decorative uptime numbers involved.
+        <p className="mt-1 text-sm leading-6 text-slate-500">
+          Administrative activity, access changes and live platform health information.
         </p>
-      </div>
+      </header>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-red-700 flex gap-3">
-          <ServerCrash className="w-5 h-5" /> {error}
+        <div className="flex gap-3 border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">
+          <ServerCrash className="h-4 w-4 shrink-0" />
+          {error}
         </div>
       )}
 
-      <div className="grid sm:grid-cols-3 gap-3">
+      <section className="grid border-l border-t border-slate-200 sm:grid-cols-3">
         <Metric
           icon={Database}
-          label="Database"
+          label="Database State"
           value={(diagnostics?.database?.status || 'unknown').toUpperCase()}
         />
         <Metric
           icon={Server}
-          label="Backend"
+          label="Backend State"
           value={(diagnostics?.status || 'unknown').toUpperCase()}
         />
         <Metric
           icon={Terminal}
-          label="Audit events"
+          label="Recorded Audit Events"
           value={summary?.total ?? 0}
         />
-      </div>
+      </section>
 
-      <div className="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden min-h-[520px]">
-        <div className="p-4 border-b border-slate-800">
-          <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-300">
-            System Audit Trail
-          </h2>
+      <section className="border border-slate-200 bg-white">
+        <div className="flex flex-col gap-1 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-800">
+              System Audit Trail
+            </h2>
+            <p className="mt-1 text-[11px] text-slate-500">
+              Most recent administrative and operational events.
+            </p>
+          </div>
+          <span className="text-[10px] font-semibold text-slate-400">Latest 100 records</span>
         </div>
 
         {loading ? (
-          <div className="py-24 flex justify-center">
-            <Loader2 className="w-7 h-7 animate-spin text-slate-500" />
+          <div className="flex justify-center py-24">
+            <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
           </div>
         ) : (
-          <div className="p-4 overflow-x-auto font-mono text-[10px] space-y-2">
-            {logs.map((log) => (
-              <div key={log.id} className="min-w-[760px] grid grid-cols-[160px_180px_120px_1fr] gap-3">
-                <span className="text-slate-500">
-                  {new Date(log.createdAt).toLocaleString()}
-                </span>
-                <span className="text-emerald-400 truncate">
-                  {log.action}
-                </span>
-                <span className="text-blue-400 truncate">
-                  {log.actorRole || 'SYSTEM'}
-                </span>
-                <span className="text-slate-300 break-all">
-                  {log.entityType || '—'} {log.entityId || ''}{' '}
-                  {log.metadata ? JSON.stringify(log.metadata) : ''}
-                </span>
-              </div>
-            ))}
-            {logs.length === 0 && (
-              <p className="text-slate-500 py-10 text-center">
-                No audit events recorded.
-              </p>
-            )}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[980px] border-collapse text-left">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  {['Timestamp', 'Action', 'Actor', 'Entity', 'Details'].map((heading) => (
+                    <th
+                      key={heading}
+                      className="px-4 py-3 text-[9px] font-black uppercase tracking-[0.14em] text-slate-500"
+                    >
+                      {heading}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {logs.map((log) => (
+                  <tr key={log.id} className="align-top transition-colors hover:bg-slate-50">
+                    <td className="whitespace-nowrap px-4 py-3 text-[10px] font-medium text-slate-500">
+                      {new Date(log.createdAt).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-[10px] font-black text-slate-900">
+                      {log.action}
+                    </td>
+                    <td className="px-4 py-3 text-[10px] font-semibold text-slate-600">
+                      {log.actorRole || 'SYSTEM'}
+                    </td>
+                    <td className="px-4 py-3 text-[10px] text-slate-600">
+                      <p className="font-semibold">{log.entityType || '—'}</p>
+                      {log.entityId && (
+                        <p className="mt-1 max-w-[210px] truncate font-mono text-[9px] text-slate-400">
+                          {log.entityId}
+                        </p>
+                      )}
+                    </td>
+                    <td className="max-w-[420px] px-4 py-3 font-mono text-[9px] leading-5 text-slate-500">
+                      {log.metadata ? JSON.stringify(log.metadata) : '—'}
+                    </td>
+                  </tr>
+                ))}
+                {logs.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-14 text-center text-xs text-slate-500">
+                      No audit events have been recorded.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }
 
 function Metric({ icon: Icon, label, value }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-5">
-      <Icon className="w-5 h-5 text-indigo-600" />
-      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-3">
-        {label}
-      </p>
-      <p className="text-lg font-black mt-1">{value}</p>
+    <div className="min-h-[116px] border-b border-r border-slate-200 bg-white p-5 sm:border-b-0">
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-[9px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</p>
+        <Icon className="h-4 w-4 text-slate-400" />
+      </div>
+      <p className="mt-4 text-lg font-black text-slate-950">{value}</p>
     </div>
   );
 }

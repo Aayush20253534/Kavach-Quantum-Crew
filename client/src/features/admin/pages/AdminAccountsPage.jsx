@@ -11,9 +11,9 @@ import {
 import { adminService } from '../api/adminService';
 
 const filters = [
-  ['ALL', 'All Accounts'],
-  ['DISASTER_MANAGER', 'Authorities'],
-  ['FLEETS', 'Fleet Accounts'],
+  ['ALL', 'All identities'],
+  ['DISASTER_MANAGER', 'Disaster Management'],
+  ['FLEETS', 'Emergency fleets'],
   ['SUSPENDED', 'Suspended'],
 ];
 
@@ -77,27 +77,27 @@ export function AdminAccountsPage() {
   return (
     <div className="max-w-[1200px] mx-auto pb-10">
       <div className="mb-7">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">
-          System Admin
+        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600">
+          Identity & Access
         </p>
         <h1 className="mt-1 text-xl font-black uppercase tracking-tight flex items-center gap-2">
-          <Users className="w-6 h-6" /> Account Management
+          <Users className="w-6 h-6" /> Account Directory
         </h1>
         <p className="text-xs text-slate-500 mt-1">
-          Real tourist, disaster-manager, emergency-fleet and system-admin accounts from PostgreSQL.
+          Review platform identities, operational roles, account state and access activity.
         </p>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col sm:flex-row gap-3 justify-between mb-5">
-        <div className="flex overflow-x-auto bg-slate-100 rounded-lg p-1">
+      <div className="bg-white border border-slate-200 rounded-none-none p-4  flex flex-col sm:flex-row gap-3 justify-between mb-5">
+        <div className="flex overflow-x-auto bg-slate-100 rounded-none-none p-1">
           {filters.map(([value, label]) => (
             <button
               key={value}
               type="button"
               onClick={() => setFilter(value)}
-              className={`whitespace-nowrap px-4 py-2 rounded-md text-[10px] font-black uppercase tracking-wider ${
+              className={`whitespace-nowrap px-4 py-2 rounded-none-none text-[10px] font-black uppercase tracking-wider ${
                 filter === value
-                  ? 'bg-white shadow-sm text-slate-900'
+                  ? 'bg-white  text-slate-900'
                   : 'text-slate-500'
               }`}
             >
@@ -111,19 +111,19 @@ export function AdminAccountsPage() {
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Name, username, email or phone"
-            className="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-xs outline-none"
+            placeholder="Search name, username, email or phone"
+            className="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-none-none text-xs outline-none"
           />
         </div>
       </div>
 
       {error && (
-        <div className="mb-5 bg-red-50 border border-red-200 rounded-xl p-5 text-red-700 text-xs flex gap-3">
+        <div className="mb-5 bg-red-50 border border-red-200 rounded-none-none p-5 text-red-700 text-xs flex gap-3">
           <ServerCrash className="w-5 h-5 shrink-0" /> {error}
         </div>
       )}
 
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-x-auto">
+      <div className="bg-white border border-slate-200 rounded-none-none  overflow-x-auto">
         {loading ? (
           <div className="py-20 flex justify-center">
             <Loader2 className="w-7 h-7 animate-spin" />
@@ -132,11 +132,11 @@ export function AdminAccountsPage() {
           <table className="w-full min-w-[760px] text-left">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                {['Account', 'Role', 'Status', 'Last login', 'Joined', 'Actions'].map(
+                {['Account', 'Role', 'Status', 'Last Sign-in', 'Created', 'Actions'].map(
                   (heading) => (
                     <th
                       key={heading}
-                      className="px-5 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500"
+                      className="px-4 py-3 text-[9px] font-black uppercase tracking-[0.14em] text-slate-500"
                     >
                       {heading}
                     </th>
@@ -147,7 +147,7 @@ export function AdminAccountsPage() {
             <tbody className="divide-y divide-slate-100">
               {accounts.map((account) => (
                 <tr key={`${account.role}-${account.id}`}>
-                  <td className="px-5 py-4">
+                  <td className="px-4 py-3">
                     <p className="font-black text-xs">
                       {account.name || account.username}
                     </p>
@@ -156,8 +156,8 @@ export function AdminAccountsPage() {
                     </p>
                     {account.organization && <p className="text-[10px] text-slate-400 mt-1">{account.organization}</p>}
                   </td>
-                  <td className="px-5 py-4">
-                    <span className="text-[10px] font-black uppercase bg-slate-100 px-2 py-1 rounded inline-flex items-center gap-1">
+                  <td className="px-4 py-3">
+                    <span className="text-[10px] font-black uppercase bg-slate-100 border border-slate-200 px-2 py-1 inline-flex items-center gap-1">
                       {account.role === 'SYSTEM_ADMIN' ? (
                         <ShieldCheck className="w-3 h-3" />
                       ) : account.role === 'DISASTER_MANAGER' ? (
@@ -166,25 +166,25 @@ export function AdminAccountsPage() {
                       {account.role}
                     </span>
                   </td>
-                  <td className="px-5 py-4 text-[11px] font-bold">
+                  <td className="px-4 py-3 text-[10px] font-bold">
                     {account.status}
                   </td>
-                  <td className="px-5 py-4 text-[11px] text-slate-500">
+                  <td className="px-4 py-3 text-[10px] text-slate-500">
                     {account.lastLoginAt
                       ? new Date(account.lastLoginAt).toLocaleString()
                       : 'Never'}
                   </td>
-                  <td className="px-5 py-4 text-[11px] text-slate-500">
+                  <td className="px-4 py-3 text-[10px] text-slate-500">
                     {new Date(account.createdAt).toLocaleDateString()}
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="px-4 py-3">
                     <button
                       type="button"
                       onClick={() => changeStatus(account)}
-                      className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase ${
+                      className={`px-3 py-2 rounded-none-none text-[10px] font-black uppercase ${
                         account.status === 'ACTIVE'
-                          ? 'bg-red-50 text-red-700'
-                          : 'bg-emerald-50 text-emerald-700'
+                          ? 'border-red-200 bg-white text-red-700 hover:bg-red-50'
+                          : 'border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50'
                       }`}
                     >
                       {account.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
