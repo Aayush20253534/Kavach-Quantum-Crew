@@ -77,3 +77,9 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 Frontend integration should treat the backend as authoritative for incident/dispatch state and account/base coordinates. Browser geolocation is live responder telemetry only. The responder UI may label a transition differently for operator clarity, but the payload must use supported backend status values.
 
 AI integration must never accept a client-supplied account ID as the identity source for private context; use the verified token subject.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Frontend handoff should assume persistent responder tracking in the layout, shared tourist dispatch-tracking access, sanitized application errors, OTP password reset, and trip-bound safety expiry. Integrators should use server route modules as the final endpoint/role contract.

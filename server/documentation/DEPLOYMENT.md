@@ -89,3 +89,9 @@ After backend deployment, verify more than health checks:
 - a completed/cancelled trip leaves no trip-derived active alerts/incidents;
 - AI authentication uses the same JWT contract and preserves user isolation;
 - Google Maps/Directions API configuration exists on the frontend deployment.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Production deployments must preserve exact frontend/backend CORS origins, email configuration for verification/password-reset/dispatch notifications, Google Maps client configuration, database migrations, realtime transport, and blockchain/provider settings. Frontend and backend may be deployed separately, but cookie/CORS credentials must remain aligned.

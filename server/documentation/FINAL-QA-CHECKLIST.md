@@ -121,3 +121,9 @@ Before release, additionally verify:
 - [ ] password reset OTP works end to end;
 - [ ] production CORS allows deployed frontend login and refresh;
 - [ ] chatbot history/private context is isolated by authenticated user.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Add/retain regression checks for: responder navigation while GPS tracking continues; tourist group+fleet map composition; live remaining-distance updates; road route + dotted final connector; SOS fresh/trusted location fallback and `0,0` rejection; danger-zone auto incidents; trip-end alert expiry; group tracking consent/presence; password-reset OTP; and sanitized duplicate-record errors.

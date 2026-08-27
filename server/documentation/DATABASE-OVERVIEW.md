@@ -73,3 +73,9 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 The current model relies on a deliberate distinction between emergency-service account location (`EmergencyServiceAccount.latitude/longitude/locationUpdatedAt`) and moving dispatch location. Trip-derived operational records must respect the owning trip's lifecycle when calculating active counts.
 
 Chatbot history is user-scoped. Private AI enrichment is derived at request time from authenticated account tables and is not modeled as shared knowledge-base data.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Operational data spans users/accounts, trips/groups, trusted locations, safety alerts/incidents, emergency-service accounts/units/dispatches, notifications, and integrity metadata. Fixed responder base location and live dispatch GPS are intentionally separate concepts.

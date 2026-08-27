@@ -397,3 +397,16 @@ Important current behavior:
 - signal-loss escalation gives the leader a verification window before authority escalation except when confirmed immediately;
 - password reset uses email OTP verification before accepting a new password;
 - realtime/notification/email integrations are side effects of operational state changes rather than mock frontend behavior.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Backend synchronization highlights:
+
+- Auth includes email verification plus password-reset request/OTP-verify/reset endpoints.
+- Tracking is consent-gated and supports pings, latest trusted location, and group location feeds.
+- SOS rejects invalid `0,0` coordinates and can fall back to the latest trusted trip location.
+- Emergency services support provisioned police/fire/ambulance accounts, fixed base locations, responder dispatches, live location updates, status transitions, tourist dispatch listing, and shared tracking snapshots.
+- Trip-bound safety alerts/incidents are expired when a trip is completed/cancelled.
+- Unique-constraint failures are translated to a user-safe conflict response rather than exposing Prisma field/constraint wording.

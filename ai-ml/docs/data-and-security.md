@@ -25,3 +25,9 @@ Model output is advisory/informational. It does not directly mutate trips, incid
 Rakshak AI may use a minimized profile for the **currently authenticated account only**. The lookup key is the verified JWT subject, never an arbitrary account ID in the request body.
 
 Do not include password hashes, OTP/reset state, auth sessions, government ID numbers, medical history/documents, emergency contacts, audit records, or fixed precise account coordinates in model context. Conversation lookup and history mutation remain user-scoped. Private context may help answer self-referential questions but must not be volunteered unnecessarily or described as information available to other users.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Private chatbot enrichment is user-scoped and minimized. Do not persist another user's profile or tracking context in shared prompts/caches. Emergency locations, dispatch tracking, credentials, and account data must be fetched through role-authorized backend endpoints.

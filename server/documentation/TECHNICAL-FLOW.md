@@ -1124,3 +1124,9 @@ Manual completion, cancellation, and lifecycle-job completion must converge on t
 ### Chatbot identity semantics
 
 Private AI context is fetched after JWT verification using the token subject and role. Client-provided context is supplementary and cannot select another user's profile.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Current operational flow: active trip -> trusted location tracking -> safety/danger/signal-loss evaluation -> incident ingestion -> Disaster Management assignment -> responder dispatch -> continuous responder GPS -> shared tourist/staff tracking -> lifecycle completion. Responder GPS is independent of which responder child page is currently open. Completing/cancelling the trip expires trip-bound active alerts.

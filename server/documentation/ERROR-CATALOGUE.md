@@ -218,3 +218,9 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 Treat browser `Network Error` during login/refresh as a likely CORS/preflight or unreachable-backend problem before treating it as invalid credentials. A backend `500` during dispatch status progression is an application/server failure and must not be hidden behind optimistic frontend status changes.
 
 Blockchain `ID_NOT_FOUND` / `SNAPSHOT_NOT_FOUND` contract reverts indicate missing on-chain state and should be surfaced/reconciled as such rather than silently inventing a trusted snapshot.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Error handling now treats Prisma unique-constraint failures as a generic conflict for end users. Do not expose messages such as `A record with these values already exists`, constraint targets, or raw Prisma metadata in production responses. SOS location failures should use a clear application-level validation/error code instead of silently storing invalid coordinates.

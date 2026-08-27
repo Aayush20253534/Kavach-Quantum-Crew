@@ -52,3 +52,9 @@ Rakshak AI currently combines four context sources for an authenticated conversa
 4. minimized private authenticated-user context fetched from the verified account identity.
 
 Private user context is not written into the shared knowledge base and is not treated as cross-user knowledge. Sensitive fields such as password hashes, password-reset/session tokens, government ID numbers, medical history, emergency contacts, and stored precise account coordinates are excluded from AI profile enrichment.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Rakshak documentation is synchronized with the authenticated, user-scoped chatbot and current KAVACH safety/emergency workflows. Live operational facts should always be fetched through the backend authorization boundary.

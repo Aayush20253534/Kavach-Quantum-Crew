@@ -17,3 +17,11 @@ Blockchain does not run GPS tracking, danger-zone calculations, signal-loss time
 ## Current implementation note — 2026-08-27
 
 Blockchain remains a trust/integrity subsystem rather than the source of live UI state. Operational incident, trip, fleet, and chatbot views use the application database/services; blockchain verification is used where a credential/integrity workflow explicitly calls for it.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+The knowledge-base entry remains source material for the authenticated Rakshak chatbot.
+
+- Blockchain integrity is eventually consistent: fresh database membership can temporarily precede the latest chain snapshot. Treat snapshot-unavailable/pending states separately from a confirmed mismatch, and do not auto-repair chain membership from database state while integrity evidence is incomplete.

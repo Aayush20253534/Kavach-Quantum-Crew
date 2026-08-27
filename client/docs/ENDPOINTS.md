@@ -386,3 +386,9 @@ The frontend currently depends on the following responder contracts in addition 
 - `PATCH /api/v1/emergency-services/dispatches/:dispatchId/status` — dispatch lifecycle progression.
 
 The client does not derive fleet base coordinates from browser geolocation. Fixed base coordinates come from the emergency-service account; browser geolocation represents the current moving response unit only during live operation.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Frontend integrations now depend on password-reset OTP endpoints, tracking consent/pings/group-location endpoints, tourist emergency-dispatch listing, shared dispatch tracking, responder location/status updates, and Disaster Management incident APIs. Keep this catalogue aligned with the server route modules; do not invent client-only endpoint aliases.

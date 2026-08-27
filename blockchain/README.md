@@ -232,3 +232,9 @@ See [`docs/data-storage-and-integrity.md`](docs/data-storage-and-integrity.md) f
 The latest KAVACH UI, incident-lifecycle, responder, and chatbot changes do **not** change the blockchain trust layer's core responsibility. Live operational state remains in the application backend/database; the blockchain gateway is used for explicit credential/integrity workflows.
 
 A contract revert such as `ID_NOT_FOUND` or `SNAPSHOT_NOT_FOUND` means the requested on-chain identity/snapshot is absent. Reconciliation code must not treat that as a valid trusted snapshot or silently manufacture one.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+The blockchain layer is an asynchronous verification/integrity subsystem. Operational UI should not treat a temporarily unavailable snapshot as a confirmed membership/identity failure.

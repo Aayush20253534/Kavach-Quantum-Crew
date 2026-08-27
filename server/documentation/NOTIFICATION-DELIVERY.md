@@ -77,3 +77,9 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 ## 2026-08-27 notification lifecycle sync
 
 Emergency assignment notifications and signal-loss escalation notifications follow operational state, not frontend rendering. A leader verification request is distinct from a Disaster Management escalation. Ending the owning trip should prevent obsolete trip-derived alerts from continuing to appear as active notifications/operational alerts.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Operational notifications include emergency dispatch/assignment links, safety/escalation messages, leader signal-loss verification, email verification, and password-reset OTP delivery. Notification payloads must avoid exposing another user's private data.

@@ -16,3 +16,11 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 Trip-derived alerts are active only while the related trip remains active. Completing or cancelling a trip expires/clears its active safety state from current Tourist, Disaster Management, and System Admin active views.
 
 For group signal loss, the leader gets the initial verification opportunity. Confirmed danger or no response after five minutes escalates urgently; a false alarm does not immediately become a Disaster Management incident.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+The knowledge-base entry remains source material for the authenticated Rakshak chatbot.
+
+- Safety behavior includes SOS location capture, danger-zone entry/group-boundary detection, trip-bound alert expiry, signal-loss escalation, and incident ingestion into Disaster Management. A missing GPS fix must not be represented as `0,0`.

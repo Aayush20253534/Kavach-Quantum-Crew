@@ -377,3 +377,9 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 Responder clients currently rely on the emergency-service self/dispatch/tracking endpoints to separate account configuration from live operation. In particular, `/emergency-services/me` supplies the fixed account/base location while `/emergency-services/dispatches/:dispatchId/location` carries live response telemetry.
 
 Authentication documentation should also treat forgot-password as an OTP-confirmed reset workflow, separate from initial tourist email verification.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Verified route additions/usage include `POST /auth/password-reset/request`, `POST /auth/password-reset/verify`, `POST /auth/password-reset/reset`, tracking consent/ping/group-location routes, `GET /emergency-services/tourist/dispatches`, `GET /emergency-services/tracking/:dispatchId`, responder dispatch/location/status routes, and Disaster Management incident queue/detail/transition routes. The route modules remain the source of truth for exact prefixes and role authorization.

@@ -118,3 +118,9 @@ In addition to the original issue/revoke/evidence tests, production QA for the c
 ## 2026-08-27 regression note
 
 Include negative-path tests for unknown IDs and missing snapshots. The expected behavior is an explicit contract/gateway not-found failure; tests must not accept fabricated/default snapshots as successful verification.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Regression coverage should include delayed snapshot availability, `ID_NOT_FOUND`/`SNAPSHOT_NOT_FOUND`, retry exhaustion, eventual convergence after membership changes, and protection against automatic database-to-chain membership repair while trusted evidence is unavailable.

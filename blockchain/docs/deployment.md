@@ -256,3 +256,9 @@ After deployment verify the gateway readiness endpoint, then create a new trip/c
 ## 2026-08-27 deployment note
 
 After deployment, test the gateway against identities/snapshots that are known to exist and known not to exist. Missing on-chain records should return a deterministic not-found/revert mapping rather than a generic trusted result. Keep gateway/backend environment configuration independent from frontend CORS and map configuration.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Production deployment should preserve gateway retry/backoff, chain/provider environment variables, and explicit handling for contract reverts such as `ID_NOT_FOUND` or `SNAPSHOT_NOT_FOUND`. Those conditions should not crash unrelated tourist or responder workflows.

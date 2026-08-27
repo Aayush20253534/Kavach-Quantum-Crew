@@ -38,3 +38,9 @@ The frontend receives only `VITE_AI_SERVICE_URL`. Never put Groq keys, DB URLs, 
 The AI service requires database connectivity for persisted user-scoped history and private authenticated-context enrichment. Production authentication must use the same access-token issuer, audience, algorithm, and secret contract as the main backend.
 
 After deployment, validate: authenticated history isolation, safe-zone live context, self-profile questions for each supported role, rejection of invalid/expired access tokens, and absence of sensitive fields in application logs/model context.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Deployment must provide the configured AI provider credentials, backend origin, and CORS-safe frontend/backend URLs. The AI service must not bypass backend role checks for user, trip, incident, or emergency-response data.

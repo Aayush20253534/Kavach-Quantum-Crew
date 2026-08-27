@@ -28,3 +28,11 @@ The AI Render service therefore needs `KAVACH_API_URL` set to the main backend A
 Rakshak AI can understand the currently logged-in user's own basic account/role context when the authenticated runtime provides it. That context is private to the authenticated request and is not shared with other users or stored in the static knowledge base.
 
 Emergency-service accounts have a fixed configured base location. Police uses a blue service identity, Ambulance/Hospital uses green, and Fire uses red in the responder interface.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+The knowledge-base entry remains source material for the authenticated Rakshak chatbot.
+
+- Authenticated-user enrichment is private to the current session/user and must not be reused across accounts. Emergency-service accounts are provisioned for police, fire, and ambulance/hospital organizations with fixed registered base locations.

@@ -292,3 +292,9 @@ Current emergency flow:
 6. trip completion/cancellation expires remaining trip-derived active safety state.
 
 A fleet account's registered location is a fixed base/reference and does not replace live response telemetry.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Current operational flow: active trip -> trusted location tracking -> safety/danger/signal-loss evaluation -> incident ingestion -> Disaster Management assignment -> responder dispatch -> continuous responder GPS -> shared tourist/staff tracking -> lifecycle completion. Responder GPS is independent of which responder child page is currently open. Completing/cancelling the trip expires trip-bound active alerts.

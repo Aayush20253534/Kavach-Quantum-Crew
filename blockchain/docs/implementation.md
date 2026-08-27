@@ -514,3 +514,9 @@ The current API uses a short timeout for gateway reads and a longer timeout for 
 ## 2026-08-27 implementation note
 
 The current trust-layer boundary remains intentionally narrow: blockchain verifies explicit credential/integrity records; PostgreSQL/services own live trip, incident, alert, fleet, GPS, notification, and AI context state. Preserve this separation when extending contracts or reconciliation jobs.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+The current backend integrates blockchain verification as a trust layer rather than the primary operational database. PostgreSQL remains the live workflow store; chain snapshots provide verification/integrity evidence and are reconciled asynchronously.

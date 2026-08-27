@@ -508,3 +508,9 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 ## 2026-08-27 plan status
 
 The wider KAVACH application now has mature operational lifecycle handling and responder tracking. Future blockchain work should continue to prioritize verifiable, stable artifacts rather than pushing ephemeral operational telemetry onto chain. Missing contract state must remain distinguishable from trusted/verified state.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+The current backend integrates blockchain verification as a trust layer rather than the primary operational database. PostgreSQL remains the live workflow store; chain snapshots provide verification/integrity evidence and are reconciled asynchronously.

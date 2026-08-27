@@ -1030,3 +1030,9 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 5. **A completed/cancelled trip cannot contribute to active alert counts.** Active UI queries and derived dashboard metrics must respect trip lifecycle.
 6. **Disaster Management and System Admin are visually distinct products.** Do not reapply one portal's palette wholesale to the other.
 7. **Private chatbot user context is not client-authored truth.** Identity enrichment must be derived server-side from the verified authenticated account, never trusted from arbitrary client `context` fields.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Frontend rules added by current implementation: never render missing emergency coordinates as `0,0`; keep long-lived responder tracking in the persistent layout; do not block navigation on map calculations; use backend-authorized tracking snapshots; keep private chatbot/account context user-scoped; and present sanitized user-facing errors instead of database internals.

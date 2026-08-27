@@ -1476,3 +1476,9 @@ Responder pages are routed beneath `/responder`. Navigation uses route-aware lin
 ### Current visual-system boundaries
 
 System Admin, Disaster Management, and Responder portals deliberately do not share the same accent palette. Shared concerns are typography scale, restrained radius, accessible status colours, white operational surfaces, consistent border hierarchy, and responsive layout behavior.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+`ResponderLayout` is now a persistent operational runtime: it owns active-dispatch polling, tracking snapshot polling, and `watchPosition`, then exposes `backgroundTracking` through `Outlet` context. Child responder pages are viewers/controllers and must not create duplicate long-lived GPS watchers. Tourist `MapComponent` can compose group/danger-zone layers with `FleetResponseOverlay` on the same Google map.

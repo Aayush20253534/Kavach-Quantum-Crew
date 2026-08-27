@@ -56,3 +56,9 @@ For current deployment, API, KB maintenance and data-boundary details, also read
 `POST /api/v1/chatbot/messages` requires an authenticated user identity for stored conversation use. The verified token subject is the only accepted account identifier for history and private-profile enrichment.
 
 The runtime can enrich a request with a minimized user-specific context. Tourist context can include basic identity preferences and the current active/planned trip/group state; Disaster Manager and emergency-service context can include organization/jurisdiction/service identity. This data is injected only into that authenticated model request and must never be copied into static KB documents or another user's conversation.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+The chatbot runtime is expected to preserve user-scoped history/context, select relevant KAVACH KB material, and avoid exposing another account's private profile, trip, credential, or emergency information.
