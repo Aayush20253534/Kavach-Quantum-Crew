@@ -64,6 +64,26 @@ model EmailVerificationOtp {
   @@map("email_verification_otps")
 }
 
+model PasswordResetOtp {
+  id             String   @id @default(uuid()) @db.Uuid
+  accountId      String   @db.Uuid
+  accountRole    Role
+  codeHash       String   @db.VarChar(64)
+  expiresAt      DateTime
+  attempts       Int      @default(0)
+  lastSentAt     DateTime @default(now())
+  verifiedAt     DateTime?
+  resetTokenHash String?  @db.VarChar(64)
+  tokenExpiresAt DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([accountId, accountRole])
+  @@index([expiresAt])
+  @@index([resetTokenHash])
+  @@map("password_reset_otps")
+}
+
 model DisasterManager {
   id                String        @id @default(uuid()) @db.Uuid
   name              String        @db.VarChar(120)

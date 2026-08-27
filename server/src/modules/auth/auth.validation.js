@@ -70,6 +70,30 @@ export const verifyEmailBodySchema = z.object({
 
 export const resendEmailVerificationBodySchema = z.object({ email });
 
+export const requestPasswordResetBodySchema = z.object({ email });
+
+export const verifyPasswordResetOtpBodySchema = z.object({
+  email,
+  otp: z.string().regex(/^\d{6}$/, "OTP must be exactly 6 digits"),
+});
+
+export const resetPasswordBodySchema = z
+  .object({
+    email,
+    resetToken: z.string().trim().min(32).max(256),
+    password,
+    confirmPassword: z.string(),
+  })
+  .superRefine((data, context) => {
+    if (data.password !== data.confirmPassword) {
+      context.addIssue({
+        code: "custom",
+        path: ["confirmPassword"],
+        message: "Passwords do not match",
+      });
+    }
+  });
+
 
 export const usernameAvailabilityQuerySchema = z.object({
   username,

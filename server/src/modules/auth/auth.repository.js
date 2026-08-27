@@ -123,6 +123,21 @@ export const createAuthRepository = ({ db = prisma } = {}) => ({
     }).then((user) => withRole(user, ROLES.TOURIST));
   },
 
+  async findAccountByEmail(email) {
+    const normalized = email.trim().toLowerCase();
+    const [tourist, disasterManager, systemAdmin, emergencyService] = await Promise.all([
+      db.user.findUnique({ where: { email: normalized } }),
+      db.disasterManager.findUnique({ where: { email: normalized } }),
+      db.systemAdmin.findUnique({ where: { email: normalized } }),
+      db.emergencyServiceAccount.findUnique({ where: { email: normalized } }),
+    ]);
+    if (tourist) return withRole(tourist, ROLES.TOURIST);
+    if (disasterManager) return withRole(disasterManager, ROLES.DISASTER_MANAGER);
+    if (systemAdmin) return withRole(systemAdmin, ROLES.SYSTEM_ADMIN);
+    if (emergencyService) return withRole(emergencyService, emergencyService.serviceType);
+    return null;
+  },
+
   markTouristEmailVerified(id, verifiedAt = new Date()) {
     return db.user.update({
       where: { id },
@@ -152,6 +167,56 @@ export const createAuthRepository = ({ db = prisma } = {}) => ({
 
   deleteEmailVerificationOtp(userId) {
     return db.emailVerificationOtp.deleteMany({ where: { userId } });
+  },
+
+  findPasswordResetOtp(accountId, accountRole) {
+    return db.passwordResetOtp.findUnique({
+      where: { accountId_accountRole: { accountId, accountRole } },
+    });
+  },
+
+  upsertPasswordResetOtp(accountId, accountRole, data) {
+    return db.passwordResetOtp.upsert({
+      where: { accountId_accountRole: { accountId, accountRole } },
+      create: { accountId, accountRole, ...data },
+      update: data,
+    });
+  },
+
+  incrementPasswordResetAttempts(accountId, accountRole) {
+    return db.passwordResetOtp.update({
+      where: { accountId_accountRole: { accountId, accountRole } },
+      data: { attempts: { increment: 1 } },
+    });
+  },
+
+  markPasswordResetVerified(accountId, accountRole, data) {
+    return db.passwordResetOtp.update({
+      where: { accountId_accountRole: { accountId, accountRole } },
+      data,
+    });
+  },
+
+  deletePasswordResetOtp(accountId, accountRole) {
+    return db.passwordResetOtp.deleteMany({
+      where: { accountId, accountRole },
+    });
+  },
+
+  async updateAccountPassword(accountId, accountRole, passwordHash) {
+    const delegate = accountDelegate(db, accountRole);
+    if (!delegate) return null;
+    return delegate.update({
+      where: { id: accountId },
+      data: { passwordHash },
+    });
+  },
+
+  revokeAllSessions(accountId, accountRole, revokedAt = new Date()) {
+    return db.authSession.updateMany({
+      where: { accountId, accountRole, revokedAt: null },
+      data: { revokedAt },
+    });
   },
 
   createSession(data) {

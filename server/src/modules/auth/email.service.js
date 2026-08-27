@@ -94,6 +94,78 @@ export const createEmailService = ({
     return { messageId: payload?.messageId ?? null };
   },
 
+  async sendPasswordResetOtp({
+    to,
+    name,
+    otp,
+    expiresInMinutes,
+  }) {
+    if (
+      !config.BREVO_API_KEY ||
+      !config.BREVO_SENDER_EMAIL ||
+      typeof fetchImpl !== "function"
+    ) {
+      throw ApiError.serviceUnavailable("Email delivery is not configured", {
+        code: "EMAIL_PROVIDER_NOT_CONFIGURED",
+      });
+    }
+
+    const safeName =
+      typeof name === "string" && name.trim() ? name.trim() : "KAVACH user";
+
+    const subject = "Reset your KAVACH password";
+    const textContent =
+      `Hello ${safeName}, your password reset code is ${otp}. ` +
+      `It expires in ${expiresInMinutes} minutes. If you did not request this, ignore this email.`;
+
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto; padding: 24px; color: #0f172a;">
+        <h2 style="margin-bottom: 8px;">Reset your password</h2>
+        <p>Hello ${escapeHtml(safeName)},</p>
+        <p>Use this 6-digit code to confirm your KAVACH password reset:</p>
+        <p style="font-size: 32px; font-weight: 700; letter-spacing: 8px; margin: 24px 0;">
+          ${escapeHtml(otp)}
+        </p>
+        <p>This code expires in ${expiresInMinutes} minutes.</p>
+        <p style="color: #64748b; font-size: 13px;">
+          If you did not request a password reset, you can safely ignore this email.
+        </p>
+      </div>
+    `;
+
+    try {
+      const response = await fetchImpl(BREVO_EMAIL_ENDPOINT, {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "api-key": config.BREVO_API_KEY,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          sender: {
+            name: config.BREVO_SENDER_NAME || "QuantumCrew",
+            email: config.BREVO_SENDER_EMAIL,
+          },
+          to: [{ email: to, name: safeName }],
+          subject,
+          textContent,
+          htmlContent,
+        }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.message || `Brevo returned HTTP ${response.status}`);
+      }
+      return { messageId: payload?.messageId ?? null };
+    } catch (cause) {
+      throw ApiError.serviceUnavailable("Password reset email could not be sent", {
+        code: "PASSWORD_RESET_EMAIL_FAILED",
+        cause,
+      });
+    }
+  },
+
   async sendVerificationOtp({
     to,
     name,

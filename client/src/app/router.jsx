@@ -22,6 +22,7 @@ import { CredentialVerifyPage } from '../features/credentials/pages/CredentialVe
 import LoginPage from '../features/auth/pages/LoginPage';
 import { RegisterPage } from '../features/auth/pages/RegisterPage';
 import { VerifyEmailPage } from '../features/auth/pages/VerifyEmailPage';
+import { ForgotPasswordPage } from '../features/auth/pages/ForgotPasswordPage';
 
 // Pages - Onboarding
 import { OnboardingPage } from '../features/onboarding/pages/OnboardingPage';
@@ -86,6 +87,7 @@ export const router = createBrowserRouter([
             children: [
               { path: 'login', element: <LoginPage /> },
               { path: 'register', element: <RegisterPage /> },
+              { path: 'forgot-password', element: <ForgotPasswordPage /> },
             ],
           },
           { path: 'verify-email', element: <VerifyEmailPage /> },

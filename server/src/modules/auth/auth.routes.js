@@ -10,7 +10,10 @@ import {
   refreshBodySchema,
   registerBodySchema,
   resendEmailVerificationBodySchema,
+  requestPasswordResetBodySchema,
+  resetPasswordBodySchema,
   verifyEmailBodySchema,
+  verifyPasswordResetOtpBodySchema,
   usernameAvailabilityQuerySchema,
 } from "./auth.validation.js";
 
@@ -38,6 +41,22 @@ export const createAuthRouter = ({ controller = authController } = {}) => {
     validate({ body: resendEmailVerificationBodySchema }),
     asyncHandler(controller.resendEmailVerification),
   );
+  router.post(
+    "/password-reset/request",
+    validate({ body: requestPasswordResetBodySchema }),
+    asyncHandler(controller.requestPasswordReset),
+  );
+  router.post(
+    "/password-reset/verify",
+    validate({ body: verifyPasswordResetOtpBodySchema }),
+    asyncHandler(controller.verifyPasswordResetOtp),
+  );
+  router.post(
+    "/password-reset/reset",
+    validate({ body: resetPasswordBodySchema }),
+    asyncHandler(controller.resetPassword),
+  );
+
   router.post(
     "/login",
     validate({ body: loginBodySchema }),
