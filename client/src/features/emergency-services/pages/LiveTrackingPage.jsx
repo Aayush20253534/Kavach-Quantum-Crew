@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -25,12 +25,22 @@ export function LiveTrackingPage() {
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const loadDispatches = useCallback(async () => {
     try {
       const response = await emergencyServicesApi.getDispatches();
       const rows = response?.data?.data || [];
       const active = rows.filter((dispatch) => !['COMPLETED', 'CANCELLED'].includes(dispatch.status));
+
+      if (!mountedRef.current) return;
 
       setDispatches(active);
       setSelectedId((current) =>
@@ -58,6 +68,7 @@ export function LiveTrackingPage() {
 
     try {
       const response = await emergencyServicesApi.getTracking(selectedId);
+      if (!mountedRef.current) return;
       setTracking(response?.data?.data || null);
       setError('');
     } catch (err) {
@@ -79,8 +90,12 @@ export function LiveTrackingPage() {
   useEffect(() => {
     if (!selectedId || !navigator.geolocation) return undefined;
 
+    let cancelled = false;
+
     const watchId = navigator.geolocation.watchPosition(
       async (position) => {
+        if (cancelled || !mountedRef.current) return;
+
         const next = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
@@ -91,14 +106,20 @@ export function LiveTrackingPage() {
 
         try {
           await emergencyServicesApi.updateDispatchLocation(selectedId, next);
-          setError('');
+          if (!cancelled && mountedRef.current) setError('');
         } catch (err) {
-          setError(err?.response?.data?.error?.message || 'Live GPS transmission failed.');
+          if (!cancelled && mountedRef.current) {
+            setError(err?.response?.data?.error?.message || 'Live GPS transmission failed.');
+          }
         } finally {
-          setSending(false);
+          if (!cancelled && mountedRef.current) setSending(false);
         }
       },
-      () => setError('Location permission is required to transmit responder GPS.'),
+      () => {
+        if (!cancelled && mountedRef.current) {
+          setError('Location permission is required to transmit responder GPS.');
+        }
+      },
       {
         enableHighAccuracy: true,
         maximumAge: 5000,
@@ -106,7 +127,10 @@ export function LiveTrackingPage() {
       },
     );
 
-    return () => navigator.geolocation.clearWatch(watchId);
+    return () => {
+      cancelled = true;
+      navigator.geolocation.clearWatch(watchId);
+    };
   }, [selectedId]);
 
   const selectedDispatch = useMemo(
@@ -325,7 +349,7 @@ export function LiveTrackingPage() {
           </div>
         </div>
 
-        <div className="h-[500px] w-full">
+        <div className="relative isolate z-0 h-[500px] w-full overflow-hidden">
           <AuthorityOperationsMap
             incidents={routeIncident ? [routeIncident] : []}
             units={routeUnit ? [routeUnit] : []}

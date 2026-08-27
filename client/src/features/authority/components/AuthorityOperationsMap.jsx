@@ -206,8 +206,8 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
   if (!isLoaded) return <div className="min-h-[420px] animate-pulse bg-slate-100" />;
 
   return (
-    <div className="relative h-full w-full">
-      <div className="absolute left-3 top-3 z-20 inline-flex overflow-hidden rounded-md border border-slate-300 bg-white shadow-sm">
+    <div className="relative isolate z-0 h-full w-full overflow-hidden">
+      <div className="absolute left-3 top-3 z-10 inline-flex overflow-hidden rounded-md border border-slate-300 bg-white shadow-sm">
         {[
           ['roadmap', 'Map'],
           ['satellite', 'Satellite'],
@@ -229,6 +229,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
 
       <GoogleMap
       mapContainerStyle={containerStyle}
+      mapContainerClassName="fleet-operations-map"
       center={markers[0]?.point || defaultCenter}
       zoom={markers.length ? 12 : 6}
       mapTypeId={mapTypeId}
