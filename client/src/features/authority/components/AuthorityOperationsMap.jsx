@@ -40,6 +40,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const mapRef = useRef(null);
   const fittedContextRef = useRef('');
+  const routeRequestRef = useRef(0);
   const [selected, setSelected] = useState(null);
   const [routes, setRoutes] = useState([]);
   const [mapTypeId, setMapTypeId] = useState('roadmap');
@@ -87,6 +88,8 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
   );
 
   useEffect(() => {
+    const requestId = ++routeRequestRef.current;
+
     if (!isLoaded || !showRoutes || !window.google?.maps || incidents.length !== 1) {
       setRoutes([]);
       onRouteSummary?.([]);
@@ -149,7 +152,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
         }),
       ),
     ).then((resolved) => {
-      if (cancelled) return;
+      if (cancelled || requestId !== routeRequestRef.current) return;
       const successful = resolved.filter(Boolean);
       setRoutes(successful);
       onRouteSummary?.(
@@ -159,6 +162,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
 
     return () => {
       cancelled = true;
+      routeRequestRef.current += 1;
     };
   }, [incidents, isLoaded, onRouteSummary, routeLineColor, showRoutes, units]);
 
@@ -243,6 +247,12 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
         });
       }}
       onUnmount={() => {
+        routeRequestRef.current += 1;
+        setRoutes([]);
+        setSelected(null);
+        if (window.google?.maps && mapRef.current) {
+          window.google.maps.event.clearInstanceListeners(mapRef.current);
+        }
         mapRef.current = null;
         fittedContextRef.current = '';
       }}

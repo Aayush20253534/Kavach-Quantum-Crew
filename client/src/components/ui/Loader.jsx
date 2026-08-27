@@ -19,56 +19,54 @@ export function Loader({ className, size = 'md' }) {
 
 export function FullPageLoader({ message = 'Securing session...' }) {
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#f8f9fa] overflow-hidden">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-slate-50 px-6">
+      <div className="relative flex w-full max-w-sm flex-col items-center text-center">
+        {/* Compact concentric KAVACH scanner. The rings use different speeds so
+            the loader feels intentional without becoming visual noise. */}
+        <div className="relative flex h-36 w-36 items-center justify-center">
+          <div className="absolute inset-0 rounded-full border border-slate-200 bg-white/70 shadow-[0_18px_55px_rgba(15,23,42,0.08)]" />
 
-      {/* Ambient Pulsing Background Glows */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '4s' }}></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-rose-400/10 rounded-full blur-[80px] animate-pulse" style={{ animationDuration: '3s', animationDelay: '1s' }}></div>
+          <div
+            className="absolute inset-2 rounded-full border-2 border-transparent border-t-red-600 border-r-red-200 animate-spin"
+            style={{ animationDuration: '1.15s' }}
+          />
 
-      <div className="relative z-10 flex flex-col items-center justify-center w-full max-w-sm px-6">
+          <div
+            className="absolute inset-5 rounded-full border border-dashed border-slate-300 animate-spin"
+            style={{ animationDuration: '5.5s', animationDirection: 'reverse' }}
+          />
 
-        {/* Core Holographic Scanner Group */}
-        <div className="relative w-48 h-48 flex items-center justify-center mb-10">
+          <div
+            className="absolute inset-8 rounded-full border-2 border-transparent border-b-slate-900 border-l-slate-300 animate-spin"
+            style={{ animationDuration: '1.9s' }}
+          />
 
-          {/* Outer Radar Sweep */}
-          <div className="absolute inset-0 rounded-full border border-red-200/40"></div>
-          <div className="absolute inset-0 rounded-full border-t-2 border-red-500 shadow-[0_-4px_10px_rgba(225,29,72,0.2)] animate-spin" style={{ animationDuration: '2s' }}></div>
-
-          {/* Middle Dotted Track */}
-          <div className="absolute inset-5 rounded-full border-[1.5px] border-dashed border-slate-300/80 animate-spin" style={{ animationDuration: '12s', animationDirection: 'reverse' }}></div>
-
-          {/* Inner Highlight Ring */}
-          <div className="absolute inset-9 rounded-full border border-transparent border-r-red-400/60 animate-spin" style={{ animationDuration: '3s' }}></div>
-
-          {/* Solid White Glowing Core */}
-          <div className="absolute inset-12 bg-white rounded-full shadow-[0_8px_30px_rgba(225,29,72,0.15)] flex items-center justify-center border border-red-50 z-10">
-            <div className="relative flex items-center justify-center w-full h-full bg-gradient-to-tr from-red-50/50 to-white rounded-full">
-              <ShieldCheck className="w-8 h-8 text-red-600 drop-shadow-sm animate-pulse" style={{ animationDuration: '2s' }} />
-            </div>
+          <div className="absolute inset-[46px] rounded-full border border-slate-200 bg-white shadow-sm" />
+          <div className="relative z-10 flex h-11 w-11 items-center justify-center rounded-full bg-slate-950 text-white shadow-md">
+            <ShieldCheck className="h-5 w-5" />
           </div>
+
+          <span className="absolute left-[14px] top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-red-600 shadow-[0_0_0_5px_rgba(225,29,72,0.08)] animate-pulse" />
+          <span
+            className="absolute right-[20px] top-[25px] h-1.5 w-1.5 rounded-full bg-slate-700 animate-pulse"
+            style={{ animationDelay: '350ms' }}
+          />
         </div>
 
-        {/* Text & Branding Presentation */}
-        <div className="flex flex-col items-center w-full">
-          <div className="flex items-center gap-2 mb-6">
-            <h2 className="text-[22px] font-black text-slate-900 tracking-tight uppercase flex items-center gap-2">
-              Kavach
-              <span className="bg-slate-900 text-white text-[10px] px-2.5 py-0.5 rounded-md tracking-widest font-bold uppercase shadow-sm">
-                OS
-              </span>
-            </h2>
+        <div className="mt-7">
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-lg font-black tracking-tight text-slate-950">KAVACH</span>
+            <span className="rounded-md border border-slate-300 bg-white px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.16em] text-slate-600">
+              Safety Network
+            </span>
           </div>
 
-          {/* Status Bar Indicator */}
-          <div className="flex items-center gap-3 bg-white px-5 py-3 rounded-2xl border border-slate-200 shadow-sm w-max justify-center">
-            <div className="flex gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-bounce" style={{ animationDelay: '0ms' }}></span>
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-bounce" style={{ animationDelay: '150ms' }}></span>
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-bounce" style={{ animationDelay: '300ms' }}></span>
-            </div>
-            <p className="text-[11px] text-slate-600 font-semibold uppercase tracking-widest">
-              {message}
-            </p>
+          <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">
+            {message}
+          </p>
+
+          <div className="mx-auto mt-4 h-1 w-32 overflow-hidden rounded-full bg-slate-200">
+            <div className="h-full w-1/2 rounded-full bg-gradient-to-r from-slate-900 to-red-600 animate-[pulse_1.2s_ease-in-out_infinite]" />
           </div>
         </div>
       </div>
