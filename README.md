@@ -400,3 +400,17 @@ The responder live map distinguishes three concepts:
 - **black route:** Google driving route from the responder's current live position to the emergency destination once a dispatch is active.
 
 Manual pan/zoom is preserved while GPS updates arrive. The map re-fits only when the operational context changes, such as selecting a different dispatch.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+This documentation snapshot has been synchronized with the current KAVACH repository. The implemented system now includes tourist, disaster-management, system-admin, police, fire, and ambulance workflows; persistent responder GPS tracking; road-aware emergency routing; group safety monitoring; danger-zone automation; user-scoped chatbot context; and email-OTP password recovery.
+
+- Responder tracking runs from the persistent responder layout, so GPS transmission and dispatch polling continue while moving between Active Dispatch, Live Tracking, and Dispatch History.
+- Tourist Live Map combines group-member tracking, danger zones, and active emergency-fleet response on one map. The leader remains red; subsequent members use distinct colors, with the second member purple.
+- Fleet routes follow Google driving roads where routable, show travelled segments in grey, remaining road in blue, the live fleet in green, and a dotted connector from the closest routable road point to an off-road tourist/incident location.
+- SOS creation requires a valid location. The client requests fresh high-accuracy GPS and the backend can fall back to the latest trusted trip location instead of silently storing `0,0`.
+- Active trip/group danger-zone intersections can create safety alerts/incidents immediately; trip completion or cancellation expires trip-bound active alerts.
+- Password reset uses an email OTP verification flow before accepting the new password.
+- Database conflicts are returned as user-safe conflict messages instead of leaking Prisma/constraint wording.

@@ -147,3 +147,9 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 ## 2026-08-27 environment sync
 
 Production configuration must keep the deployed frontend origin in backend CORS allowlists and keep AI-service JWT issuer/audience/secret settings aligned with backend access-token issuance. Frontend map/routing requires `VITE_GOOGLE_MAPS_API_KEY`; email-backed verification/reset/dispatch notifications require the configured mail provider settings.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Environment configuration should include database/auth settings, frontend/backend origin/CORS values, email delivery credentials, Google Maps client key/configuration, realtime settings, AI provider variables where enabled, and blockchain gateway/provider variables. Do not expose server secrets through `VITE_*` client variables.

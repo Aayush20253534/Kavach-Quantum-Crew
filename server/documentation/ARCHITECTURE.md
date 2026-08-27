@@ -136,3 +136,9 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 The operational architecture now explicitly distinguishes **fixed fleet identity/location** from **live dispatch telemetry**. `EmergencyServiceAccount` owns the configured service/base coordinates; active dispatch tracking owns moving responder GPS. Disaster Management and Tourist shared-response views consume the latter during an active response.
 
 Trip lifecycle cleanup is cross-module behavior: trip end reconciles monitoring alerts, signal-loss cases, incidents, and dispatches so active operational projections cannot outlive the trip that created them.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+The backend remains the authority boundary for identity, roles, trip state, incidents, tracking consent, trusted locations, dispatch state, notifications, and blockchain integration. Frontend route calculations/visualization must not replace backend authorization or operational state.

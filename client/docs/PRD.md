@@ -940,3 +940,9 @@ Police, Ambulance/Hospital, and Fire share the same operational product architec
 ### Safety lifecycle acceptance rule
 
 Ending a trip must remove or expire trip-derived active alerts/incidents from all active views. A stale alert from a completed/cancelled trip is a product defect, not a historical record to display as active.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Implemented product behavior now includes persistent responder background tracking, combined tourist group+fleet live tracking, danger-zone/group-boundary incident automation, SOS location integrity, trip-end alert expiry, password-reset email OTP, and system/disaster/fleet role-specific dashboards. These should be treated as current requirements, not future-only items.

@@ -151,3 +151,9 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 Emergency-service accounts are grouped operationally as Police, Ambulance/Hospital, and Fire. Each account has a fixed configured service location that remains available as a reference even with no dispatch.
 
 When an incident is assigned, live tracking is based on the responder's current dispatch GPS, not the fixed base location. The frontend requests a Google driving route from live unit position to incident/tourist position and displays route distance/ETA. The dispatch state machine remains authoritative server-side.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Police, fire, and ambulance/hospital accounts have fixed registered bases. During active assignments responders publish live dispatch locations, shared tracking is visible to authorized tourists/staff, and status transitions drive the operational lifecycle. Route visualization is client-side Google driving geometry with travelled/remaining progress and off-road dotted access.

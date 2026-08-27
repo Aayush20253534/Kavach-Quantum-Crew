@@ -86,3 +86,9 @@ The Current Trip UI maps the healthy `VERIFIED` state to `APPROVED`. A tamper re
 ## 2026-08-27 realtime sync
 
 Realtime consumers should expect incident/dispatch state to converge with the database after completion/cancellation and trip lifecycle cleanup. Responder GPS updates are frequent telemetry and should update marker position without forcing clients to reset map zoom/pan on every event.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Realtime tracking/incident events complement polling but are not the sole persistence mechanism. Responder location continues to be written through authenticated dispatch-location updates; tourist/staff maps can refresh from shared tracking snapshots if a socket event is missed.

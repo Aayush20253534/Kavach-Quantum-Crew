@@ -34,3 +34,9 @@ The chatbot request path is now conceptually:
 `verified JWT -> user-scoped conversation -> private user context -> optional live Kavach context -> KB selection -> system prompt -> Groq -> user-scoped history persistence`.
 
 Private account enrichment is deliberately separated from KB selection. Shared KB files describe platform behavior; per-user data is resolved at request time and must not become shared knowledge.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+The current architecture uses the Node/Express backend as the authority boundary for authentication, account context, safety data, and emergency tracking. Rakshak may enrich answers with KB retrieval and provider completions, while authorization and private user context remain backend responsibilities.

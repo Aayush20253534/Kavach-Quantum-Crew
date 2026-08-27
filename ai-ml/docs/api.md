@@ -27,3 +27,9 @@ The service validates the same access-token issuer/audience/secret configuration
 For authenticated chatbot messages, account identity is taken from the verified access token. Any `context` supplied by the frontend is supplementary application context and must not override authenticated identity.
 
 The successful message contract remains conversation-oriented; private user enrichment is internal prompt context and is intentionally not returned as a separate public API payload.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+The AI-facing contract should be treated as authenticated and user-scoped. Chatbot responses may use minimized profile/context fields for the signed-in user, but that context must never be cached or exposed across users. Live safety/fleet state should be obtained through backend-authorized APIs rather than inferred by the model.

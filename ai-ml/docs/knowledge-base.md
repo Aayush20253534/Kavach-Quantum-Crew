@@ -29,3 +29,9 @@ Static Markdown explains rules and architecture. It must not fabricate current l
 Static KB files contain **shared KAVACH product behavior only**. Do not put tourist names, emails, phone numbers, IDs, trip-specific private data, fleet-account private details, or conversation-specific content into the KB.
 
 Personalized answers should come from request-time authenticated context. This keeps static retrieval safe for reuse across users while still allowing Rakshak AI to understand the logged-in user's own role and current journey when appropriate.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+The KB now documents emergency response/live tracking, emergency safety, trips/groups, chatbot/accounts, and blockchain integrity behavior. Operational facts that change at runtime should still come from backend APIs; KB documents describe policy and workflow, not live state.

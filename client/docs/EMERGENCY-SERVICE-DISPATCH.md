@@ -159,3 +159,9 @@ The Active Dispatch page exposes only the next valid lifecycle action for the ba
 The Live Tracking page shows the fleet's configured fixed account location as a blue reference marker. When a dispatch is active, the browser's live responder GPS is transmitted to the backend and becomes the Google Directions route origin. The incident/tourist is the destination and the route polyline is black. Route distance and ETA come from the resolved Directions leg.
 
 Dispatch History provides search, outcome filtering, desktop table presentation, and mobile cards for completed/cancelled responses.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Emergency-service UI uses one account per police/fire/ambulance-hospital organization with a fixed registered base. During an active dispatch, live GPS updates continue in the responder layout across navigation. Tourist and authorized staff can read shared dispatch tracking. Routes follow driving roads and use a dotted connector only for the final non-routable segment.

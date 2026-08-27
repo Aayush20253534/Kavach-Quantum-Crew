@@ -44,3 +44,9 @@ The frontend currently has four distinct authenticated shells: Tourist, Disaster
 - **Tourist:** mobile-first safety experience with trip, group, incident, profile, SOS, notifications, and response-tracking flows.
 
 Responder live tracking uses the fixed fleet-account coordinates as a blue base marker. After dispatch activation, browser GPS becomes the live route origin and the road route to the incident is drawn in black. User zoom/pan is not reset by recurring GPS updates.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Current frontend state: responder GPS/polling is owned by `ResponderLayout` and survives child-route switches; the responder sidebar uses router-native navigation; tourist Live Map overlays group members, danger zones, and active fleet responses; fleet routing shows road progress plus dotted off-road access; and password reset uses a six-box email OTP flow.

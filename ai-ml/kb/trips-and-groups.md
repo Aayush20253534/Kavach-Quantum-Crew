@@ -14,3 +14,11 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 ## Current implementation note — 2026-08-27
 
 Trip completion/cancellation closes the active monitoring lifecycle for that trip. Group-member signal-loss monitoring is meaningful only while the trip/group is operational, and stale active alerts should not survive trip end.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+The knowledge-base entry remains source material for the authenticated Rakshak chatbot.
+
+- Group Live Map uses trusted location pings, leader/member roles, per-member marker colors, consent-gated location sharing, and a 500 m group safety boundary. Ending or cancelling a trip invalidates trip-bound active alerts and tracking context.

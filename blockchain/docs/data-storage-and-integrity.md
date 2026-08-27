@@ -229,3 +229,9 @@ Snapshot failure is intentionally independent of credential issuance status. A Q
 ## 2026-08-27 integrity note
 
 Operational cleanup of trips/incidents/dispatches is an application-database concern unless an explicit blockchain workflow records a corresponding credential/integrity event. Do not mirror rapidly changing GPS, dashboard counters, chatbot context, or other ephemeral UI state onto chain.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Integrity handling must distinguish `verified`, `pending/unavailable`, and confirmed `mismatch` states. Group membership or identity updates can reach PostgreSQL before the latest blockchain snapshot is queryable; that temporary lag is not proof of corruption. Automatic repair remains blocked when the trusted snapshot is unavailable.

@@ -712,3 +712,9 @@ Every five seconds the main API reconciles open confirmed individual and group c
 ## 2026-08-27 workflow boundary
 
 Incident dispatch, live responder routing, trip-end alert cleanup, and chatbot personalization are off-chain application workflows. Blockchain interaction occurs only where the credential/integrity workflow explicitly invokes the gateway. This separation prevents transient operational failures from being mistaken for immutable trust records.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Runtime reconciliation is asynchronous. Database mutations may be visible before the corresponding trusted chain snapshot. Consumers should retry snapshot reads and surface a neutral synchronization state until a fresh snapshot is available; only then should a persistent disagreement be treated as an integrity mismatch.

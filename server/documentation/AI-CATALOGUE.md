@@ -106,3 +106,9 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 ## 2026-08-27 AI integration sync
 
 Rakshak AI now has three backend-facing trust boundaries: authenticated identity, live application context, and shared KB retrieval. Private user enrichment must be resolved from the verified account ID and minimized before model use. It is not a shared catalogue/KB datum and must never be exposed to another user's conversation.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+AI/chatbot integration may use authenticated minimized user context and curated KB retrieval, but role authorization and live operational data access remain backend-controlled. Never share one user's enriched context/history with another user.

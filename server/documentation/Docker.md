@@ -1647,3 +1647,9 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 ## 2026-08-27 container/runtime note
 
 Current local/production verification should include the backend, PostgreSQL, optional blockchain gateway, frontend, and Rakshak AI service as separate runtime concerns. A container being healthy does not prove CORS, email delivery, Google Maps client configuration, websocket/realtime delivery, or AI JWT compatibility; validate those integration paths explicitly after startup.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Production deployments must preserve exact frontend/backend CORS origins, email configuration for verification/password-reset/dispatch notifications, Google Maps client configuration, database migrations, realtime transport, and blockchain/provider settings. Frontend and backend may be deployed separately, but cookie/CORS credentials must remain aligned.

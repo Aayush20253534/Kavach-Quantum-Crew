@@ -184,3 +184,15 @@ The current frontend is no longer a single visual system applied to every role. 
 The responder map uses custom Map/Satellite controls, a persistent fixed-base reference marker, live responder GPS, road-route rendering, preserved user zoom/pan, and ETA/distance summaries derived from Google Directions when available.
 
 Navigation under `/responder` is shared across all emergency-service roles and remounts routed page content on pathname changes to prevent stale responder-page state from leaking across route transitions.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Frontend synchronization highlights:
+
+- Responder tracking is persistent across `/responder/dispatch`, `/responder/tracking`, and `/responder/history`.
+- Tourist Live Map combines group and emergency-fleet tracking.
+- Fleet route semantics: blue base marker, green live unit, grey travelled road, blue remaining road, red tourist/incident, dotted non-road connector.
+- Group leader marker is red; other members receive distinct colors and the second member is purple.
+- Mobile location tracking requests fresh GPS on foreground/focus and tolerates realistic handset accuracy/freshness windows.

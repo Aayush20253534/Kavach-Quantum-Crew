@@ -12,3 +12,11 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 ## Current implementation note — 2026-08-27
 
 A responder's fixed fleet base and live response position are separate. The fixed base remains visible as a blue reference marker. During an active dispatch, the live responder GPS is the route origin, the tourist/incident is the destination, and the road route is shown as a black line. Police, Ambulance, and Fire retain blue, green, and red service accents respectively.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+The knowledge-base entry remains source material for the authenticated Rakshak chatbot.
+
+- Current response context includes police/fire/ambulance dispatch status, shared tracking snapshots, responder base location, live responder GPS, road-route progress, and tourist-visible response tracking. Fleet tracking data must only be disclosed to the authorized tourist or staff roles allowed by the backend.

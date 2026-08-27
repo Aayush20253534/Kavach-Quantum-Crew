@@ -86,3 +86,9 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 Emergency responder access is shared across `POLICE`, `AMBULANCE`, and `FIRE` roles under the responder portal, but each account may act only on dispatches/telemetry authorized for that emergency-service account. Disaster Managers operate incidents and fleet assignment; System Admin governs platform accounts/content/diagnostics; Tourist owns journey/safety actions.
 
 Private chatbot profile context is always limited to the currently authenticated account regardless of role.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Shared emergency tracking is role-gated: tourists can read tracking for their dispatches, Disaster Manager/System Admin can observe operational response, and police/fire/ambulance responders manage their own dispatch/location/status. Private chatbot enrichment and tourist profile/trip data remain scoped to the authenticated account.

@@ -144,3 +144,9 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 ## 2026-08-27 authentication email note
 
 Email verification and password reset are separate flows. Password reset now uses an email OTP confirmation step and must not reuse email-verification state as proof of reset authorization. The reset UI uses six OTP positions followed by new-password and confirm-password fields after OTP verification.
+
+---
+
+## Repository synchronization — 2026-08-27
+
+Email delivery now also supports password-reset OTP confirmation and operational notification links in addition to account verification. Password reset verifies the OTP before accepting the new password/confirmation pair.
