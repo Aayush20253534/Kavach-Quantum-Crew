@@ -147,7 +147,7 @@ export function AdminAccountsPage() {
             <tbody className="divide-y divide-slate-100">
               {accounts.map((account) => (
                 <tr key={`${account.role}-${account.id}`}>
-                  <td className="px-4 py-3">
+                  <td className="border-r border-slate-300 last:border-r-0 px-4 py-3">
                     <p className="font-black text-xs">
                       {account.name || account.username}
                     </p>
@@ -156,7 +156,7 @@ export function AdminAccountsPage() {
                     </p>
                     {account.organization && <p className="text-[10px] text-slate-400 mt-1">{account.organization}</p>}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="border-r border-slate-300 last:border-r-0 px-4 py-3">
                     <span className="text-[10px] font-black uppercase bg-slate-100 border border-slate-200 px-2 py-1 inline-flex items-center gap-1">
                       {account.role === 'SYSTEM_ADMIN' ? (
                         <ShieldCheck className="w-3 h-3" />
@@ -166,18 +166,18 @@ export function AdminAccountsPage() {
                       {account.role}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-[10px] font-bold">
+                  <td className="border-r border-slate-300 last:border-r-0 px-4 py-3 text-[10px] font-bold">
                     {account.status}
                   </td>
-                  <td className="px-4 py-3 text-[10px] text-slate-500">
+                  <td className="border-r border-slate-300 last:border-r-0 px-4 py-3 text-[10px] text-slate-500">
                     {account.lastLoginAt
                       ? new Date(account.lastLoginAt).toLocaleString()
                       : 'Never'}
                   </td>
-                  <td className="px-4 py-3 text-[10px] text-slate-500">
+                  <td className="border-r border-slate-300 last:border-r-0 px-4 py-3 text-[10px] text-slate-500">
                     {new Date(account.createdAt).toLocaleDateString()}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="border-r border-slate-300 last:border-r-0 px-4 py-3">
                     <button
                       type="button"
                       onClick={() => changeStatus(account)}
