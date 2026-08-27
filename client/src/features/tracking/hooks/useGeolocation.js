@@ -6,6 +6,7 @@ export const useGeolocation = (tripId, active = false) => {
   const [error, setError] = useState('');
   const [permission, setPermission] = useState('prompt');
   const [isTracking, setIsTracking] = useState(false);
+  const [pingError, setPingError] = useState('');
   const pingMutation = useSendPing();
   const watchId = useRef(null);
   const lastPingAt = useRef(0);
@@ -49,7 +50,15 @@ export const useGeolocation = (tripId, active = false) => {
       if (active && tripId && Date.now() - lastPingAt.current >= 3000) {
         lastPingAt.current = Date.now();
         pingMutation.mutate(coords, {
-          onError: (err) => console.error('Failed to ping location', err),
+          onSuccess: () => setPingError(''),
+          onError: (err) => {
+            const message =
+              err?.response?.data?.error?.message ||
+              err?.message ||
+              'Failed to publish trusted location';
+            setPingError(message);
+            console.error('Failed to ping location', err);
+          },
         });
       }
     };
@@ -101,5 +110,5 @@ export const useGeolocation = (tripId, active = false) => {
     };
   }, [tripId, active]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { location, error, permission, isTracking };
+  return { location, error, permission, isTracking, pingError };
 };
