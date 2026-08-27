@@ -144,7 +144,7 @@ export function AdminAccountsPage() {
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-300">
               {accounts.map((account) => (
                 <tr key={`${account.role}-${account.id}`}>
                   <td className="border-r border-slate-300 last:border-r-0 px-4 py-3">
