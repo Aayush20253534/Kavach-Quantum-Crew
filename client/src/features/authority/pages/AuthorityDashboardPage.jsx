@@ -81,7 +81,7 @@ export function AuthorityDashboardPage() {
     <div className="space-y-4 max-w-[1320px] mx-auto pb-8 font-sans">
 
       {/* Top Banner Ticker */}
-      <div className="flex flex-col justify-between gap-4 rounded-lg border border-slate-400 bg-gradient-to-r from-slate-800 via-slate-700 to-slate-600 p-5 sm:flex-row sm:items-center sm:p-6">
+      <div className="flex flex-col justify-between gap-4 rounded-lg border border-slate-400 bg-gradient-to-r from-slate-300 via-slate-100 to-slate-300 p-4 sm:flex-row sm:items-center sm:p-5">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="bg-[#e11d48] text-white text-[10px] font-black px-2.5 py-1 uppercase tracking-widest rounded-md ">
@@ -89,14 +89,14 @@ export function AuthorityDashboardPage() {
             </span>
             <span className="text-[11px] text-slate-600 font-bold tracking-widest uppercase">JURISDICTION-AWARE EMERGENCY GRID</span>
           </div>
-          <h1 className="text-[22px] sm:text-[22px] font-black text-white tracking-tight">
+          <h1 className="text-[20px] sm:text-[22px] font-black text-slate-950 tracking-tight">
             Emergency Operations Command
           </h1>
         </div>
 
         <button
           onClick={() => setBroadcastModalOpen(true)}
-          className="flex items-center gap-2 px-5 py-3 bg-[#e11d48] text-white hover:bg-slate-50 text-[12px] font-bold uppercase tracking-widest rounded-md  transition-colors active:scale-95 cursor-pointer"
+          className="flex items-center gap-2 px-5 py-3 bg-[#e11d48] text-white hover:bg-[#be123c] text-[11px] font-bold uppercase tracking-widest rounded-md transition-colors active:scale-95 cursor-pointer"
         >
           <BellRing className="w-4 h-4" /> Broadcast Safety Alert
         </button>

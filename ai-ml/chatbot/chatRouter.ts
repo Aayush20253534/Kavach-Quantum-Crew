@@ -8,12 +8,28 @@ import { selectBestKbFile } from "./kbSelector.js";
 import { appendMessage, ensureConversation, getConversationHistory, getVisibleHistory, hideHistoryForUser } from "./historyStore.js";
 import { callGroq } from "./groqClient.js";
 import { fetchNearestSafeZones, isNearestSafeZoneIntent, NearbySafeZone } from "./kavachContext.js";
+import { fetchPrivateUserContext, PrivateUserContext } from "./privateUserContext.js";
 
 const router = Router();
 
+type AuthenticatedChatUser = {
+  sub?: string;
+  role?: string;
+};
+
+function authenticatedUserFromRequest(req: Request): AuthenticatedChatUser | null {
+  const user = (req as Request & { user?: AuthenticatedChatUser }).user;
+  return user && typeof user === "object" ? user : null;
+}
+
 function userIdFromRequest(req: Request): string | null {
-  const user = (req as Request & { user?: { sub?: string } }).user;
+  const user = authenticatedUserFromRequest(req);
   return typeof user?.sub === "string" ? user.sub : null;
+}
+
+function userRoleFromRequest(req: Request): string | null {
+  const user = authenticatedUserFromRequest(req);
+  return typeof user?.role === "string" ? user.role : null;
 }
 
 function bearerTokenFromRequest(req: Request): string | null {
@@ -41,12 +57,14 @@ function buildSystemPrompt({
   location,
   context,
   nearbySafeZones,
+  privateUserContext,
 }: {
   fileName: string | null;
   fileContent: string | null;
   location?: { latitude: number; longitude: number };
   context?: Record<string, unknown>;
   nearbySafeZones?: NearbySafeZone[];
+  privateUserContext?: PrivateUserContext | null;
 }): string {
   const parts = [
     "You are Rakshak AI, the Kavach travel and tourist-safety assistant.",
@@ -56,7 +74,18 @@ function buildSystemPrompt({
     "If a Kavach-specific fact is not available in either source, clearly say that you do not have that information instead of fabricating it.",
     "Never claim that you triggered SOS, dispatched responders, changed a trip, or performed another real application action unless the supplied context explicitly says that action happened.",
     "Use recent conversation history to understand references and details the user has voluntarily shared during the chat.",
+    "Authenticated user context, when supplied below, is private context for this authenticated user only.",
+    "Use private user context only when it helps answer this user's request. Do not treat it as shared Kavach knowledge, do not generalize it to other users, and never claim another user can access it.",
+    "Do not reveal private profile fields merely because they are available. Mention them only when the authenticated user asks about themselves or when the information is directly necessary for their request.",
   ];
+
+  if (privateUserContext) {
+    parts.push(
+      "Private authenticated-user context (not shared knowledge):",
+      JSON.stringify(privateUserContext),
+      "End private authenticated-user context.",
+    );
+  }
 
   if (location) {
     parts.push(`The tourist's current browser location is latitude ${location.latitude}, longitude ${location.longitude}.`);
@@ -136,6 +165,19 @@ router.post("/v1/chatbot/messages", async (req: Request, res: Response) => {
       conversationId && typeof conversationId === "string" ? conversationId : null,
     );
 
+    // The identity comes from the verified JWT, never from request.body.
+    // Any lookup failure is non-fatal: chatbot functionality should still work
+    // without private profile enrichment.
+    let privateUserContext: PrivateUserContext | null = null;
+    try {
+      privateUserContext = await fetchPrivateUserContext(
+        userId,
+        userRoleFromRequest(req),
+      );
+    } catch (error) {
+      console.error("Private chatbot user-context lookup failed:", error);
+    }
+
     const history = await getConversationHistory(userId, activeConversationId);
     const { fileName, content } = selectBestKbFile(normalizedMessage);
     const wantsNearestSafeZone = isNearestSafeZoneIntent(normalizedMessage);
@@ -181,6 +223,7 @@ router.post("/v1/chatbot/messages", async (req: Request, res: Response) => {
           location,
           context,
           nearbySafeZones,
+          privateUserContext,
         }),
       },
       ...history.map((m) => ({ role: m.role, content: m.content })),
