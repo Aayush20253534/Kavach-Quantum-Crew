@@ -29,7 +29,7 @@ export const createIncidentService = ({ repository = incidentRepository, notifie
     async ingestSafetyAlert(alert) {
       if (!alert?.id) return null;
       const existing = await repository.findBySafetyAlert(alert.id);
-      if (existing) { await notifier.incidentCreated(existing); return existing; }
+      if (existing) return existing;
       const latestLocation = await repository.findLatestLocation(alert.tripId, alert.userId);
       const alertLocation =
         Number.isFinite(Number(alert.details?.latitude)) && Number.isFinite(Number(alert.details?.longitude))

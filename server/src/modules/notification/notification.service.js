@@ -44,7 +44,12 @@ export const createNotificationService = ({
       notifications.push(payload(leaderId, ROLES.TOURIST, incident, "GROUP_MEMBER_EMERGENCY", "Group member safety alert", "A member of your active trip group has an emergency incident."));
     }
 
-    if (incident.sourceType === "SAFETY_ALERT" && incident.severity === "DANGER" && incident.title?.startsWith("Entered risk zone:") && tourist) {
+    if (
+      incident.sourceType === "SAFETY_ALERT" &&
+      incident.severity === "DANGER" &&
+      (incident.title === "Danger" || incident.title?.startsWith("Entered risk zone:")) &&
+      tourist
+    ) {
       await emailer.dangerZoneEntered({ recipient: tourist, incident });
     }
 
@@ -52,20 +57,20 @@ export const createNotificationService = ({
   },
 
   async signalLoss({ signalCase, trip, member, leader, reminder = false }) {
-    const managers = await repository.listDisasterManagers();
     const suffix = `${signalCase.id}:${new Date(signalCase.lastNotifiedAt || signalCase.detectedAt).getTime()}`;
     const notifications = [];
     const title = reminder ? "Group member still offline" : "Group member signal lost";
     const message = `${member.name || "A group member"} has not sent a location update for at least 5 minutes. The leader has 5 minutes to mark false alarm or confirm danger.`;
 
+    // Before escalation this is a leader-verification workflow, not a Disaster
+    // Management incident. Managers are notified only if the leader confirms
+    // danger or the 5-minute response window expires, when incidentCreated()
+    // handles both in-app and email escalation.
     if (leader) {
       notifications.push(payload(leader.id, ROLES.TOURIST, null, "GROUP_MEMBER_EMERGENCY", title, message, suffix));
-    }
-    for (const manager of managers) {
-      notifications.push(payload(manager.id, ROLES.DISASTER_MANAGER, null, "INCIDENT_ESCALATED", title, message, suffix));
+      await emailer.signalLossAlert({ recipients: [leader], member, trip, signalCase, reminder });
     }
 
-    await emailer.signalLossAlert({ recipients: [leader, ...managers].filter(Boolean), member, trip, signalCase, reminder });
     await publishCreated(repository, publisher, notifications);
   },
 

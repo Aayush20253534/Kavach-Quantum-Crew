@@ -197,6 +197,13 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
     });
     if (!alerts.length) return { indexed: 0, resolved: 0 };
 
+    const tripIds = [...new Set(alerts.map((alert) => alert.tripId))];
+    const trips = await db.trip.findMany({
+      where: { id: { in: tripIds } },
+      select: { id: true, status: true },
+    });
+    const tripStatusById = new Map(trips.map((trip) => [trip.id, trip.status]));
+
     const alertIds = alerts.map((alert) => alert.id);
     const incidents = await db.incident.findMany({
       where: { sourceSafetyAlertId: { in: alertIds } },
@@ -208,7 +215,9 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
     let resolved = 0;
     for (const alert of alerts) {
       const linked = incidentByAlert.get(alert.id);
-      const activeAlert = ["OPEN", "ACKNOWLEDGED"].includes(alert.status);
+      const activeAlert =
+        tripStatusById.get(alert.tripId) === "ACTIVE" &&
+        ["OPEN", "ACKNOWLEDGED"].includes(alert.status);
 
       if (activeAlert && !linked) {
         const latest = await db.latestTrustedLocation.findUnique({
@@ -457,9 +466,19 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
       ? { tripId: { in: jurisdictionTripIds } }
       : {};
 
+    const activeTripIds = (
+      await db.trip.findMany({
+        where: { status: "ACTIVE" },
+        select: { id: true },
+      })
+    ).map((trip) => trip.id);
+    const activeIncidentTripIds = jurisdictionTripIds
+      ? jurisdictionTripIds.filter((tripId) => activeTripIds.includes(tripId))
+      : activeTripIds;
+
     const activeFilter = {
       status: { in: ACTIVE_INCIDENT_STATUSES },
-      ...incidentJurisdictionFilter,
+      tripId: { in: activeIncidentTripIds },
     };
 
     const tripFilter = jurisdiction

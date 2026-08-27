@@ -155,7 +155,6 @@ export const createTripRepository = ({ db = prisma } = {}) => ({
       const incidents = await transaction.incident.findMany({
         where: {
           tripId,
-          sourceType: "SAFETY_ALERT",
           status: { in: ["OPEN", "ACKNOWLEDGED", "IN_PROGRESS"] },
         },
         select: { id: true },
@@ -175,6 +174,14 @@ export const createTripRepository = ({ db = prisma } = {}) => ({
 
       await transaction.safetyAlert.updateMany({
         where: { tripId, status: { in: ["OPEN", "ACKNOWLEDGED"] } },
+        data: { status: "RESOLVED", resolvedAt: now },
+      });
+
+      await transaction.signalLossCase.updateMany({
+        where: {
+          tripId,
+          status: { in: ["WAITING_FOR_LEADER", "ESCALATED", "FALSE_ALARM"] },
+        },
         data: { status: "RESOLVED", resolvedAt: now },
       });
 
@@ -287,6 +294,40 @@ export const createTripRepository = ({ db = prisma } = {}) => ({
       },
       select: { id: true, touristId: true, plannedEndAt: true },
       orderBy: { plannedEndAt: "asc" },
+      take: limit,
+    });
+  },
+
+  async findEndedTripsWithActiveSafetyState(limit = 100) {
+    const [alerts, incidents, signalCases] = await Promise.all([
+      db.safetyAlert.findMany({
+        where: { status: { in: ["OPEN", "ACKNOWLEDGED"] } },
+        select: { tripId: true },
+        distinct: ["tripId"],
+        take: limit,
+      }),
+      db.incident.findMany({
+        where: { status: { in: ["OPEN", "ACKNOWLEDGED", "IN_PROGRESS"] } },
+        select: { tripId: true },
+        distinct: ["tripId"],
+        take: limit,
+      }),
+      db.signalLossCase.findMany({
+        where: { status: { in: ["WAITING_FOR_LEADER", "ESCALATED", "FALSE_ALARM"] } },
+        select: { tripId: true },
+        distinct: ["tripId"],
+        take: limit,
+      }),
+    ]);
+    const tripIds = [...new Set([
+      ...alerts.map((row) => row.tripId),
+      ...incidents.map((row) => row.tripId),
+      ...signalCases.map((row) => row.tripId),
+    ])];
+    if (!tripIds.length) return [];
+    return db.trip.findMany({
+      where: { id: { in: tripIds }, status: { in: ["COMPLETED", "CANCELLED"] } },
+      select: { id: true, touristId: true, status: true },
       take: limit,
     });
   },

@@ -4,6 +4,7 @@ import { logger } from "../config/logger.js";
 import { emailService } from "../modules/auth/email.service.js";
 import { tripRepository } from "../modules/trip/trip.repository.js";
 import { credentialService } from "../modules/credential/credential.service.js";
+import { realtimePublisher } from "../realtime/realtimePublisher.js";
 
 const uniqueRecipients = (trip) => {
   const users = [
@@ -19,6 +20,7 @@ export const createTripLifecycleJob = ({
   mailer = emailService,
   log = logger,
   clock = () => new Date(),
+  publisher = realtimePublisher,
 } = {}) => {
   let running = false;
 
@@ -55,13 +57,42 @@ export const createTripLifecycleJob = ({
     }
   };
 
+  const processEndedSafetyState = async () => {
+    const now = clock();
+    const endedTrips = await repository.findEndedTripsWithActiveSafetyState(100);
+    for (const trip of endedTrips) {
+      try {
+        const expired = await repository.expireSafetyState(
+          trip.id,
+          now,
+          trip.status === "CANCELLED" ? "cancelled" : "completed",
+        );
+        for (const incidentId of expired.incidentIds) {
+          publisher.publishIncidentUpdated?.(
+            { id: incidentId, tripId: trip.id, userId: trip.touristId },
+            { type: "EXPIRED", source: "TRIP_ENDED_RECONCILIATION" },
+          );
+        }
+      } catch (error) {
+        log.error({ err: error, tripId: trip.id }, "Ended-trip safety cleanup failed");
+      }
+    }
+  };
+
   const processExpired = async () => {
     const now = clock();
     const trips = await repository.findExpiredActiveTrips(now, 50);
 
     for (const trip of trips) {
       try {
+        const expired = await repository.expireSafetyState(trip.id, now, "completed");
         await repository.completeTrip(trip.id, now);
+        for (const incidentId of expired.incidentIds) {
+          publisher.publishIncidentUpdated?.(
+            { id: incidentId, tripId: trip.id, userId: trip.touristId },
+            { type: "EXPIRED", source: "TRIP_AUTO_COMPLETED" },
+          );
+        }
         await credentialService.revokeTrip(trip.id, 4);
         await repository.createAudit({
           actorId: trip.touristId,
@@ -86,6 +117,7 @@ export const createTripLifecycleJob = ({
     running = true;
     try {
       await processExpired();
+      await processEndedSafetyState();
       await processEndingSoon();
     } finally {
       running = false;
