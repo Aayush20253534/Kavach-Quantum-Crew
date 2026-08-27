@@ -114,3 +114,7 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 ## Snapshot-era QA
 
 In addition to the original issue/revoke/evidence tests, production QA for the current snapshot-enabled contract should cover: snapshot append authorization, strict sequence ordering, `ID_NOT_FOUND`, `SNAPSHOT_NOT_FOUND`, individual type `1`, group type `2`, payload-hash verification, encrypted-payload round trips in the API layer, and fresh-contract migration behavior. Old credentials are not automatically copied when `CONTRACT_ADDRESS` changes.
+
+## 2026-08-27 regression note
+
+Include negative-path tests for unknown IDs and missing snapshots. The expected behavior is an explicit contract/gateway not-found failure; tests must not accept fabricated/default snapshots as successful verification.

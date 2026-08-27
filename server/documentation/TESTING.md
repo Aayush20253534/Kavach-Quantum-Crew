@@ -64,3 +64,16 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 ## Current regression scenarios
 
 Regression tests/manual QA should cover immediate danger-zone evaluation at trip start, five-minute signal-loss response/reminder cycles, Disaster-Management-controlled responder assignment, individual blockchain self-repair, group blockchain approval/recovery, and `INTEGRITY_UNAVAILABLE` when a snapshot cannot be safely read.
+
+## 2026-08-27 testing additions
+
+Add regression coverage for:
+
+- automatic trip completion performing the same active-alert cleanup as manual completion/cancellation;
+- signal-loss leader response, no-response timeout, and false-alarm recheck timing;
+- emergency-service status-transition validation;
+- fixed fleet-account location vs live dispatch-location updates;
+- account-scoped responder dispatch/tracking access;
+- forgot-password OTP verification/reset;
+- chatbot conversation/private-context user isolation;
+- production-origin CORS preflight for auth refresh/login.

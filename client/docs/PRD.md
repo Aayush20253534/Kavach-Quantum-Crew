@@ -922,3 +922,21 @@ A tourist should be able to understand their current safety situation and access
 
 Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
 
+
+## 2026-08-27 implemented product addendum
+
+### Administration UX
+
+System Admin uses an enterprise administration visual language: neutral black/gray palette, white cards, restrained radius, dark external card borders, lighter internal table separators, dense professional tables, two-column forms, and white diagnostics.
+
+### Disaster Management UX
+
+Disaster Management is an emergency-operations command center using silver/graphite surfaces with red reserved for urgency and critical actions. Incident management favors operational context, live map/fleet visibility, clear status progression, and command-oriented terminology over generic admin-card presentation.
+
+### Emergency responder UX
+
+Police, Ambulance/Hospital, and Fire share the same operational product architecture while retaining distinct service identity. A fleet account has a fixed configured base location. Active dispatch tracking uses the responder's live location and displays a road route to the tourist/incident. Dispatch history remains available after completion/cancellation.
+
+### Safety lifecycle acceptance rule
+
+Ending a trip must remove or expire trip-derived active alerts/incidents from all active views. A stale alert from a completed/cancelled trip is a product defect, not a historical record to display as active.

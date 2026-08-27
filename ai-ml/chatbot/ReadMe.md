@@ -50,3 +50,9 @@ Location-dependent questions use live platform context where implemented. `Neare
 ## Documentation map
 
 For current deployment, API, KB maintenance and data-boundary details, also read `../README.md` and `../docs/architecture.md`, `../docs/api.md`, `../docs/deployment.md`, `../docs/knowledge-base.md`, and `../docs/data-and-security.md`.
+
+## 2026-08-27 runtime behavior
+
+`POST /api/v1/chatbot/messages` requires an authenticated user identity for stored conversation use. The verified token subject is the only accepted account identifier for history and private-profile enrichment.
+
+The runtime can enrich a request with a minimized user-specific context. Tourist context can include basic identity preferences and the current active/planned trip/group state; Disaster Manager and emergency-service context can include organization/jurisdiction/service identity. This data is injected only into that authenticated model request and must never be copied into static KB documents or another user's conversation.

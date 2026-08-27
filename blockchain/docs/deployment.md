@@ -252,3 +252,7 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 Changing `RPC_URL` does not change an existing contract address. Deploying a new `TrustAnchor.sol` does. A new contract has empty storage, so old `idHash` records do not automatically exist there. After changing `CONTRACT_ADDRESS`, create fresh credentials for clean integrity tests unless an explicit migration strategy has been implemented.
 
 After deployment verify the gateway readiness endpoint, then create a new trip/credential and confirm both `ISSUE` and `SNAPSHOT` succeed before testing database tampering.
+
+## 2026-08-27 deployment note
+
+After deployment, test the gateway against identities/snapshots that are known to exist and known not to exist. Missing on-chain records should return a deterministic not-found/revert mapping rather than a generic trusted result. Keep gateway/backend environment configuration independent from frontend CORS and map configuration.

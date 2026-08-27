@@ -374,3 +374,15 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 ## Realtime blockchain note
 
 Blockchain tamper/repair state is pushed over Socket.IO rather than polled through a dedicated REST endpoint. The Current Trip page listens for `blockchain:integrity` and applies events to the matching individual or group credential.
+
+## 2026-08-27 client contract sync
+
+The frontend currently depends on the following responder contracts in addition to the catalogue above:
+
+- `GET /api/v1/emergency-services/me` — authenticated emergency-service account, including fixed service location where configured.
+- `GET /api/v1/emergency-services/me/dispatches` — active/history dispatch source for responder pages.
+- `GET /api/v1/emergency-services/tracking/:dispatchId` — live response destination/unit state.
+- `PATCH /api/v1/emergency-services/dispatches/:dispatchId/location` — responder GPS updates.
+- `PATCH /api/v1/emergency-services/dispatches/:dispatchId/status` — dispatch lifecycle progression.
+
+The client does not derive fleet base coordinates from browser geolocation. Fixed base coordinates come from the emergency-service account; browser geolocation represents the current moving response unit only during live operation.

@@ -279,3 +279,16 @@ confirmed individual/group credential
 ```
 
 Group membership-count mismatches are detected but are not automatically repaired by deleting or inventing member rows.
+
+## 2026-08-27 operational flow addendum
+
+Current emergency flow:
+
+1. an active tourist trip can generate danger-zone, SOS, manual-safety, or confirmed/no-response signal-loss incidents;
+2. Disaster Management triages and assigns an emergency-service fleet;
+3. the fleet account receives the assignment and progresses the allowed response lifecycle;
+4. live responder GPS is transmitted during response and shared tracking renders a route to the incident;
+5. completion resolves the dispatch operationally;
+6. trip completion/cancellation expires remaining trip-derived active safety state.
+
+A fleet account's registered location is a fixed base/reference and does not replace live response telemetry.

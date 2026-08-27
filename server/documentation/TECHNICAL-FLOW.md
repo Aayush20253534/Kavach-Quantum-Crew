@@ -1110,3 +1110,17 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 ## Snapshot data boundary
 
 The server, not Solidity, knows the plaintext snapshot schema. Individual type `1` includes name, DOB, destination, phone and email plus identifiers. Group type `2` includes group name, member count, destination, leader contact identity and append-only added-member context. The server canonicalizes and hashes plaintext, encrypts with AES-256-GCM, and submits only hash/ciphertext plus sequence/type metadata to the gateway.
+
+## 2026-08-27 technical-flow addendum
+
+### Fleet location semantics
+
+`EmergencyServiceAccount.latitude/longitude` represent the account/base location configured through address geocoding. During an active dispatch, location updates sent to the dispatch-location endpoint represent the moving responder. Do not overwrite the conceptual meaning of the fixed account location with every GPS sample.
+
+### Trip-end reconciliation
+
+Manual completion, cancellation, and lifecycle-job completion must converge on the same cleanup behavior for trip-derived active safety records. Dashboard counters and active-list endpoints should exclude ended trips even while reconciliation is catching up.
+
+### Chatbot identity semantics
+
+Private AI context is fetched after JWT verification using the token subject and role. Client-provided context is supplementary and cannot select another user's profile.

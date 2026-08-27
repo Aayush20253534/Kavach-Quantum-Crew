@@ -145,3 +145,17 @@ The responder frontend uses real backend dispatch data; mock fallback dispatches
 
 Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
 
+
+## 2026-08-27 responder UI sync
+
+Emergency-service accounts use one shared responder implementation for `POLICE`, `AMBULANCE`, and `FIRE` with role-specific accents:
+
+- Police: blue;
+- Ambulance / Hospital: green;
+- Fire: red.
+
+The Active Dispatch page exposes only the next valid lifecycle action for the backend's current dispatch model: `ASSIGNED -> DISPATCHED -> EN_ROUTE -> ON_SCENE -> COMPLETED`. The first action is presented to the operator as **Acknowledge & Dispatch** without inventing a separate unsupported database state.
+
+The Live Tracking page shows the fleet's configured fixed account location as a blue reference marker. When a dispatch is active, the browser's live responder GPS is transmitted to the backend and becomes the Google Directions route origin. The incident/tourist is the destination and the route polyline is black. Route distance and ETA come from the resolved Directions leg.
+
+Dispatch History provides search, outcome filtering, desktop table presentation, and mobile cards for completed/cancelled responses.

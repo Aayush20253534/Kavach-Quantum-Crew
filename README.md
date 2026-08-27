@@ -371,3 +371,32 @@ For an active group trip, a non-leader member that stops sending trusted locatio
 Individual and group credentials are issued to `TrustAnchor.sol` using a SHA-256 `idHash`. The contract also keeps append-only encrypted `DataSnapshot` records. The API integrity worker runs every five seconds and publishes realtime states such as `CHECKING`, `VERIFIED`, `DB_TAMPERED`, `FIXING`, `FIXED` and `INTEGRITY_UNAVAILABLE`.
 
 See `blockchain/docs/data-storage-and-integrity.md` for the exact hashed/encrypted fields and recovery model.
+
+## 2026-08-27 implementation sync
+
+The repository documentation is synchronized with the current integrated KAVACH build as of **27 August 2026**.
+
+### Current product surfaces
+
+- **Tourist:** trip planning and lifecycle, live tracking, group journeys, SOS, manual safety reports, incident history, profile, evidence, notifications, and shared emergency-response tracking.
+- **Disaster Management:** emergency command dashboard, live command map, incident queue, incident command record, fleet dispatch, risk zones, fleet account provisioning, response intelligence, notifications, and realtime operational updates.
+- **System Admin:** enterprise-style platform overview, destination registry, risk-zone administration, account directory, audit trail, and diagnostics.
+- **Police / Ambulance / Fire fleets:** service-specific responder portals with blue / green / red accents, active dispatch progression, live GPS transmission, fixed registered fleet-base marker, black road routing to the incident, and structured dispatch history.
+- **Rakshak AI:** authenticated chat history, live safe-zone context, static KAVACH knowledge-base retrieval, and private authenticated-user context scoped to the current user only.
+
+### Current incident lifecycle rules
+
+An incident is operational only while its owning trip remains active where a trip relationship exists. Completing or cancelling a trip expires or closes trip-derived active alerts, signal-loss cases, incidents, and active dispatch state so stale records do not remain in active Tourist, Disaster Management, or System Admin views.
+
+Group-member signal loss uses a leader-verification workflow: the leader receives the initial verification request, a confirmed danger or no response after five minutes escalates to Disaster Management, and a false alarm is rechecked later instead of immediately creating an operational incident.
+
+### Current responder-map rules
+
+The responder live map distinguishes three concepts:
+
+- **blue reference dot:** the fixed location configured for the fleet account;
+- **service-coloured live unit:** Police blue, Ambulance green, Fire red;
+- **red incident/tourist marker:** emergency destination;
+- **black route:** Google driving route from the responder's current live position to the emergency destination once a dispatch is active.
+
+Manual pan/zoom is preserved while GPS updates arrive. The map re-fits only when the operational context changes, such as selecting a different dispatch.

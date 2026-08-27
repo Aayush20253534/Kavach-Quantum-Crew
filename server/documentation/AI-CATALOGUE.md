@@ -102,3 +102,7 @@ Police/Fire/Ambulance nearest-unit selection is deterministic backend logic, not
 
 Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
 
+
+## 2026-08-27 AI integration sync
+
+Rakshak AI now has three backend-facing trust boundaries: authenticated identity, live application context, and shared KB retrieval. Private user enrichment must be resolved from the verified account ID and minimized before model use. It is not a shared catalogue/KB datum and must never be exposed to another user's conversation.

@@ -139,3 +139,7 @@ The integrity scheduler runs every five seconds for open confirmed credentials. 
 For exact plaintext payload schemas versus Solidity storage, see `../../blockchain/docs/data-storage-and-integrity.md`.
 
 Realtime status is intentionally separate from credential `chainStatus`: a credential can be `CONFIRMED` while its snapshot reports `INTEGRITY_UNAVAILABLE`. The UI must not equate credential confirmation with snapshot approval.
+
+## 2026-08-27 integration note
+
+The August operational/UI changes do not make blockchain the source of truth for live trip, incident, fleet, or chatbot state. Blockchain remains an integrity/credential subsystem. Reconciliation failures must degrade/report clearly and must not cause the application to fabricate a snapshot or identity that the contract reports as missing.

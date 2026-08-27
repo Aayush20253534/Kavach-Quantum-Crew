@@ -743,3 +743,9 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 - Recent persisted per-user chat history is always supplied as conversation context.
 - Nearest-safe-zone questions use live data from the main Kavach API rather than asking the model to infer places from coordinates.
 - Configure `KAVACH_API_URL` on the AI service to the main backend URL including `/api/v1`.
+
+## 2026-08-27 implementation status
+
+The current implementation has moved beyond a static FAQ chatbot. Implemented runtime capabilities include authenticated user-scoped history, Groq completion, KB selection, live safe-zone lookup, browser-location context, and private authenticated-user enrichment with a minimized-field policy.
+
+Remaining AI work should preserve the current boundary: shared product facts belong in the KB, live operational facts come from authenticated APIs, and private profile data is injected only for the current authenticated user.

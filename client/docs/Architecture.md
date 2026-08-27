@@ -1453,3 +1453,26 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 ## Realtime integrity presentation
 
 `CurrentTripPage.jsx` uses the shared authenticated Socket.IO client for both individual and group blockchain integrity. Credential confirmation and snapshot integrity are separate concepts: a confirmed credential may still be checking or temporarily unavailable. The UI must render server-published integrity state rather than deriving approval solely from `chainStatus`.
+
+## 2026-08-27 architecture addendum
+
+### Role-specific application shells
+
+The production frontend uses separate layouts rather than one generic authenticated layout:
+
+- `TouristLayout` for tourist journeys and safety workflows;
+- `AuthorityLayout` for Disaster Management command operations;
+- `AdminLayout` for System Admin governance and platform administration;
+- `ResponderLayout` for Police, Ambulance, and Fire response operations.
+
+`ResponderLayout` is configuration-driven. Service role selects iconography, terminology, accent classes, map marker colour, and readiness labels while keeping page structure shared.
+
+### Responder routing and map state
+
+Responder pages are routed beneath `/responder`. Navigation uses route-aware links and routed content is keyed by pathname so route changes receive clean page state. The sidebar's collapsed/expanded width and the content/header width are updated together.
+
+`AuthorityOperationsMap` supports incident markers, live response-unit markers, fixed reference markers, configurable route colour, custom Map/Satellite controls, and a viewport-context key. GPS coordinate changes do not automatically run `fitBounds`; only a change in marker identity / dispatch context causes a refit. This preserves manual zoom and pan during live tracking.
+
+### Current visual-system boundaries
+
+System Admin, Disaster Management, and Responder portals deliberately do not share the same accent palette. Shared concerns are typography scale, restrained radius, accessible status colours, white operational surfaces, consistent border hierarchy, and responsive layout behavior.

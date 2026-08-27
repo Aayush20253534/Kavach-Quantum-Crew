@@ -82,3 +82,7 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 Authenticated tourist sockets receive `blockchain:integrity` updates for relevant individual credentials and, for active members, relevant group credentials. Payloads identify the entity type and credential and carry states including `CHECKING`, `VERIFIED`, `DB_TAMPERED`, `FIXING`, `FIXED`, and `INTEGRITY_UNAVAILABLE`.
 
 The Current Trip UI maps the healthy `VERIFIED` state to `APPROVED`. A tamper repair is deliberately visible as `TAMPERED -> FIXING -> FIXED -> APPROVED`.
+
+## 2026-08-27 realtime sync
+
+Realtime consumers should expect incident/dispatch state to converge with the database after completion/cancellation and trip lifecycle cleanup. Responder GPS updates are frequent telemetry and should update marker position without forcing clients to reset map zoom/pan on every event.

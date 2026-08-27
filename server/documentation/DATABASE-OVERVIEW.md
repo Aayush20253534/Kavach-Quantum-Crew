@@ -67,3 +67,9 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 ## Current signal-loss and blockchain records
 
 `SignalLossCase` persists the five-minute leader decision/cooldown lifecycle while a member remains offline. `BlockchainAnchorJob` persists credential and snapshot operations separately; snapshot failure does not rewrite a confirmed credential's issuance state. Individual and group snapshot integrity is reconciled every five seconds from the trusted chain data.
+
+## 2026-08-27 data-model note
+
+The current model relies on a deliberate distinction between emergency-service account location (`EmergencyServiceAccount.latitude/longitude/locationUpdatedAt`) and moving dispatch location. Trip-derived operational records must respect the owning trip's lifecycle when calculating active counts.
+
+Chatbot history is user-scoped. Private AI enrichment is derived at request time from authenticated account tables and is not modeled as shared knowledge-base data.

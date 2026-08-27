@@ -21,3 +21,9 @@ Clears the user's visible chat screen/history state without physically deleting 
 ## Authentication
 
 The service validates the same access-token issuer/audience/secret configuration as the main backend. A token issued for a different secret, issuer or audience is rejected even if the user just logged in.
+
+## 2026-08-27 API behavior
+
+For authenticated chatbot messages, account identity is taken from the verified access token. Any `context` supplied by the frontend is supplementary application context and must not override authenticated identity.
+
+The successful message contract remains conversation-oriented; private user enrichment is internal prompt context and is intentionally not returned as a separate public API payload.
