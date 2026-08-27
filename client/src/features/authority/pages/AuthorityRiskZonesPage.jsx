@@ -144,11 +144,11 @@ export function AuthorityRiskZonesPage() {
         </div>
       </div>
 
-      {error && <div className="mb-4 p-3 rounded-md-none bg-red-50 border border-red-200 text-[11px] sm:text-xs font-semibold text-red-700">{error}</div>}
-      {success && <div className="mb-4 p-3 rounded-md-none bg-emerald-50 border border-emerald-200 text-[11px] sm:text-xs font-semibold text-emerald-700">{success}</div>}
+      {error && <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-200 text-[11px] sm:text-xs font-semibold text-red-700">{error}</div>}
+      {success && <div className="mb-4 p-3 rounded-md bg-emerald-50 border border-emerald-200 text-[11px] sm:text-xs font-semibold text-emerald-700">{success}</div>}
 
       {isSystemAdmin && (
-        <div className="mb-5 bg-white border border-slate-200 rounded-md-none p-4 sm:p-5 ">
+        <div className="mb-5 bg-white border border-slate-950 rounded-lg p-4 sm:p-5 ">
           <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr_1fr_220px] lg:items-end">
             <div className="min-w-0">
               <label className="mb-2 block text-[9px] font-black uppercase tracking-wider text-slate-500 sm:text-[10px]">
@@ -221,7 +221,7 @@ export function AuthorityRiskZonesPage() {
           </p>
 
           {selectedPlace && (
-            <div className="mt-3 flex items-start gap-2 p-3 rounded-md-none bg-slate-50 border border-slate-100 text-[10px] sm:text-[11px] text-slate-600">
+            <div className="mt-3 flex items-start gap-2 p-3 rounded-lg bg-slate-50 border border-slate-950 text-[10px] sm:text-[11px] text-slate-600">
               <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0 text-red-500" />
               <span><strong>{selectedPlace.name}</strong>{selectedPlace.address ? ` · ${selectedPlace.address}` : ''}</span>
             </div>
@@ -231,7 +231,7 @@ export function AuthorityRiskZonesPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <div className="lg:col-span-2">
-          <div className="bg-slate-100 rounded-md-none border border-slate-200  overflow-hidden h-[430px] sm:h-[500px] relative">
+          <div className="bg-slate-100 rounded-md border border-slate-200  overflow-hidden h-[430px] sm:h-[500px] relative">
             {loadError ? (
               <div className="h-full flex items-center justify-center text-xs font-semibold text-red-600">Google Maps failed to load.</div>
             ) : !isLoaded ? (
@@ -278,14 +278,14 @@ export function AuthorityRiskZonesPage() {
               </GoogleMap>
             )}
 
-            <div className="absolute left-3 bottom-3 z-10 px-3 py-2 rounded-md-none bg-white/95 border border-slate-200  text-[9px] sm:text-[10px] font-semibold text-slate-600">
+            <div className="absolute left-3 bottom-3 z-10 px-3 py-2 rounded-lg bg-white/95 border border-slate-950  text-[9px] sm:text-[10px] font-semibold text-slate-600">
               Use two fingers to move the map on mobile.
             </div>
           </div>
         </div>
 
-        <div className="lg:col-span-1 flex flex-col bg-white rounded-md-none border border-slate-200  overflow-hidden h-[430px] sm:h-[500px]">
-          <div className="p-3.5 sm:p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+        <div className="lg:col-span-1 flex flex-col bg-white rounded-lg border border-slate-950  overflow-hidden h-[430px] sm:h-[500px]">
+          <div className="rounded-lg p-3.5 sm:p-4 border-b border-slate-950 bg-slate-50 flex items-center justify-between">
             <h2 className="text-[10px] sm:text-[12px] font-bold text-slate-900 uppercase tracking-widest flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 text-slate-400" /> Registered Risk Zones
             </h2>
@@ -306,7 +306,7 @@ export function AuthorityRiskZonesPage() {
               <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-10">No risk zones configured</p>
             ) : (
               zones.map((zone) => (
-                <div key={zone.id} className="p-3 sm:p-4 rounded-md-none border border-slate-200 bg-white">
+                <div key={zone.id} className="p-3 sm:p-4 rounded-lg border border-slate-950 bg-white">
                   <div className="flex justify-between items-start gap-2 mb-2">
                     <h3 className="text-[11px] sm:text-[13px] font-bold text-slate-900 leading-snug">{zone.name}</h3>
                     <span className={`px-2 py-0.5 rounded-md text-[8px] sm:text-[9px] font-bold uppercase tracking-widest border ${

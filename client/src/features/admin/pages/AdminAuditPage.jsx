@@ -78,7 +78,7 @@ export function AdminAuditPage() {
         />
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white">
+      <section className="rounded-lg border border-slate-950 bg-white">
         <div className="flex flex-col gap-1 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-800">
@@ -99,7 +99,7 @@ export function AdminAuditPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[980px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
+                <tr className="rounded-lg border-b border-slate-950 bg-slate-50">
                   {['Timestamp', 'Action', 'Actor', 'Entity', 'Details'].map((heading) => (
                     <th
                       key={heading}
@@ -153,7 +153,7 @@ export function AdminAuditPage() {
 
 function Metric({ icon: Icon, label, value }) {
   return (
-    <div className="min-h-[96px] rounded-lg border border-slate-200 bg-white p-4">
+    <div className="min-h-[96px] rounded-lg border border-slate-950 bg-white p-4">
       <div className="flex items-center justify-between gap-4">
         <p className="text-[9px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</p>
         <Icon className="h-4 w-4 text-slate-400" />
