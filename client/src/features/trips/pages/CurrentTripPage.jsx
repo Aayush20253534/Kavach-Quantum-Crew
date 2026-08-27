@@ -314,7 +314,10 @@ export function CurrentTripPage() {
       <div className="max-w-2xl mx-auto py-16 text-center bg-white border border-slate-200 rounded-2xl">
         <MapPin className="w-10 h-10 mx-auto text-slate-300" />
         <h2 className="mt-4 text-xl font-black">No current trip</h2>
-        <p className="text-sm text-slate-500 mt-2">Plan a trip to enable tracking, groups, check-ins and SOS.</p>
+        <p className="mt-2 px-4 text-sm leading-6 text-slate-500">
+          <span className="block sm:inline">Plan a trip to enable tracking, groups,</span>{' '}
+          <span className="block sm:inline">check-ins and SOS.</span>
+        </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2.5">
           <Link to="/tourist/trips/create" className="inline-flex items-center px-5 py-2.5 bg-rose-600 text-white rounded-lg text-[11px] sm:text-xs font-black uppercase">Plan Trip</Link>
           <Link to="/tourist/groups/join" className="inline-flex items-center gap-2 px-5 py-2.5 border border-slate-200 bg-white text-slate-700 rounded-lg text-[11px] sm:text-xs font-black uppercase">

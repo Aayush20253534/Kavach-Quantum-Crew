@@ -5,25 +5,81 @@ import { safetyService } from '../../safety/api/safetyService';
 
 const asArray = (value) => value?.items || value || [];
 
-const formatDetail = (detail) => {
-  if (!detail) return '';
-  if (typeof detail === 'object') {
-    const zone = detail.zoneName || detail.locationName;
-    return zone ? `Location: ${zone}` : Object.entries(detail).map(([key, value]) => `${key}: ${String(value)}`).join(' · ');
-  }
-  if (typeof detail !== 'string') return String(detail);
-  const trimmed = detail.trim();
-  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-    try {
-      const parsed = JSON.parse(trimmed);
-      const zone = parsed.zoneName || parsed.locationName;
-      if (zone) return `Location: ${zone}`;
-      return Object.entries(parsed).map(([key, value]) => `${key.replace(/([A-Z])/g, ' $1')}: ${String(value)}`).join(' · ');
-    } catch {
-      return detail;
+const humanizeKey = (key) =>
+  key
+    .replace(/Id$/i, '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replaceAll('_', ' ')
+    .trim()
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+
+const formatStructuredValue = (key, value) => {
+  if (value == null || value === '') return null;
+
+  if (/At$|Date$|Time$/i.test(key)) {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleString(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      });
     }
   }
-  return detail;
+
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'object') return null;
+
+  return String(value).replaceAll('_', ' ');
+};
+
+const formatDetail = (detail) => {
+  if (!detail) return [];
+
+  let parsed = detail;
+
+  if (typeof detail === 'string') {
+    const trimmed = detail.trim();
+
+    if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+      return [{ label: '', value: detail }];
+    }
+
+    try {
+      parsed = JSON.parse(trimmed);
+    } catch {
+      return [{ label: '', value: detail }];
+    }
+  }
+
+  if (Array.isArray(parsed)) {
+    return parsed
+      .map((value) => ({ label: '', value: String(value) }))
+      .filter(({ value }) => value);
+  }
+
+  if (typeof parsed !== 'object' || parsed === null) {
+    return [{ label: '', value: String(parsed) }];
+  }
+
+  const zone = parsed.zoneName || parsed.locationName;
+  if (zone) {
+    return [{ label: 'Location', value: String(zone) }];
+  }
+
+  return Object.entries(parsed)
+    .map(([key, value]) => {
+      const formattedValue = formatStructuredValue(key, value);
+      if (!formattedValue) return null;
+
+      // Internal identifiers are useful for support, but they should not dominate
+      // the mobile incident card. Give them a short, readable label.
+      const label = /signalLossCaseId/i.test(key)
+        ? 'Case ID'
+        : humanizeKey(key);
+
+      return { label, value: formattedValue };
+    })
+    .filter(Boolean);
 };
 
 export function IncidentHistoryPage() {
@@ -89,8 +145,26 @@ function Card({ icon: Icon, title, status, meta, detail }) {
           <Icon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-rose-600 mt-0.5" />
           <div className="min-w-0">
             <h3 className="font-black text-[13px] sm:text-sm leading-snug break-words">{title}</h3>
-            <p className="text-[11px] sm:text-xs leading-relaxed text-slate-500 mt-1 break-words">{detail}</p>
-            <p className="text-[10px] text-slate-400 mt-2">{meta}</p>
+            {detail?.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {detail.map(({ label, value }, index) => (
+                  <p
+                    key={`${label}-${index}`}
+                    className="text-[11px] sm:text-xs leading-5 text-slate-500 break-words"
+                  >
+                    {label && (
+                      <span className="font-semibold text-slate-600">
+                        {label}:{' '}
+                      </span>
+                    )}
+                    <span className="break-words [overflow-wrap:anywhere]">{value}</span>
+                  </p>
+                ))}
+              </div>
+            )}
+            <p className="text-[10px] sm:text-[11px] text-slate-400 mt-2.5">
+              {meta}
+            </p>
           </div>
         </div>
         <span className="self-start shrink-0 text-[9px] sm:text-[10px] font-black uppercase bg-slate-100 rounded-full px-2.5 sm:px-3 py-1 h-fit">{status}</span>
