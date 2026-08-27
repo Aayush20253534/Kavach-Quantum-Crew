@@ -30,6 +30,7 @@ import { tripService } from '../../features/trips/api/tripService';
 import { useCurrentTrip } from '../../features/trips/api/tripQueries';
 import { useTouristDashboardSummary } from '../../features/dashboard/api/dashboardQueries';
 import { safetyService } from '../../features/safety/api/safetyService';
+import { getEmergencyLocation } from '../../features/safety/utils/emergencyLocation';
 
 export function TouristLayout() {
   const { user } = useSelector((state) => state.auth);
@@ -100,17 +101,22 @@ export function TouristLayout() {
     setSosError('');
     try {
       const trip = await tripService.getCurrentTrip();
-      if (!trip?.id) throw new Error('An active or planned trip is required for SOS.');
+      if (!trip?.id || trip.status !== 'ACTIVE') {
+        throw new Error('An active trip is required for SOS.');
+      }
+
+      // Do not depend only on the layout's watchPosition value. On phones the
+      // browser may have paused that watcher while the tab was backgrounded.
+      const emergencyLocation = await getEmergencyLocation(liveLocation);
+
       const result = await safetyService.triggerSOS({
         tripId: trip.id,
         emergencyType: 'OTHER',
         message: 'Tourist triggered SOS from the KAVACH app.',
-        ...(liveLocation ? {
-          latitude: liveLocation.lat,
-          longitude: liveLocation.lng,
-          accuracyM: Math.max(1, liveLocation.accuracy || 1),
-        } : {}),
+        ...(emergencyLocation || {}),
       });
+
+      void result;
       setSosState('active');
     } catch (error) {
       setSosError(error?.response?.data?.error?.message || error.message || 'Unable to trigger SOS');

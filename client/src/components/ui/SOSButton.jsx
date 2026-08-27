@@ -4,24 +4,7 @@ import { Modal } from './Modal';
 import { Button } from './Button';
 import { safetyService } from '../../features/safety/api/safetyService';
 import { tripService } from '../../features/trips/api/tripService';
-
-const getEmergencyLocation = () =>
-  new Promise((resolve) => {
-    if (!navigator.geolocation) {
-      resolve(null);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => resolve({
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-        accuracyM: position.coords.accuracy,
-      }),
-      () => resolve(null),
-      { enableHighAccuracy: true, timeout: 7000, maximumAge: 10000 },
-    );
-  });
+import { getEmergencyLocation } from '../../features/safety/utils/emergencyLocation';
 
 export function SOSButton({ size = 'md', className = '', label = 'SOS EMERGENCY' }) {
   const [isModalOpen, setIsModalOpen] = useState(false);

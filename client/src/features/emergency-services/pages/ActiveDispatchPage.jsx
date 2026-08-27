@@ -19,6 +19,32 @@ const FLOW = ['ASSIGNED', 'DISPATCHED', 'EN_ROUTE', 'ON_SCENE', 'COMPLETED'];
 
 const humanizeStatus = (value) => String(value || '').replaceAll('_', ' ');
 
+const validIncidentLocation = (incident) => {
+  if (
+    incident?.latitude === null ||
+    incident?.latitude === undefined ||
+    incident?.latitude === '' ||
+    incident?.longitude === null ||
+    incident?.longitude === undefined ||
+    incident?.longitude === ''
+  ) {
+    return null;
+  }
+
+  const latitude = Number(incident.latitude);
+  const longitude = Number(incident.longitude);
+
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    (latitude === 0 && longitude === 0)
+  ) {
+    return null;
+  }
+
+  return { latitude, longitude };
+};
+
 export function ActiveDispatchPage() {
   const { theme, responderProfile } = useOutletContext();
   const [searchParams] = useSearchParams();
@@ -237,12 +263,12 @@ export function ActiveDispatchPage() {
                       <InfoTile
                         icon={MapPin}
                         label="Incident location"
-                        value={
-                          Number.isFinite(Number(incident.latitude)) &&
-                          Number.isFinite(Number(incident.longitude))
-                            ? `${Number(incident.latitude).toFixed(5)}, ${Number(incident.longitude).toFixed(5)}`
-                            : 'Location pending'
-                        }
+                        value={(() => {
+                          const point = validIncidentLocation(incident);
+                          return point
+                            ? `${point.latitude.toFixed(5)}, ${point.longitude.toFixed(5)}`
+                            : 'Location unavailable';
+                        })()}
                       />
                       <InfoTile
                         icon={Clock3}

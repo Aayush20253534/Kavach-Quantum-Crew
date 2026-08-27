@@ -7,6 +7,35 @@ import { realtimePublisher } from "../../realtime/realtimePublisher.js";
 const STAFF = new Set([ROLES.DISASTER_MANAGER, ROLES.SYSTEM_ADMIN]);
 const participant = (trip, userId) => trip?.touristId === userId || Boolean(trip?.group?.members?.some((m) => m.userId === userId));
 
+const validSosLocation = (location) => {
+  if (!location) return false;
+
+  const latitude = Number(location.latitude);
+  const longitude = Number(location.longitude);
+
+  return (
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    longitude >= -180 &&
+    longitude <= 180 &&
+    !(latitude === 0 && longitude === 0)
+  );
+};
+
+const normalizeSosLocation = (location) =>
+  validSosLocation(location)
+    ? {
+        latitude: Number(location.latitude),
+        longitude: Number(location.longitude),
+        accuracyM:
+          location.accuracyM == null
+            ? null
+            : Number(location.accuracyM),
+      }
+    : null;
+
 export const createIncidentService = ({ repository = incidentRepository, notifier = notificationService, publisher = realtimePublisher, clock = () => new Date() } = {}) => {
   const find = async (id) => {
     const incident = await repository.findById(id);
@@ -46,11 +75,37 @@ export const createIncidentService = ({ repository = incidentRepository, notifie
       if (trip.status !== "ACTIVE") throw ApiError.conflict("SOS requires an active trip", { code: "SOS_TRIP_NOT_ACTIVE" });
       const duplicate = await repository.findOpenSos(input.tripId, userId);
       if (duplicate) throw ApiError.conflict("An active SOS already exists", { code: "SOS_ALREADY_ACTIVE", details: { incidentId: duplicate.id } });
-      const location = input.latitude !== undefined
-        ? { latitude: input.latitude, longitude: input.longitude, accuracyM: input.accuracyM ?? null }
-        : await repository.findLatestLocation(input.tripId, userId);
+      const suppliedLocation = normalizeSosLocation({
+        latitude: input.latitude,
+        longitude: input.longitude,
+        accuracyM: input.accuracyM ?? null,
+      });
+
+      const trustedLocation = suppliedLocation
+        ? null
+        : normalizeSosLocation(
+            await repository.findLatestLocation(input.tripId, userId),
+          );
+
+      const location = suppliedLocation ?? trustedLocation;
+
+      if (!location) {
+        throw ApiError.badRequest(
+          "Unable to determine your location for SOS. Keep location enabled and retry immediately.",
+          {
+            code: "SOS_LOCATION_REQUIRED",
+          },
+        );
+      }
+
       const result = await repository.createSos({ ...input, userId, location, now: clock() });
-      await repository.createAudit({ actorId: userId, actorRole: ROLES.TOURIST, action: "SOS_TRIGGERED", entityId: result.incident.id, metadata: { tripId: input.tripId, emergencyType: input.emergencyType } });
+      await repository.createAudit({ actorId: userId, actorRole: ROLES.TOURIST, action: "SOS_TRIGGERED", entityId: result.incident.id, metadata: {
+        tripId: input.tripId,
+        emergencyType: input.emergencyType,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        locationSource: suppliedLocation ? "SOS_DEVICE_GPS" : "LATEST_TRUSTED_LOCATION",
+      } });
       await notifier.incidentCreated(result.incident); publisher.publishIncidentCreated(result.incident);
       return result;
     },
