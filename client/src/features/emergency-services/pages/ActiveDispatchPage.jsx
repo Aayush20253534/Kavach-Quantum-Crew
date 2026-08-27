@@ -1,30 +1,45 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock3,
+  Crosshair,
+  MapPin,
+  Navigation,
+  Radio,
+  Route,
+  ShieldCheck,
+} from 'lucide-react';
+
 import { emergencyServicesApi } from '../api/emergencyServicesApi';
 import { Loader } from '../../../components/ui/Loader';
-import { MapPin, Navigation, Radio, CheckCircle, Clock } from 'lucide-react';
+
+const FLOW = ['ASSIGNED', 'DISPATCHED', 'EN_ROUTE', 'ON_SCENE', 'COMPLETED'];
+
+const humanizeStatus = (value) => String(value || '').replaceAll('_', ' ');
 
 export function ActiveDispatchPage() {
-  const { theme } = useOutletContext();
+  const { theme, responderProfile } = useOutletContext();
   const [searchParams] = useSearchParams();
   const requestedDispatchId = searchParams.get('dispatch') || '';
   const ThemeIcon = theme.icon;
+
   const [dispatches, setDispatches] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
   const [updating, setUpdating] = useState(null);
 
   const fetchDispatches = async () => {
     try {
       const response = await emergencyServicesApi.getDispatches();
-      const allDispatches = response?.data?.data || [];
-      // Filter for active ones
-      const active = allDispatches.filter(d => !['COMPLETED', 'CANCELLED'].includes(d.status));
-      setDispatches(active);
+      const rows = response?.data?.data || [];
+      setDispatches(rows.filter((dispatch) => !['COMPLETED', 'CANCELLED'].includes(dispatch.status)));
+      setError('');
     } catch (err) {
       console.error('Failed to fetch dispatches:', err);
       setDispatches([]);
-      setError(err?.response?.data?.error?.message || 'Unable to load dispatches from the backend.');
+      setError(err?.response?.data?.error?.message || 'Unable to load active dispatches.');
     } finally {
       setLoading(false);
     }
@@ -32,23 +47,32 @@ export function ActiveDispatchPage() {
 
   useEffect(() => {
     fetchDispatches();
-    const interval = setInterval(fetchDispatches, 15000); // poll every 15s
-    return () => clearInterval(interval);
+    const interval = window.setInterval(fetchDispatches, 15000);
+    return () => window.clearInterval(interval);
   }, []);
 
   useEffect(() => {
     if (!navigator.geolocation || dispatches.length === 0) return undefined;
-    const tracked = dispatches.find((dispatch) => dispatch.id === requestedDispatchId) || dispatches[0];
+
+    const tracked =
+      dispatches.find((dispatch) => dispatch.id === requestedDispatchId) ||
+      dispatches[0];
+
     if (!tracked) return undefined;
 
     const watchId = navigator.geolocation.watchPosition(
       ({ coords }) => {
-        emergencyServicesApi.updateDispatchLocation(tracked.id, {
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-        }).catch((err) => {
-          setError(err?.response?.data?.error?.message || 'Unable to transmit live dispatch location.');
-        });
+        emergencyServicesApi
+          .updateDispatchLocation(tracked.id, {
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+          })
+          .catch((err) => {
+            setError(
+              err?.response?.data?.error?.message ||
+                'Unable to transmit live dispatch location.',
+            );
+          });
       },
       () => setError('Location permission is required for live dispatch tracking.'),
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
@@ -57,8 +81,16 @@ export function ActiveDispatchPage() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, [dispatches, requestedDispatchId]);
 
+  const orderedDispatches = useMemo(() => {
+    if (!requestedDispatchId) return dispatches;
+    return [...dispatches].sort((left, right) =>
+      left.id === requestedDispatchId ? -1 : right.id === requestedDispatchId ? 1 : 0,
+    );
+  }, [dispatches, requestedDispatchId]);
+
   const handleUpdateStatus = async (dispatchId, newStatus) => {
     setUpdating(dispatchId);
+    setError('');
     try {
       await emergencyServicesApi.updateDispatchStatus(dispatchId, { status: newStatus });
       await fetchDispatches();
@@ -71,130 +103,254 @@ export function ActiveDispatchPage() {
   };
 
   const getNextStatus = (currentStatus) => {
-    const flow = ['ASSIGNED', 'DISPATCHED', 'EN_ROUTE', 'ON_SCENE', 'COMPLETED'];
-    const idx = flow.indexOf(currentStatus);
-    if (idx >= 0 && idx < flow.length - 1) return flow[idx + 1];
-    return null;
+    const index = FLOW.indexOf(currentStatus);
+    return index >= 0 && index < FLOW.length - 1 ? FLOW[index + 1] : null;
+  };
+
+  const nextActionLabel = (status) => {
+    switch (status) {
+      case 'ASSIGNED':
+        return 'Acknowledge & Dispatch';
+      case 'DISPATCHED':
+        return 'Begin Response';
+      case 'EN_ROUTE':
+        return 'Mark On Scene';
+      case 'ON_SCENE':
+        return 'Complete Response';
+      default:
+        return null;
+    }
   };
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-64">
+      <div className="flex h-72 flex-col items-center justify-center">
         <Loader size="lg" />
-        <p className="mt-4 text-slate-500 font-semibold uppercase tracking-widest text-xs">Connecting to Dispatch Engine...</p>
+        <p className="mt-4 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">
+          Synchronizing dispatch operations
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
-      <div className={`p-6 rounded-2xl ${theme.bgClass} text-white shadow-lg relative overflow-hidden`}>
-        <div className="absolute top-0 right-0 p-8 opacity-10">
-          <ThemeIcon className="w-32 h-32" />
+    <div className="mx-auto max-w-[1180px] space-y-5 pb-8">
+      <section className="overflow-hidden rounded-lg border border-slate-300 bg-white">
+        <div className={`h-1.5 w-full ${theme.bgClass}`} />
+        <div className="flex flex-col gap-5 p-5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${theme.lightBgClass} ${theme.textClass}`}>
+                <Radio className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-slate-400">
+                  Response Operations
+                </p>
+                <h1 className="text-xl font-black tracking-tight text-slate-950">
+                  Active Dispatch
+                </h1>
+              </div>
+            </div>
+            <p className="mt-3 max-w-2xl text-xs leading-5 text-slate-500">
+              Review active assignments, transmit responder GPS and advance only through the valid operational response sequence.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <SummaryMetric
+              label="Active"
+              value={dispatches.length}
+              icon={Radio}
+              accentClass={theme.textClass}
+            />
+            <SummaryMetric
+              label={theme.readinessLabel}
+              value={dispatches.length ? 'ENGAGED' : 'READY'}
+              icon={ShieldCheck}
+              accentClass={dispatches.length ? 'text-amber-600' : 'text-emerald-600'}
+            />
+            <SummaryMetric
+              label="Base"
+              value={responderProfile?.organization || responderProfile?.name || theme.unitLabel}
+              icon={MapPin}
+              accentClass="text-slate-600"
+              wide
+            />
+          </div>
         </div>
-        <div className="relative z-10">
-          <h1 className="text-2xl font-black uppercase tracking-tight flex items-center gap-2">
-            <Radio className="w-6 h-6 animate-pulse" /> Active Dispatch
-          </h1>
-          <p className="text-white/80 font-medium text-sm mt-1">
-            Current operational assignment for this unit.
-          </p>
-        </div>
-      </div>
+      </section>
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-semibold border border-red-100">
+        <div className="flex gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           {error}
         </div>
       )}
 
-      {dispatches.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 border border-slate-200 text-center flex flex-col items-center shadow-sm">
-          <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-            <CheckCircle className="w-8 h-8 text-slate-300" />
+      {orderedDispatches.length === 0 ? (
+        <section className="rounded-lg border border-slate-300 bg-white p-10 text-center">
+          <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-lg ${theme.lightBgClass}`}>
+            <CheckCircle2 className={`h-6 w-6 ${theme.textClass}`} />
           </div>
-          <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">No Active Dispatches</h3>
-          <p className="text-slate-500 font-medium mt-1 text-sm">Your unit is currently standing by.</p>
-        </div>
+          <h2 className="mt-4 text-base font-black text-slate-950">Unit Ready for Assignment</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            No active emergency dispatches are assigned to this account.
+          </p>
+        </section>
       ) : (
         <div className="space-y-4">
-          {dispatches.map((dispatch) => {
+          {orderedDispatches.map((dispatch) => {
             const nextStatus = getNextStatus(dispatch.status);
-            
+            const currentIndex = Math.max(0, FLOW.indexOf(dispatch.status));
+            const incident = dispatch.incident || {};
+
             return (
-              <div key={dispatch.id} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-                
-                <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-                  <div className="flex-1 space-y-4">
-                    <div className="flex items-center gap-3">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${theme.lightBgClass} ${theme.textClass}`}>
-                        {dispatch.status}
+              <article
+                key={dispatch.id}
+                className="overflow-hidden rounded-lg border border-slate-300 bg-white"
+              >
+                <div className="grid gap-0 lg:grid-cols-[1fr_290px]">
+                  <div className="p-5 sm:p-6">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`inline-flex items-center rounded-md border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.12em] ${theme.lightBgClass} ${theme.textClass} ${theme.borderClass}`}
+                      >
+                        {humanizeStatus(dispatch.status)}
                       </span>
-                      <span className="text-[10px] font-bold text-slate-400 font-mono">ID: {dispatch.id.slice(0,8)}</span>
+                      <span className="font-mono text-[9px] font-bold uppercase text-slate-400">
+                        Dispatch {dispatch.id.slice(0, 8)}
+                      </span>
                     </div>
 
-                    <div>
-                      <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
-                        {dispatch.incident?.title || 'Emergency Incident'}
-                      </h3>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-slate-500 font-medium">
-                        <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> {dispatch.incident?.latitude?.toFixed(4)}, {dispatch.incident?.longitude?.toFixed(4)}</span>
-                        <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {new Date(dispatch.createdAt).toLocaleTimeString()}</span>
+                    <h2 className="mt-4 text-lg font-black tracking-tight text-slate-950">
+                      {incident.title || 'Emergency Incident'}
+                    </h2>
+
+                    {incident.description && (
+                      <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500">
+                        {incident.description}
+                      </p>
+                    )}
+
+                    <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                      <InfoTile
+                        icon={MapPin}
+                        label="Incident location"
+                        value={
+                          Number.isFinite(Number(incident.latitude)) &&
+                          Number.isFinite(Number(incident.longitude))
+                            ? `${Number(incident.latitude).toFixed(5)}, ${Number(incident.longitude).toFixed(5)}`
+                            : 'Location pending'
+                        }
+                      />
+                      <InfoTile
+                        icon={Clock3}
+                        label="Assigned"
+                        value={new Date(dispatch.createdAt).toLocaleString()}
+                      />
+                      <InfoTile
+                        icon={Crosshair}
+                        label="Current state"
+                        value={humanizeStatus(dispatch.status)}
+                      />
+                    </div>
+
+                    <div className="mt-6">
+                      <div className="relative">
+                        <div className="absolute left-0 right-0 top-[9px] h-px bg-slate-200" />
+                        <div className="relative grid grid-cols-5 gap-2">
+                          {FLOW.map((step, index) => {
+                            const past = index <= currentIndex;
+                            const current = index === currentIndex;
+                            return (
+                              <div key={step} className="min-w-0">
+                                <div
+                                  className={`mx-auto h-[18px] w-[18px] rounded-full border-2 ${
+                                    current
+                                      ? `${theme.bgClass} border-white ring-4 ${theme.ringClass}`
+                                      : past
+                                        ? `${theme.bgClass} border-white`
+                                        : 'border-white bg-slate-200'
+                                  }`}
+                                />
+                                <p
+                                  className={`mt-2 truncate text-center text-[8px] font-black uppercase tracking-wide ${
+                                    current ? theme.textClass : 'text-slate-400'
+                                  }`}
+                                >
+                                  {humanizeStatus(step)}
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="md:text-right shrink-0">
+                  <aside className="border-t border-slate-200 bg-slate-50 p-5 lg:border-l lg:border-t-0">
+                    <p className="text-[9px] font-black uppercase tracking-[0.14em] text-slate-400">
+                      Dispatch Control
+                    </p>
+                    <p className="mt-2 text-sm font-black text-slate-950">
+                      {nextActionLabel(dispatch.status) || 'Response complete'}
+                    </p>
+                    <p className="mt-1 text-[10px] leading-4 text-slate-500">
+                      Only the next valid lifecycle action is available.
+                    </p>
+
                     {nextStatus && (
                       <button
+                        type="button"
                         onClick={() => handleUpdateStatus(dispatch.id, nextStatus)}
                         disabled={updating === dispatch.id}
-                        className={`w-full md:w-auto px-6 py-3 rounded-xl font-bold text-[12px] uppercase tracking-widest transition-all shadow-sm ${theme.bgClass} hover:opacity-90 text-white flex items-center justify-center gap-2 disabled:opacity-50`}
+                        className={`mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-md px-4 text-[10px] font-black uppercase tracking-[0.12em] text-white transition-colors disabled:opacity-50 ${theme.bgClass} ${theme.hoverBgClass}`}
                       >
                         {updating === dispatch.id ? (
                           <Loader size="sm" className="text-white" />
                         ) : (
-                          <Navigation className="w-4 h-4" />
+                          <Navigation className="h-4 w-4" />
                         )}
-                        Advance to {nextStatus.replace('_', ' ')}
+                        {nextActionLabel(dispatch.status)}
                       </button>
                     )}
-                  </div>
+
+                    <div className="mt-4 flex items-center gap-2 border-t border-slate-200 pt-4 text-[10px] font-semibold text-slate-500">
+                      <Route className="h-4 w-4" />
+                      GPS tracking is active while this dispatch remains open.
+                    </div>
+                  </aside>
                 </div>
-
-                {/* Progress bar visualizer */}
-                <div className="mt-8 relative">
-                  <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-100 -translate-y-1/2 rounded-full"></div>
-                  
-                  <div className="relative flex justify-between">
-                    {['ASSIGNED', 'DISPATCHED', 'EN_ROUTE', 'ON_SCENE', 'COMPLETED'].map((step, idx) => {
-                      const flow = ['ASSIGNED', 'DISPATCHED', 'EN_ROUTE', 'ON_SCENE', 'COMPLETED'];
-                      const currentIdx = flow.indexOf(dispatch.status);
-                      const isPast = idx <= currentIdx;
-                      const isCurrent = idx === currentIdx;
-
-                      return (
-                        <div key={step} className="flex flex-col items-center gap-2 z-10">
-                          <div className={`w-4 h-4 rounded-full transition-colors duration-500 border-2 ${
-                            isCurrent ? `${theme.bgClass} border-white shadow-md ring-4 ring-${theme.color}-100` :
-                            isPast ? `${theme.bgClass} border-transparent` :
-                            'bg-slate-200 border-transparent'
-                          }`} />
-                          <span className={`text-[9px] font-bold uppercase tracking-wider ${isCurrent ? theme.textClass : 'text-slate-400'}`}>
-                            {step.replace('_', ' ')}
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-
-              </div>
+              </article>
             );
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+function SummaryMetric({ label, value, icon: Icon, accentClass, wide = false }) {
+  return (
+    <div className={`${wide ? 'col-span-2 sm:col-span-1' : ''} min-w-[128px] rounded-lg border border-slate-200 bg-slate-50 p-3`}>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[8px] font-black uppercase tracking-[0.12em] text-slate-400">{label}</p>
+        <Icon className={`h-3.5 w-3.5 ${accentClass}`} />
+      </div>
+      <p className="mt-2 truncate text-xs font-black text-slate-900">{value}</p>
+    </div>
+  );
+}
+
+function InfoTile({ icon: Icon, label, value }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <p className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-[0.12em] text-slate-400">
+        <Icon className="h-3.5 w-3.5" />
+        {label}
+      </p>
+      <p className="mt-2 break-words text-[10px] font-bold leading-4 text-slate-700">{value}</p>
     </div>
   );
 }

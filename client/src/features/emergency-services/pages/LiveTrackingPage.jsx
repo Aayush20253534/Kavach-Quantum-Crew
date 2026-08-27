@@ -1,115 +1,347 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { MapPin, Navigation, Signal, Loader2, AlertTriangle, Crosshair } from 'lucide-react';
+import {
+  AlertTriangle,
+  Clock3,
+  Crosshair,
+  MapPin,
+  Navigation,
+  RefreshCw,
+  Route,
+  Signal,
+} from 'lucide-react';
+
 import { emergencyServicesApi } from '../api/emergencyServicesApi';
-import { MapComponent } from '../../tracking/components/MapComponent';
+import { AuthorityOperationsMap } from '../../authority/components/AuthorityOperationsMap';
 
 export function LiveTrackingPage() {
-  const { theme } = useOutletContext();
+  const { theme, responderProfile } = useOutletContext();
+
   const [dispatches, setDispatches] = useState([]);
   const [selectedId, setSelectedId] = useState('');
   const [location, setLocation] = useState(null);
   const [tracking, setTracking] = useState(null);
+  const [routeSummary, setRouteSummary] = useState([]);
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const response = await emergencyServicesApi.getDispatches();
-        const rows = response?.data?.data || [];
-        const active = rows.filter((d) => !['COMPLETED', 'CANCELLED'].includes(d.status));
-        if (!cancelled) {
-          setDispatches(active);
-          setSelectedId((current) => current || active[0]?.id || '');
-        }
-      } catch (e) {
-        if (!cancelled) setError(e?.response?.data?.error?.message || 'Unable to load active dispatches.');
-      }
-    };
-    load();
-    const timer = window.setInterval(load, 15000);
-    return () => { cancelled = true; window.clearInterval(timer); };
+  const loadDispatches = useCallback(async () => {
+    try {
+      const response = await emergencyServicesApi.getDispatches();
+      const rows = response?.data?.data || [];
+      const active = rows.filter((dispatch) => !['COMPLETED', 'CANCELLED'].includes(dispatch.status));
+
+      setDispatches(active);
+      setSelectedId((current) =>
+        active.some((dispatch) => dispatch.id === current)
+          ? current
+          : active[0]?.id || '',
+      );
+      setError('');
+    } catch (err) {
+      setError(err?.response?.data?.error?.message || 'Unable to load active dispatches.');
+    }
   }, []);
 
   useEffect(() => {
-    if (!selectedId) { setTracking(null); return undefined; }
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const response = await emergencyServicesApi.getTracking(selectedId);
-        if (!cancelled) setTracking(response?.data?.data || null);
-      } catch {}
-    };
-    load();
-    const timer = window.setInterval(load, 10000);
-    return () => { cancelled = true; window.clearInterval(timer); };
+    loadDispatches();
+    const timer = window.setInterval(loadDispatches, 15000);
+    return () => window.clearInterval(timer);
+  }, [loadDispatches]);
+
+  const loadTracking = useCallback(async () => {
+    if (!selectedId) {
+      setTracking(null);
+      return;
+    }
+
+    try {
+      const response = await emergencyServicesApi.getTracking(selectedId);
+      setTracking(response?.data?.data || null);
+      setError('');
+    } catch (err) {
+      setError(err?.response?.data?.error?.message || 'Unable to load live response tracking.');
+    }
   }, [selectedId]);
 
   useEffect(() => {
+    if (!selectedId) {
+      setTracking(null);
+      return undefined;
+    }
+
+    loadTracking();
+    const timer = window.setInterval(loadTracking, 10000);
+    return () => window.clearInterval(timer);
+  }, [loadTracking, selectedId]);
+
+  useEffect(() => {
     if (!selectedId || !navigator.geolocation) return undefined;
+
     const watchId = navigator.geolocation.watchPosition(
       async (position) => {
-        const next = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+        const next = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
+
         setLocation(next);
-        setError('');
         setSending(true);
+
         try {
           await emergencyServicesApi.updateDispatchLocation(selectedId, next);
-        } catch (e) {
-          setError(e?.response?.data?.error?.message || 'Live location update failed.');
+          setError('');
+        } catch (err) {
+          setError(err?.response?.data?.error?.message || 'Live GPS transmission failed.');
         } finally {
           setSending(false);
         }
       },
       () => setError('Location permission is required to transmit responder GPS.'),
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+        timeout: 15000,
+      },
     );
+
     return () => navigator.geolocation.clearWatch(watchId);
   }, [selectedId]);
 
-  const mapLocation = useMemo(() => {
+  const selectedDispatch = useMemo(
+    () => dispatches.find((dispatch) => dispatch.id === selectedId) || null,
+    [dispatches, selectedId],
+  );
+
+  const currentPoint = useMemo(() => {
     const source = location || tracking?.unit?.location;
-    return source ? { lat: source.latitude, lng: source.longitude } : null;
+    if (!source) return null;
+
+    const latitude = Number(source.latitude);
+    const longitude = Number(source.longitude);
+
+    return Number.isFinite(latitude) && Number.isFinite(longitude)
+      ? { lat: latitude, lng: longitude }
+      : null;
   }, [location, tracking]);
 
+  const incidentPoint = useMemo(() => {
+    const source = tracking?.destination || selectedDispatch?.incident;
+    if (!source) return null;
+
+    const latitude = Number(source.latitude);
+    const longitude = Number(source.longitude);
+
+    return Number.isFinite(latitude) && Number.isFinite(longitude)
+      ? { lat: latitude, lng: longitude }
+      : null;
+  }, [selectedDispatch, tracking]);
+
+  const routeIncident = useMemo(() => {
+    if (!incidentPoint) return null;
+
+    return {
+      id: tracking?.incidentId || selectedDispatch?.incident?.id || selectedId || 'incident',
+      title: selectedDispatch?.incident?.title || 'Tourist / incident location',
+      status: tracking?.status || selectedDispatch?.status || 'ACTIVE',
+      severity: selectedDispatch?.incident?.severity || 'CRITICAL',
+      latitude: incidentPoint.lat,
+      longitude: incidentPoint.lng,
+      description:
+        selectedDispatch?.incident?.description ||
+        'Emergency destination for this active response.',
+    };
+  }, [incidentPoint, selectedDispatch, selectedId, tracking]);
+
+  const routeUnit = useMemo(() => {
+    if (!currentPoint) return null;
+
+    return {
+      id: tracking?.unit?.id || responderProfile?.id || 'current-unit',
+      name:
+        tracking?.unit?.name ||
+        responderProfile?.organization ||
+        responderProfile?.name ||
+        theme.unitLabel,
+      type: tracking?.serviceType || responderProfile?.serviceType || theme.color,
+      status: tracking?.status || selectedDispatch?.status || 'AVAILABLE',
+      organization:
+        tracking?.unit?.organization ||
+        responderProfile?.organization ||
+        responderProfile?.jurisdiction ||
+        theme.unitLabel,
+      latitude: currentPoint.lat,
+      longitude: currentPoint.lng,
+    };
+  }, [currentPoint, responderProfile, selectedDispatch, theme, tracking]);
+
+  const primaryRoute = routeSummary[0] || null;
+  const lastUpdated =
+    tracking?.unit?.location?.updatedAt ||
+    tracking?.updatedAt ||
+    selectedDispatch?.updatedAt ||
+    null;
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([loadDispatches(), loadTracking()]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className={`p-6 rounded-2xl ${theme.bgClass} text-white shadow-lg relative overflow-hidden`}>
-        <div className="relative z-10 flex items-center justify-between gap-4">
+    <div className="mx-auto max-w-[1180px] space-y-5 pb-8">
+      <section className="overflow-hidden rounded-lg border border-slate-300 bg-white">
+        <div className={`h-1.5 w-full ${theme.bgClass}`} />
+        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-black uppercase tracking-tight flex items-center gap-2"><Navigation className="w-6 h-6" /> Live Tracking</h1>
-            <p className="text-white/80 font-medium text-sm mt-1">GPS is sent to Disaster Management and exposed to the affected tourist/group for this dispatch.</p>
+            <p className="text-[9px] font-black uppercase tracking-[0.16em] text-slate-400">
+              Operational Tracking
+            </p>
+            <h1 className="mt-1 flex items-center gap-2 text-xl font-black tracking-tight text-slate-950">
+              <Navigation className={`h-5 w-5 ${theme.textClass}`} />
+              Live Response Tracking
+            </h1>
+            <p className="mt-2 max-w-2xl text-xs leading-5 text-slate-500">
+              Live responder position, tourist / incident destination and road route are synchronized with Disaster Management.
+            </p>
           </div>
-          <div className="hidden sm:flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full border border-white/20">
-            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Signal className="w-4 h-4" />}
-            <span className="text-[10px] font-bold uppercase tracking-widest">{selectedId ? 'GPS Active' : 'Standby'}</span>
+
+          <div
+            className={`inline-flex items-center gap-2 self-start rounded-md border px-3 py-2 text-[9px] font-black uppercase tracking-[0.12em] sm:self-auto ${
+              selectedId
+                ? `${theme.lightBgClass} ${theme.textClass} ${theme.borderClass}`
+                : 'border-slate-200 bg-slate-50 text-slate-500'
+            }`}
+          >
+            {sending ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Signal className="h-3.5 w-3.5" />}
+            {selectedId ? 'GPS transmitting' : 'Standby'}
           </div>
         </div>
-      </div>
+      </section>
 
-      {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700 flex gap-2"><AlertTriangle className="w-4 h-4 shrink-0" />{error}</div>}
-
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Active dispatch</label>
-        <select value={selectedId} onChange={(e) => setSelectedId(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm font-bold text-slate-900">
-          <option value="">No active dispatch selected</option>
-          {dispatches.map((d) => <option key={d.id} value={d.id}>{d.incident?.title || 'Emergency'} · {d.status}</option>)}
-        </select>
-      </div>
-
-      <div className="bg-white p-2 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-        <MapComponent currentLocation={mapLocation} className="h-[480px] w-full rounded-2xl" />
-      </div>
-
-      {tracking && (
-        <div className="grid sm:grid-cols-3 gap-3">
-          <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-[10px] uppercase font-black text-slate-400">Status</p><p className="mt-1 font-black text-slate-900">{tracking.status}</p></div>
-          <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-[10px] uppercase font-black text-slate-400">Distance remaining</p><p className="mt-1 font-black text-slate-900">{tracking.distanceRemainingM == null ? '—' : `${tracking.distanceRemainingM} m`}</p></div>
-          <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-[10px] uppercase font-black text-slate-400">Coordinates</p><p className="mt-1 text-xs font-bold text-slate-900 flex items-center gap-1"><Crosshair className="w-3.5 h-3.5" />{mapLocation ? `${mapLocation.lat.toFixed(5)}, ${mapLocation.lng.toFixed(5)}` : 'Waiting for GPS'}</p></div>
+      {error && (
+        <div className="flex gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          {error}
         </div>
       )}
+
+      <section className="rounded-lg border border-slate-300 bg-white p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <label className="flex-1">
+            <span className="text-[9px] font-black uppercase tracking-[0.14em] text-slate-400">
+              Active Dispatch
+            </span>
+            <select
+              value={selectedId}
+              onChange={(event) => setSelectedId(event.target.value)}
+              className="mt-2 h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-xs font-bold text-slate-900 outline-none focus:border-slate-400"
+            >
+              <option value="">No active dispatch selected</option>
+              {dispatches.map((dispatch) => (
+                <option key={dispatch.id} value={dispatch.id}>
+                  {dispatch.incident?.title || 'Emergency'} · {String(dispatch.status).replaceAll('_', ' ')}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex h-11 items-center justify-center gap-2 rounded-md border border-slate-300 bg-slate-50 px-4 text-[9px] font-black uppercase tracking-[0.12em] text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
+      </section>
+
+      <section className="overflow-hidden rounded-lg border border-slate-300 bg-white">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-800">
+              Response Route
+            </p>
+            <p className="mt-1 text-[9px] text-slate-500">
+              {selectedDispatch?.incident?.title || 'Select an active dispatch to begin route tracking.'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-wider">
+            <span className={`flex items-center gap-1.5 ${theme.textClass}`}>
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: theme.markerColor }}
+              />
+              {theme.unitLabel}
+            </span>
+            <span className="flex items-center gap-1.5 text-red-700">
+              <span className="h-2.5 w-2.5 rounded-full bg-red-600" />
+              Tourist / Incident
+            </span>
+          </div>
+        </div>
+
+        <div className="h-[500px] w-full">
+          <AuthorityOperationsMap
+            incidents={routeIncident ? [routeIncident] : []}
+            units={routeUnit ? [routeUnit] : []}
+            showRoutes
+            routeUnitColor={theme.markerColor}
+            onRouteSummary={setRouteSummary}
+          />
+        </div>
+      </section>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <TrackingMetric
+          icon={Route}
+          label="Distance Remaining"
+          value={
+            primaryRoute?.distanceText ||
+            (tracking?.distanceRemainingM == null
+              ? '—'
+              : `${tracking.distanceRemainingM} m`)
+          }
+        />
+        <TrackingMetric
+          icon={Clock3}
+          label="Estimated Arrival"
+          value={primaryRoute?.durationText || 'Calculating'}
+        />
+        <TrackingMetric
+          icon={Crosshair}
+          label="Unit Position"
+          value={
+            currentPoint
+              ? `${currentPoint.lat.toFixed(5)}, ${currentPoint.lng.toFixed(5)}`
+              : 'Waiting for GPS'
+          }
+        />
+        <TrackingMetric
+          icon={MapPin}
+          label="Last Update"
+          value={lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : 'Waiting for GPS'}
+        />
+      </div>
+    </div>
+  );
+}
+
+function TrackingMetric({ icon: Icon, label, value }) {
+  return (
+    <div className="rounded-lg border border-slate-300 bg-white p-4">
+      <p className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-[0.12em] text-slate-400">
+        <Icon className="h-3.5 w-3.5" />
+        {label}
+      </p>
+      <p className="mt-2 break-words text-xs font-black text-slate-900">{value}</p>
     </div>
   );
 }
