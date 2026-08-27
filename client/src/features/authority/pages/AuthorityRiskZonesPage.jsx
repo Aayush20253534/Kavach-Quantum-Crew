@@ -149,37 +149,43 @@ export function AuthorityRiskZonesPage() {
 
       {isSystemAdmin && (
         <div className="mb-5 bg-white border border-slate-200 rounded-md-none p-4 sm:p-5 ">
-          <div className="grid gap-x-5 gap-y-5 md:grid-cols-2 lg:grid-cols-[1.35fr_1fr_210px_220px] lg:items-end">
-            <div>
-              <label className="block text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Location search</label>
+          <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr_1fr_220px] lg:items-end">
+            <div className="min-w-0">
+              <label className="mb-2 block text-[9px] font-black uppercase tracking-wider text-slate-500 sm:text-[10px]">
+                Location search
+              </label>
               {isLoaded ? (
                 <Autocomplete onLoad={setAutocomplete} onPlaceChanged={handlePlaceChanged}>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
                       type="text"
                       placeholder="Search a building, landmark or area"
-                      className="w-full h-10 sm:h-11 pl-9 pr-3 border border-slate-200 rounded-md-none text-[11px] sm:text-xs font-semibold outline-none focus:border-slate-500"
+                      className="h-11 w-full rounded-md border border-slate-200 pl-9 pr-3 text-[11px] font-semibold outline-none focus:border-slate-500 sm:text-xs"
                     />
                   </div>
                 </Autocomplete>
               ) : (
-                <div className="h-10 sm:h-11 rounded-md-none bg-slate-100 animate-pulse" />
+                <div className="h-11 animate-pulse rounded-md bg-slate-100" />
               )}
             </div>
 
-            <div>
-              <label className="block text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Risk zone name</label>
+            <div className="min-w-0">
+              <label className="mb-2 block text-[9px] font-black uppercase tracking-wider text-slate-500 sm:text-[10px]">
+                Risk zone name
+              </label>
               <input
                 value={zoneName}
                 onChange={(event) => setZoneName(event.target.value)}
                 placeholder="Danger zone name"
-                className="w-full h-10 sm:h-11 px-3 border border-slate-200 rounded-md-none text-[11px] sm:text-xs font-semibold outline-none focus:border-slate-500"
+                className="h-11 w-full rounded-md border border-slate-200 px-3 text-[11px] font-semibold outline-none focus:border-slate-500 sm:text-xs"
               />
             </div>
 
-            <div>
-              <label className="block text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Coverage radius</label>
+            <div className="min-w-0">
+              <label className="mb-2 block text-[9px] font-black uppercase tracking-wider text-slate-500 sm:text-[10px]">
+                Coverage radius
+              </label>
               <input
                 type="number"
                 min="50"
@@ -187,20 +193,32 @@ export function AuthorityRiskZonesPage() {
                 step="50"
                 value={radiusM}
                 onChange={(event) => setRadiusM(Math.max(50, Math.min(100000, Number(event.target.value) || 50)))}
-                className="w-full h-10 sm:h-11 px-3 border border-slate-200 rounded-md-none text-[11px] sm:text-xs font-semibold outline-none focus:border-slate-500"
+                className="h-11 w-full rounded-md border border-slate-200 px-3 text-[11px] font-semibold outline-none focus:border-slate-500 sm:text-xs"
               />
-              <p className="mt-1 text-[9px] text-slate-400">50 m to 100 km</p>
             </div>
 
-            <button
-              onClick={createDangerZone}
-              disabled={!selectedPlace || saving}
-              className="h-10 sm:h-11 px-4 bg-red-600 text-white rounded-md-none text-[10px] sm:text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Create risk zone
-            </button>
+            <div className="min-w-0">
+              <span
+                aria-hidden="true"
+                className="mb-2 block text-[9px] font-black uppercase tracking-wider opacity-0 sm:text-[10px]"
+              >
+                Action
+              </span>
+              <button
+                type="button"
+                onClick={createDangerZone}
+                disabled={!selectedPlace || saving}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-md border border-slate-950 bg-slate-950 px-5 text-[10px] font-black uppercase tracking-[0.12em] text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                Create risk zone
+              </button>
+            </div>
           </div>
+
+          <p className="mt-2 text-[9px] text-slate-400">
+            Coverage radius: 50 m to 100 km
+          </p>
 
           {selectedPlace && (
             <div className="mt-3 flex items-start gap-2 p-3 rounded-md-none bg-slate-50 border border-slate-100 text-[10px] sm:text-[11px] text-slate-600">
