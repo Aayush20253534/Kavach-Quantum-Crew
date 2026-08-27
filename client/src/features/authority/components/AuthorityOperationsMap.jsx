@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { DirectionsRenderer, GoogleMap, InfoWindowF, MarkerF, useJsApiLoader } from '@react-google-maps/api';
+import { GoogleMap, InfoWindowF, MarkerF, PolylineF, useJsApiLoader } from '@react-google-maps/api';
 import { MapPin } from 'lucide-react';
 
 const GOOGLE_MAP_LIBRARIES = ['places'];
@@ -65,11 +65,21 @@ const nearestOverviewPathIndex = (overviewPath, point) => {
   return bestIndex;
 };
 
+const plainOverviewPath = (overviewPath = []) =>
+  overviewPath
+    .map((point) => {
+      const lat = typeof point?.lat === 'function' ? point.lat() : Number(point?.lat);
+      const lng = typeof point?.lng === 'function' ? point.lng() : Number(point?.lng);
+      return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+    })
+    .filter(Boolean);
+
+
+
 export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes = false, onRouteSummary, routeUnitColor = '#16a34a', referencePoints = [] }) {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const mapRef = useRef(null);
   const fittedContextRef = useRef('');
-  const travelledPolylineRefs = useRef([]);
   const routeRequestRef = useRef(0);
   const [selected, setSelected] = useState(null);
   const [routes, setRoutes] = useState([]);
@@ -184,9 +194,24 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
             },
             (result, status) => {
               if (status !== window.google.maps.DirectionsStatus.OK || !result) {
-                resolve(null);
+                // Keep the tactical map useful even if Google Directions is
+                // temporarily unavailable. This fallback is visually distinct
+                // only by being a direct segment; the next successful refresh
+                // replaces it with the actual road route.
+                resolve({
+                  unitId: unit.id,
+                  unitName: unit.name,
+                  result: null,
+                  distanceText: null,
+                  distanceM: null,
+                  durationText: null,
+                  durationSeconds: null,
+                  overviewPath: [origin, destination],
+                  fallback: true,
+                });
                 return;
               }
+
               const leg = result.routes?.[0]?.legs?.[0];
               resolve({
                 unitId: unit.id,
@@ -196,7 +221,8 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
                 distanceM: leg?.distance?.value ?? null,
                 durationText: leg?.duration?.text ?? null,
                 durationSeconds: leg?.duration?.value ?? null,
-                overviewPath: result.routes?.[0]?.overview_path ?? [],
+                overviewPath: plainOverviewPath(result.routes?.[0]?.overview_path ?? []),
+                fallback: false,
               });
             },
           );
@@ -207,7 +233,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
       const successful = resolved.filter(Boolean);
       setRoutes(successful);
       onRouteSummary?.(
-        successful.map(({ result, ...summary }) => summary),
+        successful.map(({ result: _result, overviewPath: _overviewPath, ...summary }) => summary),
       );
     });
 
@@ -217,43 +243,42 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
     };
   }, [isLoaded, onRouteSummary, routeRequestKey, showRoutes]); // route is anchored to fleet base; live GPS only advances progress
 
-  useEffect(() => {
-    travelledPolylineRefs.current.forEach((polyline) => polyline.setMap(null));
-    travelledPolylineRefs.current = [];
 
-    if (!isLoaded || !mapRef.current || !window.google?.maps || !showRoutes) return undefined;
 
-    const polylines = routes
-      .map((route) => {
+  const routeProgress = useMemo(
+    () =>
+      routes.map((route) => {
         const unit = units.find((candidate) => candidate.id === route.unitId);
         const livePoint = unit ? finitePoint(unit.latitude, unit.longitude) : null;
-        const overviewPath = route.overviewPath || route.result?.routes?.[0]?.overview_path || [];
-        const nearestIndex = nearestOverviewPathIndex(overviewPath, livePoint);
+        const fullPath = plainOverviewPath(route.overviewPath);
+        const nearestIndex = nearestOverviewPathIndex(fullPath, livePoint);
 
-        if (!livePoint || nearestIndex < 1) return null;
+        if (!fullPath.length) {
+          return { ...route, travelledPath: [], remainingPath: [] };
+        }
 
-        const travelledPath = overviewPath.slice(0, nearestIndex + 1);
-        travelledPath.push(livePoint);
+        if (!livePoint || nearestIndex < 0) {
+          return { ...route, travelledPath: [], remainingPath: fullPath };
+        }
 
-        return new window.google.maps.Polyline({
-          map: mapRef.current,
-          path: travelledPath,
-          strokeColor: '#64748b',
-          strokeOpacity: 0.95,
-          strokeWeight: 7,
-          clickable: false,
-          zIndex: 25,
-        });
-      })
-      .filter(Boolean);
+        const travelledPath =
+          nearestIndex > 0
+            ? [...fullPath.slice(0, nearestIndex + 1), livePoint]
+            : [fullPath[0], livePoint];
 
-    travelledPolylineRefs.current = polylines;
+        const remainingPath = [
+          livePoint,
+          ...fullPath.slice(Math.max(0, nearestIndex + 1)),
+        ];
 
-    return () => {
-      polylines.forEach((polyline) => polyline.setMap(null));
-      travelledPolylineRefs.current = [];
-    };
-  }, [isLoaded, routes, showRoutes, units]);
+        return {
+          ...route,
+          travelledPath,
+          remainingPath,
+        };
+      }),
+    [routes, units],
+  );
 
   const fitVisibleMarkers = (map) => {
     if (!map || markers.length === 0 || !window.google?.maps) return;
@@ -358,20 +383,33 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
         maxZoom: 20,
       }}
     >
-      {routes.map((route) => (
-        <DirectionsRenderer
-          key={`route-${route.unitId}`}
-          directions={route.result}
-          options={{
-            suppressMarkers: true,
-            preserveViewport: true,
-            polylineOptions: {
-              strokeColor: '#2563eb',
-              strokeOpacity: 0.92,
-              strokeWeight: 6,
-            },
-          }}
-        />
+      {routeProgress.map((route) => (
+        <React.Fragment key={`route-${route.unitId}`}>
+          {route.travelledPath.length >= 2 && (
+            <PolylineF
+              path={route.travelledPath}
+              options={{
+                strokeColor: '#64748b',
+                strokeOpacity: 0.95,
+                strokeWeight: 7,
+                clickable: false,
+                zIndex: 20,
+              }}
+            />
+          )}
+          {route.remainingPath.length >= 2 && (
+            <PolylineF
+              path={route.remainingPath}
+              options={{
+                strokeColor: '#2563eb',
+                strokeOpacity: 0.95,
+                strokeWeight: 7,
+                clickable: false,
+                zIndex: 21,
+              }}
+            />
+          )}
+        </React.Fragment>
       ))}
 
 

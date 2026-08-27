@@ -286,6 +286,21 @@ export const createTripService = ({
             longitude: startLocation.longitude,
             capturedAt: startLocation.capturedAt ?? now.toISOString(),
           });
+
+          // A group has a 500 m operational safety boundary. Trigger the same
+          // safety-alert -> incident ingestion pipeline immediately when that
+          // boundary overlaps a risk zone, even if the leader's exact GPS point
+          // is just outside the zone itself.
+          if (trip.tripType === "GROUP") {
+            await safetyEvaluator.evaluateGroupBoundary({
+              tripId: trip.id,
+              userId,
+              latitude: startLocation.latitude,
+              longitude: startLocation.longitude,
+              radiusM: 500,
+              capturedAt: startLocation.capturedAt ?? now.toISOString(),
+            });
+          }
         } catch (error) {
           logger.error(
             { err: error, tripId: trip.id, userId },
