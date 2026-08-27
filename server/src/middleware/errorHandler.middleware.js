@@ -35,9 +35,8 @@ const normalizeError = (error) => {
 
   if (error?.name === "PrismaClientKnownRequestError") {
     if (error.code === "P2002") {
-      return ApiError.conflict("A record with these values already exists", {
-        code: "UNIQUE_CONSTRAINT_VIOLATION",
-        details: error.meta?.target,
+      return ApiError.conflict("This information could not be saved. Please review the details and try again.", {
+        code: "CONFLICT",
         cause: error,
       });
     }

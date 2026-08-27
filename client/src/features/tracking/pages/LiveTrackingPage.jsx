@@ -12,7 +12,7 @@ import { findDangerZoneForTrip, GROUP_GEOFENCE_RADIUS_M } from '../utils/geofenc
 import { useGeolocation } from '../hooks/useGeolocation';
 
 
-const MEMBER_COLORS = ['#2563eb', '#16a34a', '#d97706', '#7c3aed', '#0891b2', '#db2777', '#4f46e5'];
+const MEMBER_COLORS = ['#2563eb', '#7c3aed', '#d97706', '#0891b2', '#db2777', '#4f46e5', '#16a34a'];
 
 const memberColor = (member, index) =>
   member?.role === 'LEADER' ? '#dc2626' : MEMBER_COLORS[index % MEMBER_COLORS.length];

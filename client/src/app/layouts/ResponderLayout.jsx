@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   ShieldAlert,
@@ -22,7 +22,6 @@ export function ResponderLayout() {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
@@ -220,16 +219,6 @@ export function ResponderLayout() {
     }
   };
 
-  const handleResponderNavigation = (path) => {
-    if (location.pathname === path) return;
-
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
-
-    navigate(path);
-  };
-
   const getTheme = () => {
     switch (user?.role) {
       case 'POLICE':
@@ -356,24 +345,30 @@ export function ResponderLayout() {
             </p>
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname.startsWith(item.path);
 
               return (
-                <button
+                <NavLink
                   key={item.name}
-                  type="button"
-                  onClick={() => handleResponderNavigation(item.path)}
-                  className={`relative z-[10010] flex w-full touch-manipulation items-center gap-3 py-3 rounded-lg text-[12px] font-bold transition-all cursor-pointer ${isCollapsed ? 'justify-center px-0' : 'px-4'} ${
-                    isActive
-                      ? `${theme.lightBgClass} ${theme.textClass} after:absolute after:left-0 after:top-2 after:bottom-2 after:w-1 after:${theme.bgClass} after:rounded-r-sm`
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `relative z-[10010] flex w-full touch-manipulation items-center gap-3 py-3 rounded-lg text-[12px] font-bold transition-all cursor-pointer ${isCollapsed ? 'justify-center px-0' : 'px-4'} ${
+                      isActive
+                        ? `${theme.lightBgClass} ${theme.textClass} after:absolute after:left-0 after:top-2 after:bottom-2 after:w-1 after:${theme.bgClass} after:rounded-r-sm`
+                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                    }`
+                  }
                   title={isCollapsed ? item.name : undefined}
-                  aria-current={isActive ? 'page' : undefined}
                 >
-                  <Icon className="w-4 h-4 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
-                  {!isCollapsed && <span>{item.name}</span>}
-                </button>
+                  {({ isActive }) => (
+                    <>
+                      <Icon
+                        className="w-4 h-4 shrink-0"
+                        strokeWidth={isActive ? 2.5 : 2}
+                      />
+                      {!isCollapsed && <span>{item.name}</span>}
+                    </>
+                  )}
+                </NavLink>
               );
             })}
           </div>
