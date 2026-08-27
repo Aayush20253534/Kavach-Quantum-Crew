@@ -69,6 +69,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const mapRef = useRef(null);
   const fittedContextRef = useRef('');
+  const travelledPolylineRefs = useRef([]);
   const routeRequestRef = useRef(0);
   const [selected, setSelected] = useState(null);
   const [routes, setRoutes] = useState([]);
