@@ -6,6 +6,7 @@ import { useSelector } from 'react-redux';
 import { groupService } from '../../groups/api/groupService';
 import { useCurrentTrip } from '../../trips/api/tripQueries';
 import { trackingService } from '../api/trackingService';
+import { emergencyServicesApi } from '../../emergency-services/api/emergencyServicesApi';
 import { MapComponent } from '../components/MapComponent';
 import { findDangerZoneForTrip, GROUP_GEOFENCE_RADIUS_M } from '../utils/geofenceSafety';
 import { useGeolocation } from '../hooks/useGeolocation';
@@ -44,6 +45,8 @@ export function LiveTrackingPage() {
   const [memberLocations, setMemberLocations] = useState([]);
   const [battery, setBattery] = useState(null);
   const [trackingConsentReady, setTrackingConsentReady] = useState(false);
+  const [fleetResponses, setFleetResponses] = useState([]);
+  const [fleetError, setFleetError] = useState('');
 
   useEffect(() => {
     trackingService.getRiskZones().then((data) => setZones(data?.items || data || [])).catch(() => setZones([]));
@@ -112,6 +115,63 @@ export function LiveTrackingPage() {
       if (timer) window.clearInterval(timer);
     };
   }, [trip?.id, trip?.tripType, trip?.status]);
+
+  useEffect(() => {
+    if (!trip?.id || trip.status !== 'ACTIVE') {
+      setFleetResponses([]);
+      setFleetError('');
+      return undefined;
+    }
+
+    let cancelled = false;
+    let timer;
+
+    const loadFleetResponses = async () => {
+      try {
+        const dispatchResponse = await emergencyServicesApi.getTouristDispatches();
+        const dispatches = dispatchResponse?.data?.data || [];
+
+        const activeDispatches = dispatches.filter(
+          (dispatch) =>
+            !['COMPLETED', 'CANCELLED'].includes(
+              String(dispatch.status || '').toUpperCase(),
+            ),
+        );
+
+        const snapshots = await Promise.all(
+          activeDispatches.map(async (dispatch) => {
+            try {
+              const response = await emergencyServicesApi.getTracking(dispatch.id);
+              return response?.data?.data || null;
+            } catch {
+              return null;
+            }
+          }),
+        );
+
+        if (!cancelled) {
+          setFleetResponses(snapshots.filter(Boolean));
+          setFleetError('');
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setFleetResponses([]);
+          setFleetError(
+            error?.response?.data?.error?.message ||
+              'Unable to synchronize active emergency response.',
+          );
+        }
+      }
+    };
+
+    loadFleetResponses();
+    timer = window.setInterval(loadFleetResponses, 5000);
+
+    return () => {
+      cancelled = true;
+      if (timer) window.clearInterval(timer);
+    };
+  }, [trip?.id, trip?.status]);
 
   useEffect(() => {
     let batteryManager;
@@ -235,9 +295,17 @@ export function LiveTrackingPage() {
         </div>
       )}
 
+      {fleetError && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 sm:text-sm">
+          {fleetError}
+        </div>
+      )}
+
       <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 border border-slate-200 text-[10px] sm:text-[11px] font-semibold text-slate-600">
         <Navigation className="w-3.5 h-3.5 shrink-0" />
-        Use two fingers to move the map. Active danger zones are shown in red, and group members are shown inside a 500 m geofence.
+        {fleetResponses.length
+          ? 'Use two fingers to move the map. Group members, danger zones and the active emergency fleet response are shown together.'
+          : 'Use two fingers to move the map. Active danger zones are shown in red, and group members are shown inside a 500 m geofence.'}
       </div>
 
       {currentZone && (
@@ -259,6 +327,7 @@ export function LiveTrackingPage() {
             currentMarkerColor={currentMemberStyle.color}
             currentMarkerTitle={currentMemberStyle.role === 'LEADER' ? 'Team leader · Active' : 'Your live location · Active'}
             groupLocations={memberLocations.filter((member) => member.userId !== user?.id)}
+            fleetResponses={fleetResponses}
             groupGeofenceRadiusM={trip.tripType === 'GROUP' ? GROUP_GEOFENCE_RADIUS_M : 0}
             riskZones={zones}
             mapGestureHandling="cooperative"
@@ -271,6 +340,47 @@ export function LiveTrackingPage() {
           </div>
         )}
       </div>
+
+      {fleetResponses.length > 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-wider text-slate-800">
+                Active emergency response
+              </p>
+              <p className="mt-0.5 text-[10px] text-slate-500">
+                Responding fleet and route are overlaid on your existing group map.
+              </p>
+            </div>
+
+            <span className="text-[10px] font-black text-slate-500">
+              {fleetResponses.length} responding
+            </span>
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[9px] font-black uppercase tracking-wider">
+            <span className="flex items-center gap-1.5 text-emerald-700">
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-600" />
+              Live fleet
+            </span>
+
+            <span className="flex items-center gap-1.5 text-slate-600">
+              <span className="h-1 w-5 rounded-full bg-slate-500" />
+              Travelled
+            </span>
+
+            <span className="flex items-center gap-1.5 text-blue-700">
+              <span className="h-1 w-5 rounded-full bg-blue-600" />
+              Remaining road
+            </span>
+
+            <span className="flex items-center gap-1.5 text-blue-700">
+              <span className="tracking-[0.15em]">•••</span>
+              Off-road
+            </span>
+          </div>
+        </div>
+      )}
 
       {trip.tripType === 'GROUP' && memberStatuses.length > 0 && (
         <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">

@@ -389,10 +389,12 @@ export function LiveTrackingPage() {
           icon={Route}
           label="Distance Remaining"
           value={
-            primaryRoute?.distanceText ||
+            primaryRoute?.remainingDistanceText ||
             (tracking?.distanceRemainingM == null
               ? '—'
-              : `${tracking.distanceRemainingM} m`)
+              : tracking.distanceRemainingM < 1000
+                ? `${Math.round(tracking.distanceRemainingM)} m`
+                : `${(tracking.distanceRemainingM / 1000).toFixed(1)} km`)
           }
         />
         <TrackingMetric

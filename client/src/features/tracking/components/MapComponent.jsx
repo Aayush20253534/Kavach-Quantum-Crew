@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CircleF, GoogleMap, InfoWindowF, MarkerF, PolygonF, useJsApiLoader } from '@react-google-maps/api';
 import { MapPin } from 'lucide-react';
+import { FleetResponseOverlay } from './FleetResponseOverlay';
 
 const GOOGLE_MAP_LIBRARIES = ['places'];
 const containerStyle = { width: '100%', height: '100%', borderRadius: '0.5rem' };
@@ -17,6 +18,7 @@ export function MapComponent({
   currentMarkerColor = '#2563eb',
   currentMarkerTitle = 'Your live location',
   groupLocations = [],
+  fleetResponses = [],
   groupGeofenceRadiusM = 0,
   riskZones = [],
   showEmergencyServicesOnly = false,
@@ -296,6 +298,10 @@ export function MapComponent({
               </>
             )}
           </>
+        )}
+
+        {!showEmergencyServicesOnly && fleetResponses.length > 0 && (
+          <FleetResponseOverlay responses={fleetResponses} />
         )}
 
         {showEmergencyServicesOnly ? (
