@@ -245,12 +245,6 @@ export function AuthorityDashboardPage() {
 
                     <div className="flex flex-wrap gap-3 pt-3 border-t border-slate-100">
                       <button
-                        onClick={() => alert(`Connecting radio channel...`)}
-                        className="px-5 py-2.5 bg-slate-900 hover:bg-slate-900 text-white text-[11px] font-bold uppercase tracking-widest rounded cursor-pointer  transition-colors"
-                      >
-                        Radio Connect PCR
-                      </button>
-                      <button
                         onClick={() => handleResolve(ticket.id)}
                         disabled={isResolving}
                         className="px-5 py-2.5 bg-white border border-slate-200 hover:bg-[#f0fdf4] hover:border-[#16a34a] hover:text-[#16a34a] text-slate-700 text-[11px] font-bold uppercase tracking-widest rounded cursor-pointer transition-colors disabled:opacity-50 flex items-center gap-1.5"

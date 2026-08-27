@@ -345,15 +345,9 @@ export function AuthorityIncidentsPage() {
                 <div className="w-full md:w-auto shrink-0 flex items-center justify-end mt-2 md:mt-0">
                   <Link
                     to={`/authority/incidents/${incident.id}`}
-                    className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors ${
-                      ['RESOLVED', 'DISMISSED'].includes((incident.status || '').toUpperCase()) || incident.expired
-                        ? 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                        : 'bg-slate-900 hover:bg-slate-900 text-white'
-                    }`}
+                    className="flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-700 transition-colors hover:bg-slate-50"
                   >
-                    {['RESOLVED', 'DISMISSED'].includes((incident.status || '').toUpperCase()) || incident.expired
-                      ? 'View Details'
-                      : 'Take Command'}
+                    View Details
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </div>

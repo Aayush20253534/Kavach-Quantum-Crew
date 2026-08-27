@@ -65,6 +65,13 @@ const nearestOverviewPathIndex = (overviewPath, point) => {
   return bestIndex;
 };
 
+const nearestOverviewPathPoint = (overviewPath, point) => {
+  const index = nearestOverviewPathIndex(overviewPath, point);
+  return index >= 0 ? { index, point: overviewPath[index] } : null;
+};
+
+
+
 const plainOverviewPath = (overviewPath = []) =>
   overviewPath
     .map((point) => {
@@ -194,10 +201,9 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
             },
             (result, status) => {
               if (status !== window.google.maps.DirectionsStatus.OK || !result) {
-                // Keep the tactical map useful even if Google Directions is
-                // temporarily unavailable. This fallback is visually distinct
-                // only by being a direct segment; the next successful refresh
-                // replaces it with the actual road route.
+                // Google could not produce a driving route. Never pretend
+                // the direct line is a road. The UI renders this fallback as a
+                // dotted connector until a real Directions result is available.
                 resolve({
                   unitId: unit.id,
                   unitName: unit.name,
@@ -251,30 +257,67 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
         const unit = units.find((candidate) => candidate.id === route.unitId);
         const livePoint = unit ? finitePoint(unit.latitude, unit.longitude) : null;
         const fullPath = plainOverviewPath(route.overviewPath);
-        const nearestIndex = nearestOverviewPathIndex(fullPath, livePoint);
 
         if (!fullPath.length) {
-          return { ...route, travelledPath: [], remainingPath: [] };
+          return {
+            ...route,
+            travelledPath: [],
+            remainingPath: [],
+            connectorPath: [],
+            fallbackPath: [],
+          };
         }
 
-        if (!livePoint || nearestIndex < 0) {
-          return { ...route, travelledPath: [], remainingPath: fullPath };
+        // If Google Directions itself failed there is no trustworthy road
+        // geometry. Show only a dotted base -> destination indication.
+        if (route.fallback) {
+          return {
+            ...route,
+            travelledPath: [],
+            remainingPath: [],
+            connectorPath: [],
+            fallbackPath: fullPath,
+          };
+        }
+
+        if (!livePoint) {
+          return {
+            ...route,
+            travelledPath: [],
+            remainingPath: fullPath,
+            connectorPath: [],
+            fallbackPath: [],
+          };
+        }
+
+        const nearest = nearestOverviewPathPoint(fullPath, livePoint);
+        if (!nearest) {
+          return {
+            ...route,
+            travelledPath: [],
+            remainingPath: fullPath,
+            connectorPath: [],
+            fallbackPath: [],
+          };
         }
 
         const travelledPath =
-          nearestIndex > 0
-            ? [...fullPath.slice(0, nearestIndex + 1), livePoint]
-            : [fullPath[0], livePoint];
+          nearest.index > 0
+            ? fullPath.slice(0, nearest.index + 1)
+            : [fullPath[0]];
 
-        const remainingPath = [
+        const remainingPath = fullPath.slice(nearest.index);
+        const connectorPath = [
           livePoint,
-          ...fullPath.slice(Math.max(0, nearestIndex + 1)),
+          nearest.point,
         ];
 
         return {
           ...route,
           travelledPath,
           remainingPath,
+          connectorPath,
+          fallbackPath: [],
         };
       }),
     [routes, units],
@@ -397,6 +440,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
               }}
             />
           )}
+
           {route.remainingPath.length >= 2 && (
             <PolylineF
               path={route.remainingPath}
@@ -406,6 +450,54 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
                 strokeWeight: 7,
                 clickable: false,
                 zIndex: 21,
+              }}
+            />
+          )}
+
+          {route.connectorPath.length >= 2 && (
+            <PolylineF
+              path={route.connectorPath}
+              options={{
+                strokeColor: '#475569',
+                strokeOpacity: 0,
+                strokeWeight: 2,
+                clickable: false,
+                zIndex: 22,
+                icons: [{
+                  icon: {
+                    path: window.google.maps.SymbolPath.CIRCLE,
+                    fillColor: '#475569',
+                    fillOpacity: 1,
+                    strokeOpacity: 0,
+                    scale: 2.2,
+                  },
+                  offset: '0',
+                  repeat: '10px',
+                }],
+              }}
+            />
+          )}
+
+          {route.fallbackPath.length >= 2 && (
+            <PolylineF
+              path={route.fallbackPath}
+              options={{
+                strokeColor: '#2563eb',
+                strokeOpacity: 0,
+                strokeWeight: 2,
+                clickable: false,
+                zIndex: 19,
+                icons: [{
+                  icon: {
+                    path: window.google.maps.SymbolPath.CIRCLE,
+                    fillColor: '#2563eb',
+                    fillOpacity: 0.85,
+                    strokeOpacity: 0,
+                    scale: 2.1,
+                  },
+                  offset: '0',
+                  repeat: '12px',
+                }],
               }}
             />
           )}
