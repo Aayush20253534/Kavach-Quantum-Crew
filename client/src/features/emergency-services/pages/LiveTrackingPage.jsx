@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -15,137 +15,18 @@ import { emergencyServicesApi } from '../api/emergencyServicesApi';
 import { AuthorityOperationsMap } from '../../authority/components/AuthorityOperationsMap';
 
 export function LiveTrackingPage() {
-  const { theme, responderProfile } = useOutletContext();
+  const { theme, responderProfile, backgroundTracking } = useOutletContext();
 
-  const [dispatches, setDispatches] = useState([]);
-  const [selectedId, setSelectedId] = useState('');
-  const [location, setLocation] = useState(null);
-  const [tracking, setTracking] = useState(null);
   const [routeSummary, setRouteSummary] = useState([]);
-  const [error, setError] = useState('');
-  const [sending, setSending] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const mountedRef = useRef(true);
-  const gpsWatchRef = useRef(null);
 
-  useEffect(() => {
-    mountedRef.current = true;
-    const stopLiveTracking = () => {
-      mountedRef.current = false;
-      if (gpsWatchRef.current != null && navigator.geolocation) {
-        navigator.geolocation.clearWatch(gpsWatchRef.current);
-        gpsWatchRef.current = null;
-      }
-    };
-
-    window.addEventListener('pagehide', stopLiveTracking);
-    return () => {
-      window.removeEventListener('pagehide', stopLiveTracking);
-      stopLiveTracking();
-    };
-  }, []);
-
-  const loadDispatches = useCallback(async () => {
-    try {
-      const response = await emergencyServicesApi.getDispatches();
-      const rows = response?.data?.data || [];
-      const active = rows.filter((dispatch) => !['COMPLETED', 'CANCELLED'].includes(dispatch.status));
-
-      if (!mountedRef.current) return;
-
-      setDispatches(active);
-      setSelectedId((current) =>
-        active.some((dispatch) => dispatch.id === current)
-          ? current
-          : active[0]?.id || '',
-      );
-      setError('');
-    } catch (err) {
-      setError(err?.response?.data?.error?.message || 'Unable to load active dispatches.');
-    }
-  }, []);
-
-  useEffect(() => {
-    loadDispatches();
-    const timer = window.setInterval(loadDispatches, 15000);
-    return () => window.clearInterval(timer);
-  }, [loadDispatches]);
-
-  const loadTracking = useCallback(async () => {
-    if (!selectedId) {
-      setTracking(null);
-      return;
-    }
-
-    try {
-      const response = await emergencyServicesApi.getTracking(selectedId);
-      if (!mountedRef.current) return;
-      setTracking(response?.data?.data || null);
-      setError('');
-    } catch (err) {
-      setError(err?.response?.data?.error?.message || 'Unable to load live response tracking.');
-    }
-  }, [selectedId]);
-
-  useEffect(() => {
-    if (!selectedId) {
-      setTracking(null);
-      return undefined;
-    }
-
-    loadTracking();
-    const timer = window.setInterval(loadTracking, 10000);
-    return () => window.clearInterval(timer);
-  }, [loadTracking, selectedId]);
-
-  useEffect(() => {
-    if (!selectedId || !navigator.geolocation) return undefined;
-
-    let cancelled = false;
-
-    const watchId = navigator.geolocation.watchPosition(
-      async (position) => {
-        if (cancelled || !mountedRef.current) return;
-
-        const next = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        };
-
-        setLocation(next);
-        setSending(true);
-
-        try {
-          await emergencyServicesApi.updateDispatchLocation(selectedId, next);
-          if (!cancelled && mountedRef.current) setError('');
-        } catch (err) {
-          if (!cancelled && mountedRef.current) {
-            setError(err?.response?.data?.error?.message || 'Live GPS transmission failed.');
-          }
-        } finally {
-          if (!cancelled && mountedRef.current) setSending(false);
-        }
-      },
-      () => {
-        if (!cancelled && mountedRef.current) {
-          setError('Location permission is required to transmit responder GPS.');
-        }
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 5000,
-        timeout: 15000,
-      },
-    );
-
-    gpsWatchRef.current = watchId;
-
-    return () => {
-      cancelled = true;
-      navigator.geolocation.clearWatch(watchId);
-      if (gpsWatchRef.current === watchId) gpsWatchRef.current = null;
-    };
-  }, [selectedId]);
+  const dispatches = backgroundTracking?.dispatches || [];
+  const selectedId = backgroundTracking?.selectedId || '';
+  const setSelectedId = backgroundTracking?.setSelectedId || (() => {});
+  const location = backgroundTracking?.location || null;
+  const tracking = backgroundTracking?.tracking || null;
+  const sending = backgroundTracking?.sending || false;
+  const error = backgroundTracking?.error || '';
 
   const selectedDispatch = useMemo(
     () => dispatches.find((dispatch) => dispatch.id === selectedId) || null,
@@ -256,8 +137,9 @@ export function LiveTrackingPage() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
+
     try {
-      await Promise.all([loadDispatches(), loadTracking()]);
+      await backgroundTracking?.refresh?.();
     } finally {
       setRefreshing(false);
     }
@@ -289,7 +171,7 @@ export function LiveTrackingPage() {
             }`}
           >
             {sending ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Signal className="h-3.5 w-3.5" />}
-            {selectedId ? 'GPS transmitting' : 'Standby'}
+            {selectedId ? 'Background tracking active' : 'Standby'}
           </div>
         </div>
       </section>
