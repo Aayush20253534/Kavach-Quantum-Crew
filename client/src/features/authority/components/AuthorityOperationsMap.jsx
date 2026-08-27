@@ -36,7 +36,7 @@ const finitePoint = (latitude, longitude) => {
   return { lat, lng };
 };
 
-export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes = false, onRouteSummary }) {
+export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes = false, onRouteSummary, routeUnitColor = '#16a34a' }) {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const mapRef = useRef(null);
   const [selected, setSelected] = useState(null);
@@ -140,7 +140,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
     return () => {
       cancelled = true;
     };
-  }, [incidents, isLoaded, onRouteSummary, showRoutes, units]);
+  }, [incidents, isLoaded, onRouteSummary, routeUnitColor, showRoutes, units]);
 
   const fitVisibleMarkers = (map) => {
     if (!map || markers.length === 0 || !window.google?.maps) return;
@@ -199,7 +199,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
             suppressMarkers: true,
             preserveViewport: true,
             polylineOptions: {
-              strokeColor: '#16a34a',
+              strokeColor: routeUnitColor,
               strokeOpacity: 0.9,
               strokeWeight: 6,
             },
@@ -213,7 +213,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
         // In response-routing mode the visual language is intentionally fixed:
         // tourist/incident = red, responding fleet = green.
         const color = showRoutes
-          ? (isIncident ? '#dc2626' : '#16a34a')
+          ? (isIncident ? '#dc2626' : routeUnitColor)
           : (isIncident ? incidentColor(marker.data.severity || marker.data.priority) : unitColor(marker.data.type));
         return (
           <MarkerF
@@ -246,7 +246,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
               </>
             ) : (
               <>
-                <p className={`text-[11px] font-black uppercase tracking-wide ${showRoutes ? 'text-emerald-600' : 'text-slate-500'}`}>{selected.data.type} Fleet</p>
+                <p className="text-[11px] font-black uppercase tracking-wide text-slate-600">{selected.data.type} Fleet</p>
                 <p className="mt-1 text-[13px] font-black text-slate-900">{selected.data.name}</p>
                 <p className="mt-1 text-[11px] text-slate-600">{selected.data.organization || selected.data.jurisdiction || 'Emergency unit'}</p>
                 <p className="mt-2 text-[10px] font-bold text-slate-500">Status: {selected.data.status}</p>

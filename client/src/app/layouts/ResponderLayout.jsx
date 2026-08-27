@@ -16,6 +16,7 @@ import { logout } from '../../features/auth/store/authSlice';
 import { authService } from '../../features/auth/api/authService';
 import { markExplicitSignOut } from '../../services/apiClient';
 import { SignOutConfirmModal } from '../components/SignOutConfirmModal';
+import { emergencyServicesApi } from '../../features/emergency-services/api/emergencyServicesApi';
 
 export function ResponderLayout() {
   const { user } = useSelector((state) => state.auth);
@@ -27,10 +28,23 @@ export function ResponderLayout() {
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [logoutBusy, setLogoutBusy] = useState(false);
   const [now, setNow] = useState(() => new Date());
+  const [responderProfile, setResponderProfile] = useState(null);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    emergencyServicesApi.getMe()
+      .then((response) => {
+        if (!cancelled) setResponderProfile(response?.data?.data || response?.data || null);
+      })
+      .catch(() => {
+        if (!cancelled) setResponderProfile(null);
+      });
+    return () => { cancelled = true; };
   }, []);
 
   const timeLabel = now.toLocaleTimeString([], { hour12: true, hour: '2-digit', minute: '2-digit' });
@@ -55,43 +69,67 @@ export function ResponderLayout() {
     switch (user?.role) {
       case 'POLICE':
         return {
-          color: 'amber',
-          textClass: 'text-amber-700',
-          bgClass: 'bg-amber-600',
-          lightBgClass: 'bg-amber-50',
-          borderClass: 'border-amber-200',
+          color: 'blue',
+          textClass: 'text-blue-700',
+          bgClass: 'bg-blue-600',
+          hoverBgClass: 'hover:bg-blue-700',
+          lightBgClass: 'bg-blue-50',
+          borderClass: 'border-blue-200',
+          strongBorderClass: 'border-blue-500',
+          ringClass: 'ring-blue-100',
+          markerColor: '#2563eb',
           icon: ShieldAlert,
-          label: 'Police Dispatch'
+          label: 'Police Response',
+          unitLabel: 'Police Unit',
+          readinessLabel: 'Patrol readiness',
         };
       case 'FIRE':
         return {
           color: 'red',
-          textClass: 'text-red-600',
+          textClass: 'text-red-700',
           bgClass: 'bg-red-600',
+          hoverBgClass: 'hover:bg-red-700',
           lightBgClass: 'bg-red-50',
           borderClass: 'border-red-200',
+          strongBorderClass: 'border-red-500',
+          ringClass: 'ring-red-100',
+          markerColor: '#dc2626',
           icon: Flame,
-          label: 'Fire Dispatch'
+          label: 'Fire Response',
+          unitLabel: 'Fire Unit',
+          readinessLabel: 'Station readiness',
         };
       case 'AMBULANCE':
         return {
           color: 'emerald',
-          textClass: 'text-emerald-600',
+          textClass: 'text-emerald-700',
           bgClass: 'bg-emerald-600',
+          hoverBgClass: 'hover:bg-emerald-700',
           lightBgClass: 'bg-emerald-50',
           borderClass: 'border-emerald-200',
+          strongBorderClass: 'border-emerald-500',
+          ringClass: 'ring-emerald-100',
+          markerColor: '#16a34a',
           icon: Ambulance,
-          label: 'Ambulance Dispatch'
+          label: 'Medical Response',
+          unitLabel: 'Ambulance / Hospital Unit',
+          readinessLabel: 'Medical readiness',
         };
       default:
         return {
-          color: 'indigo',
-          textClass: 'text-indigo-600',
-          bgClass: 'bg-indigo-600',
-          lightBgClass: 'bg-indigo-50',
-          borderClass: 'border-indigo-200',
+          color: 'slate',
+          textClass: 'text-slate-700',
+          bgClass: 'bg-slate-700',
+          hoverBgClass: 'hover:bg-slate-800',
+          lightBgClass: 'bg-slate-100',
+          borderClass: 'border-slate-200',
+          strongBorderClass: 'border-slate-500',
+          ringClass: 'ring-slate-100',
+          markerColor: '#475569',
           icon: Radio,
-          label: 'Responder'
+          label: 'Emergency Response',
+          unitLabel: 'Responder Unit',
+          readinessLabel: 'Unit readiness',
         };
     }
   };
@@ -102,14 +140,14 @@ export function ResponderLayout() {
   const navItems = [
     { name: 'Active Dispatch', path: '/responder/dispatch', icon: Radio },
     { name: 'Live Tracking', path: '/responder/tracking', icon: MapPin },
-    { name: 'History', path: '/responder/history', icon: History },
+    { name: 'Dispatch History', path: '/responder/history', icon: History },
   ];
 
   const userName = user?.organization || user?.name || 'Responder Unit';
   const initial = userName.charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] text-slate-900 antialiased relative">
+    <div className="min-h-screen bg-slate-100 text-slate-900 antialiased relative">
       <SignOutConfirmModal
         open={logoutOpen}
         busy={logoutBusy}
@@ -118,7 +156,7 @@ export function ResponderLayout() {
       />
 
       {/* DESKTOP SIDEBAR */}
-      <aside className={`hidden lg:flex flex-col bg-white border-r border-slate-200 fixed top-0 left-0 h-screen z-30 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[280px]'}`}>
+      <aside className={`hidden lg:flex flex-col bg-white border-r border-slate-300 fixed top-0 left-0 h-screen z-30 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[280px]'}`}>
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="absolute -right-3 top-8 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 shadow-sm z-40 cursor-pointer transition-transform hover:scale-110"
@@ -129,7 +167,7 @@ export function ResponderLayout() {
         <div className={`p-6 pb-2 flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}>
           {!isCollapsed ? (
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 flex items-center justify-center shrink-0 rounded-xl ${theme.lightBgClass} ${theme.textClass}`}>
+              <div className={`w-10 h-10 flex items-center justify-center shrink-0 rounded-lg ${theme.lightBgClass} ${theme.textClass}`}>
                 <ThemeIcon className="w-5 h-5" />
               </div>
               <div>
@@ -140,7 +178,7 @@ export function ResponderLayout() {
               </div>
             </div>
           ) : (
-            <div className={`w-10 h-10 flex items-center justify-center shrink-0 rounded-xl ${theme.lightBgClass} ${theme.textClass}`}>
+            <div className={`w-10 h-10 flex items-center justify-center shrink-0 rounded-lg ${theme.lightBgClass} ${theme.textClass}`}>
               <ThemeIcon className="w-5 h-5" />
             </div>
           )}
@@ -159,9 +197,9 @@ export function ResponderLayout() {
                 <Link
                   key={item.name}
                   to={item.path}
-                  className={`flex items-center gap-3 py-3 rounded-xl text-[12px] font-bold transition-all ${isCollapsed ? 'justify-center px-0' : 'px-4'} ${
+                  className={`flex items-center gap-3 py-3 rounded-lg text-[12px] font-bold transition-all ${isCollapsed ? 'justify-center px-0' : 'px-4'} ${
                     isActive
-                      ? `${theme.lightBgClass} ${theme.textClass} relative after:absolute after:left-0 after:top-2 after:bottom-2 after:w-1 after:${theme.bgClass} after:rounded-r-full`
+                      ? `${theme.lightBgClass} ${theme.textClass} relative after:absolute after:left-0 after:top-2 after:bottom-2 after:w-1 after:${theme.bgClass} after:rounded-r-sm`
                       : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                   title={isCollapsed ? item.name : undefined}
@@ -174,7 +212,18 @@ export function ResponderLayout() {
           </div>
         </div>
 
-        <div className={`pt-4 border-t border-slate-100 bg-white space-y-4 ${isCollapsed ? 'p-3' : 'p-6'}`}>
+        <div className={`pt-4 border-t border-slate-200 bg-white space-y-4 ${isCollapsed ? 'p-3' : 'p-6'}`}>
+          {!isCollapsed && responderProfile && (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-[9px] font-black uppercase tracking-[0.14em] text-slate-400">Response Base</p>
+              <p className="mt-1 truncate text-[11px] font-bold text-slate-800">
+                {responderProfile.organization || responderProfile.name || userName}
+              </p>
+              <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-500">
+                {responderProfile.address || responderProfile.jurisdiction || 'Operational location configured'}
+              </p>
+            </div>
+          )}
           <button
             onClick={() => setLogoutOpen(true)}
             className={`w-full flex items-center gap-2 py-2 text-[12px] font-semibold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer ${isCollapsed ? 'justify-center px-0' : 'px-4'}`}
@@ -187,11 +236,11 @@ export function ResponderLayout() {
       </aside>
 
       {/* MAIN APPLICATION AREA */}
-      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 pl-0 ${isCollapsed ? 'lg:pl-20' : 'lg:pl-[280px]'}`}>
+      <div className={`flex min-h-screen min-w-0 flex-1 flex-col transition-[margin,width] duration-300 ease-out ${isCollapsed ? 'lg:ml-20 lg:w-[calc(100%-5rem)]' : 'lg:ml-[280px] lg:w-[calc(100%-280px)]'}`} >
         
-        <header className={`fixed top-0 right-0 z-[60] h-16 bg-white border-b border-slate-200 px-4 lg:px-8 flex items-center justify-between transition-all duration-300 w-full ${isCollapsed ? 'lg:w-[calc(100%-5rem)]' : 'lg:w-[calc(100%-280px)]'}`}>
+        <header className={`fixed top-0 right-0 z-[60] h-16 bg-white border-b border-slate-300 px-4 lg:px-8 flex items-center justify-between transition-[width] duration-300 w-full ${isCollapsed ? 'lg:w-[calc(100%-5rem)]' : 'lg:w-[calc(100%-280px)]'}`}>
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${theme.lightBgClass} flex items-center justify-center shrink-0`}>
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg ${theme.lightBgClass} flex items-center justify-center shrink-0`}>
               <ThemeIcon className={`w-4 h-4 sm:w-5 sm:h-5 ${theme.textClass}`} />
             </div>
             <div>
@@ -202,7 +251,7 @@ export function ResponderLayout() {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
               <Clock className="w-5 h-5 text-slate-500" />
             </div>
             <div>
@@ -213,7 +262,7 @@ export function ResponderLayout() {
 
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="hidden sm:flex items-center gap-3 pl-4 border-l border-slate-200">
-              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-700 border border-slate-200">
+              <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-700 border border-slate-200">
                 {initial}
               </div>
               <div className="flex items-center gap-1">
@@ -223,8 +272,8 @@ export function ResponderLayout() {
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-8 mt-16 pb-24 lg:pb-8 max-w-[1400px] w-full mx-auto">
-          <Outlet context={{ theme }} />
+        <main className="flex-1 p-4 lg:p-8 mt-16 pb-24 lg:pb-8 max-w-[1500px] w-full mx-auto">
+          <Outlet context={{ theme, responderProfile }} />
         </main>
       </div>
     </div>
