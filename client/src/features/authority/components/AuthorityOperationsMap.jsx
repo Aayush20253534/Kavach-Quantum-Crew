@@ -36,11 +36,12 @@ const finitePoint = (latitude, longitude) => {
   return { lat, lng };
 };
 
-export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes = false, onRouteSummary, routeUnitColor = '#16a34a' }) {
+export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes = false, onRouteSummary, routeUnitColor = '#16a34a', routeLineColor = '#111827', referencePoints = [] }) {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const mapRef = useRef(null);
   const [selected, setSelected] = useState(null);
   const [routes, setRoutes] = useState([]);
+  const [mapTypeId, setMapTypeId] = useState('roadmap');
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
@@ -63,8 +64,15 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
       })
       .filter(Boolean);
 
-    return [...incidentMarkers, ...unitMarkers];
-  }, [incidents, units]);
+    const referenceMarkers = referencePoints
+      .map((reference) => {
+        const point = finitePoint(reference.latitude, reference.longitude);
+        return point ? { kind: 'reference', id: reference.id, point, data: reference } : null;
+      })
+      .filter(Boolean);
+
+    return [...incidentMarkers, ...unitMarkers, ...referenceMarkers];
+  }, [incidents, referencePoints, units]);
 
   useEffect(() => {
     if (!isLoaded || !showRoutes || !window.google?.maps || incidents.length !== 1) {
@@ -140,7 +148,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
     return () => {
       cancelled = true;
     };
-  }, [incidents, isLoaded, onRouteSummary, routeUnitColor, showRoutes, units]);
+  }, [incidents, isLoaded, onRouteSummary, routeLineColor, showRoutes, units]);
 
   const fitVisibleMarkers = (map) => {
     if (!map || markers.length === 0 || !window.google?.maps) return;
@@ -178,10 +186,32 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
   if (!isLoaded) return <div className="min-h-[420px] animate-pulse bg-slate-100" />;
 
   return (
-    <GoogleMap
+    <div className="relative h-full w-full">
+      <div className="absolute left-3 top-3 z-20 inline-flex overflow-hidden rounded-md border border-slate-300 bg-white shadow-sm">
+        {[
+          ['roadmap', 'Map'],
+          ['satellite', 'Satellite'],
+        ].map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setMapTypeId(value)}
+            className={`h-8 border-r border-slate-200 px-3 text-[10px] font-bold last:border-r-0 ${
+              mapTypeId === value
+                ? 'bg-slate-900 text-white'
+                : 'bg-white text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <GoogleMap
       mapContainerStyle={containerStyle}
       center={markers[0]?.point || defaultCenter}
       zoom={markers.length ? 12 : 6}
+      mapTypeId={mapTypeId}
       onLoad={(map) => {
         mapRef.current = map;
         // The markers may already exist before the GoogleMap instance mounts.
@@ -189,7 +219,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
         window.requestAnimationFrame(() => fitVisibleMarkers(map));
       }}
       onUnmount={() => { mapRef.current = null; }}
-      options={{ fullscreenControl: true, streetViewControl: false, mapTypeControl: true, clickableIcons: false, gestureHandling: 'cooperative', scrollwheel: true }}
+      options={{ fullscreenControl: true, streetViewControl: false, mapTypeControl: false, clickableIcons: false, gestureHandling: 'cooperative', scrollwheel: true, controlSize: 28 }}
     >
       {routes.map((route) => (
         <DirectionsRenderer
@@ -199,7 +229,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
             suppressMarkers: true,
             preserveViewport: true,
             polylineOptions: {
-              strokeColor: routeUnitColor,
+              strokeColor: routeLineColor,
               strokeOpacity: 0.9,
               strokeWeight: 6,
             },
@@ -210,21 +240,24 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
 
       {markers.map((marker) => {
         const isIncident = marker.kind === 'incident';
-        // In response-routing mode the visual language is intentionally fixed:
-        // tourist/incident = red, responding fleet = green.
-        const color = showRoutes
-          ? (isIncident ? '#dc2626' : routeUnitColor)
-          : (isIncident ? incidentColor(marker.data.severity || marker.data.priority) : unitColor(marker.data.type));
+        const isReference = marker.kind === 'reference';
+        // Response routing keeps incident/tourist red, uses the service accent for the live unit,
+        // and reserves blue for the fleet's fixed registered base location.
+        const color = isReference
+          ? (marker.data.color || '#2563eb')
+          : showRoutes
+            ? (isIncident ? '#dc2626' : routeUnitColor)
+            : (isIncident ? incidentColor(marker.data.severity || marker.data.priority) : unitColor(marker.data.type));
         return (
           <MarkerF
             key={`${marker.kind}-${marker.id}`}
             position={marker.point}
             onClick={() => setSelected(marker)}
-            title={isIncident ? 'Tourist / incident location' : `${marker.data.name || marker.data.type || 'Emergency'} fleet`}
-            zIndex={isIncident ? 1000 : 1100}
+            title={isReference ? (marker.data.label || 'Fleet Base') : isIncident ? 'Tourist / incident location' : `${marker.data.name || marker.data.type || 'Emergency'} fleet`}
+            zIndex={isReference ? 900 : isIncident ? 1000 : 1100}
             icon={{
               path: isIncident ? window.google.maps.SymbolPath.BACKWARD_CLOSED_ARROW : window.google.maps.SymbolPath.CIRCLE,
-              scale: isIncident ? 7 : 10,
+              scale: isIncident ? 7 : isReference ? 8 : 10,
               fillColor: color,
               fillOpacity: 1,
               strokeColor: '#ffffff',
@@ -237,7 +270,13 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
       {selected && (
         <InfoWindowF position={selected.point} onCloseClick={() => setSelected(null)}>
           <div className="max-w-[260px] pr-2 font-sans">
-            {selected.kind === 'incident' ? (
+            {selected.kind === 'reference' ? (
+              <>
+                <p className="text-[11px] font-black uppercase tracking-wide text-blue-700">Fleet Base</p>
+                <p className="mt-1 text-[13px] font-black text-slate-900">{selected.data.name || 'Registered fleet location'}</p>
+                <p className="mt-1 text-[11px] text-slate-600">Fixed location configured for this emergency-service account.</p>
+              </>
+            ) : selected.kind === 'incident' ? (
               <>
                 <p className="text-[11px] font-black uppercase tracking-wide text-red-600">{showRoutes ? 'Tourist / Incident' : 'Incident'}</p>
                 <p className="mt-1 text-[13px] font-black text-slate-900">{selected.data.title || selected.data.type || 'Emergency Incident'}</p>
@@ -255,6 +294,7 @@ export function AuthorityOperationsMap({ incidents = [], units = [], showRoutes 
           </div>
         </InfoWindowF>
       )}
-    </GoogleMap>
+      </GoogleMap>
+    </div>
   );
 }
