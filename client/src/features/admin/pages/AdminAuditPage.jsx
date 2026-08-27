@@ -60,7 +60,7 @@ export function AdminAuditPage() {
         </div>
       )}
 
-      <section className="grid border-l border-t border-slate-200 sm:grid-cols-3">
+      <section className="grid max-w-[1100px] gap-3 sm:grid-cols-3">
         <Metric
           icon={Database}
           label="Database State"
@@ -78,7 +78,7 @@ export function AdminAuditPage() {
         />
       </section>
 
-      <section className="border border-slate-200 bg-white">
+      <section className="rounded-lg border border-slate-200 bg-white">
         <div className="flex flex-col gap-1 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-800">
@@ -153,12 +153,12 @@ export function AdminAuditPage() {
 
 function Metric({ icon: Icon, label, value }) {
   return (
-    <div className="min-h-[116px] border-b border-r border-slate-200 bg-white p-5 sm:border-b-0">
+    <div className="min-h-[96px] rounded-lg border border-slate-200 bg-white p-4">
       <div className="flex items-center justify-between gap-4">
         <p className="text-[9px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</p>
         <Icon className="h-4 w-4 text-slate-400" />
       </div>
-      <p className="mt-4 text-lg font-black text-slate-950">{value}</p>
+      <p className="mt-3 text-base font-black text-slate-950">{value}</p>
     </div>
   );
 }
