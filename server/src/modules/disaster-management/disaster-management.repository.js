@@ -190,8 +190,91 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
     return indexed;
   },
 
+  async syncSafetyAlertIncidents() {
+    const alerts = await db.safetyAlert.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 1000,
+    });
+    if (!alerts.length) return { indexed: 0, resolved: 0 };
+
+    const alertIds = alerts.map((alert) => alert.id);
+    const incidents = await db.incident.findMany({
+      where: { sourceSafetyAlertId: { in: alertIds } },
+      select: { id: true, sourceSafetyAlertId: true, status: true },
+    });
+    const incidentByAlert = new Map(incidents.map((incident) => [incident.sourceSafetyAlertId, incident]));
+
+    let indexed = 0;
+    let resolved = 0;
+    for (const alert of alerts) {
+      const linked = incidentByAlert.get(alert.id);
+      const activeAlert = ["OPEN", "ACKNOWLEDGED"].includes(alert.status);
+
+      if (activeAlert && !linked) {
+        const latest = await db.latestTrustedLocation.findUnique({
+          where: { tripId_userId: { tripId: alert.tripId, userId: alert.userId } },
+          select: { latitude: true, longitude: true },
+        });
+        const isDangerZoneEntry = alert.type === "RISK_ZONE_ENTRY" && alert.level === "DANGER";
+        const zoneName = alert.details?.zoneName || null;
+        const incident = await db.incident.create({
+          data: {
+            tripId: alert.tripId,
+            userId: alert.userId,
+            sourceType: "SAFETY_ALERT",
+            sourceSafetyAlertId: alert.id,
+            severity: alert.level === "DANGER" ? "DANGER" : "WARNING",
+            title: isDangerZoneEntry ? "Danger" : alert.message,
+            description: isDangerZoneEntry
+              ? `Tourist entered an active danger zone${zoneName ? `: ${zoneName}` : ""}.`
+              : (alert.details ? JSON.stringify(alert.details).slice(0, 1000) : alert.message),
+            latitude: latest?.latitude ?? alert.details?.latitude ?? null,
+            longitude: latest?.longitude ?? alert.details?.longitude ?? null,
+          },
+        });
+        await db.incidentEvent.create({
+          data: {
+            incidentId: incident.id,
+            type: "CREATED",
+            actorId: alert.userId,
+            actorRole: "TOURIST",
+            metadata: { safetyAlertId: alert.id, indexedFromActiveAlert: true },
+          },
+        });
+        indexed += 1;
+        continue;
+      }
+
+      if (!activeAlert && linked && ["OPEN", "ACKNOWLEDGED", "IN_PROGRESS"].includes(linked.status)) {
+        const now = alert.resolvedAt ?? new Date();
+        await db.incident.update({
+          where: { id: linked.id },
+          data: {
+            status: "RESOLVED",
+            resolvedAt: now,
+            resolutionNote: "The linked safety alert was resolved.",
+          },
+        });
+        await db.incidentEvent.create({
+          data: {
+            incidentId: linked.id,
+            type: "RESOLVED",
+            actorId: alert.userId,
+            actorRole: "TOURIST",
+            note: "Linked safety alert resolved.",
+            metadata: { safetyAlertId: alert.id, automatic: true },
+          },
+        });
+        resolved += 1;
+      }
+    }
+
+    return { indexed, resolved };
+  },
+
   async listIncidentQueue({ status, severity, scope, actorId, jurisdiction, limit }) {
     await this.indexUnlinkedHazardReports();
+    await this.syncSafetyAlertIncidents();
 
     const assignmentFilter =
       scope === "MINE"
@@ -281,6 +364,12 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
     }
     const seenHazardReports = new Set();
     const uniqueRows = rows.filter((row) => {
+      const trip = tripById.get(row.tripId) ?? null;
+      // Safety alerts are operational only while their trip/group is active. Once
+      // the trip is completed or cancelled they are expired history, not command
+      // work, so never keep them in the Disaster Management incident queue.
+      if (row.sourceType === "SAFETY_ALERT" && trip?.status !== "ACTIVE") return false;
+
       const hazardReportId = originByIncident.get(row.id)?.hazardReportId;
       if (!hazardReportId) return true;
       if (seenHazardReports.has(hazardReportId)) return false;

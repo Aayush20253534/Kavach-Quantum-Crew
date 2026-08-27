@@ -150,6 +150,69 @@ export const createTripRepository = ({ db = prisma } = {}) => ({
     });
   },
 
+  async expireSafetyState(tripId, now, reason) {
+    return db.$transaction(async (transaction) => {
+      const incidents = await transaction.incident.findMany({
+        where: {
+          tripId,
+          sourceType: "SAFETY_ALERT",
+          status: { in: ["OPEN", "ACKNOWLEDGED", "IN_PROGRESS"] },
+        },
+        select: { id: true },
+      });
+      const incidentIds = incidents.map((incident) => incident.id);
+
+      const activeDispatches = incidentIds.length
+        ? await transaction.dispatch.findMany({
+            where: {
+              incidentId: { in: incidentIds },
+              status: { notIn: ["COMPLETED", "CANCELLED"] },
+            },
+            select: { id: true, unitId: true },
+          })
+        : [];
+      const unitIds = [...new Set(activeDispatches.map((dispatch) => dispatch.unitId).filter(Boolean))];
+
+      await transaction.safetyAlert.updateMany({
+        where: { tripId, status: { in: ["OPEN", "ACKNOWLEDGED"] } },
+        data: { status: "RESOLVED", resolvedAt: now },
+      });
+
+      if (activeDispatches.length) {
+        await transaction.dispatch.updateMany({
+          where: { id: { in: activeDispatches.map((dispatch) => dispatch.id) } },
+          data: { status: "CANCELLED", cancelledAt: now },
+        });
+      }
+      if (unitIds.length) {
+        await transaction.emergencyUnit.updateMany({
+          where: { id: { in: unitIds } },
+          data: { status: "AVAILABLE" },
+        });
+      }
+      if (incidentIds.length) {
+        await transaction.incident.updateMany({
+          where: { id: { in: incidentIds } },
+          data: {
+            status: "DISMISSED",
+            dismissedAt: now,
+            resolutionNote: `Expired because the associated trip was ${reason}.`,
+          },
+        });
+        await transaction.incidentEvent.createMany({
+          data: incidentIds.map((incidentId) => ({
+            incidentId,
+            type: "DISMISSED",
+            note: `Safety incident expired because the associated trip was ${reason}.`,
+            metadata: { automatic: true, source: "TRIP_ENDED", reason },
+          })),
+        });
+      }
+
+      return { incidentIds, cancelledDispatchIds: activeDispatches.map((dispatch) => dispatch.id), unitIds };
+    });
+  },
+
   async completeTrip(tripId, now) {
     return db.$transaction(async (transaction) => {
       await transaction.tripConsent.updateMany({
