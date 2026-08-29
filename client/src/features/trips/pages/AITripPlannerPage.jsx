@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Sparkles, MapPin, Calendar, Compass, 
   ChevronLeft, Map, BedDouble, ArrowRight,
   CheckCircle2, Loader2, MessageSquareText
 } from 'lucide-react';
 import { tripService } from '../api/tripService';
+import { groupService } from '../../groups/api/groupService';
 import { ItineraryTimeline } from '../components/ai-planner/ItineraryTimeline';
 import { HotelRecommendations } from '../components/ai-planner/HotelRecommendations';
 
@@ -18,19 +19,24 @@ const LOADING_STEPS = [
 
 export function AITripPlannerPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const tripDraft = location.state?.tripDraft || null;
+  const shouldAutoGenerate = Boolean(location.state?.autoGenerate && tripDraft);
+  const autoGenerateStarted = useRef(false);
   
   const [status, setStatus] = useState('idle'); // 'idle' | 'loading' | 'success' | 'error'
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
   
   const [formData, setFormData] = useState({
-    city: '',
-    check_in: '',
-    check_out: '',
+    city: tripDraft?.city || '',
+    check_in: tripDraft?.check_in || '',
+    check_out: tripDraft?.check_out || '',
   });
 
   const [loadingStep, setLoadingStep] = useState(0);
-  const [saveTripType, setSaveTripType] = useState('SOLO');
+  const [saveTripType, setSaveTripType] = useState(tripDraft?.tripType || 'SOLO');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     let interval;
@@ -49,43 +55,66 @@ export function AITripPlannerPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handlePlanTrip = async (e) => {
-    e.preventDefault();
+  const generatePlan = async (data) => {
     setStatus('loading');
     setError('');
-    
+
     try {
-      const checkInDate = new Date(formData.check_in);
-      const checkOutDate = new Date(formData.check_out);
+      const checkInDate = new Date(data.check_in);
+      const checkOutDate = new Date(data.check_out);
       const daysDiff = Math.max(1, Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)));
-      
+
       const response = await tripService.planTripWithAI({
-        city: formData.city,
+        city: data.city,
         num_days: daysDiff,
-        check_in: formData.check_in,
-        check_out: formData.check_out,
+        check_in: data.check_in,
+        check_out: data.check_out,
       });
-      
+
       setResult(response);
       setStatus('success');
     } catch (err) {
       console.error('Failed to plan trip with AI:', err);
-      setError(err?.response?.data?.error?.message || err.message || 'Failed to generate trip plan.');
+      setError(err?.response?.data?.error?.message || err?.response?.data?.message || err.message || 'Failed to generate trip plan.');
       setStatus('error');
     }
   };
 
+  const handlePlanTrip = async (e) => {
+    e.preventDefault();
+    await generatePlan(formData);
+  };
+
+  useEffect(() => {
+    if (!shouldAutoGenerate || autoGenerateStarted.current) return;
+    autoGenerateStarted.current = true;
+    void generatePlan({
+      city: tripDraft.city,
+      check_in: tripDraft.check_in,
+      check_out: tripDraft.check_out,
+    });
+  }, [shouldAutoGenerate, tripDraft]);
+
   const handleSaveToTrips = async () => {
+    setSaving(true);
+    setError('');
     try {
-      await tripService.createTrip({
+      const trip = await tripService.createTrip({
         locationName: formData.city,
         tripType: saveTripType,
-        plannedStartAt: new Date(formData.check_in).toISOString(),
-        plannedEndAt: new Date(formData.check_out).toISOString(),
+        plannedStartAt: tripDraft?.plannedStartAt || new Date(formData.check_in).toISOString(),
+        plannedEndAt: tripDraft?.plannedEndAt || new Date(formData.check_out).toISOString(),
       });
+
+      if (saveTripType === 'GROUP') {
+        await groupService.createGroupForTrip(trip.id);
+      }
+
       navigate('/tourist/trips/current', { replace: true });
     } catch (err) {
-      alert('Failed to save trip to backend: ' + err.message);
+      setError(err?.response?.data?.error?.message || err.message || 'Failed to save trip to backend.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -129,10 +158,10 @@ export function AITripPlannerPage() {
         <div className="sticky top-16 bg-white/80 backdrop-blur-xl z-40 border-b border-slate-200 px-4 py-4 mb-8">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
             <button 
-              onClick={() => setStatus('idle')}
+              onClick={() => shouldAutoGenerate ? navigate('/tourist/trips/create', { state: { destination: { name: tripDraft.city }, tripType: tripDraft.tripType } }) : setStatus('idle')}
               className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors"
             >
-              <ChevronLeft className="w-4 h-4" /> Edit Preferences
+              <ChevronLeft className="w-4 h-4" /> {shouldAutoGenerate ? 'Change Trip Details' : 'Edit Preferences'}
             </button>
             <div className="flex items-center gap-3">
               <select
@@ -144,10 +173,12 @@ export function AITripPlannerPage() {
                 <option value="SOLO">Solo Trip</option>
                 <option value="GROUP">Group Trip</option>
               </select>
-              <button 
+              <button
                 onClick={handleSaveToTrips}
-                className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-sm transition-colors"
+                disabled={saving}
+                className="bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-sm transition-colors flex items-center gap-2"
               >
+                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                 Add to My Trips
               </button>
             </div>
