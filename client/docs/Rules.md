@@ -1,6 +1,6 @@
 # Rules.md
 
-> **Documentation status (24 Aug 2026):** Retained as project documentation and design history. Current `frontend/src/` behavior is authoritative where older phase language, placeholders, or proposed structure differs.
+> **Documentation status (29 Aug 2026):** Retained as project documentation and design history. Current `client/src/` behavior is authoritative where older phase language, placeholders, or proposed structure differs. See `CLIENT-FILE-GUIDE.md` for the complete current client inventory.
 
 
 ## 1. Purpose
@@ -32,11 +32,10 @@ When instructions conflict, follow this priority:
 1. Explicit user instructions
 2. Rules.md
 3. PRD.md
-4. Phases.md
-5. Design.md
-6. Architecture.md
-7. Memory.md
-8. Existing codebase patterns
+4. Architecture.md
+5. CLIENT-FILE-GUIDE.md
+6. Memory.md
+7. Existing codebase patterns
 ```
 
 If an explicit user instruction conflicts with an existing document, the explicit user instruction takes priority.
@@ -48,7 +47,7 @@ If an explicit user instruction conflicts with an existing document, the explici
 ## The agent must only modify files inside:
 
 ```text
-frontend/
+client/
 ```
 
 The workspace may contain:
@@ -65,7 +64,7 @@ These files may exist for the broader project, but they are **outside the fronte
 The agent must never create, modify, delete, rename, or move any file outside:
 
 ```text
-frontend/
+client/
 ```
 
 This includes, but is not limited to:
@@ -79,7 +78,7 @@ This includes, but is not limited to:
 * Deployment configuration belonging to another application
 * Other project applications
 
-The agent may inspect files outside `frontend/` only when necessary to understand:
+The agent may inspect files outside `client/` only when necessary to understand:
 
 * API contracts
 * Backend endpoints
@@ -97,9 +96,8 @@ Before starting any implementation task, the agent must read:
 1. `PRD.md`
 2. `Architecture.md`
 3. `Rules.md`
-4. `Phases.md`
-5. `Design.md`
-6. `Memory.md`
+4. `CLIENT-FILE-GUIDE.md`
+5. `Memory.md`
 
 The agent must also inspect relevant existing frontend files before creating or modifying functionality.
 
@@ -114,44 +112,31 @@ The agent must not silently rewrite large sections of the project without unders
 
 ---
 
-# 5. Current Phase Rule
+# 5. Current Scope Rule
 
-The agent must implement only the currently active phase defined in:
-
-```text
-Phases.md
-```
-
-The agent must not:
-
-* Implement future phases prematurely
-* Build unrelated features
-* Add speculative functionality
-* Create placeholders for features that are not part of the current phase
-
-If a task depends on a future phase, the agent should stop and request clarification rather than implementing the entire future architecture.
+The agent must implement only the requested client work and must not add unrelated speculative functionality.
 
 ---
 
 # 6. Memory Management Rule
 
-`docs/Memory.md` is the living context file for frontend development.
+`Memory.md` is the living context file for frontend development.
 
 Before starting work, the agent must:
 
-* Read `docs/Memory.md`
+* Read `Memory.md`
 * Understand the current project state
-* Identify the current phase
+* Identify the requested client scope
 * Identify completed work
 * Identify ongoing work
 * Check important architectural decisions
 * Check known issues
 
-After completing meaningful work, the agent must update `docs/Memory.md`.
+After completing meaningful work, the agent must update `Memory.md` and `docs/CLIENT-FILE-GUIDE.md` when file responsibilities, routes, libraries, or feature behavior change.
 
 Updates should include:
 
-* Current phase
+* Current scope
 * Completed work
 * Files created
 * Files modified
@@ -159,7 +144,7 @@ Updates should include:
 * Current issues or blockers
 * Next recommended step
 
-The agent must not rewrite the entire `docs/Memory.md` unnecessarily.
+The agent must not rewrite the entire `Memory.md` unnecessarily.
 
 It should preserve useful existing context and update it accurately.
 
@@ -225,7 +210,7 @@ If a refactor is required to implement the current feature:
 
 * Keep the refactor as small as possible
 * Preserve existing functionality
-* Update `docs/Memory.md` if the architecture changes meaningfully
+* Update `Memory.md` and `docs/CLIENT-FILE-GUIDE.md` if the architecture changes meaningfully
 
 ---
 
@@ -575,7 +560,7 @@ Interactive elements must not be implemented as non-interactive elements when pr
 Styling must follow:
 
 ```text
-Design.md
+Existing component/layout patterns and docs/CLIENT-FILE-GUIDE.md
 ```
 
 The agent must:
@@ -840,7 +825,7 @@ Do not hide errors using:
 
 # 39. Scope Discipline
 
-The agent must implement the requested task and current phase.
+The agent must implement the requested client task and scope.
 
 Do not:
 
@@ -861,10 +846,11 @@ The agent must update documentation when implementation changes make existing do
 Most importantly:
 
 ```text
-docs/Memory.md
+Memory.md
+docs/CLIENT-FILE-GUIDE.md
 ```
 
-must be updated after meaningful progress.
+must be updated after meaningful progress that changes project state or file responsibilities.
 
 The agent should not update every documentation file after every small code change.
 
@@ -927,11 +913,11 @@ The mandatory development workflow is:
 ```text
 1. Read project documents
         ↓
-2. Read docs/Memory.md
+2. Read Memory.md and docs/CLIENT-FILE-GUIDE.md
         ↓
 3. Inspect relevant existing frontend code
         ↓
-4. Identify current phase
+4. Identify the requested client scope
         ↓
 5. Implement only the required task
         ↓
@@ -939,7 +925,7 @@ The mandatory development workflow is:
         ↓
 7. Fix discovered issues
         ↓
-8. Update docs/Memory.md
+8. Update Memory.md and docs/CLIENT-FILE-GUIDE.md when needed
         ↓
 9. Report completed work
 ```
@@ -950,9 +936,9 @@ The mandatory development workflow is:
 
 Before completing any task, verify:
 
-* [ ] Only files inside `frontend/` were modified
+* [ ] Only files inside `client/` were modified
 * [ ] Existing code was inspected before creating duplicates
-* [ ] Current phase requirements were followed
+* [ ] Requested client scope was followed
 * [ ] No unnecessary dependency was added
 * [ ] No unrelated refactor was performed
 * [ ] Loading states are handled
@@ -964,13 +950,13 @@ Before completing any task, verify:
 * [ ] No secrets were exposed
 * [ ] Temporary debug code was removed
 * [ ] The implementation was reasonably verified
-* [ ] `docs/Memory.md` was updated after meaningful work
+* [ ] `Memory.md` and `docs/CLIENT-FILE-GUIDE.md` were updated after meaningful work that changed project state or file responsibilities
 
 ---
 
 # 45. Core Principle
 
-> **Implement exactly what is required, preserve what already works, avoid unnecessary complexity, and never modify anything outside the frontend directory.**
+> **Implement exactly what is required, preserve what already works, avoid unnecessary complexity, and never modify anything outside the `client/` directory.**
 
 The agent's goal is not to generate the maximum amount of code.
 
