@@ -1,89 +1,58 @@
-# Python Trip Planner Service
+# KAVACH AI Trip Planner
 
-This directory is a standalone FastAPI microservice used by the main Kavach backend for AI trip planning.
-The original Python planning logic remains in `trip_core.py`; `main.py` only exposes it over HTTP.
+Standalone FastAPI microservice used by the main KAVACH backend for itinerary generation. The browser never calls this service directly.
 
 ## Architecture
 
 ```text
-Frontend
-  -> Main Node/Express backend
-     -> Python FastAPI trip planner (this service)
-        -> SerpAPI (places + hotels)
-        -> Groq (daily itinerary)
+React client
+   → main Express backend POST /api/v1/trips/ai-plan
+      → FastAPI POST /api/trip/plan
+         → SerpAPI places + hotels
+         → Groq itinerary generation
 ```
 
-The browser does **not** call this Python service directly. `Plan without AI` also does not call it.
-
 ## Environment
-
-Copy `.env.example` to `.env` and provide:
 
 ```env
 SERPAPI_API_KEY=...
 GROQ_API_KEY=...
 ```
 
-## Install
-
-From `ai-ml/trip-planner`:
+## Local run
 
 ```bash
 python -m venv .venv
-```
-
-Windows PowerShell:
-
-```powershell
-.\.venv\Scripts\Activate.ps1
+# activate the environment
 pip install -r requirements.txt
-```
-
-macOS/Linux:
-
-```bash
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-## Run
-
-From `ai-ml/trip-planner`:
-
-```bash
 uvicorn main:app --host 0.0.0.0 --port 4300 --reload
 ```
 
-Health check:
+Endpoints:
 
-```text
-GET http://localhost:4300/health
-```
+- `GET /health`
+- `POST /api/trip/plan`
 
-Planning endpoint:
-
-```text
-POST http://localhost:4300/api/trip/plan
-```
-
-Example body:
+Example request:
 
 ```json
 {
-  "city": "Jaipur",
-  "num_days": 3,
-  "check_in": "2026-09-10",
-  "check_out": "2026-09-13"
+  "city": "Prayagraj",
+  "num_days": 2,
+  "check_in": "2026-08-29",
+  "check_out": "2026-08-31"
 }
 ```
 
+The response contains `itinerary` and `hotels`. Hotel lookup failures are non-fatal: the service may return an empty hotel list plus `warnings` while preserving the itinerary.
+
 ## Main backend configuration
 
-In `server/.env`:
+Local:
 
 ```env
 TRIP_PLANNER_SERVICE_URL=http://127.0.0.1:4300
-AI_TRIP_PLAN_TIMEOUT_MS=60000
+AI_TRIP_PLAN_TIMEOUT_MS=120000
 ```
 
-For production, set `TRIP_PLANNER_SERVICE_URL` to the deployed FastAPI service URL.
+Production must use the deployed FastAPI URL. The main backend retries transient/unreachable upstream failures and translates planner failures into API errors.
