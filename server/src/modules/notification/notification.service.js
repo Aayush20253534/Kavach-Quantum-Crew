@@ -38,7 +38,7 @@ export const createNotificationService = ({
     for (const manager of managers) {
       notifications.push(payload(manager.id, ROLES.DISASTER_MANAGER, incident, "INCIDENT_CREATED", `New ${incident.severity.toLowerCase()} incident`, incident.title));
     }
-    await emailer.incidentCreated({ recipients: managers, incident });
+    await emailer.incidentCreated({ recipients: managers, incident: tourist ? { ...incident, tourist } : incident });
 
     if (leaderId && leaderId !== incident.userId) {
       notifications.push(payload(leaderId, ROLES.TOURIST, incident, "GROUP_MEMBER_EMERGENCY", "Group member safety alert", "A member of your active trip group has an emergency incident."));
@@ -54,6 +54,10 @@ export const createNotificationService = ({
     }
 
     await publishCreated(repository, publisher, notifications);
+  },
+
+  async soloSignalLossPrompt({ alert, trip, tourist }) {
+    await emailer.soloSignalLossAlert?.({ tourist, trip, alert });
   },
 
   async signalLoss({ signalCase, trip, member, leader, reminder = false }) {
