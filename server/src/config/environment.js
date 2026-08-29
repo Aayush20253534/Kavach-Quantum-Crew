@@ -249,15 +249,19 @@ const environmentSchema = z
       .min(1)
       .default("storage/evidence"),
 
-    BREVO_API_KEY: optionalString(
+    MAILJET_API_KEY: optionalString(
       z.string().trim().min(1),
     ),
 
-    BREVO_SENDER_EMAIL: optionalString(
+    MAILJET_SECRET_KEY: optionalString(
+      z.string().trim().min(1),
+    ),
+
+    MAILJET_SENDER_EMAIL: optionalString(
       z.string().trim().email(),
     ),
 
-    BREVO_SENDER_NAME: z
+    MAILJET_SENDER_NAME: z
       .string()
       .trim()
       .min(1)
@@ -368,21 +372,30 @@ const environmentSchema = z
         }
       }
 
-      if (!value.BREVO_API_KEY) {
+      if (!value.MAILJET_API_KEY) {
         context.addIssue({
           code: "custom",
-          path: ["BREVO_API_KEY"],
+          path: ["MAILJET_API_KEY"],
           message:
-            "is required in production for tourist email verification via Brevo",
+            "is required in production for transactional email via Mailjet",
         });
       }
 
-      if (!value.BREVO_SENDER_EMAIL) {
+      if (!value.MAILJET_SECRET_KEY) {
         context.addIssue({
           code: "custom",
-          path: ["BREVO_SENDER_EMAIL"],
+          path: ["MAILJET_SECRET_KEY"],
           message:
-            "is required in production for tourist email verification via Brevo",
+            "is required in production for transactional email via Mailjet",
+        });
+      }
+
+      if (!value.MAILJET_SENDER_EMAIL) {
+        context.addIssue({
+          code: "custom",
+          path: ["MAILJET_SENDER_EMAIL"],
+          message:
+            "is required in production for transactional email via Mailjet",
         });
       }
     }

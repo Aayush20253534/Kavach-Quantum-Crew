@@ -228,7 +228,7 @@ Dispatch persisted as ASSIGNED
              /login?redirect=/emergency-services/dispatches/:id
 ```
 
-Email is a notification transport, not the source of truth. Incident/dispatch database state is created first and remains valid if Brevo delivery fails.
+Email is a notification transport, not the source of truth. Incident/dispatch database state is created first and remains valid if Mailjet delivery fails.
 
 ## Latest end-to-end safety flow
 

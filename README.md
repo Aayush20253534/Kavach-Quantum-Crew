@@ -167,7 +167,7 @@ This double-confirmation flow limits the damage from copied or forwarded QR code
 - Node.js **20.19+** and npm **10+**
 - PostgreSQL
 - an EVM JSON-RPC endpoint for blockchain-backed credentials, or a local Hardhat node
-- optional external services depending on enabled features: Brevo, Cloudinary, Google Maps, Upstash Redis, notification providers
+- optional external services depending on enabled features: Mailjet, Cloudinary, Google Maps, Upstash Redis, notification providers
 
 ## Local development
 

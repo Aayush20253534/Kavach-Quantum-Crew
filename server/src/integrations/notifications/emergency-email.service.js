@@ -1,7 +1,6 @@
 import { environment } from "../../config/environment.js";
 import { logger } from "../../config/logger.js";
-
-const BREVO_EMAIL_ENDPOINT = "https://api.brevo.com/v3/smtp/email";
+import { isMailjetConfigured, sendMailjetEmail } from "./mailjet.client.js";
 
 const escapeHtml = (value) =>
   String(value ?? "")
@@ -29,40 +28,22 @@ export const createEmergencyEmailService = ({
 } = {}) => {
   const send = async ({ to, name, subject, textContent, htmlContent, context }) => {
     if (!to) return { skipped: true, reason: "NO_RECIPIENT" };
-    if (!config.BREVO_API_KEY || !config.BREVO_SENDER_EMAIL || typeof fetchImpl !== "function") {
-      log.warn({ context, to }, "Emergency email skipped because Brevo is not configured");
+    if (!isMailjetConfigured(config) || typeof fetchImpl !== "function") {
+      log.warn({ context, to }, "Emergency email skipped because Mailjet is not configured");
       return { skipped: true, reason: "EMAIL_PROVIDER_NOT_CONFIGURED" };
     }
 
     try {
-      const response = await fetchImpl(BREVO_EMAIL_ENDPOINT, {
-        method: "POST",
-        headers: {
-          accept: "application/json",
-          "api-key": config.BREVO_API_KEY,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          sender: {
-            name: config.BREVO_SENDER_NAME || "QuantumCrew",
-            email: config.BREVO_SENDER_EMAIL,
-          },
-          to: [{ email: to, name: name || to }],
-          subject,
-          textContent,
-          htmlContent,
-        }),
+      const result = await sendMailjetEmail({
+        to,
+        name: name || to,
+        subject,
+        textContent,
+        htmlContent,
+        config,
+        fetchImpl,
       });
-
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        log.error(
-          { context, to, status: response.status, providerMessage: payload?.message },
-          "Emergency email delivery failed",
-        );
-        return { delivered: false, reason: "EMAIL_DELIVERY_FAILED" };
-      }
-      return { delivered: true, messageId: payload?.messageId ?? null };
+      return { delivered: true, messageId: result.messageId };
     } catch (error) {
       log.error({ err: error, context, to }, "Emergency email delivery failed");
       return { delivered: false, reason: "EMAIL_DELIVERY_FAILED" };
