@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Calendar, Compass, Loader2, MapPin, Search, ShieldCheck, Users } from 'lucide-react';
+import { Calendar, Compass, Loader2, MapPin, Search, ShieldCheck, Users, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { destinationService } from '../../destinations/api/destinationService';
@@ -67,11 +67,21 @@ export function CreateTripPage() {
 
   return (
     <div className="max-w-5xl mx-auto pb-10 space-y-6">
-      <div>
-        <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-          <Compass className="w-6 h-6 text-rose-600" /> Plan a Trip
-        </h1>
-        <p className="text-sm text-slate-500 mt-1">Trip, tracking and group data are stored in the real backend.</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+            <Compass className="w-6 h-6 text-rose-600" /> Plan a Trip
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">Trip, tracking and group data are stored in the real backend.</p>
+        </div>
+        
+        <button
+          onClick={() => navigate('/tourist/trips/ai-planner')}
+          className="rounded-lg bg-slate-900 text-white px-5 py-2.5 font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-sm hover:bg-slate-800 transition-colors"
+        >
+          <Sparkles className="w-4 h-4 text-slate-300" />
+          Plan with AI
+        </button>
       </div>
 
       {error && <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}
