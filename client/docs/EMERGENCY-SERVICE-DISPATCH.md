@@ -1,4 +1,6 @@
-# Emergency Service Dispatch Backend
+# Emergency Service Dispatch Frontend Integration
+
+> **Documentation status (29 Aug 2026):** Current client integration note. For the file-by-file frontend map, see `CLIENT-FILE-GUIDE.md`.
 
 ## Purpose
 
@@ -15,7 +17,7 @@ The disaster-management backend now supports three operational fleet sections: *
 
 `POST /api/v1/emergency-services/accounts` (Disaster Management/System Admin only)
 
-The single registration endpoint accepts `serviceType` as `POLICE`, `FIRE`, or `AMBULANCE`, plus the service location. The location can be supplied by browser/device geolocation in the future frontend.
+The single registration endpoint accepts `serviceType` as `POLICE`, `FIRE`, or `AMBULANCE`, plus the service location. The current `AuthorityAccountCreationPage.jsx` can geocode an address or capture browser/device geolocation before submitting the fixed base location.
 
 Example request:
 
@@ -54,7 +56,7 @@ Manual assignment continues to use the existing dispatch endpoints, so Disaster 
 
 Authenticated Police/Fire/Ambulance accounts use:
 
-The Disaster Management **Account Creation** page provisions Police, Fire, and Ambulance/Hospital accounts with service type, username, email, phone, and password. Credentials are hashed before storage. New accounts can sign in immediately, but their primary unit has no coordinates until the responder publishes live GPS, so it is excluded from nearest-unit auto-selection until then.
+The Disaster Management **Account Creation** page provisions Police, Fire, and Ambulance/Hospital accounts with service type, username, email, phone, password, and fixed base coordinates. Credentials are hashed before storage on the backend. New accounts can sign in immediately; active-dispatch live GPS updates are sent later from `ResponderLayout.jsx`.
 
 - `GET /api/v1/emergency-services/me`
 - `PATCH /api/v1/emergency-services/me/location`
@@ -111,7 +113,7 @@ The `/dispatch/incidents/:incidentId/auto/:serviceType` route means **automatic 
 The email contains incident summary information and a deep link generated from `PUBLIC_APP_URL`:
 
 ```text
-/login?redirect=/emergency-services/dispatches/<dispatchId>&role=<POLICE|AMBULANCE|FIRE>
+/login?redirect=/responder/dispatch?dispatch=<dispatchId>&role=<POLICE|AMBULANCE|FIRE>
 ```
 
 Frontend contract: if the fleet is already authenticated, the login route should immediately honor `redirect`. Otherwise it should complete login and then navigate to the requested active dispatch.
