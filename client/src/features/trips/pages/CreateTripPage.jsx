@@ -122,6 +122,7 @@ export function CreateTripPage() {
         });
         tripId = trip.id;
       }
+      setStep('details');
       navigate('/tourist/trips/create', {
         replace: true,
         state: {

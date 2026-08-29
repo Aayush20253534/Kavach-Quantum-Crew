@@ -171,7 +171,7 @@ const environmentSchema = z
 
     AI_SERVICE_URL: z.string().trim().url().default("http://127.0.0.1:4200"),
     TRIP_PLANNER_SERVICE_URL: z.string().trim().url().default("http://127.0.0.1:4300"),
-    AI_TRIP_PLAN_TIMEOUT_MS: integerFromEnvironment(1000, 120000).default(60000),
+    AI_TRIP_PLAN_TIMEOUT_MS: integerFromEnvironment(1000, 180000).default(120000),
 
     BLOCKCHAIN_ENABLED: booleanFromEnvironment.default(false),
     BLOCKCHAIN_GATEWAY_URL: z.string().trim().url().default("http://127.0.0.1:4100"),

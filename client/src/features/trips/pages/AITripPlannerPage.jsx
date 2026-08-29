@@ -76,7 +76,10 @@ export function AITripPlannerPage() {
       setStatus('success');
     } catch (err) {
       console.error('Failed to plan trip with AI:', err);
-      setError(err?.response?.data?.error?.message || err?.response?.data?.message || err.message || 'Failed to generate trip plan.');
+      const apiMessage = err?.response?.data?.error?.message || err?.response?.data?.message;
+      const apiCode = err?.response?.data?.error?.code;
+      const message = apiMessage || err.message || 'Failed to generate trip plan.';
+      setError(apiCode ? `${message} (${apiCode})` : message);
       setStatus('error');
     }
   };
@@ -155,6 +158,75 @@ export function AITripPlannerPage() {
     );
   }
 
+  if (status === 'error' && shouldAutoGenerate && tripDraft) {
+    return (
+      <div className="max-w-3xl mx-auto pb-12 pt-6 px-4">
+        <button
+          type="button"
+          onClick={() => navigate('/tourist/trips/create', {
+            state: {
+              destination: { name: tripDraft.city },
+              tripType: tripDraft.tripType,
+              plannedStartAt: tripDraft.plannedStartAt,
+              plannedEndAt: tripDraft.plannedEndAt,
+              existingTripId,
+              groupLocked: location.state?.groupLocked,
+              startAtMode: true,
+            },
+          })}
+          className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 mb-5"
+        >
+          <ChevronLeft className="w-4 h-4" /> Back to planning choices
+        </button>
+
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
+          <div className="flex items-start gap-3">
+            <div className="mt-1 w-2 h-2 rounded-full bg-red-500 shrink-0" />
+            <div className="min-w-0">
+              <h1 className="text-lg font-black text-red-800">AI planner could not generate this trip</h1>
+              <p className="mt-1 text-sm text-red-700 break-words">{error}</p>
+              <p className="mt-3 text-xs text-red-700/80">
+                Your destination and dates are still saved. Retry AI planning or go back and continue without AI.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-5">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Trip details</p>
+          <h2 className="mt-2 text-2xl font-black text-slate-900">{tripDraft.city}</h2>
+          <p className="mt-1 text-sm text-slate-500">{tripDraft.check_in} to {tripDraft.check_out}</p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => generatePlan({ city: tripDraft.city, check_in: tripDraft.check_in, check_out: tripDraft.check_out })}
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
+            >
+              <Sparkles className="w-4 h-4" /> Retry AI planning
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/tourist/trips/create', {
+                state: {
+                  destination: { name: tripDraft.city },
+                  tripType: tripDraft.tripType,
+                  plannedStartAt: tripDraft.plannedStartAt,
+                  plannedEndAt: tripDraft.plannedEndAt,
+                  existingTripId,
+                  groupLocked: location.state?.groupLocked,
+                  startAtMode: true,
+                },
+              })}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+            >
+              Plan without AI
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (status === 'success' && result) {
     const daysDiff = Math.max(1, Math.ceil((new Date(formData.check_out) - new Date(formData.check_in)) / (1000 * 60 * 60 * 24)));
     
@@ -164,7 +236,17 @@ export function AITripPlannerPage() {
         <div className="sticky top-16 bg-white/90 backdrop-blur-xl z-40 border-b border-slate-200 px-3 py-3 mb-5">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
             <button 
-              onClick={() => shouldAutoGenerate ? navigate('/tourist/trips/create', { state: { destination: { name: tripDraft.city }, tripType: tripDraft.tripType } }) : setStatus('idle')}
+              onClick={() => shouldAutoGenerate ? navigate('/tourist/trips/create', {
+                state: {
+                  destination: { name: tripDraft.city },
+                  tripType: tripDraft.tripType,
+                  plannedStartAt: tripDraft.plannedStartAt,
+                  plannedEndAt: tripDraft.plannedEndAt,
+                  existingTripId,
+                  groupLocked: location.state?.groupLocked,
+                  startAtMode: true,
+                },
+              }) : setStatus('idle')}
               className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors"
             >
               <ChevronLeft className="w-4 h-4" /> {shouldAutoGenerate ? 'Change Trip Details' : 'Edit Preferences'}

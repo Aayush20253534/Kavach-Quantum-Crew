@@ -75,7 +75,7 @@ export function CurrentTripPage() {
           setGroup(loadedGroup);
           try { setGroupCredential(await credentialService.getGroupCredential(loadedGroup.id)); } catch { setGroupCredential(null); }
           if (loadedGroup.leaderId === user?.id) {
-            if (current.status === 'PLANNED') { try { setJoinRequests(await groupService.getPendingJoinRequests(loadedGroup.id)); } catch { setJoinRequests([]); } } else setJoinRequests([]);
+            if (current.status === 'PLANNED' && !loadedGroup.isLocked) { try { setJoinRequests(await groupService.getPendingJoinRequests(loadedGroup.id)); } catch { setJoinRequests([]); } } else setJoinRequests([]);
             if (current.status === 'ACTIVE') { try { setSignalCases(await groupService.getSignalLossCases(current.id)); } catch { setSignalCases([]); } } else setSignalCases([]);
           } else {
             setJoinRequests([]);
@@ -262,7 +262,7 @@ export function CurrentTripPage() {
     };
     const timer = window.setInterval(refresh, 6000);
     return () => { cancelled = true; window.clearInterval(timer); };
-  }, [group?.id, group?.leaderId, trip?.status, user?.id]);
+  }, [group?.id, group?.leaderId, group?.isLocked, trip?.status, user?.id]);
 
   const run = async (name, action) => {
     setBusy(name);
