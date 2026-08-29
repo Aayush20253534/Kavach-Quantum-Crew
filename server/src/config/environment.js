@@ -164,6 +164,14 @@ const environmentSchema = z
       5,
       3600,
     ).default(30),
+    REDIS_PLACES_TTL_SECONDS: integerFromEnvironment(
+      60,
+      86400,
+    ).default(21600),
+    REDIS_ANALYTICS_TTL_SECONDS: integerFromEnvironment(
+      5,
+      300,
+    ).default(20),
 
     GOOGLE_MAPS_API_KEY: optionalString(
       z.string().trim().min(1),

@@ -1,9 +1,18 @@
 import { ApiError } from "../../common/errors/ApiError.js";
+import { cacheGetOrSet } from "../../common/cache/cache.js";
+import { environment } from "../../config/environment.js";
 import { ROLES } from "../../constants/roles.js";
 import { analyticsRepository } from "./analytics.repository.js";
 
 const STAFF = new Set([ROLES.DISASTER_MANAGER, ROLES.SYSTEM_ADMIN]);
 const minute = 60_000;
+
+const rangeCacheKey = (range = {}) => {
+  const from = range.from ? new Date(range.from).toISOString() : "all";
+  const to = range.to ? new Date(range.to).toISOString() : "now";
+  return `${from}:${to}`;
+};
+
 
 const countMap = (rows, key) => Object.fromEntries(rows.map((row) => [row[key], row._count._all]));
 const averageMinutes = (rows, startKey, endKey) => {
@@ -85,7 +94,17 @@ const resolveIncidentScope = async (repository, actor) => {
   return { jurisdiction, tripIds: null };
 };
 
-export const createAnalyticsService = ({ repository = analyticsRepository } = {}) => {
+export const createAnalyticsService = ({
+  repository = analyticsRepository,
+  cache = cacheGetOrSet,
+} = {}) => {
+  const cached = (key, fetcher) =>
+    cache({
+      key: `analytics:${key}`,
+      ttlSeconds: environment.REDIS_ANALYTICS_TTL_SECONDS,
+      fetcher,
+    });
+
   const requireStaff = (actor) => {
     if (!STAFF.has(actor.role)) {
       throw ApiError.forbidden("Analytics access requires emergency staff", { code: "ANALYTICS_ACCESS_FORBIDDEN" });
@@ -95,91 +114,104 @@ export const createAnalyticsService = ({ repository = analyticsRepository } = {}
   return Object.freeze({
     overview(actor, range) {
       requireStaff(actor);
-      return repository.overview(range);
+      return cached(`overview:${rangeCacheKey(range)}`, () => repository.overview(range));
     },
 
     async incidents(actor, range) {
       requireStaff(actor);
-      const scope = await resolveIncidentScope(repository, actor);
-      const data = await repository.incidentBreakdown(range, scope.tripIds);
+      return cached(`incidents:${actor.id}:${rangeCacheKey(range)}`, async () => {
+        const scope = await resolveIncidentScope(repository, actor);
+        const data = await repository.incidentBreakdown(range, scope.tripIds);
 
-      return {
-        jurisdiction: scope.jurisdiction,
+        return {
+          jurisdiction: scope.jurisdiction,
         byStatus: countMap(data.byStatus, "status"),
         bySeverity: countMap(data.bySeverity, "severity"),
         bySource: countMap(data.bySource, "sourceType"),
         dailyVolume: buildDailyIncidentVolume(data.timingRows, range),
-        responseTimesMinutes: {
-          acknowledge: averageMinutes(data.timingRows, "createdAt", "acknowledgedAt"),
-          responseStart: averageMinutes(data.timingRows, "createdAt", "startedAt"),
-          resolution: averageMinutes(data.timingRows, "createdAt", "resolvedAt"),
-        },
-      };
+          responseTimesMinutes: {
+            acknowledge: averageMinutes(data.timingRows, "createdAt", "acknowledgedAt"),
+            responseStart: averageMinutes(data.timingRows, "createdAt", "startedAt"),
+            resolution: averageMinutes(data.timingRows, "createdAt", "resolvedAt"),
+          },
+        };
+      });
     },
 
     async trips(actor, range) {
       requireStaff(actor);
-      const data = await repository.tripBreakdown(range);
-      return { byStatus: countMap(data.byStatus, "status"), byType: countMap(data.byType, "tripType") };
+      return cached(`trips:${rangeCacheKey(range)}`, async () => {
+        const data = await repository.tripBreakdown(range);
+        return { byStatus: countMap(data.byStatus, "status"), byType: countMap(data.byType, "tripType") };
+      });
     },
 
     async hazards(actor, range) {
       requireStaff(actor);
-      const data = await repository.hazardBreakdown(range);
-      return {
-        byStatus: countMap(data.byStatus, "status"),
-        byType: countMap(data.byType, "type"),
-        bySeverity: countMap(data.bySeverity, "severity"),
-      };
+      return cached(`hazards:${rangeCacheKey(range)}`, async () => {
+        const data = await repository.hazardBreakdown(range);
+        return {
+          byStatus: countMap(data.byStatus, "status"),
+          byType: countMap(data.byType, "type"),
+          bySeverity: countMap(data.bySeverity, "severity"),
+        };
+      });
     },
 
     async sos(actor, range) {
       requireStaff(actor);
-      return { byEmergencyType: countMap(await repository.sosBreakdown(range), "emergencyType") };
+      return cached(`sos:${rangeCacheKey(range)}`, async () => ({
+        byEmergencyType: countMap(await repository.sosBreakdown(range), "emergencyType"),
+      }));
     },
 
     async dispatch(actor, range) {
       requireStaff(actor);
-      const data = await repository.dispatchBreakdown(range);
-      return {
-        byStatus: countMap(data.byStatus, "status"),
-        byUnitType: countMap(data.byUnitType, "requestedUnitType"),
-        responseTimesMinutes: {
-          assignment: averageMinutes(data.timingRows, "requestedAt", "assignedAt"),
-          dispatch: averageMinutes(data.timingRows, "requestedAt", "dispatchedAt"),
-          onScene: averageMinutes(data.timingRows, "requestedAt", "onSceneAt"),
-          completion: averageMinutes(data.timingRows, "requestedAt", "completedAt"),
-        },
-      };
+      return cached(`dispatch:${rangeCacheKey(range)}`, async () => {
+        const data = await repository.dispatchBreakdown(range);
+        return {
+          byStatus: countMap(data.byStatus, "status"),
+          byUnitType: countMap(data.byUnitType, "requestedUnitType"),
+          responseTimesMinutes: {
+            assignment: averageMinutes(data.timingRows, "requestedAt", "assignedAt"),
+            dispatch: averageMinutes(data.timingRows, "requestedAt", "dispatchedAt"),
+            onScene: averageMinutes(data.timingRows, "requestedAt", "onSceneAt"),
+            completion: averageMinutes(data.timingRows, "requestedAt", "completedAt"),
+          },
+        };
+      });
     },
 
     async responders(actor) {
       requireStaff(actor);
-      const data = await repository.responderWorkload();
-      const workloads = data.activeAssignments.map((row) => ({ responderId: row.assignedToId, activeIncidents: row._count._all }));
-      return {
-        byAvailability: countMap(data.byAvailability, "responderStatus"),
-        activeAssignments: workloads,
-        totalActiveAssignments: workloads.reduce((sum, row) => sum + row.activeIncidents, 0),
-      };
+      return cached("responders", async () => {
+        const data = await repository.responderWorkload();
+        const workloads = data.activeAssignments.map((row) => ({ responderId: row.assignedToId, activeIncidents: row._count._all }));
+        return {
+          byAvailability: countMap(data.byAvailability, "responderStatus"),
+          activeAssignments: workloads,
+          totalActiveAssignments: workloads.reduce((sum, row) => sum + row.activeIncidents, 0),
+        };
+      });
     },
 
     async responseTimes(actor, range) {
       requireStaff(actor);
-      const scope = await resolveIncidentScope(repository, actor);
-      const [incidents, dispatches] = await Promise.all([
-        repository.incidentBreakdown(range, scope.tripIds),
-        repository.dispatchBreakdown(range),
-      ]);
+      return cached(`response-times:${actor.id}:${rangeCacheKey(range)}`, async () => {
+        const scope = await resolveIncidentScope(repository, actor);
+        const [incidents, dispatches] = await Promise.all([
+          repository.incidentBreakdown(range, scope.tripIds),
+          repository.dispatchBreakdown(range),
+        ]);
 
-      const responseDistribution = buildResponseDistribution(incidents.timingRows);
-      const responded = responseDistribution.reduce((sum, bucket) => sum + bucket.count, 0);
-      const withinFive = responseDistribution
-        .filter((bucket) => bucket.key === "UNDER_2" || bucket.key === "TWO_TO_FIVE")
-        .reduce((sum, bucket) => sum + bucket.count, 0);
+        const responseDistribution = buildResponseDistribution(incidents.timingRows);
+        const responded = responseDistribution.reduce((sum, bucket) => sum + bucket.count, 0);
+        const withinFive = responseDistribution
+          .filter((bucket) => bucket.key === "UNDER_2" || bucket.key === "TWO_TO_FIVE")
+          .reduce((sum, bucket) => sum + bucket.count, 0);
 
-      return {
-        jurisdiction: scope.jurisdiction,
+        return {
+          jurisdiction: scope.jurisdiction,
         incidents: {
           acknowledgeMinutes: averageMinutes(incidents.timingRows, "createdAt", "acknowledgedAt"),
           responseStartMinutes: averageMinutes(incidents.timingRows, "createdAt", "startedAt"),
@@ -190,12 +222,13 @@ export const createAnalyticsService = ({ repository = analyticsRepository } = {}
             ? Number(((withinFive / responded) * 100).toFixed(1))
             : 0,
         },
-        dispatch: {
-          assignmentMinutes: averageMinutes(dispatches.timingRows, "requestedAt", "assignedAt"),
-          onSceneMinutes: averageMinutes(dispatches.timingRows, "requestedAt", "onSceneAt"),
-          completionMinutes: averageMinutes(dispatches.timingRows, "requestedAt", "completedAt"),
-        },
-      };
+          dispatch: {
+            assignmentMinutes: averageMinutes(dispatches.timingRows, "requestedAt", "assignedAt"),
+            onSceneMinutes: averageMinutes(dispatches.timingRows, "requestedAt", "onSceneAt"),
+            completionMinutes: averageMinutes(dispatches.timingRows, "requestedAt", "completedAt"),
+          },
+        };
+      });
     },
   });
 };

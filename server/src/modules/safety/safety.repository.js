@@ -1,4 +1,9 @@
+import { cacheGetOrSet } from "../../common/cache/cache.js";
+import { environment } from "../../config/environment.js";
 import { prisma } from "../../config/database.js";
+
+const zoneListKey = ({ type, active }) =>
+  `safety-zones:list:${type || "all"}:${active === undefined ? "any" : String(active)}`;
 
 export const createSafetyRepository = ({ db = prisma } = {}) => ({
   findTripContext(tripId, userId) {
@@ -22,14 +27,23 @@ export const createSafetyRepository = ({ db = prisma } = {}) => ({
   },
 
   listZones({ type, active }) {
-    return db.safetyZone.findMany({
-      where: { active, ...(type ? { type } : {}) },
-      orderBy: [{ type: "asc" }, { name: "asc" }],
+    return cacheGetOrSet({
+      key: zoneListKey({ type, active }),
+      ttlSeconds: environment.REDIS_RISK_ZONES_TTL_SECONDS,
+      fetcher: () =>
+        db.safetyZone.findMany({
+          where: { active, ...(type ? { type } : {}) },
+          orderBy: [{ type: "asc" }, { name: "asc" }],
+        }),
     });
   },
 
   listActiveZones() {
-    return db.safetyZone.findMany({ where: { active: true } });
+    return cacheGetOrSet({
+      key: "safety-zones:active:all",
+      ttlSeconds: environment.REDIS_RISK_ZONES_TTL_SECONDS,
+      fetcher: () => db.safetyZone.findMany({ where: { active: true } }),
+    });
   },
 
   createCheckIn(data) {

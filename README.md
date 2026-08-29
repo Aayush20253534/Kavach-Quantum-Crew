@@ -169,6 +169,8 @@ Authorization is enforced by backend middleware. Client-side route visibility is
 - an EVM RPC endpoint when blockchain integration is enabled
 - external credentials as needed: Mailjet, Groq, SerpAPI, Google Maps/Places, Cloudinary and Upstash Redis
 
+Redis is used selectively for read-heavy data that benefits from short-lived caching: destination discovery, safety/risk-zone reference data used during repeated safety evaluation, Google Places jurisdiction lookups, dashboard counters and analytics aggregates. Live GPS, dispatch state, group membership, notifications and other Socket.IO-driven operational state remain uncached.
+
 ## Local development
 
 ### Main backend
