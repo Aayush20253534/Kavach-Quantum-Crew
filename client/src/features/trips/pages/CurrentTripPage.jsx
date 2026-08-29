@@ -725,7 +725,7 @@ function TripPlanPanel({ trip, isOwner, busy, onStart, canStart, onBackToGroup, 
               Group & Join ID
             </button>
           )}
-          {isOwner && trip.status === 'PLANNED' && (
+          {isOwner && trip.tripType !== 'GROUP' && trip.status === 'PLANNED' && (
             <button
               type="button"
               onClick={onStart}
