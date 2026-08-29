@@ -94,12 +94,47 @@ export function AITripPlannerPage() {
     });
   }, [shouldAutoGenerate, tripDraft]);
 
+  const startTripNow = async (tripId) => {
+    await tripService.grantConsent(tripId, 'LOCATION_TRACKING');
+    await tripService.grantConsent(tripId, 'EMERGENCY_SHARING');
+    return tripService.startTrip(tripId);
+  };
+
+  const continueWithoutAI = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      let tripId = existingTripId;
+      if (!tripId) {
+        const trip = await tripService.createTrip({
+          locationName: tripDraft?.city || formData.city,
+          tripType: saveTripType,
+          plannedStartAt: tripDraft?.plannedStartAt || new Date(formData.check_in).toISOString(),
+          plannedEndAt: tripDraft?.plannedEndAt || new Date(formData.check_out).toISOString(),
+        });
+        tripId = trip.id;
+      }
+
+      await startTripNow(tripId);
+      navigate('/tourist/trips/current', {
+        replace: true,
+        state: { openGroupView: saveTripType === 'GROUP' },
+      });
+    } catch (err) {
+      setError(err?.response?.data?.error?.message || err.message || 'Failed to start the trip without AI.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSaveToTrips = async () => {
     setSaving(true);
     setError('');
     try {
-      if (existingTripId) {
-        await tripService.attachAiPlan(existingTripId, result);
+      let tripId = existingTripId;
+
+      if (tripId) {
+        await tripService.attachAiPlan(tripId, result);
       } else {
         const trip = await tripService.createTrip({
           locationName: formData.city,
@@ -108,15 +143,17 @@ export function AITripPlannerPage() {
           plannedEndAt: tripDraft?.plannedEndAt || new Date(formData.check_out).toISOString(),
           aiPlan: result,
         });
+        tripId = trip.id;
 
         if (saveTripType === 'GROUP') {
-          await groupService.createGroupForTrip(trip.id);
+          await groupService.createGroupForTrip(tripId);
         }
       }
 
+      await startTripNow(tripId);
       navigate('/tourist/trips/current', { replace: true });
     } catch (err) {
-      setError(err?.response?.data?.error?.message || err.message || 'Failed to save trip to backend.');
+      setError(err?.response?.data?.error?.message || err.message || 'Failed to save and start this trip.');
     } finally {
       setSaving(false);
     }
@@ -201,13 +238,12 @@ export function AITripPlannerPage() {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/tourist/trips/current', {
-                replace: true,
-                state: { openGroupView: tripDraft.tripType === 'GROUP' },
-              })}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+              onClick={continueWithoutAI}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
             >
-              Continue without AI
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              Start without AI
             </button>
           </div>
         </div>
@@ -246,7 +282,7 @@ export function AITripPlannerPage() {
                 className="bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-sm transition-colors flex items-center gap-2"
               >
                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                {existingTripId ? 'Save AI Plan' : 'Add to My Trips'}
+                Save Plan & Start Trip
               </button>
             </div>
           </div>

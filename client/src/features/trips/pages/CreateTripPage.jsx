@@ -108,6 +108,12 @@ export function CreateTripPage() {
     }
   };
 
+  const startTripNow = async (tripId) => {
+    await tripService.grantConsent(tripId, 'LOCATION_TRACKING');
+    await tripService.grantConsent(tripId, 'EMERGENCY_SHARING');
+    return tripService.startTrip(tripId);
+  };
+
   const createWithoutAI = async () => {
     setLoading(true);
     setError('');
@@ -122,12 +128,15 @@ export function CreateTripPage() {
         });
         tripId = trip.id;
       }
+
+      await startTripNow(tripId);
+
       navigate('/tourist/trips/current', {
         replace: true,
         state: { openGroupView: tripType === 'GROUP' },
       });
     } catch (e) {
-      setError(e?.response?.data?.error?.message || e.message || 'Could not keep this trip as a manual plan');
+      setError(e?.response?.data?.error?.message || e.message || 'Could not start this trip without AI');
     } finally {
       setLoading(false);
     }
@@ -184,10 +193,10 @@ export function CreateTripPage() {
           >
             <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mb-3"><Compass className="w-5 h-5" /></div>
             <h2 className="text-base font-black text-slate-900">Plan without AI</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">Keep this trip without a generated itinerary. You can add an AI plan later without recreating the trip.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-500">Start the trip immediately without an AI itinerary. AI planning is locked once the trip starts.</p>
             <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-rose-600">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              Continue without AI <ArrowRight className="w-4 h-4" />
+              Start without AI <ArrowRight className="w-4 h-4" />
             </span>
           </button>
         </div>
@@ -207,11 +216,6 @@ export function CreateTripPage() {
       {initialDestinationName && (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-800">
           Destination: <span className="font-black">{initialDestinationName}</span>{initialTripType === 'GROUP' ? ' · Group trip' : ''}
-        </div>
-      )}
-      {routeLocation.state?.manualTripCreated && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs font-semibold text-blue-800">
-          Trip saved without AI. You can return here and choose <span className="font-black">Plan with AI</span> at any time before the trip starts.
         </div>
       )}
 
