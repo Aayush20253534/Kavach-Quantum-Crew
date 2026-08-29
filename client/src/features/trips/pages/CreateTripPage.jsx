@@ -122,18 +122,9 @@ export function CreateTripPage() {
         });
         tripId = trip.id;
       }
-      setStep('details');
-      navigate('/tourist/trips/create', {
+      navigate('/tourist/trips/current', {
         replace: true,
-        state: {
-          destination: { name: locationName.trim() },
-          tripType,
-          plannedStartAt: toIso(plannedStartAt),
-          plannedEndAt: toIso(plannedEndAt),
-          existingTripId: tripId,
-          groupLocked: existingTripLocked,
-          manualTripCreated: true,
-        },
+        state: { openGroupView: tripType === 'GROUP' },
       });
     } catch (e) {
       setError(e?.response?.data?.error?.message || e.message || 'Could not keep this trip as a manual plan');
