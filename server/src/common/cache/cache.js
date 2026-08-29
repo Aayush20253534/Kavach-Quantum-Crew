@@ -1,11 +1,17 @@
 import { redis, redisKey } from "../../config/redis.js";
 
+// Prevent a burst of identical cache misses from fanning out into duplicate
+// PostgreSQL / external API work inside the same Node process. Redis remains
+// the cross-instance cache; this map only coalesces concurrent local misses.
+const inFlight = new Map();
+
 export const cacheGetOrSet = async ({
   key,
   ttlSeconds,
   fetcher,
   client = redis,
   logger = console,
+  shouldCache = (value) => value !== undefined && value !== null,
 }) => {
   if (!client) return fetcher();
 
@@ -14,23 +20,36 @@ export const cacheGetOrSet = async ({
     const cached = await client.get(namespacedKey);
     if (cached !== null && cached !== undefined) return cached;
   } catch (error) {
-    logger.warn?.("Redis read failed; using PostgreSQL", {
+    logger.warn?.("Redis read failed; using source of truth", {
       key: namespacedKey,
       error: error?.message,
     });
   }
 
-  const value = await fetcher();
+  if (inFlight.has(namespacedKey)) return inFlight.get(namespacedKey);
 
+  const pending = (async () => {
+    const value = await fetcher();
+
+    if (!shouldCache(value)) return value;
+
+    try {
+      await client.set(namespacedKey, value, { ex: ttlSeconds });
+    } catch (error) {
+      logger.warn?.("Redis write failed; returning source value", {
+        key: namespacedKey,
+        error: error?.message,
+      });
+    }
+    return value;
+  })();
+
+  inFlight.set(namespacedKey, pending);
   try {
-    await client.set(namespacedKey, value, { ex: ttlSeconds });
-  } catch (error) {
-    logger.warn?.("Redis write failed; returning PostgreSQL value", {
-      key: namespacedKey,
-      error: error?.message,
-    });
+    return await pending;
+  } finally {
+    inFlight.delete(namespacedKey);
   }
-  return value;
 };
 
 export const cacheDelete = async ({ keys, client = redis, logger = console }) => {
@@ -43,7 +62,6 @@ export const cacheDelete = async ({ keys, client = redis, logger = console }) =>
     logger.warn?.("Redis invalidation failed", { keys: list, error: error?.message });
   }
 };
-
 
 export const cacheDeletePrefix = async ({
   prefix,

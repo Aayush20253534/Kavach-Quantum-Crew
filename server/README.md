@@ -26,8 +26,21 @@ Default API base: `http://localhost:4000/api/v1`.
 - Police / Fire / Ambulance provisioning, dispatch and live responder GPS
 - realtime Socket.IO events and scheduled jobs
 - Mailjet transactional email
-- Cloudinary uploads, Google Places/Maps integration and optional Upstash Redis cache
+- Cloudinary uploads, Google Places/Maps integration and Upstash Redis caching
 - authenticated blockchain gateway integration
+
+
+## Redis caching strategy
+
+Redis is deliberately limited to read-heavy or externally expensive data:
+
+- destination search/results: 15 minutes by default
+- safety/risk-zone reference data: 30 seconds, with immediate invalidation on zone mutation
+- Google Places jurisdiction lookups: 6 hours
+- dashboard aggregate counters: 30 seconds
+- analytics aggregates: 20 seconds
+
+Repeated cache misses in the same Node process are coalesced so one burst produces one source query. Redis failures fail open to PostgreSQL or the upstream provider. Live tracking, dispatch transitions, current-trip/group state, notifications and other realtime Socket.IO state are intentionally not cached.
 
 ## Trip planning rules
 
