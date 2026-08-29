@@ -27,6 +27,12 @@ export const tripService = {
   async getTrip(tripId) {
     return unwrap(await apiClient.get(`/trips/${tripId}`));
   },
+  async getSoloSafetyChecks(tripId) {
+    return unwrap(await apiClient.get('/signal-loss-cases/solo', { params: { tripId } }));
+  },
+  async respondToSoloSafetyCheck(alertId, response) {
+    return unwrap(await apiClient.post(`/signal-loss-cases/solo/${alertId}/respond`, { response }));
+  },
   async startTrip(tripId, location = {}) {
     return unwrap(await apiClient.post(`/trips/${tripId}/start`, location));
   },

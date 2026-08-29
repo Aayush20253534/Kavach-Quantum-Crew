@@ -44,6 +44,7 @@ export function CurrentTripPage() {
   const [groupCredential, setGroupCredential] = useState(null);
   const [joinRequests, setJoinRequests] = useState([]);
   const [signalCases, setSignalCases] = useState([]);
+  const [soloSafetyChecks, setSoloSafetyChecks] = useState([]);
   const [responseDispatches, setResponseDispatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
@@ -65,9 +66,15 @@ export function CurrentTripPage() {
       if (current) {
         try { setIndividualCredential(await credentialService.getMyCredential(current.id)); } catch { setIndividualCredential(null); }
         try { const response = await emergencyServicesApi.getTouristDispatches(); setResponseDispatches(response?.data?.data || []); } catch { setResponseDispatches([]); }
+        if (current.tripType === 'SOLO' && current.status === 'ACTIVE') {
+          try { setSoloSafetyChecks(await tripService.getSoloSafetyChecks(current.id)); } catch { setSoloSafetyChecks([]); }
+        } else {
+          setSoloSafetyChecks([]);
+        }
       } else {
         setIndividualCredential(null);
         setResponseDispatches([]);
+        setSoloSafetyChecks([]);
       }
       if (current?.tripType === 'GROUP') {
         try {
@@ -127,6 +134,25 @@ export function CurrentTripPage() {
       window.clearInterval(timer);
     };
   }, [trip?.id, trip?.status, trip?.tripType, group?.leaderId, user?.id]);
+
+  useEffect(() => {
+    if (!trip?.id || trip.status !== 'ACTIVE' || trip.tripType !== 'SOLO') return undefined;
+    let cancelled = false;
+    const refreshSoloSafetyChecks = async () => {
+      try {
+        const checks = await tripService.getSoloSafetyChecks(trip.id);
+        if (!cancelled) setSoloSafetyChecks(checks || []);
+      } catch {
+        // Keep the previous prompt on transient network failures.
+      }
+    };
+    void refreshSoloSafetyChecks();
+    const timer = window.setInterval(refreshSoloSafetyChecks, 5_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [trip?.id, trip?.status, trip?.tripType]);
 
   useEffect(() => {
     if (!individualCredential?.id || !trip?.id) return undefined;
@@ -334,6 +360,20 @@ export function CurrentTripPage() {
     }
   };
 
+  const respondToSoloSafetyCheck = async (item, response) => {
+    const actionName = response === 'I_AM_SAFE' ? `solo-safe-${item.id}` : `solo-help-${item.id}`;
+    setBusy(actionName);
+    setError('');
+    try {
+      await tripService.respondToSoloSafetyCheck(item.id, response);
+      setSoloSafetyChecks((current) => current.filter((candidate) => candidate.id !== item.id));
+    } catch (e) {
+      setError(e?.response?.data?.error?.message || e.message || 'Unable to record your safety response');
+    } finally {
+      setBusy('');
+    }
+  };
+
   const start = () => run('start', async () => {
     if (trip.tripType === 'GROUP' && (group?.members?.length || 0) < MIN_GROUP_MEMBERS_TO_START) {
       throw new Error('A group trip needs at least 2 members before it can be started.');
@@ -427,6 +467,32 @@ export function CurrentTripPage() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {trip.tripType === 'SOLO' && soloSafetyChecks.length > 0 && (
+        <div className="rounded-2xl border border-red-300 bg-red-50 p-4 sm:p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-700" />
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm font-black text-red-950">KAVACH needs a safety confirmation</h2>
+              <p className="mt-1 text-[11px] leading-5 text-red-800">We have not received a trusted location update from you for at least 10 minutes. A safety email has been sent. Confirm below within the response window. If there is no response, a normal Disaster Management incident is created so an operator can call your registered phone number. Fleet dispatch is never automatic from this check.</p>
+              <div className="mt-3 space-y-2">
+                {soloSafetyChecks.map((item) => (
+                  <div key={item.id} className="rounded-xl border border-red-200 bg-white p-3 sm:flex sm:items-center sm:justify-between sm:gap-4">
+                    <div>
+                      <p className="text-xs font-black text-slate-900">Solo-trip safety check</p>
+                      <p className="mt-1 text-[10px] text-slate-500">Prompted {dateText(item.details?.promptedAt || item.createdAt)} · respond by {dateText(item.details?.responseDeadlineAt)}</p>
+                    </div>
+                    <div className="mt-3 flex gap-2 sm:mt-0">
+                      <button disabled={Boolean(busy)} onClick={() => respondToSoloSafetyCheck(item, 'I_AM_SAFE')} className="rounded-lg bg-emerald-600 px-3 py-2 text-[10px] font-black text-white disabled:opacity-50">{busy === `solo-safe-${item.id}` ? 'Saving…' : "I'm safe"}</button>
+                      <button disabled={Boolean(busy)} onClick={() => respondToSoloSafetyCheck(item, 'NEED_HELP')} className="rounded-lg bg-red-600 px-3 py-2 text-[10px] font-black text-white disabled:opacity-50">{busy === `solo-help-${item.id}` ? 'Sending…' : 'I need help'}</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}

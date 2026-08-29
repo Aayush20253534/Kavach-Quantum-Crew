@@ -10,6 +10,7 @@ const repo = () => ({
   markAllRead: jest.fn().mockResolvedValue({ count: 3 }),
   listDisasterManagers: jest.fn().mockResolvedValue([{ id: "d1", name: "DM One", email: "dm@example.com" }]),
   findGroupLeader: jest.fn().mockResolvedValue("leader1"),
+  findTourist: jest.fn().mockResolvedValue({ id: "u1", name: "Tourist One", email: "tourist@example.com", phone: "+919999999999" }),
 });
 
 const emailer = () => ({ incidentCreated: jest.fn().mockResolvedValue([]) });
@@ -22,7 +23,7 @@ describe("Phase 9 notifications", () => {
     const incident = { id: "i1", userId: "u1", tripId: "t1", severity: "CRITICAL", title: "SOS", escalationLevel: 0 };
     await s.incidentCreated(incident);
     expect(r.createMany.mock.calls[0][0]).toHaveLength(3);
-    expect(e.incidentCreated).toHaveBeenCalledWith({ recipients: [{ id: "d1", name: "DM One", email: "dm@example.com" }], incident });
+    expect(e.incidentCreated).toHaveBeenCalledWith({ recipients: [{ id: "d1", name: "DM One", email: "dm@example.com" }], incident: { ...incident, tourist: { id: "u1", name: "Tourist One", email: "tourist@example.com", phone: "+919999999999" } } });
   });
 
   test("protects notification ownership", async () => {
