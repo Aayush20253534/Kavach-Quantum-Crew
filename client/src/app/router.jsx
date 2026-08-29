@@ -33,6 +33,7 @@ import { LiveTrackingPage } from '../features/tracking/pages/LiveTrackingPage';
 import { CreateTripPage } from '../features/trips/pages/CreateTripPage';
 import { CurrentTripPage } from '../features/trips/pages/CurrentTripPage';
 import { TripHistoryPage } from '../features/trips/pages/TripHistoryPage';
+import { AITripPlannerPage } from '../features/trips/pages/AITripPlannerPage';
 import { CreateGroupPage } from '../features/groups/pages/CreateGroupPage';
 import { JoinGroupPage } from '../features/groups/pages/JoinGroupPage';
 import { ReportIncidentPage } from '../features/incidents/pages/ReportIncidentPage';
@@ -112,6 +113,7 @@ export const router = createBrowserRouter([
                   { path: 'dashboard', element: <TouristDashboardPage /> },
                   { path: 'tracking', element: <LiveTrackingPage /> },
                   { path: 'trips/create', element: <CreateTripPage /> },
+                  { path: 'trips/ai-planner', element: <AITripPlannerPage /> },
                   { path: 'trips/current', element: <CurrentTripPage /> },
                   { path: 'trips/history', element: <TripHistoryPage /> },
                   { path: 'groups/create', element: <CreateGroupPage /> },
