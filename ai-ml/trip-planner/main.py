@@ -11,7 +11,7 @@ from trip_core import build_trip_response
 app = FastAPI(title="Kavach Python Trip Planner API")
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def root():
     """Cheap public endpoint for Render/browser checks without invoking AI providers."""
     return {
@@ -23,7 +23,7 @@ def root():
     }
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 def health():
     return {
         "ok": True,
@@ -31,7 +31,6 @@ def health():
         "serpapi_configured": bool(os.getenv("SERPAPI_API_KEY")),
         "groq_configured": bool(os.getenv("GROQ_API_KEY")),
     }
-
 
 class TripPlanRequest(BaseModel):
     city: str
