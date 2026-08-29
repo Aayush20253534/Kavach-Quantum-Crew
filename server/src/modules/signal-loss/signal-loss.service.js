@@ -27,12 +27,27 @@ export const createSignalLossService = ({
         details: { signalLossCaseId: signalCase.id, detectedAt: signalCase.detectedAt },
       });
     }
+    // ingestSafetyAlert creates the normal Incident, publishes it to every incident
+    // surface and calls notificationService.incidentCreated(), which sends both
+    // Disaster Management in-app notifications and Mailjet incident email.
     const incident = await incidentReporter.ingestSafetyAlert(alert);
-    return repository.updateCase(signalCase.id, {
+    const updated = await repository.updateCase(signalCase.id, {
       status: "ESCALATED",
       escalatedAt: signalCase.escalatedAt || now,
       incidentId: incident?.id ?? signalCase.incidentId ?? null,
     });
+    await repository.createAudit({
+      actorId: signalCase.leaderId,
+      action: "SIGNAL_LOSS_AUTO_ESCALATED",
+      entityId: signalCase.id,
+      metadata: {
+        tripId: signalCase.tripId,
+        userId: signalCase.userId,
+        incidentId: incident?.id ?? null,
+        reason: "LEADER_RESPONSE_TIMEOUT",
+      },
+    });
+    return updated;
   };
 
   return Object.freeze({

@@ -73,17 +73,23 @@ export const createHazardService = ({ repository = hazardRepository, publisher =
       if (actor.role !== ROLES.TOURIST) {
         throw ApiError.forbidden("Only tourists can submit hazard reports", { code: "HAZARD_REPORT_FORBIDDEN" });
       }
+      const trip = await repository.findActiveTripForTourist(actor.id);
+      if (!trip) {
+        throw ApiError.conflict("Manual incident reporting requires an active trip", {
+          code: "HAZARD_ACTIVE_TRIP_REQUIRED",
+        });
+      }
+
       const { hazard: created, incident } = await repository.createWithIncident({
+        tripId: trip.id,
         reporterId: actor.id, reporterRole: actor.role, type: input.type, severity: input.severity,
         title: input.title, description: input.description, latitude: input.latitude, longitude: input.longitude,
         locationName: input.locationName ?? null, occurredAt: input.occurredAt ?? clock(),
       });
       await repository.createAudit({ actorId: actor.id, actorRole: actor.role, action: "HAZARD_REPORTED", entityId: created.id, metadata: { type: created.type, severity: created.severity, incidentId: incident?.id ?? null } });
       publisher.publishHazardCreated(created);
-      if (incident) {
-        await notifier.incidentCreated(incident);
-        publisher.publishIncidentCreated(incident);
-      }
+      await notifier.incidentCreated(incident);
+      publisher.publishIncidentCreated(incident);
       return created;
     },
 

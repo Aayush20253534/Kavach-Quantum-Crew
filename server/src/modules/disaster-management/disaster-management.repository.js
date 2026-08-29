@@ -140,17 +140,11 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
         { touristId: hazard.reporterId },
         { group: { is: { members: { some: { userId: hazard.reporterId } } } } },
       ];
-      const trip =
-        await db.trip.findFirst({
-          where: { status: "ACTIVE", OR: ownershipFilter },
-          orderBy: { createdAt: "desc" },
-          select: { id: true },
-        }) ||
-        await db.trip.findFirst({
-          where: { OR: ownershipFilter },
-          orderBy: { createdAt: "desc" },
-          select: { id: true },
-        });
+      const trip = await db.trip.findFirst({
+        where: { status: "ACTIVE", OR: ownershipFilter },
+        orderBy: { createdAt: "desc" },
+        select: { id: true },
+      });
       if (!trip) continue;
 
       const incident = await db.incident.create({
@@ -307,7 +301,7 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
 
     const rows = await db.incident.findMany({
       where: {
-        ...(status ? { status } : {}),
+        ...(status ? { status } : { status: { in: ACTIVE_INCIDENT_STATUSES } }),
         ...(severity ? { severity } : {}),
         ...assignmentFilter,
       },
