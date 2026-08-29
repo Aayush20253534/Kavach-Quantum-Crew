@@ -1628,12 +1628,13 @@ The runtime container now executes `npm run prisma:migrate:deploy` before `node 
 
 ## Emergency email environment in Docker Compose
 
-The backend container now receives the same Brevo variables used by local/Render deployments:
+The backend container now receives the same Mailjet variables used by local/Render deployments:
 
 ```env
-BREVO_API_KEY=...
-BREVO_SENDER_EMAIL=...
-BREVO_SENDER_NAME=QuantumCrew
+MAILJET_API_KEY=...
+MAILJET_SECRET_KEY=...
+MAILJET_SENDER_EMAIL=...
+MAILJET_SENDER_NAME=QuantumCrew
 PUBLIC_APP_URL=https://your-frontend.example
 ```
 

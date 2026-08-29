@@ -45,7 +45,7 @@ Realtime service assignment/tracking uses Socket.IO `dispatch:updated` events. E
 
 ## Emergency operational email notifications
 
-Critical operational events use the existing Brevo transactional-email configuration in addition to database and Socket.IO notifications.
+Critical operational events use the existing Mailjet transactional-email configuration in addition to database and Socket.IO notifications.
 
 ### New incident / SOS -> Disaster Management
 
@@ -55,7 +55,7 @@ When `notificationService.incidentCreated()` runs, all active Disaster Managers 
 
 When a dispatch reaches `ASSIGNED`, the registered email of the selected emergency-service fleet receives an email. The same behavior is used for automatic nearest assignment and manual Disaster Management assignment.
 
-Email delivery is best-effort. A Brevo outage must never undo a persisted SOS or dispatch; failures are logged for operations while realtime/in-app notification remains available.
+Email delivery is best-effort. A Mailjet outage must never undo a persisted SOS or dispatch; failures are logged for operations while realtime/in-app notification remains available.
 
 ## Current notification routing rules
 
