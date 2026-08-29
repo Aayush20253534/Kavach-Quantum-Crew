@@ -34,6 +34,12 @@ export const createTripController = ({ service = tripService, planner = aiTripPl
       data: await service.getTrip(request.user.id, request.params.tripId),
     }),
 
+  attachAiPlan: async (request, response) =>
+    ApiResponse.success(response, {
+      message: "AI trip plan saved",
+      data: await service.attachAiPlan(request.user.id, request.params.tripId, request.body.aiPlan),
+    }),
+
   grantConsent: async (request, response) =>
     ApiResponse.success(response, {
       message: "Trip consent granted",

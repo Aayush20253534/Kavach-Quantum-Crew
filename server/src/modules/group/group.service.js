@@ -15,6 +15,8 @@ const serializeGroup = (group) => ({
   leaderId: group.leaderId,
   name: group.name,
   status: group.status,
+  isLocked: Boolean(group.isLocked),
+  lockedAt: group.lockedAt,
   createdAt: group.createdAt,
   closedAt: group.closedAt,
   trip: group.trip,
@@ -42,10 +44,10 @@ const requireOpen = (group) => {
   }
 };
 const requireMembershipOpen = (group) => {
-  if (group.status !== "ACTIVE" || group.trip.status !== "PLANNED") {
+  if (group.isLocked || group.status !== "ACTIVE" || group.trip.status !== "PLANNED") {
     throw ApiError.conflict("Group membership is locked after the trip starts", {
       code: "GROUP_MEMBERSHIP_LOCKED",
-      details: { tripStatus: group.trip.status },
+      details: { tripStatus: group.trip.status, isLocked: Boolean(group.isLocked) },
     });
   }
 };
@@ -134,6 +136,23 @@ export const createGroupService = ({ repository = groupRepository, clock = () =>
     if (!group) throw ApiError.notFound("Group not found", { code: "GROUP_NOT_FOUND" });
     await requireMember(repository, group.id, userId);
     return serializeGroup(group);
+  },
+  async lockGroup(userId, groupId) {
+    const group = await requireGroup(repository, groupId);
+    requireLeader(group, userId);
+    if (group.status !== "ACTIVE" || group.trip.status !== "PLANNED") {
+      throw ApiError.conflict("Only a planned active group can be locked", { code: "GROUP_LOCK_NOT_ALLOWED" });
+    }
+    if (group.isLocked) return serializeGroup(group);
+    const memberCount = (group.members ?? []).length;
+    if (memberCount < 2) {
+      throw ApiError.conflict("Add at least one more member before locking the group", { code: "GROUP_MIN_MEMBERS_REQUIRED" });
+    }
+    const now = clock();
+    await repository.rejectPendingJoinRequests(groupId, now);
+    const locked = await repository.lockGroup(groupId, now);
+    await repository.createAudit({ actorId: userId, action: "GROUP_LOCKED", entityId: groupId, metadata: { memberCount, lockedAt: now.toISOString() } });
+    return serializeGroup(locked);
   },
   async createInvitation(userId, groupId, expiresInMinutes) {
     const group = await requireGroup(repository, groupId); requireLeader(group, userId); requireMembershipOpen(group);

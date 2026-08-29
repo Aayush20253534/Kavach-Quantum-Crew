@@ -15,6 +15,9 @@ export const tripService = {
   async createTrip(data) {
     return unwrap(await apiClient.post('/trips', data));
   },
+  async attachAiPlan(tripId, aiPlan) {
+    return unwrap(await apiClient.post(`/trips/${tripId}/ai-plan`, { aiPlan }));
+  },
   async getCurrentTrip() {
     return unwrap(await apiClient.get('/trips/current'));
   },
