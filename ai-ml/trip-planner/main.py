@@ -11,6 +11,18 @@ from trip_core import build_trip_response
 app = FastAPI(title="Kavach Python Trip Planner API")
 
 
+@app.get("/")
+def root():
+    """Cheap public endpoint for Render/browser checks without invoking AI providers."""
+    return {
+        "ok": True,
+        "service": "kavach-python-trip-planner",
+        "message": "KAVACH AI trip planner is running",
+        "health": "/health",
+        "plan_endpoint": "/api/trip/plan",
+    }
+
+
 @app.get("/health")
 def health():
     return {

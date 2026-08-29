@@ -26,6 +26,7 @@ export function CreateTripPage() {
   const [destinations, setDestinations] = useState([]);
   const [search, setSearch] = useState(initialDestinationName);
   const [locationName, setLocationName] = useState(initialDestinationName);
+  const [destinationSelected, setDestinationSelected] = useState(Boolean(initialDestinationName));
   const [tripType, setTripType] = useState(initialTripType);
   const [plannedStartAt, setStart] = useState(toLocalInput(routeLocation.state?.plannedStartAt));
   const [plannedEndAt, setEnd] = useState(toLocalInput(routeLocation.state?.plannedEndAt));
@@ -51,7 +52,7 @@ export function CreateTripPage() {
   }, [search]);
 
   const validateDraft = () => {
-    if (!locationName.trim()) return 'Choose a destination first.';
+    if (!locationName.trim() || !destinationSelected) return 'Choose a destination from the available options.';
     if (!plannedStartAt || !plannedEndAt) return 'Choose both the start and end date.';
     if (new Date(plannedEndAt) <= new Date(plannedStartAt)) return 'End date must be after start date.';
     return '';
@@ -227,13 +228,19 @@ export function CreateTripPage() {
           ) : (
             <div className="grid sm:grid-cols-2 gap-3">
               {destinations.map((destination) => (
-                <button type="button" key={destination.id || destination.name} disabled={Boolean(existingTripId)} onClick={() => setLocationName(destination.name)} className={`text-left p-3 rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-60 ${locationName === destination.name ? 'border-rose-400 bg-rose-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                <button type="button" key={destination.id || destination.name} disabled={Boolean(existingTripId)} onClick={() => { setLocationName(destination.name); setDestinationSelected(true); setError(''); }} className={`text-left p-3 rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-60 ${locationName === destination.name ? 'border-rose-400 bg-rose-50' : 'border-slate-200 hover:border-slate-300'}`}>
                   <p className="font-black text-sm text-slate-900">{destination.name}</p><p className="text-xs text-slate-500 mt-1">{destination.state || destination.country || 'Destination'}</p>
                 </button>
               ))}
             </div>
           )}
-          <div className="mt-5"><label className="text-xs font-bold text-slate-500">Destination / area</label><input required disabled={Boolean(existingTripId)} value={locationName} onChange={(e) => setLocationName(e.target.value)} className="mt-1 w-full border border-slate-200 rounded-lg px-4 py-3 text-sm disabled:bg-slate-50" placeholder="Enter destination" /></div>
+          <div className="mt-5">
+            <label className="text-xs font-bold text-slate-500">Selected destination</label>
+            <div className={`mt-1 w-full border rounded-lg px-4 py-3 text-sm ${locationName ? 'border-emerald-200 bg-emerald-50 text-slate-900 font-bold' : 'border-slate-200 bg-slate-50 text-slate-400'}`}>
+              {locationName || 'Select one of the destinations above'}
+            </div>
+            <p className="mt-2 text-[11px] text-slate-500">Destinations must be selected from the available list. Free-text trip destinations are disabled.</p>
+          </div>
         </div>
 
         <form onSubmit={goNext} className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-5">
