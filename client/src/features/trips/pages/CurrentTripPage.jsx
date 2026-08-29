@@ -905,18 +905,20 @@ function CredentialCard({
   const unavailable = integrityStatus === 'INTEGRITY_UNAVAILABLE';
   const checking = integrityStatus === 'CHECKING';
   const approved = blockchainStatus === 'CONFIRMED' && integrityStatus === 'VERIFIED';
+  const pending =
+    unavailable ||
+    checking ||
+    (blockchainStatus === 'CONFIRMED' && !approved && !tampered && !fixing && !fixed);
 
   const statusClass = tampered
     ? 'text-red-600'
-    : fixing || checking
+    : fixing || pending
       ? 'text-amber-600'
-      : unavailable
-        ? 'text-red-600'
-        : blockchainStatus === 'CONFIRMED'
-          ? 'text-emerald-600'
-          : blockchainStatus === 'DISABLED'
-            ? 'text-slate-500'
-            : 'text-amber-600';
+      : blockchainStatus === 'CONFIRMED'
+        ? 'text-emerald-600'
+        : blockchainStatus === 'DISABLED'
+          ? 'text-slate-500'
+          : 'text-amber-600';
 
   const statusText = tampered
     ? 'Blockchain verified · TAMPERED'
@@ -926,20 +928,16 @@ function CredentialCard({
         ? 'Blockchain verified · FIXED'
         : approved
           ? 'Blockchain verified · APPROVED'
-          : unavailable
-            ? 'Blockchain verified · INTEGRITY UNAVAILABLE'
-            : checking
-              ? 'Blockchain verified · CHECKING'
-              : blockchainStatus === 'CONFIRMED'
-                ? 'Blockchain verified · CHECKING'
-                : `Blockchain: ${blockchainStatus}`;
+          : pending
+            ? 'Blockchain verification · PENDING'
+            : `Blockchain: ${blockchainStatus}`;
 
   return (
     <div
       className={`rounded-xl border p-3.5 sm:p-4 ${
-        tampered || unavailable
+        tampered
           ? 'border-red-200 bg-red-50'
-          : fixing || checking
+          : fixing || pending
             ? 'border-amber-200 bg-amber-50'
             : fixed
               ? 'border-emerald-200 bg-emerald-50'
@@ -1004,9 +1002,9 @@ function CredentialCard({
         </p>
       )}
 
-      {unavailable && (
-        <p className="mt-1 text-[10px] leading-4 text-red-600">
-          {integrity.message || 'The trusted blockchain snapshot cannot currently be read, so integrity cannot be approved.'}
+      {pending && (
+        <p className="mt-1 text-[10px] leading-4 text-amber-700">
+          Verification is pending while the latest blockchain snapshot is synchronized and verified.
         </p>
       )}
 
