@@ -15,6 +15,7 @@ import { useGeolocation } from '../../tracking/hooks/useGeolocation';
 import { EvidenceUploader } from '../components/EvidenceUploader';
 
 import { safetyService } from '../../safety/api/safetyService';
+import { useCurrentTrip } from '../../trips/api/tripQueries';
 
 const TYPES = [
   ['CROWD', 'Crowd / stampede risk'],
@@ -185,6 +186,8 @@ function CategoryDropdown({ value, onChange }) {
 
 export function ReportIncidentPage() {
   const { location } = useGeolocation(undefined, false);
+  const { data: currentTrip, isLoading: tripLoading } = useCurrentTrip();
+  const hasActiveTrip = currentTrip?.status === 'ACTIVE';
 
   const [type, setType] = useState('CROWD');
 
@@ -204,6 +207,11 @@ export function ReportIncidentPage() {
 
   const submit = async (event) => {
     event.preventDefault();
+
+    if (!hasActiveTrip) {
+      setError('You can report a manual incident only while a trip is active.');
+      return;
+    }
 
     if (!location) {
       setError(
@@ -281,7 +289,24 @@ export function ReportIncidentPage() {
         </div>
       )}
 
-      {!created ? (
+      {tripLoading ? (
+        <div className="py-16 flex justify-center"><Loader2 className="animate-spin" /></div>
+      ) : !hasActiveTrip ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
+          <div className="flex gap-3">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
+            <div>
+              <h2 className="font-black text-slate-900">Active trip required</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Manual incident reporting is available only during an active trip. Start your trip first so the report can be attached to the correct trip and sent to Disaster Management.
+              </p>
+              <Link to="/tourist/trips/current" className="inline-flex mt-4 rounded-lg bg-slate-900 px-4 py-2 text-xs font-black text-white">
+                Go to Trips
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : !created ? (
         <form
           onSubmit={submit}
           className="
