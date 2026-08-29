@@ -161,6 +161,32 @@ Authorization is enforced by backend middleware. Client-side route visibility is
     └── trip-planner/            # FastAPI itinerary service
 ```
 
+## Request and data flow
+
+```text
+HTTP request
+ → security/request-id/logging/CORS/rate-limit middleware
+ → feature route
+ → authenticate / authorize / Zod validate
+ → controller
+ → service business rules
+ → repository / Prisma or external integration
+ → PostgreSQL source-of-truth mutation/read
+ → optional cache invalidation/population
+ → optional Socket.IO + Mailjet + blockchain job side effects
+ → response
+```
+
+### Performance strategy
+
+KAVACH uses Redis selectively rather than caching everything because fast stale data is still stale data. Destination discovery, safety/risk-zone reference reads, jurisdiction Places lookups, dashboard counters, and analytics aggregates get bounded TTL caching. Risk-zone writes invalidate affected cache families. Live GPS, dispatch status/location, group membership, current trip, notifications and SOS state are intentionally left uncached and use persistent state plus Socket.IO.
+
+### Endpoint families
+
+The main API currently mounts authentication, tourists, trips, groups, credentials, tracking, safety, signal-loss, alerts, SOS, incidents, Disaster Management, notifications/delivery, escalations, hazards, risk zones, monitoring, dispatch, emergency services, evidence, System Admin, analytics, chatbot proxy/integration endpoints, dashboard, destinations, integrations, audit and observability under `/api/v1`.
+
+See `server/documentation/ENDPOINTS.md` for the route-level catalogue and `server/documentation/SYSTEM-FLOW.md` / `TECHNICAL-FLOW.md` for end-to-end execution.
+
 ## Prerequisites
 
 - Node.js 20.19+ and npm
