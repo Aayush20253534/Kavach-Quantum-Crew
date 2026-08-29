@@ -9,6 +9,7 @@ export const createTripBodySchema = z
     tripType: z.enum(["SOLO", "GROUP"]),
     plannedStartAt: dateTime,
     plannedEndAt: dateTime,
+    aiPlan: z.unknown().optional(),
   })
   .superRefine((value, context) => {
     const start = new Date(value.plannedStartAt);
@@ -23,6 +24,7 @@ export const createTripBodySchema = z
   });
 
 export const tripIdParamsSchema = z.object({ tripId });
+export const attachAiPlanBodySchema = z.object({ aiPlan: z.unknown() });
 
 export const consentIdParamsSchema = z.object({
   tripId,

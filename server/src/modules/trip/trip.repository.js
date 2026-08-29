@@ -59,10 +59,20 @@ export const createTripRepository = ({ db = prisma } = {}) => ({
         tripType: input.tripType,
         plannedStartAt: input.plannedStartAt,
         plannedEndAt: input.plannedEndAt,
+        aiPlan: input.aiPlan ?? undefined,
       },
       include: tripInclude,
     });
   },
+
+  attachAiPlan(tripId, aiPlan) {
+    return db.trip.update({
+      where: { id: tripId },
+      data: { aiPlan },
+      include: tripInclude,
+    });
+  },
+
 
   listHistory(userId, { limit, cursor }) {
     return db.trip.findMany({

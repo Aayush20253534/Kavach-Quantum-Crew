@@ -1,14 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { AlertTriangle, Calendar, CheckCircle2, Clock3, Copy, Loader2, LogIn, MapPin, Navigation, Play, ShieldCheck, TimerReset, UserCheck, UserX, Users, XCircle } from 'lucide-react';
+import { AlertTriangle, ArrowRight, BedDouble, Calendar, CheckCircle2, Clock3, Copy, Loader2, Lock, LogIn, MapPin, Navigation, Play, ShieldCheck, Sparkles, TimerReset, UserCheck, UserX, Users, XCircle } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { groupService } from '../../groups/api/groupService';
 import { credentialService } from '../../credentials/api/credentialService';
 import { tripService } from '../api/tripService';
 import { emergencyServicesApi } from '../../emergency-services/api/emergencyServicesApi';
 import { createRealtimeSocket } from '../../../services/realtimeClient';
+import { ItineraryTimeline } from '../components/ai-planner/ItineraryTimeline';
+import { HotelRecommendations } from '../components/ai-planner/HotelRecommendations';
 
 const dateText = (value) => value ? new Date(value).toLocaleString() : '—';
 const MIN_GROUP_MEMBERS_TO_START = 2;
@@ -34,6 +36,7 @@ const getStartLocation = () =>
 
 
 export function CurrentTripPage() {
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const [trip, setTrip] = useState(null);
   const [group, setGroup] = useState(null);
@@ -49,6 +52,7 @@ export function CurrentTripPage() {
   const [blockchainIntegrity, setBlockchainIntegrity] = useState(null);
   const [groupBlockchainIntegrity, setGroupBlockchainIntegrity] = useState(null);
   const [integritySocketConnected, setIntegritySocketConnected] = useState(false);
+  const [groupView, setGroupView] = useState('group');
   const integrityTimerRef = useRef([]);
   const groupIntegrityTimerRef = useRef([]);
 
@@ -93,6 +97,10 @@ export function CurrentTripPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (trip?.id) setGroupView('group');
+  }, [trip?.id]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 30_000);
@@ -264,6 +272,51 @@ export function CurrentTripPage() {
     finally { setBusy(''); }
   };
 
+  const lockGroup = async () => {
+    if (!group?.id || group.isLocked) return;
+    const confirmed = window.confirm('Are you sure you want to lock this group? After locking, no new member can join and pending join requests will be closed.');
+    if (!confirmed) return;
+    await run('lock-group', async () => {
+      const locked = await groupService.lockGroup(group.id);
+      setGroup(locked);
+      setJoinRequests([]);
+    });
+  };
+
+  const openPlanningChoices = () => {
+    navigate('/tourist/trips/create', {
+      state: {
+        destination: { name: trip.locationName },
+        tripType: trip.tripType,
+        plannedStartAt: trip.plannedStartAt,
+        plannedEndAt: trip.plannedEndAt,
+        existingTripId: trip.id,
+        groupLocked: Boolean(group?.isLocked),
+        startAtMode: true,
+      },
+    });
+  };
+
+  const planCurrentTripWithAI = () => {
+    const checkIn = new Date(trip.plannedStartAt).toISOString().slice(0, 10);
+    const checkOut = new Date(trip.plannedEndAt).toISOString().slice(0, 10);
+    navigate('/tourist/trips/ai-planner', {
+      state: {
+        existingTripId: trip.id,
+        autoGenerate: true,
+        tripDraft: {
+          city: trip.locationName,
+          tripType: trip.tripType,
+          check_in: checkIn,
+          check_out: checkOut,
+          plannedStartAt: trip.plannedStartAt,
+          plannedEndAt: trip.plannedEndAt,
+          existingTripId: trip.id,
+        },
+      },
+    });
+  };
+
   const respondToSignalCase = async (item, response) => {
     const actionName = response === 'FALSE_ALARM' ? `signal-false-${item.id}` : `signal-danger-${item.id}`;
     setBusy(actionName);
@@ -300,6 +353,7 @@ export function CurrentTripPage() {
   const isOwner = trip?.touristId === user?.id;
   const groupMemberCount = group?.members?.length || 0;
   const groupTooSmallToStart = trip?.tripType === 'GROUP' && groupMemberCount < MIN_GROUP_MEMBERS_TO_START;
+  const groupLocked = Boolean(group?.isLocked);
   const remainingMs =
     trip?.status === 'ACTIVE'
       ? new Date(trip.plannedEndAt).getTime() - now
@@ -429,19 +483,26 @@ export function CurrentTripPage() {
           <div className="flex flex-wrap gap-2">
             {isOwner && trip.status === 'PLANNED' && (
               <>
-                <button
-                  onClick={start}
-                  disabled={Boolean(busy) || groupTooSmallToStart}
-                  title={groupTooSmallToStart ? 'Add at least one more member before starting this group trip.' : undefined}
-                  className="inline-flex min-w-[116px] items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-[11px] font-black text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 sm:text-xs"
-                >
-                  {busy === 'start' ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Play className="h-4 w-4" />
-                  )}
-                  {busy === 'start' ? 'Starting…' : 'Start Trip'}
-                </button>
+                {trip.tripType === 'GROUP' ? (
+                  <button
+                    type="button"
+                    onClick={openPlanningChoices}
+                    disabled={Boolean(busy) || groupTooSmallToStart || !groupLocked}
+                    title={!groupLocked ? 'Lock the group before continuing.' : groupTooSmallToStart ? 'Add at least one more member before continuing.' : undefined}
+                    className="inline-flex min-w-[104px] items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-[11px] font-black text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 sm:text-xs"
+                  >
+                    Next <ArrowRight className="h-4 w-4" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={start}
+                    disabled={Boolean(busy)}
+                    className="inline-flex min-w-[110px] items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-[11px] font-black text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50 sm:text-xs"
+                  >
+                    {busy === 'start' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                    {busy === 'start' ? 'Starting…' : 'Start Trip'}
+                  </button>
+                )}
                 <button onClick={() => run('cancel', () => tripService.cancelTrip(trip.id))} disabled={busy} className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-lg border border-red-200 text-red-600 text-[11px] sm:text-xs font-black">
                   Cancel
                 </button>
@@ -464,9 +525,11 @@ export function CurrentTripPage() {
           </div>
         </div>
 
-        {groupTooSmallToStart && trip.status === 'PLANNED' && (
+        {trip.tripType === 'GROUP' && trip.status === 'PLANNED' && groupView === 'group' && !groupLocked && (
           <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-[11px] sm:text-xs font-semibold text-amber-800">
-            Add at least one more group member before starting. Group trips require a minimum of 2 members.
+            {groupTooSmallToStart
+              ? 'Add at least one more member, then lock the group. Next stays disabled until membership is locked.'
+              : 'Review the member list and lock the group when it is final. Next stays disabled until you confirm the lock.'}
           </div>
         )}
 
@@ -495,17 +558,51 @@ export function CurrentTripPage() {
       </div>
 
       {trip.tripType === 'GROUP' && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-sm">
+        <div className="flex w-fit rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+          <button
+            type="button"
+            onClick={() => setGroupView('group')}
+            className={`rounded-md px-3 py-2 text-[11px] font-black transition ${groupView === 'group' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900'}`}
+          >
+            Group & Join ID
+          </button>
+          <button
+            type="button"
+            onClick={() => setGroupView('plan')}
+            className={`rounded-md px-3 py-2 text-[11px] font-black transition ${groupView === 'plan' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900'}`}
+          >
+            Trip Plan
+          </button>
+        </div>
+      )}
+
+      {trip.tripType === 'GROUP' && groupView === 'group' && (
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-sm sm:text-base font-black">Trip Group</h2>
               <p className="text-[11px] sm:text-xs text-slate-500 mt-1">{groupMemberCount} active member(s)</p>
             </div>
-            {groupCredential?.groupJoinQrPayload && (
-              <span className="rounded-lg bg-emerald-50 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-emerald-700">
-                QR ready to scan
-              </span>
-            )}
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {groupLocked ? (
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white">
+                  <Lock className="h-3.5 w-3.5" /> Group locked
+                </span>
+              ) : groupCredential?.groupJoinQrPayload ? (
+                <span className="rounded-lg bg-emerald-50 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-emerald-700">QR ready to scan</span>
+              ) : null}
+              {isOwner && trip.status === 'PLANNED' && !groupLocked && (
+                <button
+                  type="button"
+                  onClick={lockGroup}
+                  disabled={Boolean(busy) || groupTooSmallToStart}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-[10px] font-black text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {busy === 'lock-group' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
+                  Lock group
+                </button>
+              )}
+            </div>
           </div>
 
           {groupCredential && (
@@ -519,7 +616,7 @@ export function CurrentTripPage() {
             </div>
           )}
 
-          {isOwner && trip.status === 'PLANNED' && joinRequests.length > 0 && (
+          {isOwner && trip.status === 'PLANNED' && !groupLocked && joinRequests.length > 0 && (
             <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -570,7 +667,7 @@ export function CurrentTripPage() {
             </div>
           )}
 
-          {groupCredential?.groupJoinQrPayload && (
+          {!groupLocked && groupCredential?.groupJoinQrPayload && (
             <CredentialQrPanel
               title="Scan Group ID to join"
               description="This secure QR lets another tourist request to join your group. The underlying blockchain identifier is never displayed to users."
@@ -581,7 +678,96 @@ export function CurrentTripPage() {
           )}
         </div>
       )}
+
+      {trip.tripType === 'GROUP' && groupView === 'plan' && (
+        <TripPlanPanel
+          trip={trip}
+          isOwner={isOwner}
+          busy={busy}
+          onStart={start}
+          canStart={!groupTooSmallToStart && groupLocked}
+          onPlanWithAI={planCurrentTripWithAI}
+          onBackToGroup={() => setGroupView('group')}
+        />
+      )}
+
+      {trip.tripType === 'SOLO' && trip.aiPlan && (
+        <TripPlanPanel trip={trip} isOwner={isOwner} busy={busy} onStart={start} canStart onPlanWithAI={planCurrentTripWithAI} />
+      )}
     </div>
+  );
+}
+
+
+function TripPlanPanel({ trip, isOwner, busy, onStart, canStart, onBackToGroup, onPlanWithAI }) {
+  const plan = trip.aiPlan;
+  const itinerary = plan?.itinerary;
+  const hotels = plan?.hotels?.hotels || plan?.hotels || [];
+  const days = itinerary?.days || [];
+
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-violet-600">
+            <Sparkles className="h-3.5 w-3.5" /> {plan ? 'AI trip plan' : 'Trip plan'}
+          </div>
+          <h2 className="mt-1 text-lg font-black text-slate-950">{trip.locationName}</h2>
+          <p className="mt-1 text-xs text-slate-500">{dateText(trip.plannedStartAt)} → {dateText(trip.plannedEndAt)}</p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {onBackToGroup && (
+            <button type="button" onClick={onBackToGroup} className="rounded-lg border border-slate-200 px-3 py-2 text-[11px] font-black text-slate-600">
+              Group & Join ID
+            </button>
+          )}
+          {isOwner && trip.status === 'PLANNED' && (
+            <button
+              type="button"
+              onClick={onStart}
+              disabled={Boolean(busy) || !canStart}
+              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-[11px] font-black text-white disabled:opacity-50"
+            >
+              {busy === 'start' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              {busy === 'start' ? 'Starting…' : 'Start Trip'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {!plan ? (
+        <div className="py-8 text-center">
+          <MapPin className="mx-auto h-6 w-6 text-slate-300" />
+          <p className="mt-2 text-sm font-black text-slate-800">Manual trip</p>
+          <p className="mt-1 text-xs text-slate-500">No AI itinerary is attached. Your destination and schedule are ready.</p>
+          {isOwner && trip.status === 'PLANNED' && onPlanWithAI && (
+            <button type="button" onClick={onPlanWithAI} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-[11px] font-black text-white">
+              <Sparkles className="h-4 w-4" /> Plan with AI
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
+          <div className="min-w-0">
+            <div className="mb-3 flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-violet-600" />
+              <h3 className="text-sm font-black text-slate-900">Day-by-day itinerary</h3>
+            </div>
+            <ItineraryTimeline days={days} />
+          </div>
+          {hotels.length > 0 && (
+            <aside className="min-w-0">
+              <div className="mb-3 flex items-center gap-2">
+                <BedDouble className="h-4 w-4 text-blue-600" />
+                <h3 className="text-sm font-black text-slate-900">Recommended stays</h3>
+              </div>
+              <HotelRecommendations hotels={hotels} />
+            </aside>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -593,7 +779,7 @@ function CredentialQrPanel({ title, description, value, copyValue, copyLabel, ra
         <div className="shrink-0 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
           <QRCodeSVG
             value={value}
-            size={260}
+            size={180}
             level="L"
             marginSize={4}
             bgColor="#FFFFFF"

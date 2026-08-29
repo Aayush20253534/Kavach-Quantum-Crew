@@ -21,6 +21,7 @@ export function AITripPlannerPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const tripDraft = location.state?.tripDraft || null;
+  const existingTripId = location.state?.existingTripId || tripDraft?.existingTripId || null;
   const shouldAutoGenerate = Boolean(location.state?.autoGenerate && tripDraft);
   const autoGenerateStarted = useRef(false);
   
@@ -35,7 +36,7 @@ export function AITripPlannerPage() {
   });
 
   const [loadingStep, setLoadingStep] = useState(0);
-  const [saveTripType, setSaveTripType] = useState(tripDraft?.tripType || 'SOLO');
+  const saveTripType = tripDraft?.tripType || 'SOLO';
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -99,15 +100,20 @@ export function AITripPlannerPage() {
     setSaving(true);
     setError('');
     try {
-      const trip = await tripService.createTrip({
-        locationName: formData.city,
-        tripType: saveTripType,
-        plannedStartAt: tripDraft?.plannedStartAt || new Date(formData.check_in).toISOString(),
-        plannedEndAt: tripDraft?.plannedEndAt || new Date(formData.check_out).toISOString(),
-      });
+      if (existingTripId) {
+        await tripService.attachAiPlan(existingTripId, result);
+      } else {
+        const trip = await tripService.createTrip({
+          locationName: formData.city,
+          tripType: saveTripType,
+          plannedStartAt: tripDraft?.plannedStartAt || new Date(formData.check_in).toISOString(),
+          plannedEndAt: tripDraft?.plannedEndAt || new Date(formData.check_out).toISOString(),
+          aiPlan: result,
+        });
 
-      if (saveTripType === 'GROUP') {
-        await groupService.createGroupForTrip(trip.id);
+        if (saveTripType === 'GROUP') {
+          await groupService.createGroupForTrip(trip.id);
+        }
       }
 
       navigate('/tourist/trips/current', { replace: true });
@@ -153,9 +159,9 @@ export function AITripPlannerPage() {
     const daysDiff = Math.max(1, Math.ceil((new Date(formData.check_out) - new Date(formData.check_in)) / (1000 * 60 * 60 * 24)));
     
     return (
-      <div className="pb-24 animate-in fade-in duration-500">
+      <div className="pb-12 animate-in fade-in duration-500">
         {/* Sticky Header */}
-        <div className="sticky top-16 bg-white/80 backdrop-blur-xl z-40 border-b border-slate-200 px-4 py-4 mb-8">
+        <div className="sticky top-16 bg-white/90 backdrop-blur-xl z-40 border-b border-slate-200 px-3 py-3 mb-5">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
             <button 
               onClick={() => shouldAutoGenerate ? navigate('/tourist/trips/create', { state: { destination: { name: tripDraft.city }, tripType: tripDraft.tripType } }) : setStatus('idle')}
@@ -164,39 +170,30 @@ export function AITripPlannerPage() {
               <ChevronLeft className="w-4 h-4" /> {shouldAutoGenerate ? 'Change Trip Details' : 'Edit Preferences'}
             </button>
             <div className="flex items-center gap-3">
-              <select
-                value={saveTripType}
-                onChange={(e) => setSaveTripType(e.target.value)}
-                className="bg-slate-100 border-none text-sm font-bold text-slate-700 py-2.5 pl-4 pr-8 rounded-lg focus:ring-2 focus:ring-slate-900 outline-none cursor-pointer appearance-none"
-                style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23475569%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.7rem top 50%', backgroundSize: '0.65rem auto' }}
-              >
-                <option value="SOLO">Solo Trip</option>
-                <option value="GROUP">Group Trip</option>
-              </select>
               <button
                 onClick={handleSaveToTrips}
                 disabled={saving}
                 className="bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-sm transition-colors flex items-center gap-2"
               >
                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                Add to My Trips
+                {existingTripId ? 'Save AI Plan' : 'Add to My Trips'}
               </button>
             </div>
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 space-y-12">
+        <div className="max-w-5xl mx-auto px-3 space-y-6">
           {/* Trip Hero Summary */}
-          <div className="bg-slate-900 rounded-3xl p-8 md:p-12 text-white relative overflow-hidden shadow-xl">
+          <div className="bg-slate-900 rounded-2xl p-5 md:p-6 text-white relative overflow-hidden shadow-sm">
             <div className="absolute top-0 right-0 p-32 bg-gradient-to-bl from-slate-700/50 to-transparent rounded-bl-full opacity-50 pointer-events-none"></div>
             <div className="relative z-10 max-w-2xl">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 border border-white/20 rounded-full text-xs font-bold uppercase tracking-widest mb-6">
                 <Sparkles className="w-3 h-3 text-emerald-400" /> AI Itinerary
               </div>
-              <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4">
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight mb-2">
                 {result.itinerary?.city}
               </h1>
-              <p className="text-slate-300 font-medium text-lg flex items-center gap-2">
+              <p className="text-slate-300 font-medium text-sm flex flex-wrap items-center gap-2">
                 <Calendar className="w-5 h-5 opacity-70" />
                 {new Date(formData.check_in).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - {new Date(formData.check_out).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                 <span className="mx-2 opacity-30">•</span>
@@ -206,7 +203,7 @@ export function AITripPlannerPage() {
           </div>
 
           {/* Main Layout Grid */}
-          <div className="grid lg:grid-cols-12 gap-10">
+          <div className="grid lg:grid-cols-12 gap-6">
             {/* Left Column: Hotels */}
             <div className="lg:col-span-4 space-y-6">
               <div className="flex items-center gap-3 border-b border-slate-200 pb-4">

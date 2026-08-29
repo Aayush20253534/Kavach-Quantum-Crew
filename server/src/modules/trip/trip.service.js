@@ -30,6 +30,7 @@ const serializeTrip = (trip, now = new Date()) => ({
   status: trip.status,
   plannedStartAt: trip.plannedStartAt,
   plannedEndAt: trip.plannedEndAt,
+  aiPlan: trip.aiPlan ?? null,
   startedAt: trip.startedAt,
   endedAt: trip.endedAt,
   cancelledAt: trip.cancelledAt,
@@ -165,6 +166,16 @@ export const createTripService = ({
 
     async getTrip(userId, tripId) {
       return serializeTrip(await requireTrip(repository, tripId, userId), clock());
+    },
+
+    async attachAiPlan(userId, tripId, aiPlan) {
+      const trip = await requireTrip(repository, tripId, userId);
+      if (trip.status !== "PLANNED") {
+        throw ApiError.conflict("AI planning is only available before the trip starts", { code: "TRIP_NOT_PLANNED" });
+      }
+      const updated = await repository.attachAiPlan(tripId, aiPlan);
+      await repository.createAudit({ actorId: userId, action: "TRIP_AI_PLAN_ATTACHED", entityId: tripId, metadata: { replaced: Boolean(trip.aiPlan) } });
+      return serializeTrip(updated, clock());
     },
 
     async getHistory(userId, query) {

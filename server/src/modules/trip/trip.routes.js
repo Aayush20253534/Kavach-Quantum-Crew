@@ -8,6 +8,7 @@ import { validate } from "../../middleware/validate.middleware.js";
 import { tripController } from "./trip.controller.js";
 import {
   aiTripPlanBodySchema,
+  attachAiPlanBodySchema,
   consentIdParamsSchema,
   createTripBodySchema,
   grantConsentBodySchema,
@@ -35,6 +36,11 @@ export const createTripRouter = ({ controller = tripController } = {}) => {
     "/history",
     validate({ query: tripHistoryQuerySchema }),
     asyncHandler(controller.history),
+  );
+  router.post(
+    "/:tripId/ai-plan",
+    validate({ params: tripIdParamsSchema, body: attachAiPlanBodySchema }),
+    asyncHandler(controller.attachAiPlan),
   );
   router.get(
     "/:tripId",
