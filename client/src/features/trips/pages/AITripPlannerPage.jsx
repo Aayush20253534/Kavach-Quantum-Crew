@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
-  Sparkles, MapPin, Calendar, Compass, 
-  ChevronLeft, Map, BedDouble, ArrowRight,
+  Sparkles, Calendar,
+  ChevronLeft, Map, BedDouble,
   CheckCircle2, Loader2, MessageSquareText
 } from 'lucide-react';
 import { tripService } from '../api/tripService';
@@ -51,11 +51,6 @@ export function AITripPlannerPage() {
     return () => clearInterval(interval);
   }, [status]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
   const generatePlan = async (data) => {
     setStatus('loading');
     setError('');
@@ -84,10 +79,10 @@ export function AITripPlannerPage() {
     }
   };
 
-  const handlePlanTrip = async (e) => {
-    e.preventDefault();
-    await generatePlan(formData);
-  };
+  useEffect(() => {
+    if (tripDraft) return;
+    navigate('/tourist/trips/create', { replace: true });
+  }, [navigate, tripDraft]);
 
   useEffect(() => {
     if (!shouldAutoGenerate || autoGenerateStarted.current) return;
@@ -206,20 +201,13 @@ export function AITripPlannerPage() {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/tourist/trips/create', {
-                state: {
-                  destination: { name: tripDraft.city },
-                  tripType: tripDraft.tripType,
-                  plannedStartAt: tripDraft.plannedStartAt,
-                  plannedEndAt: tripDraft.plannedEndAt,
-                  existingTripId,
-                  groupLocked: location.state?.groupLocked,
-                  startAtMode: true,
-                },
+              onClick={() => navigate('/tourist/trips/current', {
+                replace: true,
+                state: { openGroupView: tripDraft.tripType === 'GROUP' },
               })}
               className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
             >
-              Plan without AI
+              Continue without AI
             </button>
           </div>
         </div>
@@ -344,91 +332,11 @@ export function AITripPlannerPage() {
     );
   }
 
-  // IDLE / FORM STATE
+  // The AI planner is route-state driven only. Destination, dates and trip type
+  // are always selected on the normal Trips page, never entered again here.
   return (
-    <div className="max-w-5xl mx-auto pb-16 pt-4 px-4">
-      <button 
-        onClick={() => navigate('/tourist/trips/create')}
-        className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors mb-10"
-      >
-        <ChevronLeft className="w-4 h-4" /> Back to Manual Planning
-      </button>
-
-      <div className="text-center max-w-2xl mx-auto mb-12">
-        <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4">
-          Intelligent Travel Planning
-        </h1>
-        <p className="text-lg text-slate-500 font-medium leading-relaxed">
-          Specify your destination and dates. Our AI will curate a highly optimized itinerary and recommend accommodations tailored for you.
-        </p>
-      </div>
-
-      <div className="max-w-3xl mx-auto">
-        <form onSubmit={handlePlanTrip} className="bg-white rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-200 p-8 md:p-12">
-          {error && (
-            <div className="mb-8 p-4 bg-red-50 text-red-700 rounded-xl border border-red-200 text-sm font-semibold flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-8">
-            <div className="space-y-3">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                <MapPin className="w-4 h-4" /> Destination
-              </label>
-              <input
-                type="text"
-                name="city"
-                required
-                value={formData.city}
-                onChange={handleChange}
-                placeholder="Where do you want to go?"
-                className="w-full bg-transparent border-b-2 border-slate-200 px-2 py-3 text-2xl md:text-3xl font-black text-slate-900 placeholder:text-slate-300 focus:border-slate-900 outline-none transition-colors"
-              />
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="space-y-3">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                  <Calendar className="w-4 h-4" /> Check In
-                </label>
-                <input
-                  type="date"
-                  name="check_in"
-                  required
-                  value={formData.check_in}
-                  onChange={handleChange}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-900 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 outline-none transition-all"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                  <Calendar className="w-4 h-4" /> Check Out
-                </label>
-                <input
-                  type="date"
-                  name="check_out"
-                  required
-                  value={formData.check_out}
-                  onChange={handleChange}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-900 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 outline-none transition-all"
-                />
-              </div>
-            </div>
-
-            <div className="pt-8 flex justify-center">
-              <button
-                type="submit"
-                className="w-full md:w-auto bg-slate-900 hover:bg-slate-800 text-white px-10 py-4 rounded-xl font-black text-sm tracking-wide flex items-center justify-center gap-3 shadow-md hover:shadow-lg transition-all"
-              >
-                Start Planning <ArrowRight className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
+    <div className="min-h-[45vh] flex items-center justify-center">
+      <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
     </div>
   );
 }

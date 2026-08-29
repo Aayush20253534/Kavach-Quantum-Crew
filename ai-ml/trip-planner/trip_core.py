@@ -281,13 +281,31 @@ def select_hotels(
     return [Hotel(**h) for h in selected]
 
 def build_trip_response(city: str, num_days: int, check_in: str, check_out: str) -> dict:
+    # Places + the LLM itinerary are the core planning path. Hotel lookup is
+    # supplemental, so a Google Hotels / SerpAPI failure must not discard an
+    # otherwise valid itinerary.
     raw_places = get_top_places.invoke({"city": city})
-    raw_hotels = get_hotels.invoke({"city": city, "check_in": check_in, "check_out": check_out})
-
     itinerary = generate_itinerary(city, num_days, raw_places)
-    hotels = select_hotels(raw_hotels, num_buckets=6)
 
-    return {
+    warnings = []
+    hotels = []
+    try:
+        raw_hotels = get_hotels.invoke({
+            "city": city,
+            "check_in": check_in,
+            "check_out": check_out,
+        })
+        hotels = select_hotels(raw_hotels, num_buckets=6)
+    except Exception as exc:
+        # Hotel availability can fail independently of place search and Groq.
+        # Keep the usable itinerary rather than converting that partial failure
+        # into a 502 from FastAPI and then a 503 from the main backend.
+        warnings.append(f"Hotel recommendations unavailable: {exc}")
+
+    response = {
         "itinerary": itinerary.model_dump(),
         "hotels": HotelOutput(city=city, hotels=hotels).model_dump(),
     }
+    if warnings:
+        response["warnings"] = warnings
+    return response

@@ -252,7 +252,10 @@ export function CurrentTripPage() {
   }, [individualCredential?.id, groupCredential?.id, trip?.id]);
 
   useEffect(() => {
-    if (!group?.id || group.leaderId !== user?.id || trip?.status !== 'PLANNED') return undefined;
+    if (!group?.id || group.isLocked || group.leaderId !== user?.id || trip?.status !== 'PLANNED') {
+      if (group?.isLocked) setJoinRequests([]);
+      return undefined;
+    }
     let cancelled = false;
     const refresh = async () => {
       try {
@@ -739,8 +742,12 @@ function TripPlanPanel({ trip, isOwner, busy, onStart, canStart, onBackToGroup, 
       {!plan ? (
         <div className="py-8 text-center">
           <MapPin className="mx-auto h-6 w-6 text-slate-300" />
-          <p className="mt-2 text-sm font-black text-slate-800">Manual trip</p>
-          <p className="mt-1 text-xs text-slate-500">No AI itinerary is attached. Your destination and schedule are ready.</p>
+          <p className="mt-2 text-sm font-black text-slate-800">{isOwner ? 'No AI plan yet' : 'Waiting for the trip leader'}</p>
+          <p className="mt-1 text-xs text-slate-500">
+            {isOwner
+              ? 'Your destination and schedule are ready. Generate an AI itinerary whenever you want.'
+              : 'Only the group leader can generate the itinerary. Once generated, it will appear here automatically for every member.'}
+          </p>
           {isOwner && trip.status === 'PLANNED' && onPlanWithAI && (
             <button type="button" onClick={onPlanWithAI} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-[11px] font-black text-white">
               <Sparkles className="h-4 w-4" /> Plan with AI
