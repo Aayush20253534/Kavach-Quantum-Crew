@@ -7,6 +7,7 @@ import { authorize } from "../../middleware/authorize.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
 import { tripController } from "./trip.controller.js";
 import {
+  aiTripPlanBodySchema,
   consentIdParamsSchema,
   createTripBodySchema,
   grantConsentBodySchema,
@@ -21,6 +22,11 @@ export const createTripRouter = ({ controller = tripController } = {}) => {
   router.use(authenticate, authorize(ROLES.TOURIST));
 
   router.post("/", validate({ body: createTripBodySchema }), asyncHandler(controller.create));
+  router.post(
+    "/ai-plan",
+    validate({ body: aiTripPlanBodySchema }),
+    asyncHandler(controller.planWithAI),
+  );
   router.get(
     "/current",
     asyncHandler(controller.current),

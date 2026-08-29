@@ -1,7 +1,14 @@
 import { ApiResponse } from "../../common/responses/ApiResponse.js";
 import { tripService } from "./trip.service.js";
+import { aiTripPlannerService } from "../../integrations/ai/trip-planner.service.js";
 
-export const createTripController = ({ service = tripService } = {}) => ({
+export const createTripController = ({ service = tripService, planner = aiTripPlannerService } = {}) => ({
+  planWithAI: async (request, response) =>
+    ApiResponse.success(response, {
+      message: "AI trip plan generated",
+      data: await planner.plan(request.body),
+    }),
+
   create: async (request, response) =>
     ApiResponse.success(response, {
       statusCode: 201,

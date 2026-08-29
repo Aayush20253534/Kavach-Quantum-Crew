@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+import os
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
@@ -7,7 +8,17 @@ from pydantic import BaseModel, Field
 # Import the original, unmodified trip-planning logic.
 from trip_core import build_trip_response
 
-app = FastAPI(title="AI Trip Planner API")
+app = FastAPI(title="Kavach Python Trip Planner API")
+
+
+@app.get("/health")
+def health():
+    return {
+        "ok": True,
+        "service": "kavach-python-trip-planner",
+        "serpapi_configured": bool(os.getenv("SERPAPI_API_KEY")),
+        "groq_configured": bool(os.getenv("GROQ_API_KEY")),
+    }
 
 
 class TripPlanRequest(BaseModel):

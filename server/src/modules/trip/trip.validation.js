@@ -61,3 +61,20 @@ export const startTripBodySchema = z
     }
   })
   .default({});
+
+export const aiTripPlanBodySchema = z
+  .object({
+    city: z.string().trim().min(2).max(160),
+    num_days: z.number().int().min(1).max(30),
+    check_in: z.string().date(),
+    check_out: z.string().date(),
+  })
+  .superRefine((value, context) => {
+    if (new Date(value.check_out) <= new Date(value.check_in)) {
+      context.addIssue({
+        code: "custom",
+        path: ["check_out"],
+        message: "check_out must be after check_in",
+      });
+    }
+  });

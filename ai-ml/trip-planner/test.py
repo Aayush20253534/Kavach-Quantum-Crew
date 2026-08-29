@@ -1,6 +1,6 @@
 import serpapi
 import os
-client = serpapi.Client(api_key="dc4961b819dfd9e42b6cc30a00340bce2491efc6bd43183c40dd670401c27b9d")
+client = serpapi.Client(api_key=os.getenv("SERPAPI_API_KEY"))
 
 from langchain_core.tools import tool
 
