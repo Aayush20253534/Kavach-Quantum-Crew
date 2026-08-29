@@ -51,6 +51,7 @@ const makeRepository = (overrides = {}) => ({
   findCurrentTrip: jest.fn().mockResolvedValue(null),
   findByIdForTourist: jest.fn().mockResolvedValue(baseTrip),
   create: jest.fn().mockResolvedValue(baseTrip),
+  attachAiPlan: jest.fn(),
   listHistory: jest.fn().mockResolvedValue([]),
   upsertConsent: jest.fn(),
   findConsentById: jest.fn(),
@@ -139,6 +140,44 @@ describe("Phase 4 trip service", () => {
     });
   });
 
+  test("rejects AI planning for a group with fewer than two active members", async () => {
+    const repository = makeRepository({
+      findByIdForTourist: jest.fn().mockResolvedValue({
+        ...baseTrip,
+        tripType: "GROUP",
+        group: { isLocked: false, members: [{ id: "member-1", userId: USER_ID }] },
+      }),
+    });
+    const service = makeService(repository);
+
+    await expect(service.attachAiPlan(USER_ID, TRIP_ID, { itinerary: {} })).rejects.toMatchObject({
+      code: "GROUP_MIN_MEMBERS_REQUIRED",
+    });
+    expect(repository.attachAiPlan).not.toHaveBeenCalled();
+  });
+
+  test("rejects AI planning for an unlocked group even when it has two members", async () => {
+    const repository = makeRepository({
+      findByIdForTourist: jest.fn().mockResolvedValue({
+        ...baseTrip,
+        tripType: "GROUP",
+        group: {
+          isLocked: false,
+          members: [
+            { id: "member-1", userId: USER_ID },
+            { id: "member-2", userId: "66666666-6666-6666-6666-666666666666" },
+          ],
+        },
+      }),
+    });
+    const service = makeService(repository);
+
+    await expect(service.attachAiPlan(USER_ID, TRIP_ID, { itinerary: {} })).rejects.toMatchObject({
+      code: "GROUP_LOCK_REQUIRED",
+    });
+    expect(repository.attachAiPlan).not.toHaveBeenCalled();
+  });
+
   test("requires an active Safety ID before starting", async () => {
     const repository = makeRepository({
       findByIdForTourist: jest.fn().mockResolvedValue({ ...baseTrip, consents: grantedConsents }),
@@ -171,6 +210,37 @@ describe("Phase 4 trip service", () => {
 
     await expect(service.startTrip(USER_ID, TRIP_ID)).rejects.toMatchObject({
       code: "GROUP_MIN_MEMBERS_REQUIRED",
+    });
+    expect(repository.startTrip).not.toHaveBeenCalled();
+  });
+
+  test("rejects starting an unlocked group even when it has two active members", async () => {
+    const safetyId = {
+      id: SAFETY_RECORD,
+      publicId: "STS-test-safe-id",
+      issuedAt: NOW,
+      expiresAt: END,
+      revokedAt: null,
+    };
+    const repository = makeRepository({
+      findByIdForTourist: jest.fn().mockResolvedValue({
+        ...baseTrip,
+        tripType: "GROUP",
+        consents: grantedConsents,
+        safetyId,
+        group: {
+          isLocked: false,
+          members: [
+            { id: "member-1", userId: USER_ID },
+            { id: "member-2", userId: "66666666-6666-6666-6666-666666666666" },
+          ],
+        },
+      }),
+    });
+    const service = makeService(repository);
+
+    await expect(service.startTrip(USER_ID, TRIP_ID)).rejects.toMatchObject({
+      code: "GROUP_LOCK_REQUIRED",
     });
     expect(repository.startTrip).not.toHaveBeenCalled();
   });

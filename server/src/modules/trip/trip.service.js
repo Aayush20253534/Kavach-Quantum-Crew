@@ -173,6 +173,18 @@ export const createTripService = ({
       if (trip.status !== "PLANNED") {
         throw ApiError.conflict("AI planning is only available before the trip starts", { code: "TRIP_NOT_PLANNED" });
       }
+      if (trip.tripType === "GROUP") {
+        const activeMembers = trip.group?.members?.length ?? 0;
+        if (activeMembers < 2) {
+          throw ApiError.conflict("A group trip requires at least 2 active members before AI planning", {
+            code: "GROUP_MIN_MEMBERS_REQUIRED",
+            details: { minimumMembers: 2, activeMembers },
+          });
+        }
+        if (!trip.group?.isLocked) {
+          throw ApiError.conflict("Lock the group before planning the trip", { code: "GROUP_LOCK_REQUIRED" });
+        }
+      }
       const updated = await repository.attachAiPlan(tripId, aiPlan);
       await repository.createAudit({ actorId: userId, action: "TRIP_AI_PLAN_ATTACHED", entityId: tripId, metadata: { replaced: Boolean(trip.aiPlan) } });
       return serializeTrip(updated, clock());
@@ -271,6 +283,9 @@ export const createTripService = ({
           code: "GROUP_MIN_MEMBERS_REQUIRED",
           details: { minimumMembers: 2, activeMembers: trip.group?.members?.length ?? 0 },
         });
+      }
+      if (trip.tripType === "GROUP" && !trip.group?.isLocked) {
+        throw ApiError.conflict("Lock the group before starting the trip", { code: "GROUP_LOCK_REQUIRED" });
       }
 
       const now = clock();

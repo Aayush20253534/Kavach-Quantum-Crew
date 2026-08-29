@@ -327,6 +327,11 @@ export function CurrentTripPage() {
   };
 
   const planCurrentTripWithAI = () => {
+    if (trip?.tripType === 'GROUP' && (!group?.isLocked || (group?.members?.length || 0) < MIN_GROUP_MEMBERS_TO_START)) {
+      setError('Lock the group with at least 2 active members before planning with AI.');
+      setGroupView('group');
+      return;
+    }
     const checkIn = new Date(trip.plannedStartAt).toISOString().slice(0, 10);
     const checkOut = new Date(trip.plannedEndAt).toISOString().slice(0, 10);
     navigate('/tourist/trips/ai-planner', {
@@ -397,6 +402,7 @@ export function CurrentTripPage() {
   const groupMemberCount = group?.members?.length || 0;
   const groupTooSmallToStart = trip?.tripType === 'GROUP' && groupMemberCount < MIN_GROUP_MEMBERS_TO_START;
   const groupLocked = Boolean(group?.isLocked);
+  const groupReadyForPlanning = trip?.tripType === 'GROUP' && groupLocked && !groupTooSmallToStart;
   const remainingMs =
     trip?.status === 'ACTIVE'
       ? new Date(trip.plannedEndAt).getTime() - now
@@ -635,13 +641,15 @@ export function CurrentTripPage() {
           >
             Group & Join ID
           </button>
-          <button
-            type="button"
-            onClick={() => setGroupView('plan')}
-            className={`rounded-md px-3 py-2 text-[11px] font-black transition ${groupView === 'plan' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900'}`}
-          >
-            Trip Plan
-          </button>
+          {(groupReadyForPlanning || trip.aiPlan || trip.status === 'ACTIVE') && (
+            <button
+              type="button"
+              onClick={() => setGroupView('plan')}
+              className={`rounded-md px-3 py-2 text-[11px] font-black transition ${groupView === 'plan' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900'}`}
+            >
+              Trip Plan
+            </button>
+          )}
         </div>
       )}
 
@@ -748,7 +756,7 @@ export function CurrentTripPage() {
         </div>
       )}
 
-      {trip.tripType === 'GROUP' && groupView === 'plan' && (
+      {trip.tripType === 'GROUP' && groupView === 'plan' && (groupReadyForPlanning || trip.aiPlan || trip.status === 'ACTIVE') && (
         <TripPlanPanel
           trip={trip}
           isOwner={isOwner}
