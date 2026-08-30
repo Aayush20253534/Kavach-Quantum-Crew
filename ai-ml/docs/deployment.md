@@ -1,55 +1,157 @@
-## Current KAVACH AI topology
+# AI/ML Deployment Guide
 
-KAVACH intentionally has two AI-related services with different responsibilities:
+KAVACH deploys Rakshak AI and the Python Trip Planner as separate services.
 
-1. `ai-ml/` is **Rakshak AI**, a TypeScript/Express chatbot. It validates the same access JWT as the main backend when `AI_REQUIRE_AUTH=true`, retrieves relevant Markdown KB documents, loads bounded per-user history from PostgreSQL, optionally reads live KAVACH API context, calls Groq, and persists the conversation.
-2. `ai-ml/trip-planner/` is a **Python FastAPI trip planner**. The main backend calls it server-to-server. It combines SerpAPI top sights, Groq structured itinerary generation, and SerpAPI hotel results. The browser never needs SerpAPI/Groq keys.
+## 1. Rakshak AI local setup
 
-Neither service is the authoritative source for emergency status, trip ownership, group lock, dispatch status, or user identity. Those remain in the main backend/PostgreSQL.
-
-# Rakshak AI Deployment
-
-## Render
-
-Deploy `ai-ml/` as its own Web Service.
-
-```text
-Build: npm install && npm run build
-Start: npm start
-Health: /health
+```bash
+cd ai-ml
+cp .env.example .env
+npm install
+npm run dev
 ```
 
-## Required configuration
+Default local port: `4200`.
 
-Use `.env.example` as the source of truth. Important variables include:
+Production build:
 
-- `PORT`, `HOST`
-- `DATABASE_URL`, `DB_POOL_MAX`
-- `KAVACH_API_URL`
-- `CORS_ORIGINS`
-- `GROQ_API_KEY`, `GROQ_MODEL`
-- `KB_DIR`
-- `CHATBOT_MAX_HISTORY`, `CHATBOT_MAX_MESSAGE_LENGTH`
-- `AI_REQUIRE_AUTH`
-- `ACCESS_TOKEN_SECRET`, `JWT_ISSUER`, `JWT_AUDIENCE`
-- rate-limit values
+```bash
+npm ci
+npm run build
+npm start
+```
 
-`DATABASE_URL` should be a server-safe PostgreSQL connection string. Run `migrations/001_persistent_chat_history.sql` against the selected database before relying on persistent history.
+`npm start` runs `dist/server.js` after TypeScript compilation.
 
-The frontend receives only `VITE_AI_SERVICE_URL`. Never put Groq keys, DB URLs, JWT secrets, blockchain private keys or gateway keys into Vite environment variables.
+## 2. Rakshak required environment
 
-## Main backend dependency
+```env
+NODE_ENV=production
+HOST=0.0.0.0
+PORT=4200
+DATABASE_URL=postgresql://...
+DB_POOL_MAX=5
+KAVACH_API_URL=https://<main-backend>/api/v1
+CORS_ORIGINS=https://<frontend>
+GROQ_API_KEY=...
+GROQ_MODEL=llama-3.3-70b-versatile
+KB_DIR=kb
+CHATBOT_MAX_HISTORY=10
+CHATBOT_MAX_MESSAGE_LENGTH=2000
+AI_REQUIRE_AUTH=true
+ACCESS_TOKEN_SECRET=<same access-token secret as main backend>
+JWT_ISSUER=smart-tourist-safety
+JWT_AUDIENCE=smart-tourist-safety-client
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX=30
+```
 
-`KAVACH_API_URL` must include `/api/v1` and points to the normal Kavach backend. It is used only for approved live context. The AI service does not connect directly to the blockchain contract.
+`KAVACH_API_URL` must include `/api/v1`. The `.env.example` may be copied and corrected for the actual local/main-backend port in your environment.
 
-## 2026-08-27 deployment sync
+## 3. Rakshak startup behavior
 
-The AI service requires database connectivity for persisted user-scoped history and private authenticated-context enrichment. Production authentication must use the same access-token issuer, audience, algorithm, and secret contract as the main backend.
+Before listening, Rakshak calls `ensureChatSchema()`. Startup therefore requires a reachable PostgreSQL database with permission to create the three AI tables/indexes when absent.
 
-After deployment, validate: authenticated history isolation, safe-zone live context, self-profile questions for each supported role, rejection of invalid/expired access tokens, and absence of sensitive fields in application logs/model context.
+If schema initialization fails, the process exits instead of starting half-functional.
 
----
+## 4. Rakshak health checks
 
-## Repository synchronization — 2026-08-27
+Use:
 
-Deployment must provide the configured AI provider credentials, backend origin, and CORS-safe frontend/backend URLs. The AI service must not bypass backend role checks for user, trip, incident, or emergency-response data.
+```text
+GET /
+GET /health
+```
+
+`/health` reports configuration flags but does not call Groq or PostgreSQL. It is a liveness/configuration check rather than a full dependency-readiness test.
+
+## 5. Frontend configuration
+
+Set:
+
+```env
+VITE_AI_SERVICE_URL=https://<rakshak-service>
+```
+
+The browser sends the user's access JWT in the Authorization header.
+
+## 6. Python Trip Planner local setup
+
+```bash
+cd ai-ml/trip-planner
+python -m venv .venv
+# activate the environment
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 4300
+```
+
+Environment:
+
+```env
+SERPAPI_API_KEY=...
+GROQ_API_KEY=...
+```
+
+## 7. Python service health
+
+Use:
+
+```text
+GET /
+GET /health
+```
+
+The root endpoint is intentionally cheap and does not invoke providers. `/health` reports whether the two provider keys are present.
+
+## 8. Main-backend integration
+
+The Node backend should point to the Python **service root**, not the full plan endpoint:
+
+```env
+TRIP_PLANNER_SERVICE_URL=https://<python-service>
+AI_TRIP_PLAN_TIMEOUT_MS=120000
+```
+
+The backend appends `/api/trip/plan` itself.
+
+Do not configure production with `localhost`; each Render service has its own network namespace/process environment.
+
+## 9. Deployment order
+
+A clean deployment sequence is:
+
+```text
+1. PostgreSQL/main backend
+2. Rakshak AI with matching JWT settings
+3. Python planner with SerpAPI/Groq keys
+4. frontend with VITE_AI_SERVICE_URL
+5. main backend with TRIP_PLANNER_SERVICE_URL
+```
+
+## 10. Smoke tests
+
+Rakshak:
+
+```bash
+curl https://<rakshak>/health
+```
+
+Python:
+
+```bash
+curl https://<planner>/health
+```
+
+Planner generation:
+
+```bash
+curl -X POST https://<planner>/api/trip/plan \
+  -H 'content-type: application/json' \
+  -d '{"city":"Prayagraj","num_days":2,"check_in":"2026-09-01","check_out":"2026-09-03"}'
+```
+
+Integrated generation should finally be tested through the main backend because that is where trip authorization and one-time planning rules are enforced.
+
+## 11. Repository note about `render.yaml`
+
+The current runtime implementation is TypeScript/Express for Rakshak, while the checked-in `ai-ml/render.yaml` still describes an older Python/embedding deployment shape. Treat the code and this deployment guide as authoritative unless that manifest is separately modernized. Do not deploy Rakshak from that stale manifest without reviewing it.

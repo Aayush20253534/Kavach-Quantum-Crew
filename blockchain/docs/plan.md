@@ -1,66 +1,84 @@
-# Blockchain Integration: Current Implementation and Operational Plan
+# Blockchain Trust Model and Extension Guide
 
-This document describes the current architecture and the rules for operating/extending it.
+This is a design guide for the current implementation, not a release chronology.
 
-## Current components
+## 1. Core principle
 
-- `contracts/TrustAnchor.sol` — proof/credential anchor contract.
-- `gateway/server.ts` — isolated HTTP signing gateway.
-- `adapter/` — canonicalization, hashing, privacy scan, chain client, job helpers and HTTP contract formatters/routes.
-- `scripts/` — deploy/issue/revoke/verify/anchor utilities.
-- `test/` — access control, issue/revoke, idempotency, incident/evidence anchoring tests.
-- main backend `BlockchainAnchorJob` queue/worker — asynchronous integration boundary.
-
-## Trust boundary
+Use blockchain only where an independently verifiable, append-only/tamper-evident record adds value. Do not move ordinary application CRUD onto the chain merely because a contract exists.
 
 ```text
-Main Express API
-  holds: gateway URL/key, application encryption key
-  does not hold: issuer private key
-          │
-          ▼
-Blockchain gateway
-  holds: RPC URL, contract address, issuer private key
-          │
-          ▼
-EVM / TrustAnchor.sol
+fast/private/changeable operational state -> PostgreSQL
+verification proof / historical trust anchor -> blockchain
 ```
 
-## Current proof workflow
+## 2. Current production priorities
 
-```text
-domain event
- → canonical payload
- → privacy validation
- → hash/encrypted permitted snapshot where configured
- → durable anchor job
- → authenticated gateway request
- → contract transaction
- → receipt/reference
- → persist job/proof status
-```
+The live gateway/backend path prioritizes:
 
-## Operational rules
+- trip credential trust state;
+- group/individual credential snapshots;
+- integrity reconciliation.
 
-- PostgreSQL is primary mutable application storage.
-- Do not publish raw medical/profile/location/secrets on-chain.
-- Treat retries/idempotency as mandatory because RPC/gateway failures are normal distributed-system events.
-- Rotate gateway API key separately from issuer private key.
-- Keep one stable contract address/version per intended deployment environment.
-- Verify deployed bytecode/contract ownership before production issue calls.
+The contract/adapter also contains evidence, incident, and consent proof primitives that can be activated through explicit integration work.
 
-## Deployment plan
+## 3. Adding a new on-chain proof
 
-1. deploy contract to target network,
-2. record `CONTRACT_ADDRESS`, chain ID and version,
-3. configure gateway RPC + issuer key + gateway API key,
-4. deploy gateway,
-5. configure matching `BLOCKCHAIN_GATEWAY_KEY` in main backend,
-6. enable `BLOCKCHAIN_ENABLED`,
-7. run issue/verify smoke test,
-8. test gateway outage and retry behavior,
-9. monitor failed anchor jobs.
+Before adding a feature, define:
 
-## Extension criteria
+1. the exact off-chain source record;
+2. the deterministic canonical payload;
+3. whether salting is required;
+4. which fields are forbidden on-chain;
+5. whether only a hash is needed or encrypted historical data is justified;
+6. idempotency semantics;
+7. retry semantics;
+8. verification response;
+9. authorization role;
+10. what happens when the chain is unavailable.
 
-Any new on-chain proof type should define canonical fields, privacy classification, hash/idempotency key, contract method/event, gateway request/response schema, retry semantics, verification semantics, and tests before being wired into application flows.
+## 4. Default to hash-only proofs
+
+For evidence/incident/consent, hash-only anchoring is the safer default. Encrypted on-chain data should be used only when recovery/integrity requirements justify permanent ciphertext publication.
+
+## 5. Keep signing isolated
+
+New backend features should call the authenticated gateway rather than importing a wallet/private key into unrelated application processes. This keeps the blast radius of a backend compromise smaller and makes signer rotation clearer.
+
+## 6. Preserve asynchronous behavior
+
+A blockchain outage should not prevent a tourist from creating a valid application record when the domain workflow can safely continue. Persist the domain transaction and queue the trust operation.
+
+Only workflows that mathematically require chain confirmation before proceeding should block on-chain state.
+
+## 7. Version everything that affects hashes
+
+Canonical schema or encryption changes must be versioned. Never silently change serialization and expect historical hashes to remain reproducible.
+
+## 8. Integrity restoration rules
+
+Automatic restoration should happen only when the trusted snapshot contains enough information to make the repair unambiguous. Detection is not the same as safe repair.
+
+The current group member-count rule is a useful example: a count mismatch proves drift but does not identify which member records are wrong, so destructive repair is withheld.
+
+## 9. Key rotation
+
+Plan separately for:
+
+- issuer wallet rotation through `authorizeIssuer`/`revokeIssuer`;
+- gateway API key rotation;
+- snapshot encryption-key rotation/versioning.
+
+Changing the encryption key without preserving the ability to decrypt historical snapshots would destroy the integrity-recovery value of existing ciphertext.
+
+## 10. Test requirements for extensions
+
+Every new proof type should cover:
+
+- authorized vs unauthorized caller;
+- deterministic hashing fixture;
+- happy-path anchor + verify;
+- idempotent retry;
+- RPC/timeout behavior;
+- privacy scan expectations;
+- version compatibility;
+- backend queue state transitions.

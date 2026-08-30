@@ -1,17 +1,130 @@
-## Current KAVACH AI topology
-
-KAVACH intentionally has two AI-related services with different responsibilities:
-
-1. `ai-ml/` is **Rakshak AI**, a TypeScript/Express chatbot. It validates the same access JWT as the main backend when `AI_REQUIRE_AUTH=true`, retrieves relevant Markdown KB documents, loads bounded per-user history from PostgreSQL, optionally reads live KAVACH API context, calls Groq, and persists the conversation.
-2. `ai-ml/trip-planner/` is a **Python FastAPI trip planner**. The main backend calls it server-to-server. It combines SerpAPI top sights, Groq structured itinerary generation, and SerpAPI hotel results. The browser never needs SerpAPI/Groq keys.
-
-Neither service is the authoritative source for emergency status, trip ownership, group lock, dispatch status, or user identity. Those remain in the main backend/PostgreSQL.
-
 # Rakshak AI Chatbot Runtime
 
-The chatbot is deployed as a standalone TypeScript/Express service from `ai-ml/`. The browser calls it directly through `VITE_AI_SERVICE_URL`; Groq credentials never reach the frontend.
+Rakshak AI is the standalone TypeScript/Express service under `ai-ml/`. It provides conversational assistance around KAVACH while preserving the main backend as the source of truth for operational state.
 
-## Local run
+## Runtime components
+
+| File | Responsibility |
+|---|---|
+| `server.ts` | HTTP server, CORS, Helmet, rate limiting, JWT verification, health routes |
+| `chatbot/chatRouter.ts` | message/history endpoints and prompt assembly |
+| `chatbot/db.ts` | PostgreSQL pool and automatic chat-table creation |
+| `chatbot/historyStore.ts` | conversation ownership, bounded history, persistence, visible-history clearing |
+| `chatbot/kbSelector.ts` | static KB file scoring and selection |
+| `chatbot/kavachContext.ts` | authenticated live safe-zone lookup and distance calculation |
+| `chatbot/privateUserContext.ts` | minimized role-aware profile/trip context |
+| `chatbot/groqClient.ts` | Groq HTTP completion call |
+| `chatbot/types.ts` | request/response/provider types |
+
+## Request lifecycle
+
+```text
+Browser
+  |
+  | POST /api/v1/chatbot/messages
+  | Authorization: Bearer <access token>
+  v
+server.ts
+  |
+  +--> Helmet
+  +--> CORS allow-list
+  +--> JSON body limit: 32 KB
+  +--> service-wide rate limiter
+  `--> authenticateOptional()
+          |
+          | validates HS256 token when provided
+          | validates issuer/audience/type=access
+          v
+chatRouter.ts
+  |
+  +--> require verified JWT subject
+  +--> validate message and maximum length
+  +--> ensure user-owned conversation
+  +--> load private context
+  +--> load bounded conversation history
+  +--> select KB file
+  +--> optionally load live safe zones
+  +--> build system prompt
+  +--> call Groq
+  +--> save request + response
+  `--> return conversationId/message/sources/actions
+```
+
+Even if `AI_REQUIRE_AUTH=false`, stored chat endpoints still require a verified user identity because the router requires `req.user.sub`. In production, `AI_REQUIRE_AUTH=true` is the intended configuration.
+
+## JWT trust model
+
+Rakshak verifies the same access token issued by the main backend. The values must match:
+
+```env
+ACCESS_TOKEN_SECRET=...
+JWT_ISSUER=smart-tourist-safety
+JWT_AUDIENCE=smart-tourist-safety-client
+AI_REQUIRE_AUTH=true
+```
+
+Only the token subject is accepted as the account ID. The request body cannot choose a user ID.
+
+## Conversation ownership
+
+`ensureConversation(userId, conversationId)` accepts an existing conversation only when both its ID and `user_id` match. Otherwise a new UUID conversation is created. This prevents a guessed conversation UUID from crossing user boundaries.
+
+The model receives only the most recent `CHATBOT_MAX_HISTORY` visible messages, capped at 50 even if configuration is larger.
+
+## Clear-history semantics
+
+Clearing history updates `ai_chat_view_state.hidden_before=now()`. Earlier rows remain retained, but:
+
+- `GET /history` no longer returns them;
+- `getConversationHistory()` no longer feeds them into Groq;
+- future conversation context starts after the visibility boundary.
+
+This is a hide-from-view/retention design, not a hard-delete operation.
+
+## Knowledge grounding
+
+The KB selector uses deterministic lexical matching. It does not use Chroma, embeddings, or semantic vector search in the current runtime.
+
+The selected file is inserted into the system prompt as **Kavach knowledge-base document**. If no file is selected, the model can still answer normal conversation and use live/private context.
+
+## Nearest-safe-zone behavior
+
+Rakshak recognizes phrases such as:
+
+- nearest safe zone
+- closest safety zone
+- safe zone near me
+- find a safe zone
+
+If browser coordinates are missing, the chatbot returns a direct request to enable location and does not call Groq for that turn.
+
+With coordinates and a bearer token, it calls the main backend safety-zone endpoint, computes Haversine distances, sorts by nearest, and supplies up to three results by default to Groq.
+
+A live lookup failure is non-fatal. The chatbot logs the lookup failure and continues without that live context.
+
+## Private context behavior
+
+Role-specific enrichment is fetched directly from PostgreSQL using the verified account ID:
+
+- **TOURIST**: minimal identity/profile plus highest-priority ACTIVE or PLANNED trip and group relationship.
+- **DISASTER_MANAGER**: identity plus organization/department/jurisdiction.
+- **SYSTEM_ADMIN**: minimal identity.
+- **POLICE/FIRE/AMBULANCE**: identity plus organization/jurisdiction/service type.
+
+The lookup is best-effort. A database error in this enrichment is logged but does not block the chatbot request.
+
+## Groq behavior
+
+`groqClient.ts` calls the OpenAI-compatible Groq endpoint with:
+
+- model from `GROQ_MODEL`;
+- temperature `0.3`;
+- 25-second request timeout;
+- system + recent history + current user message.
+
+Provider errors are surfaced to the router and returned through the service's standard error handling.
+
+## Local development
 
 ```bash
 cd ai-ml
@@ -20,54 +133,41 @@ npm install
 npm run dev
 ```
 
-Health: `GET /health`
-Chat: `POST /api/v1/chatbot/messages`
+Useful commands:
 
-## Render
-
-Create a new Web Service with repository root `ai-ml`.
-
-- Build command: `npm ci && npm run build`
-- Start command: `npm start`
-- Health check: `/health`
-
-Set `GROQ_API_KEY`, `CORS_ORIGINS`, and the other values from `ai-ml/.env.example`. If `AI_REQUIRE_AUTH=true`, copy `ACCESS_TOKEN_SECRET`, `JWT_ISSUER`, and `JWT_AUDIENCE` from the main backend so this service can validate the same access JWT. Never copy refresh-token, database, blockchain-wallet, or email-provider secrets into the AI service.
-
-Then set the Vercel/frontend variable:
-
-```env
-VITE_AI_SERVICE_URL=https://your-ai-service.onrender.com
+```bash
+npm run typecheck
+npm run build
+npm start
 ```
 
-## Knowledge base
+Health endpoints:
 
-Files in `ai-ml/kb/*.md` and `*.txt` are scored using keyword overlap. The best matching full file is placed in the Groq system prompt. This is deliberately lightweight RAG: no vector database or embeddings.
+```text
+GET /
+GET /health
+```
 
-Conversation history is persisted per authenticated user in PostgreSQL. Recent persisted messages are supplied back to the model as context. Clearing the visible chat does not physically delete retained history rows.
+Chat endpoint:
 
-## Latest Rakshak AI integration
+```text
+POST /api/v1/chatbot/messages
+```
 
-Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+## Production deployment
 
+Build from `ai-ml/`:
 
-## Response routing
+```bash
+npm ci
+npm run build
+npm start
+```
 
-The chatbot must not treat KB retrieval as an allow/deny gate. A missing KB match still proceeds to Groq for normal conversation. When a KB file matches, its content is added as grounding for Kavach-specific questions.
+Set the frontend variable to the deployed service root:
 
-Location-dependent questions use live platform context where implemented. `Nearest Safe Zone` calls the authenticated main Kavach safety-zone API using `KAVACH_API_URL`, calculates nearest configured safe zones from the browser coordinates, and gives those results to the model. Live platform context takes precedence over static KB text.
+```env
+VITE_AI_SERVICE_URL=https://<rakshak-service>
+```
 
-## Documentation map
-
-For current deployment, API, KB maintenance and data-boundary details, also read `../README.md` and `../docs/architecture.md`, `../docs/api.md`, `../docs/deployment.md`, `../docs/knowledge-base.md`, and `../docs/data-and-security.md`.
-
-## 2026-08-27 runtime behavior
-
-`POST /api/v1/chatbot/messages` requires an authenticated user identity for stored conversation use. The verified token subject is the only accepted account identifier for history and private-profile enrichment.
-
-The runtime can enrich a request with a minimized user-specific context. Tourist context can include basic identity preferences and the current active/planned trip/group state; Disaster Manager and emergency-service context can include organization/jurisdiction/service identity. This data is injected only into that authenticated model request and must never be copied into static KB documents or another user's conversation.
-
----
-
-## Repository synchronization — 2026-08-27
-
-The chatbot runtime is expected to preserve user-scoped history/context, select relevant KAVACH KB material, and avoid exposing another account's private profile, trip, credential, or emergency information.
+Do not place blockchain issuer keys, Mailjet secrets, SerpAPI keys, refresh-token secrets, or unrelated backend secrets in this service.

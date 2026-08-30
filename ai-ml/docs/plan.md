@@ -1,64 +1,122 @@
-# AI Services: Current Implementation and Extension Plan
+# AI/ML Feature Model and Extension Guide
 
-This document distinguishes what exists now from possible future work. It is not a promise that unimplemented AI actions exist.
+This document describes the **current functional design** and how new AI capabilities should be added without turning the AI layer into an authority it does not own.
 
-## Implemented service 1: Rakshak AI
+## 1. Current feature set
 
-Runtime: TypeScript/Node in `ai-ml/`.
+### Rakshak AI
 
-Implemented responsibilities:
+Implemented capabilities:
 
-- authenticated chatbot endpoint,
-- Groq inference,
-- Markdown knowledge-base selection,
-- bounded per-user conversation history in PostgreSQL,
-- optional live context calls to the main KAVACH API,
-- CORS/rate limits/auth configuration.
+- authenticated conversational chat;
+- user-scoped persistent history;
+- visible-history clearing without destructive deletion;
+- static Markdown KB grounding;
+- minimized role-aware private context;
+- nearest-safe-zone live lookup;
+- optional caller-provided application context;
+- Groq generation with source labels.
 
-Rakshak does not own trip/incident/dispatch state and cannot bypass backend authorization.
+### Python Trip Planner
 
-## Implemented service 2: FastAPI trip planner
+Implemented capabilities:
 
-Runtime: Python/FastAPI in `ai-ml/trip-planner/`.
+- top-sight retrieval through SerpAPI;
+- structured multi-day itinerary generation through Groq;
+- source-data URL/thumbnail enrichment;
+- hotel lookup and price-bucket selection;
+- graceful hotel failure with itinerary preservation;
+- public root/health endpoints.
 
-Implemented responsibilities:
+## 2. Design rule: AI advises, backend authorizes
 
-- `GET /health`,
-- `POST /api/trip/plan`,
-- SerpAPI place discovery,
-- Groq structured itinerary generation,
-- SerpAPI hotel lookup,
-- source URL/thumbnail enrichment,
-- hotel failure degradation.
+Any new feature should be classified first:
 
-The main backend proxies this service through `/api/v1/trips/ai-plan`.
+```text
+Does it only explain/recommend/summarize?
+  -> AI service can probably own generation.
 
-## Current planning product rule
+Does it mutate trip, incident, group, dispatch, credential, or account state?
+  -> main backend must own authorization and mutation.
+```
 
-Planning is one-time and pre-start only. Manual choice starts immediately. AI choice generates/saves and starts. A group plan can only be generated/saved by the trip owner/leader; members read the stored plan.
+For example, Rakshak may explain what an SOS does. It must not directly mark an incident resolved. The trip planner may generate an itinerary, but the main backend decides whether that plan may be attached to a trip.
 
-## Safety decision boundary
+## 3. Adding live chatbot context
 
-AI is not the emergency decision engine. Geofence/risk/check-in/signal-loss/SOS/dispatch workflows are deterministic backend features. Future AI risk-analysis providers may advise an operator but must not silently create facts or dispatch resources without explicit domain rules.
+Preferred pattern:
 
-## Safe extension points
+```text
+identify a narrow intent
+        |
+require only the data needed
+        |
+call an authenticated main-backend read endpoint
+        |
+normalize/minimize returned data
+        |
+inject it as clearly labeled live context
+        |
+let Groq phrase the answer
+```
 
-Future AI work should preserve:
+Do not grant Rakshak a broad admin credential merely to simplify retrieval.
 
-1. server-side authentication/authorization,
-2. strict schemas for model output,
-3. explicit source provenance for externally retrieved data,
-4. timeout/fallback behavior,
-5. no provider secrets in the browser,
-6. human/operator control for emergency decisions,
-7. auditability of any AI-assisted recommendation used operationally.
+## 4. Adding private user context
 
-## Testing expectations
+Before adding a field to `privateUserContext.ts`, ask:
 
-- malformed model output is rejected,
-- provider timeout is controlled,
-- unavailable service has a manual/non-AI path where product flow allows,
-- no cross-user chat history leakage,
-- trip plan ownership/status checks remain in the main backend,
-- hotel failure does not unnecessarily destroy a valid itinerary,
-- AI cannot mutate emergency state by hallucinated instruction.
+- Is this field necessary for the answer?
+- Is it less sensitive than an alternative?
+- Could the model accidentally expose it in unrelated conversation?
+- Can it be obtained from an authenticated live endpoint instead?
+
+Password, government-ID, medical, token, secret, and unrelated location-history fields should remain excluded.
+
+## 5. Improving retrieval
+
+The current lexical selector is intentionally simple. A future embeddings/vector implementation should preserve these invariants:
+
+- per-document provenance;
+- no private user data in shared index;
+- bounded prompt context;
+- deterministic fallback when retrieval is unavailable;
+- live application state outranks stale static text.
+
+## 6. Extending trip planning
+
+Possible additions such as route optimization, budgets, accessibility preferences, weather, or opening hours should remain provider/data enrichments. Authorization still belongs in the main backend.
+
+Any provider failure should be classified as:
+
+- **core failure**: no valid itinerary can be produced;
+- **supplemental failure**: return the valid core plan with warnings.
+
+The current hotel behavior demonstrates the supplemental-failure pattern.
+
+## 7. Testing expectations
+
+For Rakshak, test:
+
+- missing/invalid JWT;
+- cross-user conversation ID rejection/new conversation behavior;
+- message-length validation;
+- history visibility boundaries;
+- KB selection;
+- location-required response;
+- main-API safe-zone normalization;
+- provider failure.
+
+For the planner, test:
+
+- request validation;
+- exact day count;
+- no invented places;
+- enrichment from source metadata;
+- hotel selection;
+- hotel failure warning;
+- provider errors.
+
+## 8. Observability expectations
+
+Log enough to identify dependency failures, but never log access tokens, provider keys, private profile dumps, or complete sensitive prompts. Track provider latency/error rate and main-backend context-call failures separately so operational issues can be isolated.

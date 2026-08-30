@@ -1,44 +1,195 @@
-## Current KAVACH AI topology
+# AI/ML HTTP API
 
-KAVACH intentionally has two AI-related services with different responsibilities:
+This document covers the HTTP surface implemented by the two AI services.
 
-1. `ai-ml/` is **Rakshak AI**, a TypeScript/Express chatbot. It validates the same access JWT as the main backend when `AI_REQUIRE_AUTH=true`, retrieves relevant Markdown KB documents, loads bounded per-user history from PostgreSQL, optionally reads live KAVACH API context, calls Groq, and persists the conversation.
-2. `ai-ml/trip-planner/` is a **Python FastAPI trip planner**. The main backend calls it server-to-server. It combines SerpAPI top sights, Groq structured itinerary generation, and SerpAPI hotel results. The browser never needs SerpAPI/Groq keys.
+# Rakshak AI
 
-Neither service is the authoritative source for emergency status, trip ownership, group lock, dispatch status, or user identity. Those remain in the main backend/PostgreSQL.
+Base URL examples:
 
-# Rakshak AI API
+```text
+local:      http://localhost:4200
+production: https://<rakshak-service>
+```
 
-Base service exposes `/` and `/health` for service/readiness checks and authenticated chatbot routes under `/api/v1/chatbot`.
+## `GET /`
 
-## Message
+Cheap liveness/information endpoint.
 
-`POST /api/v1/chatbot/messages`
+Example response:
 
-Requires a valid Kavach access JWT when `AI_REQUIRE_AUTH=true`. The request carries the user message and may include conversation/location context. The service persists the user message and assistant response under the authenticated user.
+```json
+{
+  "ok": true,
+  "service": "kavach-ai-chatbot-service",
+  "message": "Rakshak AI service is running",
+  "status": "online",
+  "health": "/health",
+  "chatbot": "/api/v1/chatbot/messages"
+}
+```
 
-## History
+## `GET /health`
 
-`GET /api/v1/chatbot/history`
+Reports process health and whether Groq/auth configuration is present. It does not make a Groq request.
 
-Returns the authenticated user's visible chat history.
+## `POST /api/v1/chatbot/messages`
 
-`DELETE /api/v1/chatbot/history`
+### Authentication
 
-Clears the user's visible chat screen/history state without physically deleting the retained database history.
+Use the same KAVACH access JWT as the main backend:
 
-## Authentication
+```http
+Authorization: Bearer <access-token>
+```
 
-The service validates the same access-token issuer/audience/secret configuration as the main backend. A token issued for a different secret, issuer or audience is rejected even if the user just logged in.
+The persisted chatbot route requires a verified JWT subject.
 
-## 2026-08-27 API behavior
+### Request
 
-For authenticated chatbot messages, account identity is taken from the verified access token. Any `context` supplied by the frontend is supplementary application context and must not override authenticated identity.
+```json
+{
+  "message": "Where is the nearest safe zone?",
+  "conversationId": null,
+  "location": {
+    "latitude": 25.43,
+    "longitude": 81.84
+  },
+  "context": {
+    "optionalFrontendContext": true
+  }
+}
+```
 
-The successful message contract remains conversation-oriented; private user enrichment is internal prompt context and is intentionally not returned as a separate public API payload.
+`message` is required and bounded by `CHATBOT_MAX_MESSAGE_LENGTH` (default 2000 characters).
 
----
+`conversationId` is optional. If it does not belong to the authenticated user, Rakshak creates a fresh conversation instead of attaching to another user's conversation.
 
-## Repository synchronization — 2026-08-27
+`location` is needed for location-dependent live queries such as nearest safe zone.
 
-The AI-facing contract should be treated as authenticated and user-scoped. Chatbot responses may use minimized profile/context fields for the signed-in user, but that context must never be cached or exposed across users. Live safety/fleet state should be obtained through backend-authorized APIs rather than inferred by the model.
+### Success
+
+```json
+{
+  "success": true,
+  "message": "Chatbot response",
+  "data": {
+    "conversationId": "uuid",
+    "message": "...",
+    "sources": ["emergency-safety.md", "Kavach live safety zones"],
+    "suggestedActions": []
+  }
+}
+```
+
+`sources` are source labels used for transparency; they are not URLs.
+
+### Important errors
+
+| HTTP | Code | Meaning |
+|---|---|---|
+| 400 | `INVALID_REQUEST` | missing/empty message |
+| 400 | `MESSAGE_TOO_LONG` | message exceeds configured limit |
+| 401 | `AUTH_REQUIRED` | no verified account identity available |
+| 401 | `INVALID_ACCESS_TOKEN` | bad/expired token |
+| 501 | `CHATBOT_PROVIDER_NOT_CONFIGURED` | Groq key missing |
+| 500 | `AI_SERVICE_ERROR` | unhandled service error |
+
+## `GET /api/v1/chatbot/history`
+
+Returns visible persisted history for the authenticated user.
+
+Response data contains the latest visible `conversationId` and chronologically ordered messages.
+
+## `DELETE /api/v1/chatbot/history`
+
+Moves the caller's visibility boundary forward. It does not physically delete retained message rows.
+
+# Python Trip Planner
+
+Base URL examples:
+
+```text
+local:      http://localhost:4300
+production: https://<trip-planner-service>
+```
+
+## `GET /`
+
+Cheap service information endpoint suitable for Render/browser checks. It does not invoke SerpAPI or Groq.
+
+## `GET /health`
+
+Returns:
+
+```json
+{
+  "ok": true,
+  "service": "kavach-python-trip-planner",
+  "serpapi_configured": true,
+  "groq_configured": true
+}
+```
+
+This checks environment presence, not provider reachability.
+
+## `POST /api/trip/plan`
+
+### Request
+
+```json
+{
+  "city": "Prayagraj",
+  "num_days": 3,
+  "check_in": "2026-09-01",
+  "check_out": "2026-09-04"
+}
+```
+
+`num_days` must be greater than zero. Dates are optional at FastAPI level; omitted dates default to future values. In the integrated application the main backend supplies dates derived from the selected trip.
+
+### Response
+
+```json
+{
+  "itinerary": {
+    "city": "Prayagraj",
+    "days": [
+      {
+        "day": 1,
+        "places": [
+          {
+            "name": "...",
+            "start_time": "09:00",
+            "end_time": "10:30",
+            "url": "...",
+            "thumbnail": "..."
+          }
+        ]
+      }
+    ]
+  },
+  "hotels": {
+    "city": "Prayagraj",
+    "hotels": []
+  },
+  "warnings": []
+}
+```
+
+`warnings` is present only when supplemental work such as hotel lookup failed.
+
+### Errors
+
+- `502`: provider/domain `ValueError` surfaced by the planner.
+- `500`: unexpected planning failure.
+
+# Integrated frontend path
+
+The browser normally **does not call `/api/trip/plan` directly**. It uses the main backend:
+
+```text
+POST /api/v1/trips/ai-plan
+POST /api/v1/trips/:tripId/ai-plan
+```
+
+The first generates through FastAPI. The second attaches the generated plan to an authorized PLANNED trip. The main backend owns group readiness and one-time planning rules.
