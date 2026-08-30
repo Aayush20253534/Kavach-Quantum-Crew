@@ -1,42 +1,129 @@
-## Current KAVACH AI topology
+# AI/ML Data and Security Model
 
-KAVACH intentionally has two AI-related services with different responsibilities:
+## 1. Trust boundaries
 
-1. `ai-ml/` is **Rakshak AI**, a TypeScript/Express chatbot. It validates the same access JWT as the main backend when `AI_REQUIRE_AUTH=true`, retrieves relevant Markdown KB documents, loads bounded per-user history from PostgreSQL, optionally reads live KAVACH API context, calls Groq, and persists the conversation.
-2. `ai-ml/trip-planner/` is a **Python FastAPI trip planner**. The main backend calls it server-to-server. It combines SerpAPI top sights, Groq structured itinerary generation, and SerpAPI hotel results. The browser never needs SerpAPI/Groq keys.
+The AI layer is advisory. Authoritative identity, trip, emergency, responder, and blockchain state remains in the main KAVACH backend/PostgreSQL.
 
-Neither service is the authoritative source for emergency status, trip ownership, group lock, dispatch status, or user identity. Those remain in the main backend/PostgreSQL.
+```text
+Browser
+  | access JWT
+  v
+Rakshak AI
+  |                 \
+  |                  \ Groq API
+  +--> PostgreSQL      \
+  +--> main KAVACH API  \
 
-# Rakshak AI Data and Security
+Main backend
+  | server-to-server
+  v
+Python planner --> SerpAPI + Groq
+```
 
-## Authentication
+## 2. Rakshak authentication
 
-Production should keep `AI_REQUIRE_AUTH=true`. The AI service validates Kavach access JWTs using the same access-token secret, issuer and audience as the main backend.
+When configured for production, Rakshak validates the same HS256 access JWT as the main backend using matching secret, issuer, and audience. It additionally requires `payload.type === "access"`.
 
-## Persistent history
+The authenticated `sub` claim becomes the only user ID used for:
 
-Chat conversations/messages are stored per authenticated user in PostgreSQL. UI clear-history behavior hides previous messages from the user's active chat view but does not physically delete retained database history.
+- conversation ownership;
+- visible history;
+- private profile enrichment.
 
-## Secrets
+Request bodies cannot nominate another account ID.
 
-The AI service needs only secrets required for its own responsibilities. It must not receive the blockchain issuer private key, blockchain gateway key, snapshot encryption key, refresh-token secret, or unrelated email-provider credentials.
+## 3. CORS and request limiting
 
-## Personal/location context
+Rakshak uses an explicit comma-separated `CORS_ORIGINS` allow-list. Requests without an Origin header are permitted for non-browser/internal usage. Credentials are disabled in CORS because the chatbot uses bearer-token authentication rather than cross-site cookies.
 
-Only pass context needed to answer the current request. Location-aware answers should use current coordinates only when the browser/application supplies them and the corresponding backend capability requires them.
+The service applies:
 
-## Model boundary
+- Helmet security headers;
+- 32 KB JSON body limit;
+- `express-rate-limit` using configurable window/max values;
+- no `x-powered-by` header.
 
-Model output is advisory/informational. It does not directly mutate trips, incidents, responder dispatches or blockchain state.
+## 4. Chat persistence
 
-## 2026-08-27 private-context policy
+The database stores conversation/message content, role, source labels, timestamps, and user linkage.
 
-Rakshak AI may use a minimized profile for the **currently authenticated account only**. The lookup key is the verified JWT subject, never an arbitrary account ID in the request body.
+Clearing history hides old rows from the user/model via `hidden_before`; retained rows are not erased. Any privacy statement or retention policy should describe that behavior accurately.
 
-Do not include password hashes, OTP/reset state, auth sessions, government ID numbers, medical history/documents, emergency contacts, audit records, or fixed precise account coordinates in model context. Conversation lookup and history mutation remain user-scoped. Private context may help answer self-referential questions but must not be volunteered unnecessarily or described as information available to other users.
+## 5. Private profile minimization
 
----
+The private-context query intentionally includes only fields useful for conversation.
 
-## Repository synchronization — 2026-08-27
+### Included examples
 
-Private chatbot enrichment is user-scoped and minimized. Do not persist another user's profile or tracking context in shared prompts/caches. Emergency locations, dispatch tracking, credentials, and account data must be fetched through role-authorized backend endpoints.
+- name/username;
+- tourist nationality/preferred language;
+- current planned/active trip destination/status/timing;
+- group name/role/status;
+- responder/disaster-management organization/jurisdiction metadata.
+
+### Deliberately excluded
+
+- password hashes;
+- government identity numbers;
+- medical history;
+- password-reset/session tokens;
+- emergency contacts;
+- precise stored home/fleet coordinates;
+- audit records.
+
+The data is inserted into only the current authenticated model request. It is not copied into `kb/`.
+
+## 6. Browser location
+
+Browser coordinates may be sent to Rakshak for nearest-safe-zone questions. Rakshak forwards neither a privileged service token nor arbitrary identity. It calls the main safety API with the user's own bearer token, then performs distance calculations locally in the AI service.
+
+The current chatbot code does not persist the `location` object as a separate location table. The user's natural-language message and assistant response are persisted as chat history.
+
+## 7. Static KB safety
+
+`kb/*.md` is shared grounding material. It must contain platform behavior, not user-specific secrets. Never put:
+
+- access/refresh tokens;
+- passwords;
+- API keys;
+- real user profiles;
+- private incident details;
+- precise private location history
+
+into KB files.
+
+## 8. Provider secrets
+
+### Rakshak
+
+`GROQ_API_KEY` exists only in the Rakshak runtime environment.
+
+### Trip planner
+
+`GROQ_API_KEY` and `SERPAPI_API_KEY` exist only in the Python service environment.
+
+The browser receives generated output, not provider credentials.
+
+## 9. Provider data exposure
+
+Content included in a model request can be transmitted to the configured Groq provider. Therefore prompt construction is deliberately minimized. Do not expand `privateUserContext.ts` casually with sensitive fields.
+
+SerpAPI receives destination/date search parameters required for place/hotel lookup, not authenticated KAVACH account credentials.
+
+## 10. Operational action boundary
+
+Rakshak's system prompt states that it must not claim an action occurred unless supplied context explicitly confirms it. Chat output must not be treated as evidence that an SOS, dispatch, incident transition, trip change, or blockchain transaction actually happened.
+
+Application actions must continue through authenticated main-backend endpoints.
+
+## 11. Failure handling
+
+- Private-context lookup is best-effort and non-fatal.
+- Safe-zone API lookup is best-effort and non-fatal.
+- Missing static KB match is non-fatal.
+- Missing Groq configuration blocks generation instead of silently fabricating a provider response.
+- Planner hotel search failure is downgraded to a warning when the core itinerary is valid.
+
+## 12. Logging
+
+Current AI code logs provider/context failures to service logs. Avoid adding raw tokens, private database rows, complete provider responses containing user data, or secrets to logs.
