@@ -7,35 +7,30 @@ const incidentSeverityForHazard = (severity) => {
 };
 
 export const createHazardRepository = ({ db = prisma } = {}) => ({
-  async createWithIncident(data) {
+  findActiveTripForTourist(userId) {
+    return db.trip.findFirst({
+      where: {
+        status: "ACTIVE",
+        OR: [
+          { touristId: userId },
+          { group: { is: { members: { some: { userId, leftAt: null } } } } },
+        ],
+      },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+    });
+  },
+
+  async createWithIncident({ tripId, ...data }) {
     return db.$transaction(async (tx) => {
       const hazard = await tx.hazardReport.create({ data });
 
-      // A safety concern belongs in the same operational incident queue as SOS
-      // and automated safety alerts. Prefer the active trip, but fall back to the
-      // reporter's most recent trip so a report submitted just after a trip state
-      // transition is not silently stranded as a HazardReport only.
-      const ownershipFilter = [
-        { touristId: data.reporterId },
-        {
-          group: {
-            is: {
-              members: { some: { userId: data.reporterId } },
-            },
-          },
-        },
-      ];
-      const trip = await tx.trip.findFirst({
-        where: { status: "ACTIVE", OR: ownershipFilter },
-        orderBy: { createdAt: "desc" },
-        select: { id: true },
-      });
-
-      if (!trip) return { hazard, incident: null };
-
+      // Manual tourist reports are valid only during an ACTIVE trip. The service
+      // resolves that trip before this transaction, therefore every accepted
+      // report must also become a first-class Incident in the shared queue.
       const incident = await tx.incident.create({
         data: {
-          tripId: trip.id,
+          tripId,
           userId: data.reporterId,
           // Hazard reports are safety-origin incidents. Keeping the existing enum
           // avoids a schema migration while the event metadata preserves provenance.

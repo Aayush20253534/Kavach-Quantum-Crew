@@ -1,3 +1,7 @@
+# Current release gates
+
+Before a release, verify the one-time planning/auto-start behavior for solo and group trips; leader-only group AI planning; read-only plan visibility for members; group-lock enforcement and stopped polling; Mailjet OTP + emergency email; FastAPI planner health and proxy URL; Redis cache hit/fail-open/invalidation behavior; combined tourist/fleet live tracking; and that no secrets appear in Vite/public configuration.
+
 # Final Backend QA Checklist
 
 ## Documentation navigation
@@ -35,7 +39,7 @@ For the complete request-to-database/integration execution model, JavaScript-ori
 - [ ] Health/readiness/database probes work.
 - [ ] CORS is production allow-listed.
 - [ ] JWT unsupported roles rejected.
-- [ ] New tourist registration sends a real six-digit Gmail OTP.
+- [ ] New tourist registration sends a real six-digit email OTP.
 - [ ] Registration does not issue a normal session before verification.
 - [ ] Login/refresh/Socket.IO reject an unverified tourist.
 - [ ] Correct OTP verifies email and issues the initial session.

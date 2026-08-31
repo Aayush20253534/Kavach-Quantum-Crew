@@ -1,155 +1,150 @@
-# Environment Configuration
+# Environment Configuration Reference
 
-## Documentation navigation
+> Synchronized with `server/src/config/environment.js` and `server/.env.example` on **29 August 2026**. Production should use platform secret storage; never commit a populated `.env`.
 
-For the complete request-to-database/integration execution model, JavaScript-oriented terminology, and module map, start with [`TECHNICAL-FLOW.md`](TECHNICAL-FLOW.md). For the product journey without as much implementation detail, use [`SYSTEM-FLOW.md`](SYSTEM-FLOW.md).
+## Application/runtime
 
+| Variable | Purpose | Typical local value |
+|---|---|---|
+| `NODE_ENV` | runtime mode | `development` |
+| `APP_NAME` | service name in logs/responses | `smart-tourist-safety-backend` |
+| `APP_VERSION` | reported service version | `0.1.0` |
+| `HOST` | bind address | `0.0.0.0` |
+| `PORT` | HTTP port | `4000` |
+| `API_PREFIX` | versioned API prefix | `/api/v1` |
+| `LOG_LEVEL` | Pino verbosity | `info` |
+| `SHUTDOWN_TIMEOUT_MS` | graceful shutdown deadline | `10000` |
+| `TRUST_PROXY` | honor reverse-proxy forwarding | `false` local, `true` on Render |
 
-> **Documentation status (24 Aug 2026):** This document is maintained against the current repository. Runtime source, `server/.env.example`, `server/prisma/schema.prisma`, and `server/openapi.yaml` are authoritative if a historical phase note differs.
-
-
-Use `.env.example` as the source of defaults. Never commit real `.env` secrets.
-
-| Variable | Purpose |
-|---|---|
-| `NODE_ENV` | Runtime mode |
-| `APP_NAME` | Service identity |
-| `APP_VERSION` | Service version |
-| `HOST` | Bind host |
-| `PORT` | HTTP port |
-| `API_PREFIX` | REST prefix |
-| `DATABASE_URL` | PostgreSQL connection |
-| `DATABASE_POOL_MAX` | DB pool maximum |
-| `DATABASE_CONNECTION_TIMEOUT_MS` | DB connect timeout |
-| `CORS_ORIGINS` | Browser/Socket.IO allow-list |
-| `CORS_CREDENTIALS` | Credentialed CORS toggle |
-| `SOCKET_IO_ENABLED` | Realtime toggle |
-| `JSON_BODY_LIMIT` | JSON body-size limit |
-| `RATE_LIMIT_WINDOW_MS` | Global rate-limit window |
-| `RATE_LIMIT_MAX` | Global rate-limit allowance |
-| `SENSITIVE_RATE_LIMIT_WINDOW_MS` | Sensitive-route window |
-| `SENSITIVE_RATE_LIMIT_MAX` | Sensitive-route allowance |
-| `SECURITY_MAX_OBJECT_DEPTH` | Request nesting limit |
-| `SECURITY_MAX_OBJECT_KEYS` | Request field-count limit |
-| `TRUST_PROXY` | Proxy trust policy |
-| `LOG_LEVEL` | Structured logging level |
-| `SHUTDOWN_TIMEOUT_MS` | Graceful shutdown budget |
-| `ACCESS_TOKEN_SECRET` | Access JWT secret |
-| `REFRESH_TOKEN_SECRET` | Refresh JWT secret |
-| `ACCESS_TOKEN_TTL` | Access-token TTL |
-| `REFRESH_TOKEN_TTL_DAYS` | Refresh-session TTL |
-| `JWT_ISSUER` | JWT issuer |
-| `JWT_AUDIENCE` | JWT audience |
-| `REFRESH_COOKIE_NAME` | Refresh cookie |
-| `SEED_ADMIN_*` | System Admin seed values. Development has demo fallbacks; production requires explicit email/password. |
-| `SEED_DM_*` | Optional Disaster Manager seed |
-| `INCIDENT_ACK_TIMEOUT_MINUTES` | Escalation acknowledgement threshold |
-| `INCIDENT_ESCALATION_INTERVAL_MINUTES` | Repeat escalation interval |
-| `GMAIL_USER` | Gmail sender/login account used by Nodemailer |
-| `GMAIL_APP_PASSWORD` | Google 16-character App Password; never use the normal Gmail password |
-| `EMAIL_FROM` | Visible From address; normally the same as `GMAIL_USER` |
-| `EMAIL_OTP_SECRET` | Secret used to key/hash OTP values; strong unique production value required |
-| `EMAIL_OTP_TTL_MINUTES` | OTP validity period; default 10 minutes |
-| `EMAIL_OTP_RESEND_COOLDOWN_SECONDS` | Minimum resend interval; default 60 seconds |
-| `EMAIL_OTP_MAX_ATTEMPTS` | Maximum wrong attempts before active OTP invalidation; default 5 |
-
-Production rules:
-- use separate strong access/refresh secrets,
-- restrict CORS to deployed frontend origins,
-- enable HTTPS,
-- configure `TRUST_PROXY` to the real proxy topology,
-- keep DB/provider/service-account secrets outside Git.
-
-## Gmail email verification
+## Database
 
 | Variable | Purpose |
 |---|---|
-| `GMAIL_USER` | Gmail account used to send tourist verification email |
-| `GMAIL_APP_PASSWORD` | Google App Password generated after enabling 2-Step Verification |
-| `EMAIL_FROM` | Sender address shown to recipients; normally same Gmail account |
-| `EMAIL_OTP_SECRET` | Server-side secret used when hashing OTP values before persistence |
-| `EMAIL_OTP_TTL_MINUTES` | Verification-code lifetime; default 10 minutes |
-| `EMAIL_OTP_RESEND_COOLDOWN_SECONDS` | Minimum time between resend attempts; default 60 seconds |
-| `EMAIL_OTP_MAX_ATTEMPTS` | Wrong-code attempt limit before current OTP is invalidated; default 5 |
+| `DATABASE_URL` | PostgreSQL connection string consumed by Prisma/pg adapter |
+| `DATABASE_POOL_MAX` | pool upper bound |
+| `DATABASE_CONNECTION_TIMEOUT_MS` | connection timeout |
 
-Do not use the normal Gmail account password. Use a dedicated Google App Password and keep it only in deployment secrets.
+## HTTP, CORS, rate limiting, and request safety
 
-## Gmail OTP setup
+| Variable | Purpose |
+|---|---|
+| `CORS_ORIGINS` | comma-separated browser origins |
+| `CORS_CREDENTIALS` | whether credentialed cross-origin requests are allowed |
+| `SOCKET_IO_ENABLED` | enables Socket.IO server |
+| `JSON_BODY_LIMIT` | Express parser body limit |
+| `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX` | general API limiter |
+| `SENSITIVE_RATE_LIMIT_WINDOW_MS` / `SENSITIVE_RATE_LIMIT_MAX` | stricter sensitive-action limiter |
+| `SECURITY_MAX_OBJECT_DEPTH` | nested object abuse guard |
+| `SECURITY_MAX_OBJECT_KEYS` | request object key-count guard |
 
-1. Use a dedicated Gmail sender account where possible.
-2. Enable Google 2-Step Verification.
-3. Generate an App Password for the backend mailer.
-4. Set `GMAIL_USER` and `EMAIL_FROM` to the sender Gmail address.
-5. Set `GMAIL_APP_PASSWORD` to the App Password, not the account password.
-6. Generate a strong independent `EMAIL_OTP_SECRET`.
+Rate limiting is implemented in the Express app. There is no repository Nginx API-gateway layer.
 
-In production, Gmail and OTP secrets are validated at startup. Gmail SMTP is suitable for project/demo volume; a transactional email provider can later replace the mailer without changing the OTP domain logic.
+## Redis / Upstash
 
+| Variable | Default | Use |
+|---|---:|---|
+| `REDIS_ENABLED` | `false` | master cache switch |
+| `UPSTASH_REDIS_REST_URL` | empty | Upstash REST endpoint |
+| `UPSTASH_REDIS_REST_TOKEN` | empty | server-side token |
+| `REDIS_KEY_PREFIX` | `sts` | namespace all keys |
+| `REDIS_DASHBOARD_TTL_SECONDS` | `30` | dashboard aggregate TTL |
+| `REDIS_DESTINATIONS_TTL_SECONDS` | `900` | destination catalogue TTL |
+| `REDIS_RISK_ZONES_TTL_SECONDS` | `30` | safety/risk reference TTL |
+| `REDIS_PLACES_TTL_SECONDS` | `21600` | Google Places jurisdiction TTL |
+| `REDIS_ANALYTICS_TTL_SECONDS` | `20` | analytics aggregate TTL |
 
-## System Admin seed
+Redis is fail-open and must not become a correctness dependency. Live GPS, dispatch state, group joins, notifications, and other Socket.IO-driven state are intentionally not generic cached responses.
 
-Run the seed from the `server` directory:
+## Authentication/session
 
-```bash
-npm run prisma:seed
-```
+| Variable | Purpose |
+|---|---|
+| `ACCESS_TOKEN_SECRET` | JWT access signing secret |
+| `REFRESH_TOKEN_SECRET` | refresh-token secret |
+| `ACCESS_TOKEN_TTL` | access JWT TTL |
+| `REFRESH_TOKEN_TTL_DAYS` | persisted refresh-session lifetime |
+| `JWT_ISSUER` | JWT issuer validation |
+| `JWT_AUDIENCE` | JWT audience validation |
+| `REFRESH_COOKIE_NAME` | cookie key |
+| `REFRESH_COOKIE_SECURE` | Secure attribute |
+| `REFRESH_COOKIE_SAME_SITE` | SameSite policy |
 
-In non-production environments, when `SEED_ADMIN_EMAIL` and
-`SEED_ADMIN_PASSWORD` are not set, the seed creates/refreshes this development
-account:
+For Vercel → Render production, the repository comments recommend secure cross-site cookie settings (`Secure=true`, `SameSite=None`) when the frontend/backend are on different sites.
 
-- Username: `system.admin`
-- Email: `admin@quantumcrew.local`
-- Password: `QuantumAdmin@123`
-- Phone: `9000000001`
+## Mailjet and OTP
 
-The development fallback is disabled when `NODE_ENV=production`. Production
-seeding requires explicit `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` values.
+| Variable | Purpose |
+|---|---|
+| `MAILJET_API_KEY` | Mailjet public/API key used in Basic Auth |
+| `MAILJET_SECRET_KEY` | Mailjet secret key |
+| `MAILJET_SENDER_EMAIL` | verified sender address |
+| `MAILJET_SENDER_NAME` | display name |
+| `EMAIL_OTP_SECRET` | server secret used by OTP protection logic |
+| `EMAIL_OTP_TTL_MINUTES` | verification/reset code lifetime |
+| `EMAIL_OTP_RESEND_COOLDOWN_SECONDS` | resend throttle |
+| `EMAIL_OTP_MAX_ATTEMPTS` | incorrect-attempt ceiling |
 
-Re-running the seed updates the seeded admin password hash from the currently
-configured `SEED_ADMIN_PASSWORD`, which makes credential rotation predictable
-instead of preserving an old seed password forever.
+Mailjet calls are made server-side with built-in `fetch` through `mailjet.client.js`. The configured sender must be verified in Mailjet.
 
-## Blockchain credential environment
+## Incident escalation
 
-```env
-BLOCKCHAIN_ENABLED=false
-BLOCKCHAIN_GATEWAY_URL=http://127.0.0.1:4100
-BLOCKCHAIN_GATEWAY_KEY=dev-chain-gateway-key-change-me
-BLOCKCHAIN_CONTRACT_VERSION=1
-BLOCKCHAIN_WORKER_INTERVAL_MS=5000
-BLOCKCHAIN_MAX_ATTEMPTS=5
-QR_TOKEN_SECRET=dev-qr-token-secret-change-me
-PUBLIC_APP_URL=http://localhost:5173
-```
+- `INCIDENT_ACK_TIMEOUT_MINUTES`
+- `INCIDENT_ESCALATION_INTERVAL_MINUTES`
 
-`BLOCKCHAIN_GATEWAY_KEY` must match `GATEWAY_API_KEY` in `blockchain/.env`. The EVM private key is deliberately absent from `server/.env`.
+These control acknowledgement/escalation timing used by the incident monitoring/escalation logic.
 
-## Emergency service environment impact
+## Evidence and profile files
 
-No new application secret is required. The feature uses the existing JWT/session, PostgreSQL, and Socket.IO configuration. Container startup now needs a reachable `DATABASE_URL` because committed Prisma migrations are applied before the server starts.
+| Variable | Purpose |
+|---|---|
+| `EVIDENCE_MAX_FILE_BYTES` | evidence upload limit |
+| `EVIDENCE_STORAGE_DIR` | local/storage-adapter directory where applicable |
+| `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | Cloudinary profile-image integration |
+| `PROFILE_IMAGE_MAX_FILE_BYTES` | profile image limit |
+| `MEDICAL_DOCUMENT_MAX_FILE_BYTES` | medical document limit |
 
-## Encrypted blockchain snapshot configuration
+## Google integration
 
-```env
-BLOCKCHAIN_DATA_ENCRYPTION_KEY=replace-with-a-stable-secret-at-least-32-characters
-```
+`GOOGLE_MAPS_API_KEY` is a server-side key used for jurisdiction Places searches and mapping helpers. Browser Maps keys, if separately used by the client, must have browser/referrer restrictions and are not interchangeable with unrestricted server secrets.
 
-The server derives the AES-256-GCM encryption key from this secret. It must be identical across API/worker instances that encrypt or decrypt snapshots and must remain stable across deployments. Do not expose it to the frontend or blockchain gateway logs. Rotating it without a migration/key-version strategy makes prior snapshots unreadable.
+## AI services
 
-The latest `TrustAnchor.sol` must be deployed and `CONTRACT_ADDRESS` updated because snapshot read/append methods do not exist on the older contract deployment.
+| Variable | Purpose |
+|---|---|
+| `AI_SERVICE_URL` | Rakshak AI service base URL |
+| `TRIP_PLANNER_SERVICE_URL` | FastAPI trip-planner base URL |
+| `AI_TRIP_PLAN_TIMEOUT_MS` | Node → FastAPI request timeout (default currently 120000 ms) |
 
-## Latest Rakshak AI integration
+Production must not leave `TRIP_PLANNER_SERVICE_URL` on `127.0.0.1` when FastAPI is deployed as a separate service.
 
-Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
+## Blockchain integration
 
+| Variable | Purpose |
+|---|---|
+| `BLOCKCHAIN_ENABLED` | enable proof/anchor integration |
+| `BLOCKCHAIN_GATEWAY_URL` | isolated signing gateway URL |
+| `BLOCKCHAIN_GATEWAY_KEY` | shared API key between main backend and gateway |
+| `BLOCKCHAIN_DATA_ENCRYPTION_KEY` | application-side encryption key for permitted payloads |
+| `BLOCKCHAIN_CONTRACT_VERSION` | numeric contract version supplied to issue operation |
+| `BLOCKCHAIN_WORKER_INTERVAL_MS` | anchor worker cadence |
+| `BLOCKCHAIN_MAX_ATTEMPTS` | retry ceiling |
+| `QR_TOKEN_SECRET` | signed QR/token secret |
+| `PUBLIC_APP_URL` | frontend base for QR verification/deep links |
 
-## 2026-08-27 environment sync
+Never put `ISSUER_PRIVATE_KEY`, chain RPC signing secrets, or contract signer credentials in the main `server/.env`. Those belong to the isolated `blockchain/` service.
 
-Production configuration must keep the deployed frontend origin in backend CORS allowlists and keep AI-service JWT issuer/audience/secret settings aligned with backend access-token issuance. Frontend map/routing requires `VITE_GOOGLE_MAPS_API_KEY`; email-backed verification/reset/dispatch notifications require the configured mail provider settings.
+## Seed accounts
 
----
+The `.env.example` exposes optional `SEED_ADMIN_*` and `SEED_DM_*` variables. Development has documented fallback credentials, but production must explicitly configure non-demo values or avoid relying on demo seeds.
 
-## Repository synchronization — 2026-08-27
+## Production checklist
 
-Environment configuration should include database/auth settings, frontend/backend origin/CORS values, email delivery credentials, Google Maps client key/configuration, realtime settings, AI provider variables where enabled, and blockchain gateway/provider variables. Do not expose server secrets through `VITE_*` client variables.
+- Use strong random JWT, refresh, OTP, QR, blockchain gateway, and encryption secrets.
+- Configure the real PostgreSQL URL and run `prisma migrate deploy`.
+- Verify Mailjet sender email before testing OTP/dispatch emails.
+- Enable Redis only with valid Upstash URL/token.
+- Set `TRUST_PROXY=true` behind Render/reverse proxies.
+- Set CORS to the deployed frontend origin, not `*` with credentials.
+- Point AI URLs to actual deployed services.
+- Keep every provider secret out of `VITE_*`.
+- Run `npm run env:check` before deployment.

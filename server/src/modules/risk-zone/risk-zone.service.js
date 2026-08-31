@@ -1,4 +1,5 @@
 import { ApiError } from "../../common/errors/ApiError.js";
+import { invalidateSafetyZoneCaches } from "../../common/cache/domain-cache.js";
 import { zoneContainsPoint, zoneIsEffective } from "../../common/utils/geofence.js";
 import { realtimePublisher } from "../../realtime/realtimePublisher.js";
 import { riskZoneRepository } from "./risk-zone.repository.js";
@@ -9,7 +10,12 @@ const cleanGeometry = (input) => input.geometryType === "POLYGON"
   ? { ...input, latitude: null, longitude: null, radiusM: null }
   : { ...input, polygon: null };
 
-export const createRiskZoneService = ({ repository = riskZoneRepository, publisher = realtimePublisher, clock = () => new Date() } = {}) => {
+export const createRiskZoneService = ({
+  repository = riskZoneRepository,
+  publisher = realtimePublisher,
+  clock = () => new Date(),
+  invalidateZoneCache = invalidateSafetyZoneCaches,
+} = {}) => {
   const requireStaff = (actor) => {
     if (!STAFF.has(actor.role)) throw ApiError.forbidden("Risk zone management requires staff access", { code: "RISK_ZONE_MANAGE_FORBIDDEN" });
   };
@@ -25,6 +31,7 @@ export const createRiskZoneService = ({ repository = riskZoneRepository, publish
       requireStaff(actor);
       const zone = await repository.create(cleanGeometry({ ...input, createdById: actor.id, createdByRole: actor.role }));
       await audit(actor, "RISK_ZONE_CREATED", zone, { type: zone.type, severity: zone.severity, geometryType: zone.geometryType });
+      await invalidateZoneCache();
       publisher.publishRiskZoneUpdated?.(zone, { type: "CREATED" });
       return zone;
     },
@@ -62,6 +69,7 @@ export const createRiskZoneService = ({ repository = riskZoneRepository, publish
       delete data.id; delete data.createdAt; delete data.updatedAt; delete data.createdById; delete data.createdByRole;
       const zone = await repository.update(id, data);
       await audit(actor, "RISK_ZONE_UPDATED", zone, { geometryType: zone.geometryType });
+      await invalidateZoneCache();
       publisher.publishRiskZoneUpdated?.(zone, { type: "UPDATED" });
       return zone;
     },
@@ -70,6 +78,7 @@ export const createRiskZoneService = ({ repository = riskZoneRepository, publish
       await existing(id);
       const zone = await repository.update(id, { active });
       await audit(actor, active ? "RISK_ZONE_ACTIVATED" : "RISK_ZONE_DEACTIVATED", zone);
+      await invalidateZoneCache();
       publisher.publishRiskZoneUpdated?.(zone, { type: active ? "ACTIVATED" : "DEACTIVATED" });
       return zone;
     },

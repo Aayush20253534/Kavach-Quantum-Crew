@@ -1,42 +1,176 @@
-# Rakshak AI Architecture
+# AI/ML Architecture
 
-## Request path
+## 1. Boundary overview
+
+KAVACH separates conversational AI and itinerary generation because they have different callers, data requirements, and failure modes.
 
 ```text
-React ChatbotWidget
-  -> AI service /api/v1/chatbot/messages
-  -> JWT authentication
-  -> persisted recent user history
-  -> live Kavach context when required
-  -> Markdown KB selection
-  -> Groq
-  -> response + persisted message
+                    +------------------------+
+                    | React frontend         |
+                    +-----------+------------+
+                                |
+              +-----------------+------------------+
+              |                                    |
+              v                                    v
++-----------------------------+      +-----------------------------+
+| Rakshak AI                  |      | Main KAVACH backend         |
+| TypeScript / Express        |      | Node.js / Express           |
+| browser-facing              |      | authority for trip rules    |
++-------------+---------------+      +-------------+---------------+
+              |                                    |
+     +--------+---------+                          v
+     |                  |             +-----------------------------+
+     v                  v             | AI Trip Planner             |
+PostgreSQL          Groq API          | Python / FastAPI            |
+chat/profile            ^             +-------------+---------------+
+     |                  |                           |
+     +--> KB + live API-+                 +---------+---------+
+                                             |               |
+                                             v               v
+                                          SerpAPI          Groq
 ```
 
-The AI service is a separate deployment from `server/` and `blockchain/`.
+## 2. Rakshak architectural layers
 
-## Boundaries
+### HTTP/security layer
 
-The main Kavach backend remains authoritative for users, trips, groups, geofences, alerts, incidents, notifications, emergency-service accounts and dispatch. The blockchain gateway remains authoritative for RPC/contract access. Rakshak AI may explain these systems or consume approved live API context, but it must not bypass their authorization or state machines.
+`server.ts` owns process-level concerns: Helmet, CORS, body-size restriction, request rate limiting, root/health routes, access JWT verification, router mounting, 404 handling, and generic error handling.
 
-## Grounding
+### Conversation layer
 
-Normal greetings and general conversation still go to the model when no KB file matches. Kavach-specific questions use the best matching Markdown knowledge. Location-sensitive functions such as nearest safe-zone lookup use authenticated live backend data where implemented, because static Markdown cannot tell a tourist what is near their current coordinates.
+`chatRouter.ts` owns user-facing chatbot behavior. It requires an authenticated subject for history-backed conversation, validates the message, assembles context, sends it to Groq, and persists both sides of the exchange.
 
-## Human control
+### Persistence layer
 
-AI does not auto-dispatch Police, Fire or Ambulance/Hospital. Danger-zone and signal-loss behavior are deterministic backend workflows. Disaster Management controls responder dispatch.
+The AI service uses a small PostgreSQL schema independent of Prisma:
 
-## 2026-08-27 architecture sync
+```text
+ai_chat_conversations
+    1
+    |
+    +----< ai_chat_messages
 
-The chatbot request path is now conceptually:
+ai_chat_view_state
+    keyed by user_id
+```
 
-`verified JWT -> user-scoped conversation -> private user context -> optional live Kavach context -> KB selection -> system prompt -> Groq -> user-scoped history persistence`.
+The service creates these tables and indexes on startup through `ensureChatSchema()`.
 
-Private account enrichment is deliberately separated from KB selection. Shared KB files describe platform behavior; per-user data is resolved at request time and must not become shared knowledge.
+### Retrieval layer
 
----
+Static retrieval scans files in `KB_DIR`. The service reads the best-scoring document in full. This is intentionally simple and transparent.
 
-## Repository synchronization — 2026-08-27
+### Live-context layer
 
-The current architecture uses the Node/Express backend as the authority boundary for authentication, account context, safety data, and emergency tracking. Rakshak may enrich answers with KB retrieval and provider completions, while authorization and private user context remain backend responsibilities.
+`kavachContext.ts` is the bridge back to the main safety API. It currently supports active SAFE zone lookup with the caller's own bearer token. The AI service does not use a privileged backend token to bypass authorization.
+
+### Private-context layer
+
+`privateUserContext.ts` reads a minimized subset of account/trip data from PostgreSQL using the authenticated account ID. It is prompt-only private context and is never written into shared KB files.
+
+### Provider layer
+
+`groqClient.ts` is the only direct Groq HTTP client in Rakshak. Provider credentials remain server-side.
+
+## 3. Prompt precedence
+
+The system prompt instructs the model to reason in this order:
+
+```text
+live application context
+        >
+private authenticated-user context when relevant
+        >
+selected static KAVACH KB
+        >
+normal conversational knowledge
+```
+
+For KAVACH-specific facts unavailable in supplied sources, the model is instructed to say that it does not have the information rather than invent behavior.
+
+## 4. Safe-zone sequence
+
+```text
+User: "nearest safe zone"
+        |
+        +--> intent regex matches
+        |
+        +--> coordinates present?
+              | no -> return enable-location response
+              v yes
+        +--> bearer token present?
+              |
+              v
+        GET main API /safety/zones?type=SAFE&active=true
+              |
+        normalize response shapes
+              |
+        validate coordinates
+              |
+        Haversine distance
+              |
+        nearest <= configured limit
+              |
+        inject into system prompt
+              |
+        Groq response
+```
+
+## 5. Trip-planner architecture
+
+The Python planner is intentionally stateless. It receives one planning request and returns one plan payload.
+
+```text
+POST /api/trip/plan
+        |
+        +--> validate city / num_days
+        +--> default check-in/check-out when omitted
+        |
+        v
+build_trip_response()
+        |
+        +--> get_top_places(city)
+        |       `--> SerpAPI top_sights
+        |
+        +--> generate_itinerary()
+        |       `--> Groq structured JSON
+        |             only provided place names
+        |
+        +--> enrich itinerary URL/thumbnail from SerpAPI source map
+        |
+        `--> get_hotels()
+                `--> SerpAPI Google Hotels
+                      |
+                      v
+                select_hotels()
+                price buckets + rating selection
+```
+
+A hotel-provider failure produces `warnings` and an empty hotel set while preserving the itinerary. Failures in the core places/itinerary path can still produce a FastAPI error.
+
+## 6. Authorization responsibility
+
+The Python service does not decide whether a tourist may plan. The main backend checks trip status, trip ownership, group leadership, minimum group membership, and group lock before accepting/saving an AI plan.
+
+This prevents a direct planner call from becoming an authorization bypass. FastAPI generates content; the main backend owns application policy.
+
+## 7. Failure isolation
+
+- Rakshak private-context failure -> continue without private enrichment.
+- Rakshak safe-zone lookup failure -> continue without live safe-zone context.
+- Missing KB match -> continue normally.
+- Groq missing in Rakshak -> `501 CHATBOT_PROVIDER_NOT_CONFIGURED`.
+- Trip-planner hotel lookup failure -> itinerary succeeds with warning.
+- Main-backend-to-planner timeout/provider failure -> handled by backend proxy rather than exposing provider credentials to browser.
+
+## 8. Non-responsibilities
+
+Neither AI service should directly:
+
+- mutate trips or groups;
+- acknowledge/resolve incidents;
+- create responder dispatches;
+- sign blockchain transactions;
+- send emergency email;
+- determine legal identity validity;
+- replace PostgreSQL as authoritative state.

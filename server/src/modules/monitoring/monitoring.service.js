@@ -59,7 +59,15 @@ export const createMonitoringService = ({
     }
 
     const gapExceeded = !latest || now.getTime() - new Date(latest.capturedAt).getTime() > minutes(policy.trackingGapAfterMinutes);
-    if (gapExceeded) {
+    if (trip.tripType === "SOLO") {
+      // Solo tracking loss has its own verification workflow: 10 minutes offline
+      // -> email + trip-page confirmation -> Disaster Management incident only
+      // after the tourist misses the confirmation window. Do not create the
+      // generic 5-minute tracking alert here or the incident indexer would
+      // escalate the solo tourist before that workflow gets a chance to run.
+      await resolveAlert(trip.id, userId, "TRACKING_INTERRUPTION", "tracking-gap", now);
+      if (gapExceeded) add("TRACKING_INTERRUPTION", "WARNING", { managedBy: "SOLO_SAFETY_CHECK" });
+    } else if (gapExceeded) {
       await ensureAlert({ tripId: trip.id, userId, type: "TRACKING_INTERRUPTION", sourceId: "tracking-gap", message: "Location tracking has been interrupted", details: { latestLocationAt: latest?.capturedAt ?? null, thresholdMinutes: policy.trackingGapAfterMinutes }, reportIncident: !(trip.group && userId !== trip.group.leaderId) });
       add("TRACKING_INTERRUPTION", "WARNING");
     } else {

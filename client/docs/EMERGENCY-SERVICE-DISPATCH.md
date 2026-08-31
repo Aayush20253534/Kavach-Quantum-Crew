@@ -1,6 +1,14 @@
-# Emergency Service Dispatch Frontend Integration
+# Current dispatch behavior
 
-> **Documentation status (29 Aug 2026):** Current client integration note. For the file-by-file frontend map, see `CLIENT-FILE-GUIDE.md`.
+Disaster Management can dispatch Police, Fire, or Ambulance using the main dispatch domain, including nearest-available assignment where supported. Emergency-service accounts have their own portal endpoints for assigned dispatches, live unit location, and status transitions. Transactional assignment emails are sent through Mailjet with login/deep-link redirect information. Tourist live tracking can combine authorized group members with the active fleet position. Remaining distance should be calculated from the fleet's current location to the incident/destination, not from a static assignment origin.
+
+## Current client behavior (29 August 2026)
+
+The React 19/Vite client has role areas for tourists, Disaster Management, System Admin, and emergency-service responders. REST calls use the main `/api/v1` backend; Socket.IO is used for live operational updates. The AI chatbot and Python trip planner are separate services, but the browser calls the Python planner only indirectly through the Node backend.
+
+Trip planning is one-time. Manual planning starts immediately; AI planning generates/saves then starts. Group leaders alone generate group AI plans, members read them. A locked group stops accepting joins and the client stops join-request polling. Live group/fleet tracking should consume current REST bootstrap + Socket.IO data rather than Redis-style client caching of positions.
+
+# Emergency Service Dispatch Backend
 
 ## Purpose
 

@@ -1,3 +1,9 @@
+## Current client behavior (29 August 2026)
+
+The React 19/Vite client has role areas for tourists, Disaster Management, System Admin, and emergency-service responders. REST calls use the main `/api/v1` backend; Socket.IO is used for live operational updates. The AI chatbot and Python trip planner are separate services, but the browser calls the Python planner only indirectly through the Node backend.
+
+Trip planning is one-time. Manual planning starts immediately; AI planning generates/saves then starts. Group leaders alone generate group AI plans, members read them. A locked group stops accepting joins and the client stops join-request polling. Live group/fleet tracking should consume current REST bootstrap + Socket.IO data rather than Redis-style client caching of positions.
+
 # Frontend Project State
 
 > **Documentation status (24 Aug 2026):** Current snapshot summary. Source code remains authoritative.

@@ -1,3 +1,9 @@
+## Current client behavior (29 August 2026)
+
+The React 19/Vite client has role areas for tourists, Disaster Management, System Admin, and emergency-service responders. REST calls use the main `/api/v1` backend; Socket.IO is used for live operational updates. The AI chatbot and Python trip planner are separate services, but the browser calls the Python planner only indirectly through the Node backend.
+
+Trip planning is one-time. Manual planning starts immediately; AI planning generates/saves then starts. Group leaders alone generate group AI plans, members read them. A locked group stops accepting joins and the client stops join-request polling. Live group/fleet tracking should consume current REST bootstrap + Socket.IO data rather than Redis-style client caching of positions.
+
 # Frontend Architecture Document
 
 > **Documentation status (24 Aug 2026):** Retained as project documentation and design history. Current `frontend/src/` behavior is authoritative where older phase language, placeholders, or proposed structure differs.
@@ -1373,7 +1379,7 @@ The architecture should evolve only when required by the product and should avoi
 
 # 40. OTP Email Verification Architecture
 
-The frontend authentication flow integrates with an SMTP-based backend OTP verification system.
+The frontend authentication flow integrates with an Mailjet-backed OTP verification system.
 - **Registration**: `/api/v1/auth/register` creates an unverified account.
 - **Verification**: `/api/v1/auth/verify-email` consumes a 6-digit OTP and establishes the session.
 - **Resend**: `/api/v1/auth/resend-verification` handles resend subject to cooldown.
@@ -1384,7 +1390,7 @@ Redux Toolkit handles the global authenticated state once verification succeeds.
 # 41. GPS Tracking & Map Architecture
 
 ## 41.1 Browser Geolocation Lifecycle
-Location tracking logic is centralized (e.g., in `src/features/tracking/`) and independent of the visual map component. 
+Location tracking logic is centralized (e.g., in `src/features/tracking/`) and independent of the visual map component.
 It must handle:
 - Permission flows (granted, denied).
 - Position unavailable/timeout errors.
@@ -1415,7 +1421,7 @@ Browser GPS -> Frontend Tracking Service -> Backend Ping (`/api/v1/tracking/ping
 
 # 43. Socket.IO Real-Time Architecture
 
-The backend exposes a Socket.IO connection (currently Phase 0, without full location/incident event support yet).
+The backend exposes an authenticated Socket.IO connection for live location, incident, dispatch, notification, and integration events used by the current client.
 When authenticated gateways are enabled, the frontend architecture for real-time data will follow:
 
 ## 43.1 Socket Lifecycle

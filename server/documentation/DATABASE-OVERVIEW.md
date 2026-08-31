@@ -1,3 +1,9 @@
+# Current schema additions and boundaries
+
+The current Prisma schema includes `Trip.aiPlan` JSON for persisted AI itinerary/hotel output and `TripGroup.isLocked` / `lockedAt` for irreversible membership-finalization state. PostgreSQL remains authoritative for users, sessions, trips, groups, consents, credentials, locations, safety zones, alerts, incidents, SOS, signal loss, notifications, hazards, evidence metadata, emergency units/dispatches, destinations, audit/proof jobs, and lifecycle state.
+
+Redis is explicitly not a second database. It caches selected read-heavy projections and can be rebuilt from PostgreSQL/external sources.
+
 # Database Overview
 
 ## Documentation navigation

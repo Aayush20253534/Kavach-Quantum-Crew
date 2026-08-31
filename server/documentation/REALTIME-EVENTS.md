@@ -1,3 +1,7 @@
+# Current realtime/cache rule
+
+Socket.IO is the preferred delivery mechanism for frequent live state changes. Do not add Redis response caching in front of live tourist/fleet positions, dispatch status/location, active SOS/incident transitions, or group membership changes. Redis in this codebase is used for read-heavy reference/aggregate data, not as a stale realtime mirror.
+
 # Realtime / Socket.IO Catalogue
 
 ## Documentation navigation

@@ -12,6 +12,9 @@ export const groupService = {
   async getGroupDetails(groupId) {
     return unwrap(await apiClient.get(`/groups/${groupId}`));
   },
+  async lockGroup(groupId) {
+    return unwrap(await apiClient.post(`/groups/${groupId}/lock`));
+  },
   async createInvitation(groupId, expiresInMinutes = 60) {
     return unwrap(await apiClient.post(`/groups/${groupId}/invitations`, { expiresInMinutes }));
   },

@@ -1,5 +1,47 @@
 # Backend Architecture
 
+# Current Architecture Snapshot
+
+```text
+                         ┌─────────────────────────────┐
+                         │ React 19 + Vite client      │
+                         │ tourist / authority / admin │
+                         │ emergency service portals   │
+                         └──────────────┬──────────────┘
+                                        │ REST + Socket.IO
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ Main Express 5 API                                                  │
+│ middleware → controllers → services → repositories                  │
+│ auth | trips | groups | tracking | safety | SOS | incidents         │
+│ dispatch | notifications | admin | analytics | integrations         │
+└───────┬─────────────────┬──────────────────┬────────────────────────┘
+        │                 │                  │
+        ▼                 ▼                  ▼
+ PostgreSQL/Prisma   Upstash Redis       external adapters
+ source of truth     cache-aside          ├─ Mailjet
+                                         ├─ Google Places
+                                         ├─ Rakshak AI
+                                         ├─ FastAPI trip planner
+                                         └─ blockchain gateway → EVM
+```
+
+### Important boundary decisions
+
+- No Nginx API gateway exists in this repository. Express owns rate limiting/security middleware; Render/Vercel may provide reverse proxies externally.
+- PostgreSQL is authoritative. Redis may be deleted without losing durable state.
+- Socket.IO is for change delivery, not durable storage.
+- The main backend holds no blockchain issuer private key.
+- The browser never calls the Python trip planner with provider secrets; Node proxies it.
+- AI is not required for deterministic safety/SOS/dispatch operation.
+- Mailjet failure never makes an already-persisted emergency disappear.
+
+### Current cache policy
+
+Cache destination catalogue, risk/safety reference data, jurisdiction Places results, dashboard aggregates and analytics. Do not generic-cache live locations, dispatch transitions, current-trip state, group joins, notifications or SOS state.
+
+---
+
 ## Documentation navigation
 
 For the complete request-to-database/integration execution model, JavaScript-oriented terminology, and module map, start with [`TECHNICAL-FLOW.md`](TECHNICAL-FLOW.md). For the product journey without as much implementation detail, use [`SYSTEM-FLOW.md`](SYSTEM-FLOW.md).
@@ -51,7 +93,7 @@ Tourist register
   -> create account with emailVerifiedAt = null
   -> cryptographically generate 6-digit OTP
   -> persist keyed OTP hash + expiry/attempt state
-  -> send OTP with Gmail SMTP
+  -> send OTP with Mailjet Send API v3.1
   -> verify-email
   -> mark emailVerifiedAt
   -> issue access/refresh session

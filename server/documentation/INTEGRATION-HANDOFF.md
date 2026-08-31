@@ -1,3 +1,7 @@
+# Current integration handoff
+
+Frontend: use Node API for trips/groups/tracking and stop group join polling after lock. Main backend: configure Mailjet, Upstash Redis, Google Places, AI service URLs and blockchain gateway. AI planner: deploy FastAPI separately with SerpAPI/Groq keys. Blockchain team: keep EVM signer/RPC only in gateway. Emergency fleet: use `/emergency-services` portal/location/status endpoints and Socket.IO for live updates.
+
 # Integration Handoff
 
 ## Documentation navigation

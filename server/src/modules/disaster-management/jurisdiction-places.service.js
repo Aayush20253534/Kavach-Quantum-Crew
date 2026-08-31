@@ -1,3 +1,4 @@
+import { cacheGetOrSet } from "../../common/cache/cache.js";
 import { environment } from "../../config/environment.js";
 
 const PLACE_FIELDS = [
@@ -54,6 +55,7 @@ const searchText = async ({ query, jurisdiction, apiKey, fetchImpl }) => {
 export const createJurisdictionPlacesService = ({
   apiKey = environment.GOOGLE_MAPS_API_KEY,
   fetchImpl = globalThis.fetch,
+  cache = cacheGetOrSet,
 } = {}) => ({
   async lookup(jurisdiction) {
     if (!jurisdiction) {
@@ -76,22 +78,50 @@ export const createJurisdictionPlacesService = ({
       };
     }
 
-    const entries = await Promise.all(
-      Object.entries(CATEGORY_QUERIES).map(async ([key, query]) => {
-        try {
-          return [key, await searchText({ query, jurisdiction, apiKey, fetchImpl })];
-        } catch {
-          // One Places category failing must not take down the command dashboard.
-          return [key, []];
-        }
-      }),
-    );
+    const cleanJurisdiction = jurisdiction.trim();
+    if (!cleanJurisdiction) {
+      return {
+        configured: Boolean(apiKey),
+        jurisdiction: null,
+        policeStations: [],
+        fireStations: [],
+        hospitals: [],
+      };
+    }
 
-    return {
-      configured: true,
-      jurisdiction,
-      ...Object.fromEntries(entries),
-    };
+    const normalizedJurisdiction = cleanJurisdiction.toLowerCase();
+    const cached = await cache({
+      key: `places:jurisdiction:${encodeURIComponent(normalizedJurisdiction)}`,
+      ttlSeconds: environment.REDIS_PLACES_TTL_SECONDS,
+      shouldCache: (value) => value?.complete === true,
+      fetcher: async () => {
+        let failures = 0;
+        const entries = await Promise.all(
+          Object.entries(CATEGORY_QUERIES).map(async ([key, query]) => {
+            try {
+              return [key, await searchText({ query, jurisdiction: cleanJurisdiction, apiKey, fetchImpl })];
+            } catch {
+              // One Places category failing must not take down the command dashboard.
+              // A degraded result is intentionally not cached, so a transient provider
+              // failure does not poison the jurisdiction cache for hours.
+              failures += 1;
+              return [key, []];
+            }
+          }),
+        );
+
+        return {
+          complete: failures === 0,
+          data: {
+            configured: true,
+            jurisdiction: cleanJurisdiction,
+            ...Object.fromEntries(entries),
+          },
+        };
+      },
+    });
+
+    return cached.data;
   },
 });
 

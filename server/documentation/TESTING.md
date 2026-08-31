@@ -1,3 +1,7 @@
+# Current high-priority regression coverage
+
+In addition to the existing suite, current behavior should be protected with tests for: group lock rejecting post-lock joins/approvals; only leader/owner attaching group AI plans; AI attachment rejected after trip start; manual/AI choice auto-start; FastAPI proxy timeout/upstream error mapping; hotel failure degrading to empty recommendations; Mailjet request/error handling; Redis cache hit/miss/fail-open behavior; local cache-miss coalescing; risk-zone invalidation; Places caching; analytics caching; and no accidental cache layer on realtime operational endpoints.
+
 # Testing Guide
 
 ## Documentation navigation
@@ -25,7 +29,7 @@ npx prisma migrate status
 
 `npm test` discovers all `tests/phase*/**/*.test.js` suites and is the final regression command.
 
-The repository includes tests for Gmail email service behavior, six-digit OTP validation/expiry/attempt handling, unverified REST/Socket.IO blocking, server/database lifecycle, auth/RBAC, trips/groups/tracking, safety/geofencing, SOS/incidents, realtime, responders, hazards, monitoring, dispatch, communication, evidence, admin, analytics, provider boundaries, notification delivery, security, audit, and observability.
+The repository includes tests for Mailjet email service behavior, six-digit OTP validation/expiry/attempt handling, unverified REST/Socket.IO blocking, server/database lifecycle, auth/RBAC, trips/groups/tracking, safety/geofencing, SOS/incidents, realtime, responders, hazards, monitoring, dispatch, communication, evidence, admin, analytics, provider boundaries, notification delivery, security, audit, and observability.
 
 Targeted suites are useful for debugging but do not replace the full regression before merge/release.
 
@@ -44,7 +48,7 @@ After automated tests pass, use a fresh real receiving email in Postman:
 
 ## Emergency dispatch test coverage
 
-Tests for this feature should cover service registration validation/conflicts, role-aware login, geolocation validation, nearest-unit ranking, no-location/no-unit failures, ownership checks, dispatch state transitions, tourist tracking authorization, realtime publishing, and migration startup. Existing Phase 15 dispatch tests should remain valid because manual dispatch APIs are preserved.
+Tests for this feature should cover service registration validation/conflicts, role-aware login, geolocation validation, nearest-unit ranking, no-location/no-unit failures, ownership checks, dispatch state transitions, tourist tracking authorization, realtime publishing, and migration startup. Existing dispatch regression tests should remain valid because manual dispatch APIs are preserved.
 
 ## Latest regression scenarios
 

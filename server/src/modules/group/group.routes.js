@@ -18,6 +18,7 @@ export const createGroupRouter = ({ controller = groupController } = {}) => {
   router.get("/:groupId/join-requests",validate({params:groupIdParamsSchema}),asyncHandler(controller.listJoinRequests));
   router.post("/:groupId/join-requests/:requestId/approve",validate({params:groupJoinRequestParamsSchema}),asyncHandler(controller.approveJoinRequest));
   router.post("/:groupId/join-requests/:requestId/reject",validate({params:groupJoinRequestParamsSchema}),asyncHandler(controller.rejectJoinRequest));
+  router.post("/:groupId/lock",validate({params:groupIdParamsSchema}),asyncHandler(controller.lock));
   router.get("/:groupId",validate({params:groupIdParamsSchema}),asyncHandler(controller.getById));
   router.post("/:groupId/invitations",validate({params:groupIdParamsSchema,body:createInvitationBodySchema}),asyncHandler(controller.invite));
   router.delete("/:groupId/invitations/:invitationId",validate({params:invitationParamsSchema}),asyncHandler(controller.revokeInvite));

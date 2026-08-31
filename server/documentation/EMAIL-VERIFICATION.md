@@ -1,152 +1,109 @@
-# Tourist Email Verification
+# Email Verification and Password-Recovery Flow
 
-## Documentation navigation
+> Current provider: **Mailjet Send API v3.1**. OTP generation/verification remains backend logic; Mailjet only transports the message.
 
-For the complete request-to-database/integration execution model, JavaScript-oriented terminology, and module map, start with [`TECHNICAL-FLOW.md`](TECHNICAL-FLOW.md). For the product journey without as much implementation detail, use [`SYSTEM-FLOW.md`](SYSTEM-FLOW.md).
+## Why email verification exists
 
+A newly registered tourist must prove control of the supplied email address before the normal authenticated account flow is considered complete. The code is six digits, expires after a configured TTL, has a resend cooldown, and has a maximum failed-attempt count.
 
-> **Documentation status (24 Aug 2026):** This document is maintained against the current repository. Runtime source, `server/.env.example`, `server/prisma/schema.prisma`, and `server/openapi.yaml` are authoritative if a historical phase note differs.
-
-
-## Purpose
-
-New tourist accounts must prove access to their email address before normal authenticated use. The OTP is required for first-time signup verification and again if the tourist later changes email. It is **not** required on every login.
-
-## Flow
+## Registration sequence
 
 ```text
-POST /auth/register
-   -> create TOURIST with emailVerifiedAt = null
-   -> generate cryptographically random 6-digit OTP
-   -> hash using userId + OTP + EMAIL_OTP_SECRET
-   -> store EmailVerificationOtp record
-   -> send OTP via Gmail SMTP/Nodemailer
-   -> return verificationRequired=true (no normal session)
-
-POST /auth/verify-email
-   -> validate email + exactly 6 digits
-   -> enforce expiry/attempt limit
-   -> constant-time hash comparison
-   -> set emailVerifiedAt
-   -> delete OTP record
-   -> create refresh session + access token
+POST /api/v1/auth/register
+  → validate/normalize identity fields
+  → hash password with Argon2
+  → create unverified user
+  → generate 6-digit OTP
+  → persist protected OTP record + expiry/attempt metadata
+  → emailService.sendVerificationOtp()
+  → sendMailjetEmail()
+  → Mailjet /v3.1/send
 ```
 
-## Defaults
+The Mailjet sender address must be verified. If provider delivery fails, the API returns a controlled email-delivery error; the domain service can retain the account/OTP state so resend can be attempted according to business rules.
 
-| Setting | Default |
-|---|---:|
-| OTP digits | 6 |
-| Expiry | 10 minutes |
-| Resend cooldown | 60 seconds |
-| Maximum invalid attempts | 5 |
+## Verification sequence
 
-## Gmail environment
+```text
+POST /api/v1/auth/verify-email
+  body: email + otp
+  → active OTP lookup
+  → expiry check
+  → failed-attempt check
+  → constant/safe verification logic
+  → set emailVerifiedAt
+  → invalidate/consume OTP
+  → issue authenticated session
+```
+
+## Resend
+
+`POST /api/v1/auth/resend-verification`
+
+- respects `EMAIL_OTP_RESEND_COOLDOWN_SECONDS`,
+- generates a new code,
+- replaces/invalidates the previous active code,
+- returns a deliberately generic response where needed to avoid account enumeration.
+
+## Password reset
+
+Password recovery uses a separate OTP record/flow:
+
+```text
+POST /auth/password-reset/request
+POST /auth/password-reset/verify
+POST /auth/password-reset/reset
+```
+
+The reset email is also delivered through Mailjet but uses the password-reset OTP model/rules rather than the registration-verification record.
+
+## Required environment
 
 ```env
-GMAIL_USER=project.sender@gmail.com
-GMAIL_APP_PASSWORD=your_google_app_password
-EMAIL_FROM=project.sender@gmail.com
-EMAIL_OTP_SECRET=generate-a-strong-random-secret
+MAILJET_API_KEY=...
+MAILJET_SECRET_KEY=...
+MAILJET_SENDER_EMAIL=verified-sender@example.com
+MAILJET_SENDER_NAME=QuantumCrew
+EMAIL_OTP_SECRET=strong-random-secret
 EMAIL_OTP_TTL_MINUTES=10
 EMAIL_OTP_RESEND_COOLDOWN_SECONDS=60
 EMAIL_OTP_MAX_ATTEMPTS=5
 ```
 
-`GMAIL_USER` and `EMAIL_FROM` should normally be the same dedicated Gmail address. `GMAIL_APP_PASSWORD` is the Google App Password created after enabling 2-Step Verification; it is not the normal Gmail password.
+## Mailjet request shape
 
-## APIs
+The shared client sends `POST https://api.mailjet.com/v3.1/send` with HTTP Basic authentication and a `Messages` array containing `From`, `To`, `Subject`, `TextPart`, and `HTMLPart`. It inspects both HTTP status and Mailjet message status/errors before reporting success.
 
-### Register
+## Security properties
 
-`POST /api/v1/auth/register`
+- The raw provider secret is never sent to the browser.
+- OTP codes are time-limited.
+- Resend is throttled.
+- Incorrect attempts are bounded.
+- Login/session state is controlled by the backend, not Mailjet.
+- Email verification and password reset use separate records/purposes.
+- Production logs should never print OTP values or Mailjet secret keys.
 
-```json
-{
-  "name": "OTP Test User",
-  "username": "otptestuser01",
-  "email": "receiver@example.com",
-  "phone": "+919876543210",
-  "password": "Tourist123",
-  "confirmPassword": "Tourist123"
-}
-```
+## Manual smoke test
 
-The account is created but remains unverified. If Gmail delivery fails, the account is kept and the client can later call resend.
+1. Configure a **verified** Mailjet sender.
+2. Start PostgreSQL and the backend.
+3. Register a fresh test tourist.
+4. Confirm the message arrives at the recipient mailbox.
+5. Verify using the six-digit code.
+6. Confirm `/auth/me` works with the issued access token.
+7. Register another account and verify immediate resend is throttled.
+8. Wait past the cooldown, resend, and confirm the old code no longer succeeds.
+9. Test an expired code and too many wrong attempts.
+10. Test password-reset request/verify/reset separately.
 
-### Verify
+## Common failures
 
-`POST /api/v1/auth/verify-email`
-
-```json
-{
-  "email": "receiver@example.com",
-  "otp": "483921"
-}
-```
-
-Successful verification marks the current email verified and issues the initial access/refresh session. The code is single-use because the OTP record is deleted.
-
-### Resend
-
-`POST /api/v1/auth/resend-verification`
-
-```json
-{
-  "email": "receiver@example.com"
-}
-```
-
-The response is deliberately generic. During cooldown the backend accepts the request without sending another code. After cooldown, a fresh OTP replaces the previous active code.
-
-## Login behavior
-
-Before verification, correct password login still fails with `EMAIL_VERIFICATION_REQUIRED`. After verification, future logins use normal credentials and do not send another OTP. Refresh and Socket.IO authentication also require a verified tourist email.
-
-## Email changes
-
-When a verified tourist changes email, `emailVerifiedAt` is cleared and refresh sessions are revoked. The new address must be verified before normal authenticated use continues.
-
-## Security notes
-
-- OTP generation uses Node.js cryptographic randomness.
-- Raw OTP values are never stored in PostgreSQL.
-- Verification uses keyed hashing and timing-safe comparison.
-- OTP expiry and attempt limits reduce brute-force lifetime.
-- Resend cooldown reduces abuse/spam.
-- Existing tourists were backfilled as verified by the migration so deployment does not unexpectedly lock out current users.
-
-## Postman smoke test
-
-1. Register with a fresh real email.
-2. Confirm the response requires verification and no normal authenticated session is issued.
-3. Attempt login before verification; expect `EMAIL_VERIFICATION_REQUIRED`.
-4. Check inbox/spam and copy the six-digit OTP.
-5. Try one wrong OTP; confirm rejection.
-6. Verify with the real OTP; confirm access token/session issuance.
-7. Login normally; confirm no new OTP is required.
-8. For resend testing, register another account, call resend immediately (cooldown), then after 60 seconds request a replacement code and verify the new code.
-9. Inspect `EmailVerificationOtp` in Prisma Studio and confirm the raw OTP is absent.
-
-## Emergency service accounts
-
-Tourist email OTP behavior is unchanged. Police/Fire/Ambulance accounts use the shared login/session stack but are registered through `/emergency-services/register`; the current project flow does not add emergency-service email OTP. Production deployments should add service-organization verification/approval before enabling public registration.
-
-## Trip-time contact immutability
-
-After onboarding verifies the tourist email/contact profile, name, DOB, email, and phone become protected from tourist-side edits whenever a trip is `PLANNED` or `ACTIVE`. This supports the individual blockchain snapshot integrity model. It does not replace normal authentication/email-verification controls before or after the trip.
-
-## Latest Rakshak AI integration
-
-Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates the same access JWT issued by the main Kavach backend (`JWT_ISSUER=smart-tourist-safety`, `JWT_AUDIENCE=smart-tourist-safety-client` by default), uses the maintained Markdown knowledge base in `ai-ml/kb/`, and persists user-scoped conversations/messages in PostgreSQL. Clearing chat hides prior messages from that user's UI without deleting the stored database history. Disaster Management also has authenticated provisioning for Police, Fire, and Ambulance/Hospital responder accounts; responders subsequently use the normal login flow.
-
-
-## 2026-08-27 authentication email note
-
-Email verification and password reset are separate flows. Password reset now uses an email OTP confirmation step and must not reuse email-verification state as proof of reset authorization. The reset UI uses six OTP positions followed by new-password and confirm-password fields after OTP verification.
-
----
-
-## Repository synchronization — 2026-08-27
-
-Email delivery now also supports password-reset OTP confirmation and operational notification links in addition to account verification. Password reset verifies the OTP before accepting the new password/confirmation pair.
+| Symptom | Likely cause |
+|---|---|
+| `EMAIL_PROVIDER_NOT_CONFIGURED` | Mailjet key/secret/sender missing |
+| `EMAIL_DELIVERY_FAILED` | provider rejected verification message |
+| provider HTTP 4xx | bad credentials, unverified sender, malformed recipient/message |
+| provider HTTP 5xx | temporary Mailjet failure |
+| OTP always invalid | wrong email/code, expired/replaced code, max attempts reached |
+| frontend loops on verification | session transition/redirect logic, not Mailjet itself |
