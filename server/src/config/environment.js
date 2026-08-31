@@ -164,10 +164,22 @@ const environmentSchema = z
       5,
       3600,
     ).default(30),
+    REDIS_PLACES_TTL_SECONDS: integerFromEnvironment(
+      60,
+      86400,
+    ).default(21600),
+    REDIS_ANALYTICS_TTL_SECONDS: integerFromEnvironment(
+      5,
+      300,
+    ).default(20),
 
     GOOGLE_MAPS_API_KEY: optionalString(
       z.string().trim().min(1),
     ),
+
+    AI_SERVICE_URL: z.string().trim().url().default("http://127.0.0.1:4200"),
+    TRIP_PLANNER_SERVICE_URL: z.string().trim().url().default("http://127.0.0.1:4300"),
+    AI_TRIP_PLAN_TIMEOUT_MS: integerFromEnvironment(1000, 180000).default(120000),
 
     BLOCKCHAIN_ENABLED: booleanFromEnvironment.default(false),
     BLOCKCHAIN_GATEWAY_URL: z.string().trim().url().default("http://127.0.0.1:4100"),
@@ -245,15 +257,19 @@ const environmentSchema = z
       .min(1)
       .default("storage/evidence"),
 
-    BREVO_API_KEY: optionalString(
+    MAILJET_API_KEY: optionalString(
       z.string().trim().min(1),
     ),
 
-    BREVO_SENDER_EMAIL: optionalString(
+    MAILJET_SECRET_KEY: optionalString(
+      z.string().trim().min(1),
+    ),
+
+    MAILJET_SENDER_EMAIL: optionalString(
       z.string().trim().email(),
     ),
 
-    BREVO_SENDER_NAME: z
+    MAILJET_SENDER_NAME: z
       .string()
       .trim()
       .min(1)
@@ -364,21 +380,30 @@ const environmentSchema = z
         }
       }
 
-      if (!value.BREVO_API_KEY) {
+      if (!value.MAILJET_API_KEY) {
         context.addIssue({
           code: "custom",
-          path: ["BREVO_API_KEY"],
+          path: ["MAILJET_API_KEY"],
           message:
-            "is required in production for tourist email verification via Brevo",
+            "is required in production for transactional email via Mailjet",
         });
       }
 
-      if (!value.BREVO_SENDER_EMAIL) {
+      if (!value.MAILJET_SECRET_KEY) {
         context.addIssue({
           code: "custom",
-          path: ["BREVO_SENDER_EMAIL"],
+          path: ["MAILJET_SECRET_KEY"],
           message:
-            "is required in production for tourist email verification via Brevo",
+            "is required in production for transactional email via Mailjet",
+        });
+      }
+
+      if (!value.MAILJET_SENDER_EMAIL) {
+        context.addIssue({
+          code: "custom",
+          path: ["MAILJET_SENDER_EMAIL"],
+          message:
+            "is required in production for transactional email via Mailjet",
         });
       }
     }

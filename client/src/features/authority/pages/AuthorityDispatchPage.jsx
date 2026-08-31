@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   Ambulance,
   Car,
@@ -20,6 +20,8 @@ const SECTIONS = [
 ];
 
 export function AuthorityDispatchPage() {
+  const [searchParams] = useSearchParams();
+  const incidentFromQuery = searchParams.get('incident') || '';
   const [units, setUnits] = useState([]);
   const [incidents, setIncidents] = useState([]);
   const [activeDispatches, setActiveDispatches] = useState([]);
@@ -50,7 +52,10 @@ export function AuthorityDispatchPage() {
       setUnits(fleet);
       setActiveDispatches(active);
       setIncidents(assignable);
-      setSelectedIncidentId((current) => current || assignable[0]?.id || '');
+      setSelectedIncidentId((current) => {
+        if (incidentFromQuery && assignable.some((incident) => incident.id === incidentFromQuery)) return incidentFromQuery;
+        return current || assignable[0]?.id || '';
+      });
     } catch (err) {
       setError(err.response?.data?.error?.message || err.message || 'Failed to load fleet dispatch data');
     } finally {
@@ -58,7 +63,7 @@ export function AuthorityDispatchPage() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [incidentFromQuery]);
 
   const grouped = useMemo(() => Object.fromEntries(SECTIONS.map(({ type }) => [type, units.filter((unit) => unit.type === type)])), [units]);
 

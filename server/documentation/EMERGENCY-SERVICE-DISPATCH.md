@@ -1,3 +1,7 @@
+# Current dispatch behavior
+
+Disaster Management can dispatch Police, Fire, or Ambulance using the main dispatch domain, including nearest-available assignment where supported. Emergency-service accounts have their own portal endpoints for assigned dispatches, live unit location, and status transitions. Transactional assignment emails are sent through Mailjet with login/deep-link redirect information. Tourist live tracking can combine authorized group members with the active fleet position. Remaining distance should be calculated from the fleet's current location to the incident/destination, not from a static assignment origin.
+
 # Emergency Service Dispatch Backend
 
 ## Purpose

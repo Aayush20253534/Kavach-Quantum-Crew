@@ -1,3 +1,7 @@
+# Current AI integrations
+
+KAVACH has three distinct AI-related concepts: (1) deterministic safety logic in the main backend, which is **not AI**; (2) Rakshak AI conversational assistance at `AI_SERVICE_URL`; and (3) the FastAPI trip planner at `TRIP_PLANNER_SERVICE_URL`. The planner obtains source places/hotels from SerpAPI and uses Groq for structured itinerary generation. The browser talks to it only through `/api/v1/trips/ai-plan`.
+
 # AI Integration Catalogue
 
 ## Documentation navigation

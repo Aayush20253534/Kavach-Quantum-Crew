@@ -1,3 +1,7 @@
+# Current planning/group permissions
+
+For a GROUP trip, the trip owner/group leader is the only user permitted to generate/attach the AI plan. Members may view the saved plan through authorized current-trip access. Group lock is a leader operation. After the trip is ACTIVE, no actor can legitimately attach/replace the AI plan because lifecycle validation rejects it. Emergency fleet roles are restricted to their account/assigned dispatch context; client-side route hiding is never considered authorization.
+
 # Role and Permission Matrix
 
 ## Documentation navigation

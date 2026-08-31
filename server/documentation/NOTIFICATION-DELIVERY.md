@@ -1,3 +1,9 @@
+# Current delivery model
+
+KAVACH has two layers: durable/in-app `Notification` state and channel-specific `NotificationDelivery` operations. Critical domain events may additionally call the shared Mailjet integration directly for transactional deep-link emails. Provider failure is best-effort and must not roll back persisted SOS, incident, dispatch, signal-loss, or trip state.
+
+The shared Mailjet client is `server/src/integrations/notifications/mailjet.client.js`; account OTP/reminder templates live in `modules/auth/email.service.js`, while emergency/dispatch templates live in `integrations/notifications/emergency-email.service.js`.
+
 # Notification Delivery
 
 ## Documentation navigation
@@ -8,7 +14,7 @@ For the complete request-to-database/integration execution model, JavaScript-ori
 > **Documentation status (24 Aug 2026):** This document is maintained against the current repository. Runtime source, `server/.env.example`, `server/prisma/schema.prisma`, and `server/openapi.yaml` are authoritative if a historical phase note differs.
 
 
-> Tourist signup OTP email is **not** a `NotificationDelivery` job. Account verification uses the dedicated Gmail mailer in the auth module so verification can happen before the tourist has a normal authenticated session.
+> Tourist signup OTP email is **not** a `NotificationDelivery` job. Account verification uses the dedicated Mailjet mailer in the auth module so verification can happen before the tourist has a normal authenticated session.
 
 
 `Notification` is the application message. `NotificationDelivery` is the operational delivery attempt.
@@ -45,7 +51,7 @@ Realtime service assignment/tracking uses Socket.IO `dispatch:updated` events. E
 
 ## Emergency operational email notifications
 
-Critical operational events use the existing Brevo transactional-email configuration in addition to database and Socket.IO notifications.
+Critical operational events use the existing Mailjet transactional-email configuration in addition to database and Socket.IO notifications.
 
 ### New incident / SOS -> Disaster Management
 
@@ -55,7 +61,7 @@ When `notificationService.incidentCreated()` runs, all active Disaster Managers 
 
 When a dispatch reaches `ASSIGNED`, the registered email of the selected emergency-service fleet receives an email. The same behavior is used for automatic nearest assignment and manual Disaster Management assignment.
 
-Email delivery is best-effort. A Brevo outage must never undo a persisted SOS or dispatch; failures are logged for operations while realtime/in-app notification remains available.
+Email delivery is best-effort. A Mailjet outage must never undo a persisted SOS or dispatch; failures are logged for operations while realtime/in-app notification remains available.
 
 ## Current notification routing rules
 

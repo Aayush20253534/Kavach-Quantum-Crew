@@ -1,3 +1,7 @@
+# Current notable errors
+
+Recent/current domain errors include `GROUP_MEMBERSHIP_LOCKED` for membership operations after a leader locks the group, `AI_TRIP_PLANNER_MISCONFIGURED`, `AI_TRIP_PLANNER_TIMEOUT`, `AI_TRIP_PLANNER_UNAVAILABLE`, `AI_TRIP_PLANNER_FAILED`, and invalid-response handling for the FastAPI proxy. Email may report `EMAIL_PROVIDER_NOT_CONFIGURED`, `EMAIL_DELIVERY_FAILED`, password-reset email errors, or trip-reminder delivery errors depending on the calling service. Redis failures are intentionally logged/fail-open rather than exposed as required-request failures.
+
 # Error Catalogue
 
 ## Documentation navigation
@@ -33,7 +37,7 @@ For the complete request-to-database/integration execution model, JavaScript-ori
 | `EMAIL_OTP_ATTEMPTS_EXCEEDED` | Maximum invalid OTP attempts were reached. |
 | `EMAIL_ALREADY_VERIFIED` | Verification was requested for an already verified email. |
 | `EMAIL_PROVIDER_NOT_CONFIGURED` | Mail provider configuration is unavailable. |
-| `EMAIL_DELIVERY_FAILED` | Gmail SMTP delivery failed. |
+| `EMAIL_DELIVERY_FAILED` | Mailjet Send API v3.1 delivery failed. |
 | `REQUEST_KEY_FORBIDDEN` | Forbidden prototype-pollution-shaped key. |
 | `REQUEST_STRUCTURE_TOO_DEEP` | Request nesting exceeds configured maximum. |
 | `REQUEST_STRUCTURE_TOO_LARGE` | Request contains too many fields. |

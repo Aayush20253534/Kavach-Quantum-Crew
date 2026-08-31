@@ -7,6 +7,11 @@ const MINUTE = 60_000;
 const DEFAULT_GAP_MINUTES = 5;
 const RESPONSE_WINDOW_MS = 5 * MINUTE;
 const FALSE_ALARM_RECHECK_MS = 2 * 60 * MINUTE;
+const SOLO_MISSING_AFTER_MS = 10 * MINUTE;
+const SOLO_RESPONSE_WINDOW_MS = 5 * MINUTE;
+const SOLO_SOURCE_ID = "solo-signal-loss";
+
+const asDate = (value) => value ? new Date(value) : null;
 
 export const createSignalLossService = ({
   repository = signalLossRepository,
@@ -28,95 +33,273 @@ export const createSignalLossService = ({
       });
     }
     const incident = await incidentReporter.ingestSafetyAlert(alert);
-    return repository.updateCase(signalCase.id, {
+    const updated = await repository.updateCase(signalCase.id, {
       status: "ESCALATED",
       escalatedAt: signalCase.escalatedAt || now,
       incidentId: incident?.id ?? signalCase.incidentId ?? null,
     });
+    await repository.createAudit({
+      actorId: signalCase.leaderId,
+      action: "SIGNAL_LOSS_AUTO_ESCALATED",
+      entityId: signalCase.id,
+      metadata: {
+        tripId: signalCase.tripId,
+        userId: signalCase.userId,
+        incidentId: incident?.id ?? null,
+        reason: "LEADER_RESPONSE_TIMEOUT",
+      },
+    });
+    return updated;
+  };
+
+  const escalateSoloAlert = async (alert, trip, now) => {
+    const existingIncident = await repository.findIncidentByAlert(alert.id);
+    if (existingIncident) return existingIncident;
+
+    const details = {
+      ...(alert.details && typeof alert.details === "object" ? alert.details : {}),
+      soloMissingCheck: true,
+      escalatedToDisasterManagement: true,
+      escalationReason: "TOURIST_SAFETY_CONFIRMATION_TIMEOUT",
+      escalatedAt: now.toISOString(),
+    };
+    const escalatedAlert = await repository.updateSafetyAlert(alert.id, {
+      level: "DANGER",
+      message: "Solo tourist did not confirm safety after a 10-minute tracking interruption",
+      details,
+    });
+    const incident = await incidentReporter.ingestSafetyAlert(escalatedAlert);
+    await repository.createAudit({
+      actorId: trip.touristId,
+      action: "SOLO_SIGNAL_LOSS_ESCALATED",
+      entityId: alert.id,
+      metadata: {
+        tripId: trip.id,
+        userId: trip.touristId,
+        incidentId: incident?.id ?? null,
+        reason: "TOURIST_SAFETY_CONFIRMATION_TIMEOUT",
+      },
+    });
+    return incident;
+  };
+
+  const sweepGroupTrips = async (now, result) => {
+    const trips = await repository.listActiveGroupTrips();
+    for (const trip of trips) {
+      if (!trip.group) continue;
+      const gapMinutes = trip.monitoringPolicy?.trackingGapAfterMinutes ?? DEFAULT_GAP_MINUTES;
+      for (const member of trip.group.members) {
+        if (member.userId === trip.group.leaderId) continue;
+        result.checked += 1;
+        const latest = await repository.findLatest(trip.id, member.userId);
+        const referenceAt = latest?.capturedAt ?? trip.startedAt ?? trip.plannedStartAt;
+        const offlineMs = now.getTime() - new Date(referenceAt).getTime();
+        const offline = offlineMs >= gapMinutes * MINUTE;
+        let signalCase = await repository.findOpenCase(trip.id, member.userId);
+
+        if (!offline) {
+          if (signalCase) {
+            await repository.updateCase(signalCase.id, { status: "RESOLVED", resolvedAt: now });
+            await repository.resolveAlertByCase(signalCase.tripId, signalCase.userId, signalCase.id, now);
+            result.resolved += 1;
+          }
+          continue;
+        }
+
+        if (!signalCase) {
+          signalCase = await repository.createCase({
+            tripId: trip.id,
+            groupId: trip.group.id,
+            userId: member.userId,
+            leaderId: trip.group.leaderId,
+            detectedAt: now,
+            lastNotifiedAt: now,
+            responseDeadlineAt: new Date(now.getTime() + RESPONSE_WINDOW_MS),
+            nextReminderAt: new Date(now.getTime() + FALSE_ALARM_RECHECK_MS),
+          });
+          await notifier.signalLoss({ signalCase, trip, member: member.user, leader: trip.group.leader, reminder: false });
+          result.opened += 1;
+          continue;
+        }
+
+        if (signalCase.status === "WAITING_FOR_LEADER" && now >= new Date(signalCase.responseDeadlineAt)) {
+          await escalateCase(signalCase, now);
+          result.escalated += 1;
+          continue;
+        }
+
+        if (
+          signalCase.status === "FALSE_ALARM" &&
+          signalCase.nextReminderAt &&
+          now >= new Date(signalCase.nextReminderAt)
+        ) {
+          const updated = await repository.updateCase(signalCase.id, {
+            status: "WAITING_FOR_LEADER",
+            leaderResponse: null,
+            leaderRespondedAt: null,
+            resolvedAt: null,
+            lastNotifiedAt: now,
+            responseDeadlineAt: new Date(now.getTime() + RESPONSE_WINDOW_MS),
+            nextReminderAt: new Date(now.getTime() + FALSE_ALARM_RECHECK_MS),
+          });
+          await notifier.signalLoss({
+            signalCase: updated,
+            trip,
+            member: member.user,
+            leader: trip.group.leader,
+            reminder: true,
+          });
+          result.reminded += 1;
+        }
+      }
+    }
+  };
+
+  const sweepSoloTrips = async (now, result) => {
+    const trips = await repository.listActiveSoloTrips?.() ?? [];
+    for (const trip of trips) {
+      const tourist = trip.tourist;
+      if (!tourist) continue;
+      result.soloChecked += 1;
+
+      const latest = await repository.findLatest(trip.id, trip.touristId);
+      const referenceAt = latest?.capturedAt ?? trip.startedAt ?? trip.plannedStartAt;
+      const offlineMs = now.getTime() - new Date(referenceAt).getTime();
+      let alert = await repository.findOpenSoloAlert(trip.id, trip.touristId);
+
+      if (offlineMs < SOLO_MISSING_AFTER_MS) {
+        if (alert) {
+          const linked = await repository.findIncidentByAlert(alert.id);
+          if (!linked) {
+            await repository.resolveSoloAlert(trip.id, trip.touristId, now);
+            result.soloResolved += 1;
+          }
+        }
+        continue;
+      }
+
+      if (!alert) {
+        const responseDeadlineAt = new Date(now.getTime() + SOLO_RESPONSE_WINDOW_MS);
+        alert = await repository.createSafetyAlert({
+          tripId: trip.id,
+          userId: trip.touristId,
+          type: "TRACKING_INTERRUPTION",
+          level: "WARNING",
+          sourceId: SOLO_SOURCE_ID,
+          message: "KAVACH has not received your location for 10 minutes. Please confirm that you are safe.",
+          details: {
+            soloMissingCheck: true,
+            promptedAt: now.toISOString(),
+            responseDeadlineAt: responseDeadlineAt.toISOString(),
+            latestLocationAt: latest?.capturedAt ?? null,
+            thresholdMinutes: 10,
+            escalatedToDisasterManagement: false,
+          },
+        });
+        await notifier.soloSignalLossPrompt?.({ alert, trip, tourist });
+        await repository.createAudit({
+          actorId: trip.touristId,
+          action: "SOLO_SIGNAL_LOSS_PROMPTED",
+          entityId: alert.id,
+          metadata: { tripId: trip.id, userId: trip.touristId, responseDeadlineAt },
+        });
+        result.soloPrompted += 1;
+        continue;
+      }
+
+      const details = alert.details && typeof alert.details === "object" ? alert.details : {};
+      const deadline = asDate(details.responseDeadlineAt);
+      const alreadyEscalated = details.escalatedToDisasterManagement === true || Boolean(await repository.findIncidentByAlert(alert.id));
+      if (!alreadyEscalated && deadline && now >= deadline) {
+        await escalateSoloAlert(alert, trip, now);
+        result.soloEscalated += 1;
+      }
+    }
   };
 
   return Object.freeze({
     async sweep() {
       const now = clock();
-      const trips = await repository.listActiveGroupTrips();
-      const result = { checked: 0, opened: 0, escalated: 0, reminded: 0, resolved: 0 };
-
-      for (const trip of trips) {
-        if (!trip.group) continue;
-        const gapMinutes = trip.monitoringPolicy?.trackingGapAfterMinutes ?? DEFAULT_GAP_MINUTES;
-        for (const member of trip.group.members) {
-          if (member.userId === trip.group.leaderId) continue;
-          result.checked += 1;
-          const latest = await repository.findLatest(trip.id, member.userId);
-          const referenceAt = latest?.capturedAt ?? trip.startedAt ?? trip.plannedStartAt;
-          const offlineMs = now.getTime() - new Date(referenceAt).getTime();
-          const offline = offlineMs >= gapMinutes * MINUTE;
-          let signalCase = await repository.findOpenCase(trip.id, member.userId);
-
-          if (!offline) {
-            if (signalCase) {
-              await repository.updateCase(signalCase.id, { status: "RESOLVED", resolvedAt: now });
-              await repository.resolveAlertByCase(signalCase.tripId, signalCase.userId, signalCase.id, now);
-              result.resolved += 1;
-            }
-            continue;
-          }
-
-          if (!signalCase) {
-            signalCase = await repository.createCase({
-              tripId: trip.id,
-              groupId: trip.group.id,
-              userId: member.userId,
-              leaderId: trip.group.leaderId,
-              detectedAt: now,
-              lastNotifiedAt: now,
-              responseDeadlineAt: new Date(now.getTime() + RESPONSE_WINDOW_MS),
-              nextReminderAt: new Date(now.getTime() + FALSE_ALARM_RECHECK_MS),
-            });
-            await notifier.signalLoss({ signalCase, trip, member: member.user, leader: trip.group.leader, reminder: false });
-            result.opened += 1;
-            continue;
-          }
-
-          if (signalCase.status === "WAITING_FOR_LEADER" && now >= new Date(signalCase.responseDeadlineAt)) {
-            signalCase = await escalateCase(signalCase, now);
-            result.escalated += 1;
-            continue;
-          }
-
-          // A leader-confirmed false alarm is intentionally quiet for two hours.
-          // If the member is still offline after that cooldown, open a fresh
-          // 5-minute verification window and notify only the group leader again.
-          if (
-            signalCase.status === "FALSE_ALARM" &&
-            signalCase.nextReminderAt &&
-            now >= new Date(signalCase.nextReminderAt)
-          ) {
-            const updated = await repository.updateCase(signalCase.id, {
-              status: "WAITING_FOR_LEADER",
-              leaderResponse: null,
-              leaderRespondedAt: null,
-              resolvedAt: null,
-              lastNotifiedAt: now,
-              responseDeadlineAt: new Date(now.getTime() + RESPONSE_WINDOW_MS),
-              nextReminderAt: new Date(now.getTime() + FALSE_ALARM_RECHECK_MS),
-            });
-            await notifier.signalLoss({
-              signalCase: updated,
-              trip,
-              member: member.user,
-              leader: trip.group.leader,
-              reminder: true,
-            });
-            result.reminded += 1;
-          }
-        }
-      }
+      const result = {
+        checked: 0,
+        opened: 0,
+        escalated: 0,
+        reminded: 0,
+        resolved: 0,
+        soloChecked: 0,
+        soloPrompted: 0,
+        soloEscalated: 0,
+        soloResolved: 0,
+      };
+      await sweepGroupTrips(now, result);
+      await sweepSoloTrips(now, result);
       return result;
     },
 
     async listForLeader(userId, tripId) {
       return repository.listForLeader(userId, tripId);
+    },
+
+    async listSoloForTourist(userId, tripId) {
+      const alerts = await repository.listSoloAlertsForTourist(userId, tripId);
+      return alerts.filter((alert) => alert.details?.soloMissingCheck === true && alert.details?.escalatedToDisasterManagement !== true);
+    },
+
+    async respondSolo(userId, alertId, response) {
+      const alert = await repository.findSoloAlertForTourist(alertId, userId);
+      if (!alert) throw ApiError.notFound("Solo safety check not found", { code: "SOLO_SAFETY_CHECK_NOT_FOUND" });
+      const trip = await repository.findTripStatus(alert.tripId);
+      if (!trip || trip.status !== "ACTIVE" || trip.tripType !== "SOLO" || trip.touristId !== userId) {
+        throw ApiError.conflict("This solo trip is no longer active", { code: "SOLO_SAFETY_CHECK_TRIP_INACTIVE" });
+      }
+      const linked = await repository.findIncidentByAlert(alert.id);
+      if (linked) {
+        throw ApiError.conflict("This safety check has already escalated to Disaster Management", {
+          code: "SOLO_SAFETY_CHECK_ALREADY_ESCALATED",
+          details: { incidentId: linked.id },
+        });
+      }
+      const now = clock();
+
+      if (response === "I_AM_SAFE") {
+        const details = {
+          ...(alert.details && typeof alert.details === "object" ? alert.details : {}),
+          touristResponse: "I_AM_SAFE",
+          respondedAt: now.toISOString(),
+        };
+        const updated = await repository.updateSafetyAlert(alert.id, { status: "RESOLVED", resolvedAt: now, details });
+        await repository.createAudit({
+          actorId: userId,
+          action: "SOLO_SIGNAL_LOSS_CONFIRMED_SAFE",
+          entityId: alert.id,
+          metadata: { tripId: alert.tripId, userId },
+        });
+        return updated;
+      }
+
+      if (response === "NEED_HELP") {
+        const escalated = await repository.updateSafetyAlert(alert.id, {
+          level: "DANGER",
+          message: "Solo tourist requested help after a tracking interruption",
+          details: {
+            ...(alert.details && typeof alert.details === "object" ? alert.details : {}),
+            touristResponse: "NEED_HELP",
+            respondedAt: now.toISOString(),
+            escalatedToDisasterManagement: true,
+            escalationReason: "TOURIST_REQUESTED_HELP",
+          },
+        });
+        const incident = await incidentReporter.ingestSafetyAlert(escalated);
+        await repository.createAudit({
+          actorId: userId,
+          action: "SOLO_SIGNAL_LOSS_REQUESTED_HELP",
+          entityId: alert.id,
+          metadata: { tripId: alert.tripId, userId, incidentId: incident?.id ?? null },
+        });
+        return { ...escalated, incidentId: incident?.id ?? null };
+      }
+
+      throw ApiError.badRequest("Unsupported solo safety response", { code: "SOLO_SAFETY_RESPONSE_INVALID" });
     },
 
     async respond(userId, caseId, response) {

@@ -60,6 +60,19 @@ export const createGroupRepository = ({ db = prisma } = {}) => ({
   createInvitation(groupId, data) {
     return db.groupInvitation.create({ data: { groupId, ...data } });
   },
+  lockGroup(groupId, now) {
+    return db.tripGroup.update({
+      where: { id: groupId },
+      data: { isLocked: true, lockedAt: now },
+      include: groupInclude,
+    });
+  },
+  rejectPendingJoinRequests(groupId, now) {
+    return db.groupJoinRequest.updateMany({
+      where: { groupId, status: "PENDING" },
+      data: { status: "REJECTED", decidedAt: now },
+    });
+  },
   findGroupByCredentialId(id) {
     return db.groupTripCredential.findUnique({
       where: { id },

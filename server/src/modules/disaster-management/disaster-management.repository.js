@@ -140,17 +140,11 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
         { touristId: hazard.reporterId },
         { group: { is: { members: { some: { userId: hazard.reporterId } } } } },
       ];
-      const trip =
-        await db.trip.findFirst({
-          where: { status: "ACTIVE", OR: ownershipFilter },
-          orderBy: { createdAt: "desc" },
-          select: { id: true },
-        }) ||
-        await db.trip.findFirst({
-          where: { OR: ownershipFilter },
-          orderBy: { createdAt: "desc" },
-          select: { id: true },
-        });
+      const trip = await db.trip.findFirst({
+        where: { status: "ACTIVE", OR: ownershipFilter },
+        orderBy: { createdAt: "desc" },
+        select: { id: true },
+      });
       if (!trip) continue;
 
       const incident = await db.incident.create({
@@ -215,9 +209,14 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
     let resolved = 0;
     for (const alert of alerts) {
       const linked = incidentByAlert.get(alert.id);
+      const waitingForSoloConfirmation =
+        alert.type === "TRACKING_INTERRUPTION" &&
+        alert.details?.soloMissingCheck === true &&
+        alert.details?.escalatedToDisasterManagement !== true;
       const activeAlert =
         tripStatusById.get(alert.tripId) === "ACTIVE" &&
-        ["OPEN", "ACKNOWLEDGED"].includes(alert.status);
+        ["OPEN", "ACKNOWLEDGED"].includes(alert.status) &&
+        !waitingForSoloConfirmation;
 
       if (activeAlert && !linked) {
         const latest = await db.latestTrustedLocation.findUnique({
@@ -307,7 +306,7 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
 
     const rows = await db.incident.findMany({
       where: {
-        ...(status ? { status } : {}),
+        ...(status ? { status } : { status: { in: ACTIVE_INCIDENT_STATUSES } }),
         ...(severity ? { severity } : {}),
         ...assignmentFilter,
       },

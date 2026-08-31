@@ -4,6 +4,7 @@ export const createGroupController = ({ service = groupService } = {}) => ({
   create: async (req,res) => ApiResponse.success(res,{statusCode:201,message:"Group created",data:await service.createGroup(req.user.id,req.params.tripId)}),
   getById: async (req,res) => ApiResponse.success(res,{message:"Group",data:await service.getGroup(req.user.id,req.params.groupId)}),
   getByTrip: async (req,res) => ApiResponse.success(res,{message:"Trip group",data:await service.getTripGroup(req.user.id,req.params.tripId)}),
+  lock: async (req,res) => ApiResponse.success(res,{message:"Group locked",data:await service.lockGroup(req.user.id,req.params.groupId)}),
   invite: async (req,res) => ApiResponse.success(res,{statusCode:201,message:"Group invitation created",data:await service.createInvitation(req.user.id,req.params.groupId,req.body.expiresInMinutes)}),
   revokeInvite: async (req,res) => ApiResponse.success(res,{message:"Group invitation revoked",data:await service.revokeInvitation(req.user.id,req.params.groupId,req.params.invitationId)}),
   previewJoin: async (req,res) => ApiResponse.success(res,{message:"Group join preview",data:await service.previewJoinGroup(req.user.id,req.body.inviteToken)}),

@@ -1,3 +1,15 @@
+# Current backend implementation snapshot
+
+The backend is an Express 5 + Prisma/PostgreSQL service with JWT/refresh sessions, role-based APIs, Socket.IO, deterministic safety monitoring, SOS/incident/dispatch workflows, selective Upstash Redis caching, Mailjet transactional email, Google Places integration, a server-to-server FastAPI trip planner, a separate Rakshak AI service, and an isolated blockchain gateway.
+
+Current trip behavior: choosing **without AI** immediately starts the trip; choosing **with AI** generates and saves a plan then starts the trip. AI plans cannot be attached after start. For group trips only the leader/owner can generate/save the plan; members see it read-only. Locked groups reject new membership operations.
+
+Current cache behavior: destinations (15 min), risk/safety reference data (30 s with invalidation), Google Places jurisdiction results (6 h), dashboard aggregates (30 s), and analytics aggregates (20 s). Live GPS, dispatch state, join requests, notifications, and Socket.IO state are deliberately uncached.
+
+Transactional email uses Mailjet Send API v3.1. The sender address must be verified in Mailjet.
+
+---
+
 # Smart Tourist Safety System — Backend
 
 > **Documentation status (24 Aug 2026):** This document is maintained against the current repository. Runtime source, `server/.env.example`, `server/prisma/schema.prisma`, and `server/openapi.yaml` are authoritative if a historical phase note differs.
@@ -10,7 +22,7 @@ The service is designed as a **modular Node.js backend**. AI models, blockchain 
 ## What the backend does
 
 ### Tourist safety
-- Tourist registration with six-digit Gmail OTP email verification, login, refresh sessions, logout, and profile onboarding
+- Tourist registration with six-digit email OTP email verification, login, refresh sessions, logout, and profile onboarding
 - SOLO and GROUP trip lifecycle management
 - Explicit location/emergency-sharing consent
 - Trip-scoped Safety ID issuance
@@ -63,7 +75,7 @@ See [`documentation/ROLE-PERMISSIONS.md`](documentation/ROLE-PERMISSIONS.md) for
 - Zod validation
 - Argon2id password hashing
 - JSON Web Tokens with refresh-session persistence
-- Nodemailer + Gmail SMTP App Password for tourist email verification
+- Mailjet Send API v3.1 for tourist email verification
 - Pino structured logging
 - Multer evidence upload boundary
 - Jest + Supertest
@@ -125,7 +137,7 @@ PowerShell:
 
 ```powershell
 Copy-Item .env.example .env
-# Configure Gmail App Password + EMAIL_OTP_SECRET in .env
+# Configure Mailjet API secret + EMAIL_OTP_SECRET in .env
 npm ci
 npm run prisma:generate
 npm run prisma:validate
@@ -137,7 +149,7 @@ bash:
 
 ```bash
 cp .env.example .env
-# Configure Gmail App Password + EMAIL_OTP_SECRET in .env
+# Configure Mailjet API secret + EMAIL_OTP_SECRET in .env
 npm ci
 npm run prisma:generate
 npm run prisma:validate
@@ -158,7 +170,7 @@ The backend uses short-lived access JWTs, persisted refresh sessions, and mandat
 Tourist signup flow:
 
 ```text
-register -> generate 6-digit OTP -> Gmail SMTP -> verify-email -> issue session
+register -> generate 6-digit OTP -> Mailjet Send API v3.1 -> verify-email -> issue session
 ```
 
 - Registration creates the tourist but does **not** issue a normal login session until the email is verified.
@@ -257,7 +269,7 @@ Dedicated domain suites remain available for targeted debugging, but `npm test` 
 | [`REALTIME-EVENTS.md`](documentation/REALTIME-EVENTS.md) | Socket.IO rooms, commands, and server events |
 | [`ERROR-CATALOGUE.md`](documentation/ERROR-CATALOGUE.md) | Error envelope and important error codes |
 | [`ENVIRONMENT.md`](documentation/ENVIRONMENT.md) | Environment-variable reference |
-| [`EMAIL-VERIFICATION.md`](documentation/EMAIL-VERIFICATION.md) | Gmail SMTP OTP signup verification flow and Postman testing |
+| [`EMAIL-VERIFICATION.md`](documentation/EMAIL-VERIFICATION.md) | Mailjet Send API v3.1 OTP signup verification flow and Postman testing |
 | [`AI-CATALOGUE.md`](documentation/AI-CATALOGUE.md) | Mounted AI analysis endpoints, validation, provider status, and handoff guidance |
 | [`BLOCKCHAIN-CATALOGUE.md`](documentation/BLOCKCHAIN-CATALOGUE.md) | Blockchain proof boundaries |
 | [`NOTIFICATION-DELIVERY.md`](documentation/NOTIFICATION-DELIVERY.md) | Delivery jobs/providers/retries |
@@ -281,7 +293,7 @@ Those systems connect through the documented API, Socket.IO, and provider interf
 
 ## Tourist email verification
 
-Tourist email verification is mandatory on first signup and whenever the tourist changes to a new email address. It is not required on every login. Gmail SMTP uses a Google App Password, while the OTP itself is generated and verified entirely by backend code.
+Tourist email verification is mandatory on first signup and whenever the tourist changes to a new email address. It is not required on every login. Mailjet Send API v3.1 uses a Mailjet API secret, while the OTP itself is generated and verified entirely by backend code.
 
 See [`documentation/EMAIL-VERIFICATION.md`](documentation/EMAIL-VERIFICATION.md) for configuration, security behavior, API examples, and Postman verification steps.
 

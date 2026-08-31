@@ -1,5 +1,147 @@
 # Backend Technical Flow for JavaScript Developers
 
+> **Current implementation supplement — 29 August 2026.** The detailed tutorial below is retained because it explains the Express/Prisma architecture deeply. This opening section records the current runtime changes that matter most: one-time trip planning/auto-start, leader-only group AI plans, the FastAPI planner proxy, Mailjet, and selective Redis caching.
+
+## Current production topology
+
+```text
+Vercel React client
+   │
+   │ HTTPS REST + Socket.IO
+   ▼
+Render Express API (server/)
+   │
+   ├─ Prisma → PostgreSQL / Neon
+   ├─ Upstash Redis REST → short-lived read cache
+   ├─ Mailjet v3.1 → transactional email
+   ├─ Google Maps/Places → server-side jurisdiction/geospatial helpers
+   ├─ Rakshak AI service (ai-ml/) → Groq + KB + chat history
+   ├─ FastAPI planner (ai-ml/trip-planner/) → SerpAPI + Groq
+   └─ blockchain gateway (blockchain/) → ethers → TrustAnchor.sol
+```
+
+There is no Nginx process in this repository acting as an API gateway. Rate limiting is implemented in Express with `express-rate-limit`; deployment providers may place their own reverse proxy in front of the service. `TRUST_PROXY` exists so Express interprets forwarded client IPs correctly on hosts such as Render.
+
+## Current request pipeline
+
+Every API request enters `src/app.js` and passes through the shared middleware stack before feature routing:
+
+```text
+request
+ → requestIdMiddleware
+ → observabilityMiddleware
+ → pino-http logger
+ → Helmet
+ → CORS
+ → JSON/urlencoded parser
+ → cookie-parser
+ → requestSecurityMiddleware
+ → API privacy headers
+ → global rate limiter
+ → sensitive-action limiter
+ → /api/v1 module router
+ → module authenticate/authorize/validate middleware
+ → controller
+ → service
+ → repository
+ → Prisma/PostgreSQL or external adapter
+ → ApiResponse
+ → errorHandler on failure
+```
+
+The distinction between global and feature middleware matters: a route can be structurally valid but still fail authentication, role authorization, ownership checks, lifecycle rules, or business-state validation inside the service.
+
+## Current cache-aside implementation
+
+`src/common/cache/cache.js` implements a fail-open cache-aside helper:
+
+```js
+cacheGetOrSet({
+  key,
+  ttlSeconds,
+  fetcher,
+  shouldCache,
+});
+```
+
+Execution is:
+
+```text
+Redis GET
+  ├─ hit → return cached value
+  └─ miss/error
+       → check local inFlight map
+       ├─ identical fetch already running → await it
+       └─ run fetcher once
+            → optionally Redis SET EX
+            → return source value even if Redis write fails
+```
+
+The in-memory `inFlight` map is not a second cache. It only coalesces simultaneous misses inside one Node process, preventing a cache stampede immediately after expiry/deploy.
+
+Cached domains and default TTLs:
+
+- destination queries: `REDIS_DESTINATIONS_TTL_SECONDS=900`
+- risk/safety-zone reference data: `REDIS_RISK_ZONES_TTL_SECONDS=30`
+- Google Places jurisdiction results: `REDIS_PLACES_TTL_SECONDS=21600`
+- dashboard aggregates: `REDIS_DASHBOARD_TTL_SECONDS=30`
+- analytics aggregates: `REDIS_ANALYTICS_TTL_SECONDS=20`
+
+Risk-zone writes call invalidation helpers so safety evaluation does not wait for TTL expiry to observe administrative changes.
+
+Do **not** use this cache for live tourist/fleet positions, current dispatch transitions, join requests, notifications, active SOS state, or Socket.IO messages. Those are mutable operational state and already have realtime delivery paths.
+
+## Current AI trip-planner call chain
+
+```text
+AITripPlannerPage
+ → tripService.planTripWithAI()
+ → POST /api/v1/trips/ai-plan
+ → trip.controller.planWithAI
+ → integrations/ai/trip-planner.service.js
+ → POST {TRIP_PLANNER_SERVICE_URL}/api/trip/plan
+ → FastAPI main.py
+ → trip_core.build_trip_response()
+ → SerpAPI places
+ → Groq structured itinerary
+ → SerpAPI hotels (non-fatal if hotel lookup fails)
+ → Node validates response
+ → client previews
+ → leader/owner attaches aiPlan
+ → trip starts
+```
+
+The backend retries selected network/upstream failures once and distinguishes timeout, unavailable, misconfigured, invalid-response, and upstream-failure conditions. Production rejects a localhost planner URL to avoid a deceptively valid configuration that can never reach a separate Render service.
+
+## Current trip-planning lock
+
+`Trip.aiPlan` is mutable only before start. The backend service checks `trip.status === PLANNED` when attaching AI data. The current frontend finalizes the plan choice and then starts the trip, so later navigation cannot legitimately expose another planning choice.
+
+For group trips the owner/leader is the only actor allowed to create/save the plan. Members consume the persisted plan read-only from the current-trip screen.
+
+## Current Mailjet call chain
+
+```text
+domain service
+ → sendMailjetEmail()
+ → POST https://api.mailjet.com/v3.1/send
+ → Basic Auth(MAILJET_API_KEY:MAILJET_SECRET_KEY)
+ → verified MAILJET_SENDER_EMAIL
+ → recipient
+```
+
+`email.service.js` handles verification OTP, password reset OTP, and trip-ending reminders. `emergency-email.service.js` handles emergency/dispatch/signal-loss/deep-link messages. Core emergency records are persisted independently of email success.
+
+## Current group lock mechanics
+
+`POST /api/v1/groups/:groupId/lock` is a business-state transition, not a cosmetic toggle. The service checks leader authority and trip state, requires the group's membership conditions, rejects pending requests, stores `isLocked/lockedAt`, and makes later membership-open operations fail with `GROUP_MEMBERSHIP_LOCKED`.
+
+Because a locked group cannot receive pending join requests, `CurrentTripPage` also stops the join-request polling effect once `group.isLocked` is true.
+
+---
+
+## Deep backend reference
+
 This is the **start-here technical document** for the KAVACH / Smart Tourist Safety backend.
 
 It is written for a developer who understands normal JavaScript concepts such as objects, functions, promises, modules, HTTP requests, and `async/await`, but may not yet know Express architecture, Prisma, PostgreSQL, JWT authentication, middleware, queues, Socket.IO, Redis, background jobs, or blockchain integration.
@@ -62,7 +204,7 @@ Optional/external systems are enabled depending on configuration:
 
 - Upstash Redis
 - Socket.IO clients
-- Gmail SMTP / notification providers
+- Mailjet Send API v3.1 / notification providers
 - Google Maps
 - blockchain gateway + blockchain RPC
 - AI provider integrations
@@ -100,7 +242,7 @@ instead of CommonJS `require()` and `module.exports`.
 | `express-rate-limit` | Request throttling | Slow abusive or accidental request floods |
 | `multer` | Multipart upload parser | Receive uploaded evidence/files |
 | `socket.io` | Realtime client/server library | Push live events without repeated HTTP polling |
-| `nodemailer` | Email sending library | Email verification/notification delivery |
+| built-in `fetch` + Mailjet client | HTTP transactional email | OTP, reminders and emergency email |
 | `firebase-admin` | Firebase server SDK | Push-notification integration |
 | `@aws-sdk/client-s3` | S3-compatible object-storage client | External file/object storage adapter |
 | `axios` | HTTP client | External API integrations where used |
@@ -666,7 +808,7 @@ That distinction is useful because:
 and
 
 ```text
-"Firebase/SMTP/SMS provider successfully delivered it"
+"configured delivery provider successfully delivered it"
 ```
 
 are different facts.
@@ -681,7 +823,7 @@ Tourist signup/email-change flows can require an OTP sent by email.
 
 OTP means **One-Time Password**: a short code intended for a single verification action and limited time window.
 
-The backend generates/verifies the OTP and uses Nodemailer/Gmail SMTP only as the delivery mechanism. Gmail does not decide whether the OTP is correct.
+The backend generates/verifies the OTP and uses Mailjet Send API v3.1 only as the delivery mechanism. Mailjet does not decide whether the OTP is correct.
 
 See [`EMAIL-VERIFICATION.md`](EMAIL-VERIFICATION.md).
 
@@ -819,7 +961,7 @@ Examples:
 ```text
 application concept       provider-specific implementation
 ----------------------------------------------------------
-send email             -> SMTP/Nodemailer
+send email             -> Mailjet API
 send push              -> Firebase Admin
 store object           -> S3 client
 get directions         -> Google Maps API
@@ -901,7 +1043,7 @@ DATABASE_URL
 PORT
 CORS_ORIGINS
 JWT secrets/config
-SMTP credentials
+Mailjet API credentials
 GOOGLE_MAPS_API_KEY
 BLOCKCHAIN_GATEWAY_URL
 ```

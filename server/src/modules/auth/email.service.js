@@ -1,8 +1,6 @@
 import { ApiError } from "../../common/errors/ApiError.js";
 import { environment } from "../../config/environment.js";
-
-const BREVO_EMAIL_ENDPOINT =
-  "https://api.brevo.com/v3/smtp/email";
+import { sendMailjetEmail } from "../../integrations/notifications/mailjet.client.js";
 
 const escapeHtml = (value) =>
   String(value)
@@ -23,8 +21,9 @@ export const createEmailService = ({
     plannedEndAt,
   }) {
     if (
-      !config.BREVO_API_KEY ||
-      !config.BREVO_SENDER_EMAIL ||
+      !config.MAILJET_API_KEY ||
+      !config.MAILJET_SECRET_KEY ||
+      !config.MAILJET_SENDER_EMAIL ||
       typeof fetchImpl !== "function"
     ) {
       throw ApiError.serviceUnavailable("Email delivery is not configured", {
@@ -64,34 +63,23 @@ export const createEmailService = ({
       </div>
     `;
 
-    const response = await fetchImpl(BREVO_EMAIL_ENDPOINT, {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        "api-key": config.BREVO_API_KEY,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        sender: {
-          name: config.BREVO_SENDER_NAME || "QuantumCrew",
-          email: config.BREVO_SENDER_EMAIL,
-        },
-        to: [{ email: to, name: safeName }],
+    try {
+      const result = await sendMailjetEmail({
+        to,
+        name: safeName,
         subject,
         textContent,
         htmlContent,
-      }),
-    });
-
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
+        config,
+        fetchImpl,
+      });
+      return { messageId: result.messageId };
+    } catch (cause) {
       throw ApiError.serviceUnavailable("Trip reminder email could not be sent", {
         code: "TRIP_REMINDER_EMAIL_FAILED",
-        cause: new Error(payload?.message || `Brevo returned HTTP ${response.status}`),
+        cause,
       });
     }
-
-    return { messageId: payload?.messageId ?? null };
   },
 
   async sendPasswordResetOtp({
@@ -101,8 +89,9 @@ export const createEmailService = ({
     expiresInMinutes,
   }) {
     if (
-      !config.BREVO_API_KEY ||
-      !config.BREVO_SENDER_EMAIL ||
+      !config.MAILJET_API_KEY ||
+      !config.MAILJET_SECRET_KEY ||
+      !config.MAILJET_SENDER_EMAIL ||
       typeof fetchImpl !== "function"
     ) {
       throw ApiError.serviceUnavailable("Email delivery is not configured", {
@@ -134,30 +123,16 @@ export const createEmailService = ({
     `;
 
     try {
-      const response = await fetchImpl(BREVO_EMAIL_ENDPOINT, {
-        method: "POST",
-        headers: {
-          accept: "application/json",
-          "api-key": config.BREVO_API_KEY,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          sender: {
-            name: config.BREVO_SENDER_NAME || "QuantumCrew",
-            email: config.BREVO_SENDER_EMAIL,
-          },
-          to: [{ email: to, name: safeName }],
-          subject,
-          textContent,
-          htmlContent,
-        }),
+      const result = await sendMailjetEmail({
+        to,
+        name: safeName,
+        subject,
+        textContent,
+        htmlContent,
+        config,
+        fetchImpl,
       });
-
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload?.message || `Brevo returned HTTP ${response.status}`);
-      }
-      return { messageId: payload?.messageId ?? null };
+      return { messageId: result.messageId };
     } catch (cause) {
       throw ApiError.serviceUnavailable("Password reset email could not be sent", {
         code: "PASSWORD_RESET_EMAIL_FAILED",
@@ -173,8 +148,9 @@ export const createEmailService = ({
     expiresInMinutes,
   }) {
     if (
-      !config.BREVO_API_KEY ||
-      !config.BREVO_SENDER_EMAIL ||
+      !config.MAILJET_API_KEY ||
+      !config.MAILJET_SECRET_KEY ||
+      !config.MAILJET_SENDER_EMAIL ||
       typeof fetchImpl !== "function"
     ) {
       throw ApiError.serviceUnavailable(
@@ -230,67 +206,17 @@ export const createEmailService = ({
     `;
 
     try {
-      const response = await fetchImpl(
-        BREVO_EMAIL_ENDPOINT,
-        {
-          method: "POST",
+      const result = await sendMailjetEmail({
+        to,
+        name: safeName,
+        subject: "Verify your Smart Tourist Safety account",
+        textContent,
+        htmlContent,
+        config,
+        fetchImpl,
+      });
 
-          headers: {
-            accept: "application/json",
-            "api-key": config.BREVO_API_KEY,
-            "content-type":
-              "application/json",
-          },
-
-          body: JSON.stringify({
-            sender: {
-              name:
-                config.BREVO_SENDER_NAME ||
-                "QuantumCrew",
-
-              email:
-                config.BREVO_SENDER_EMAIL,
-            },
-
-            to: [
-              {
-                email: to,
-                name: safeName,
-              },
-            ],
-
-            subject:
-              "Verify your Smart Tourist Safety account",
-
-            textContent,
-            htmlContent,
-          }),
-        },
-      );
-
-      const payload = await response
-        .json()
-        .catch(() => ({}));
-
-      if (!response.ok) {
-        const providerError = new Error(
-          payload?.message ||
-            `Brevo returned HTTP ${response.status}`,
-        );
-
-        providerError.status =
-          response.status;
-
-        providerError.response =
-          payload;
-
-        throw providerError;
-      }
-
-      return {
-        messageId:
-          payload?.messageId ?? null,
-      };
+      return { messageId: result.messageId };
     } catch (cause) {
       throw ApiError.serviceUnavailable(
         "Verification email could not be sent",

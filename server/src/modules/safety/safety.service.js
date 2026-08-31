@@ -1,4 +1,5 @@
 import { ApiError } from "../../common/errors/ApiError.js";
+import { invalidateSafetyZoneCaches } from "../../common/cache/domain-cache.js";
 import { zoneContainsPoint, zoneIntersectsCircle, zoneIsEffective } from "../../common/utils/geofence.js";
 import { incidentService } from "../incident/incident.service.js";
 import { safetyRepository } from "./safety.repository.js";
@@ -40,6 +41,7 @@ export const createSafetyService = ({
   clock = () => new Date(),
   limits = SAFETY_LIMITS,
   incidentReporter = null,
+  invalidateZoneCache = invalidateSafetyZoneCaches,
 } = {}) => {
   const ensureAlert = async ({ tripId, userId, type, level, sourceId, message, details }) => {
     const existing = await repository.findOpenAlert(tripId, userId, type, sourceId);
@@ -78,6 +80,7 @@ export const createSafetyService = ({
         entityId: zone.id,
         metadata: { type: zone.type, severity: zone.severity },
       });
+      await invalidateZoneCache();
       return zone;
     },
 

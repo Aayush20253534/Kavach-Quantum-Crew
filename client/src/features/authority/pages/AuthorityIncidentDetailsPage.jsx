@@ -270,6 +270,32 @@ export function AuthorityIncidentDetailsPage() {
               </div>
             </div>
 
+            <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Tourist contact</p>
+                  <p className="mt-1 text-[15px] font-black text-slate-900">{incident.tourist?.name || 'Unknown tourist'}</p>
+                  <p className="mt-1 text-[12px] font-bold text-slate-700">{incident.tourist?.phone || 'Phone unavailable'}</p>
+                  {incident.tourist?.email && <p className="mt-0.5 text-[11px] text-slate-500">{incident.tourist.email}</p>}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {incident.tourist?.phone && (
+                    <a href={`tel:${incident.tourist.phone}`} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-[11px] font-black uppercase tracking-wider text-white hover:bg-blue-700">
+                      <PhoneCall className="h-4 w-4" /> Call tourist
+                    </a>
+                  )}
+                  {!incident.expired && !['RESOLVED', 'DISMISSED'].includes(status) && (
+                    <Link to={`/authority/dispatch?incident=${encodeURIComponent(incident.id)}`} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-[11px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50">
+                      <Radio className="h-4 w-4" /> Manual dispatch
+                    </Link>
+                  )}
+                </div>
+              </div>
+              {incident.sourceType === 'SAFETY_ALERT' && incident.title?.toLowerCase().includes('solo tourist') && (
+                <p className="mt-3 border-t border-blue-200 pt-3 text-[11px] font-semibold leading-5 text-blue-900">This incident was automatically opened after a solo tourist missed the KAVACH safety-confirmation window. Call the tourist first. If there is still no response, use Manual dispatch to assign Police, Ambulance/Hospital, or Fire as appropriate.</p>
+              )}
+            </div>
+
             <div>
               <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Location</p>
               <div className="flex items-start gap-2">

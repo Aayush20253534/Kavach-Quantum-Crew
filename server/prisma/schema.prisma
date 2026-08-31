@@ -194,6 +194,7 @@ model Trip {
   status         TripStatus    @default(PLANNED)
   plannedStartAt DateTime
   plannedEndAt   DateTime
+  aiPlan         Json?
   startedAt      DateTime?
   endedAt        DateTime?
   cancelledAt    DateTime?
@@ -269,6 +270,8 @@ model TripGroup {
   name        String            @db.VarChar(160)
   leaderId    String            @db.Uuid
   status      GroupStatus       @default(ACTIVE)
+  isLocked    Boolean           @default(false)
+  lockedAt    DateTime?
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   closedAt    DateTime?
