@@ -51,7 +51,7 @@ export function LiveTrackingPage() {
   const { user } = useSelector((state) => state.auth);
   const { data: trip, isLoading } = useCurrentTrip();
   const isActive = trip?.status === 'ACTIVE';
-  const { location, isTracking, permission, error: geoError, pingError } = useGeolocation(trip?.id, isActive);
+  const { location, isTracking, permission, error: geoError } = useGeolocation(trip?.id, isActive);
 
   const [zones, setZones] = useState([]);
   const [group, setGroup] = useState(null);
@@ -59,7 +59,6 @@ export function LiveTrackingPage() {
   const [battery, setBattery] = useState(null);
   const [trackingConsentReady, setTrackingConsentReady] = useState(false);
   const [fleetResponses, setFleetResponses] = useState([]);
-  const [fleetError, setFleetError] = useState('');
 
   useEffect(() => {
     trackingService.getRiskZones().then((data) => setZones(data?.items || data || [])).catch(() => setZones([]));
@@ -132,7 +131,6 @@ export function LiveTrackingPage() {
   useEffect(() => {
     if (!trip?.id || trip.status !== 'ACTIVE') {
       setFleetResponses([]);
-      setFleetError('');
       return undefined;
     }
 
@@ -164,15 +162,13 @@ export function LiveTrackingPage() {
 
         if (!cancelled) {
           setFleetResponses(snapshots.filter(Boolean));
-          setFleetError('');
-        }
+            }
       } catch (error) {
         if (!cancelled) {
           setFleetResponses([]);
-          setFleetError(
-            error?.response?.data?.error?.message ||
-              'Unable to synchronize active emergency response.',
-          );
+          // Live Map intentionally hides transport/backend diagnostics from tourists.
+          // A failed fleet refresh simply leaves the optional fleet overlay empty.
+          console.error('Unable to synchronize active emergency response', error);
         }
       }
     };
@@ -309,15 +305,9 @@ export function LiveTrackingPage() {
         <Metric label="Battery" value={battery == null ? 'Unavailable' : `${battery}%`} icon={BatteryMedium} />
       </div>
 
-      {(geoError || pingError || permission === 'denied') && (
+      {(geoError || permission === 'denied') && (
         <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-xs sm:text-sm">
-          {geoError || pingError || 'Location permission denied'}
-        </div>
-      )}
-
-      {fleetError && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 sm:text-sm">
-          {fleetError}
+          {geoError || 'Location permission denied'}
         </div>
       )}
 
