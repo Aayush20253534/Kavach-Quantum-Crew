@@ -67,6 +67,7 @@ Authentication alone never grants arbitrary access to another user's resource.
 
 - **Tourist:** may view responder tracking only for dispatches connected to their own individual/group incident; protected identity fields are not editable while a planned/active trip exists.
 - **Group leader (Tourist role):** may list relevant signal-loss cases and submit `FALSE_ALARM` or `CONFIRMED_DANGER`.
+- **Separated group member or group leader:** may read the relevant centroid-separation safety check and submit `SAFE` or `UNSAFE`. Either actor may clear the pending case as safe; either may escalate danger.
 - **Disaster Manager:** receives danger/signal-loss incidents and initiates responder dispatch; may view responder tracking.
 - **Police / Fire / Ambulance:** operate the single fleet account, view their dispatches, update dispatch status/location, and view authorized live tracking.
 - **System Admin:** retains administrative visibility/configuration.

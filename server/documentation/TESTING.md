@@ -69,6 +69,8 @@ Rakshak AI runs as a separate authenticated service under `ai-ml/`. It validates
 
 Regression tests/manual QA should cover immediate danger-zone evaluation at trip start, five-minute signal-loss response/reminder cycles, Disaster-Management-controlled responder assignment, individual blockchain self-repair, group blockchain approval/recovery, and `INTEGRITY_UNAVAILABLE` when a snapshot cannot be safely read.
 
+Group-centroid regression coverage should additionally verify: densest 500 m cluster selection; centroid movement with the majority; an outlier not dragging the reference center; no prompt after only one outside evaluation; member + leader prompt/email after the second consecutive outside evaluation; exact `/tourist/trips/current` deep link; `SAFE` from either actor resolving without an incident; `UNSAFE` from either actor escalating immediately; five-minute no-response escalation; return-inside auto-clear before escalation; Disaster Management synchronization not creating the incident early; and no automatic fleet assignment.
+
 ## 2026-08-27 testing additions
 
 Add regression coverage for:
