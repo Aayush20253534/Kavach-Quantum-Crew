@@ -89,6 +89,13 @@ Verify Police/Fire/Ambulance registration and login role matching; nearest-unit 
 
 - [ ] Danger zone notifies tourist + Disaster Management, not responders.
 - [ ] Signal loss uses a persisted 5-minute leader decision case and 5-minute reminders after a handled response.
+- [ ] Group separation uses the dynamic densest/majority centroid, not leader distance.
+- [ ] Group separation requires two consecutive evaluations outside the 500 m radius before prompting.
+- [ ] Separated member and leader both receive in-app + Mailjet safety checks linking to `/tourist/trips/current`.
+- [ ] `SAFE` from either actor clears the case; `UNSAFE` from either actor creates a normal Disaster Management incident.
+- [ ] No response for 5 minutes escalates, while returning inside before escalation auto-clears the pending case.
+- [ ] Live group map shows a black centroid marker and 500 m circle.
+- [ ] Nearby Police/Hospital/Fire search remains a separate 5 km user-centered lookup.
 - [ ] Responder email occurs only after dispatch assignment.
 - [ ] Police/Fire/Ambulance pages use live backend data and browser GPS.
 - [ ] Group QR is an HTTPS deep link readable by generic scanners.

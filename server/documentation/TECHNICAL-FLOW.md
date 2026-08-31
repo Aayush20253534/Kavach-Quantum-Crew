@@ -777,6 +777,70 @@ The important architectural principle is that deterministic safety decisions liv
 
 A frontend can request or display safety state, but server-side rules remain authoritative because client code can be modified by the user.
 
+### 22.1 Dynamic majority-centroid group separation
+
+The dedicated group-separation workflow lives with the signal-loss safety domain because it needs persisted warning/response state and scheduled evaluation, but it is distinct from a member losing GPS signal. `monitoring.service.js` no longer performs the old leader-distance `GROUP_SEPARATION` decision; the centroid workflow owns that condition.
+
+Core constants in `signal-loss.service.js` define the policy:
+
+```text
+GROUP_RADIUS_M = 500
+GROUP_SEPARATION_CONFIRMATIONS = 2
+GROUP_SEPARATION_RESPONSE_MS = 5 minutes
+GROUP_SEPARATION_SOURCE_ID = group-centroid-separation
+```
+
+For each active group trip, the evaluator loads members with usable recent trusted locations. For every candidate point it counts neighbours within 500 m and chooses the densest neighbourhood as the majority cluster. The centroid is the arithmetic mean latitude/longitude of that selected cluster. This makes the reference move with the group while preventing a distant member from dragging a plain all-member average toward the outlier.
+
+```text
+member locations
+   │
+   ├─ build 500 m neighbourhood around each candidate
+   ├─ choose largest neighbourhood
+   └─ centroid(cluster)
+          │
+          ▼
+   Haversine(member, centroid)
+          │
+          ├─ <= 500 m → resolve eligible pending warning
+          └─ > 500 m  → increment consecutiveOutsideEvaluations
+```
+
+The first outside evaluation persists a `SafetyAlert` with:
+
+- `type = GROUP_SEPARATION`,
+- `sourceId = group-centroid-separation`,
+- `level = WARNING`,
+- the member and leader/group identifiers,
+- current centroid and majority member IDs,
+- measured distance and 500 m threshold,
+- `consecutiveOutsideEvaluations`, and
+- `escalatedToDisasterManagement = false`.
+
+If the next evaluation is also outside, the alert becomes an active confirmation case by storing `confirmationStarted`, `promptedAt`, and `responseDeadlineAt = now + 5 minutes`. The notification service creates in-app notifications and `emergency-email.service.js` sends Mailjet messages to both the separated member and group leader. The email deep link is built with the configured frontend base URL and points to `/tourist/trips/current`, so authentication can return the user to the exact page containing the safety controls.
+
+Both actors are authorized to read/respond to the case. The API accepts `SAFE` or `UNSAFE`:
+
+```text
+GET  /api/v1/signal-loss-cases/group-separation?tripId=<tripId>
+POST /api/v1/signal-loss-cases/group-separation/:alertId/respond
+body: { "response": "SAFE" | "UNSAFE" }
+```
+
+`SAFE` from either authorized actor resolves the warning. `UNSAFE` from either actor marks it for immediate escalation. Deadline expiry without a safe response also escalates. Before escalation, returning inside the 500 m centroid radius auto-resolves the pending alert so Disaster Management is not notified for a recovered separation.
+
+### 22.2 Incident synchronization boundary
+
+`disaster-management.repository.js` must not convert every open centroid-separation warning into an incident. It skips `group-centroid-separation` alerts while `details.escalatedToDisasterManagement !== true`. This guard is essential because the general safety-alert synchronization runs independently and would otherwise defeat the five-minute confirmation window.
+
+After `UNSAFE` or timeout, the signal-loss service sets the escalation flag and sends the alert through the existing incident reporter. From that point the normal incident pipeline owns Disaster Management visibility, contact details, notification/email, lifecycle state and later manual fleet dispatch. No responder is automatically assigned merely because the centroid case escalated.
+
+### 22.3 Live-map centroid versus backend authority
+
+`client/src/features/tracking/pages/LiveTrackingPage.jsx` derives a majority centroid from the currently displayed member positions and passes it to `MapComponent`. `MapComponent` renders a black `C` marker and the 500 m circle. This client computation is for visualization only; it does not create incidents or authorize safety decisions. The backend independently evaluates persisted/trusted locations.
+
+Do not confuse this radius with `EMERGENCY_SEARCH_RADIUS_METERS = 5000` in the map component. That 5 km value belongs to the tourist dashboard's nearby Police/Hospital/Fire Places search centered on the current user. The 500 m group radius is a separate safety rule centered on the moving majority centroid.
+
 ## 23. SOS to incident flow
 
 A simplified emergency path is:

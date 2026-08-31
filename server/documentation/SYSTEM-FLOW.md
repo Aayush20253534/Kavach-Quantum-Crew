@@ -275,7 +275,7 @@ The backend can evaluate:
 - check-in state,
 - stale location/signal loss,
 - trip overtime,
-- group separation,
+- dynamic majority-centroid group separation (500 m),
 - route or monitoring-policy conditions where configured,
 - hazard/risk-zone proximity.
 
@@ -294,6 +294,85 @@ cacheGetOrSet(safety/risk-zone key)
 ```
 
 Risk-zone mutations invalidate the relevant prefixes immediately. Redis failures fail open to PostgreSQL/source APIs rather than making safety functionality unavailable.
+
+## 8.2 Dynamic group-centroid separation safety
+
+Group separation is not measured from the leader. During an `ACTIVE` group trip, KAVACH treats the moving majority of the group as the reference point so a leader walking slightly ahead, or one already-separated outlier, does not redefine the group boundary.
+
+```text
+Fresh trusted locations for active group members
+        │
+        ▼
+Find the densest / largest 500 m member cluster
+        │
+        ▼
+Average that cluster's coordinates
+        │
+        ▼
+Dynamic majority-group centroid
+        │
+        ├─ moves as the group moves
+        └─ ignores a distant outlier when choosing the reference cluster
+        │
+        ▼
+Evaluate every located member against 500 m radius
+        │
+        ├─ inside → normal / pending unconfirmed case can auto-clear
+        └─ outside
+              │
+              ▼
+        first consecutive evaluation
+              │
+              └─ persist warning state, do not notify yet
+              │
+              ▼
+        second consecutive evaluation outside
+              │
+              ▼
+        start 5-minute safety confirmation
+              │
+              ├─ in-app check for separated member
+              ├─ in-app check for team leader
+              ├─ Mailjet email to separated member
+              └─ Mailjet email to leader
+                    │
+                    └─ exact link: /tourist/trips/current
+              │
+              ├─ either confirms SAFE
+              │      → resolve the separation alert
+              │      → no Disaster Management incident
+              │
+              ├─ member reports UNSAFE / needs help
+              │      → escalate immediately
+              │
+              ├─ leader reports UNSAFE
+              │      → escalate immediately
+              │
+              ├─ no safe confirmation for 5 minutes
+              │      → escalate automatically
+              │
+              └─ member returns inside radius before escalation
+                     → auto-resolve pending case
+```
+
+Escalation uses the normal safety-alert-to-incident pipeline. The resulting incident is visible to Disaster Management like other operational incidents and carries the separated tourist's existing contact/location context. Creating the incident does **not** automatically assign Police, Fire, or Ambulance; Disaster Management still decides whether and which fleet to dispatch.
+
+The separation warning is intentionally kept out of Disaster Management incident synchronization while the five-minute confirmation is pending. This prevents the generic alert synchronizer from bypassing the human safety check. Once the alert is explicitly escalated, normal incident ingestion is allowed.
+
+### Live-map representation
+
+The tourist group live map displays the same concept used by backend safety evaluation:
+
+- a **black `C` marker** for the dynamic majority-group centroid,
+- a **500 m group safety circle** around that centroid,
+- the individual group-member markers, and
+- the existing fleet/incident overlays where applicable.
+
+The browser recomputes the display centroid from the live group positions for visualization; backend evaluation remains authoritative for creating/clearing safety cases.
+
+### This is not the Nearby Emergency Services radius
+
+The dashboard's nearby Police/Hospital/Fire lookup is a separate feature. It searches approximately **5 km (5000 m)** around the **current user's location**. Group separation uses **500 m** around the **dynamic majority-group centroid**. Neither radius is reused as the other's configuration or center.
 
 ## 9. Check-ins and alerts
 

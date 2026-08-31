@@ -133,6 +133,8 @@
 | Method | Endpoint |
 |---|---|
 | `GET` | `/api/v1/signal-loss-cases` |
+| `GET` | `/api/v1/signal-loss-cases/group-separation?tripId=:tripId` |
+| `POST` | `/api/v1/signal-loss-cases/group-separation/:alertId/respond` |
 | `POST` | `/api/v1/signal-loss-cases/:caseId/respond` |
 
 ## Alert
