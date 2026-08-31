@@ -44,6 +44,7 @@ export function CurrentTripPage() {
   const [groupCredential, setGroupCredential] = useState(null);
   const [joinRequests, setJoinRequests] = useState([]);
   const [signalCases, setSignalCases] = useState([]);
+  const [separationChecks, setSeparationChecks] = useState([]);
   const [soloSafetyChecks, setSoloSafetyChecks] = useState([]);
   const [responseDispatches, setResponseDispatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -88,6 +89,7 @@ export function CurrentTripPage() {
             setJoinRequests([]);
             setSignalCases([]);
           }
+          if (current.status === 'ACTIVE') { try { setSeparationChecks(await groupService.getGroupSeparationChecks(current.id)); } catch { setSeparationChecks([]); } } else setSeparationChecks([]);
         } catch { setGroup(null); setGroupCredential(null); setJoinRequests([]); }
       } else {
         setGroup(null);
@@ -134,6 +136,15 @@ export function CurrentTripPage() {
       window.clearInterval(timer);
     };
   }, [trip?.id, trip?.status, trip?.tripType, group?.leaderId, user?.id]);
+
+  useEffect(() => {
+    if (!trip?.id || trip.status !== 'ACTIVE' || trip.tripType !== 'GROUP') return undefined;
+    let cancelled = false;
+    const refresh = async () => { try { const checks = await groupService.getGroupSeparationChecks(trip.id); if (!cancelled) setSeparationChecks(checks || []); } catch {} };
+    void refresh();
+    const timer = window.setInterval(refresh, 5000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [trip?.id, trip?.status, trip?.tripType]);
 
   useEffect(() => {
     if (!trip?.id || trip.status !== 'ACTIVE' || trip.tripType !== 'SOLO') return undefined;
@@ -351,6 +362,13 @@ export function CurrentTripPage() {
     });
   };
 
+  const respondToGroupSeparation = async (item, response) => {
+    setBusy(`separation-${response.toLowerCase()}-${item.id}`);
+    try { await groupService.respondToGroupSeparation(item.id, response); setSeparationChecks((items) => items.filter((check) => check.id !== item.id)); await load(); }
+    catch (e) { setError(e?.response?.data?.error?.message || 'Unable to record group safety response'); }
+    finally { setBusy(''); }
+  };
+
   const respondToSignalCase = async (item, response) => {
     const actionName = response === 'FALSE_ALARM' ? `signal-false-${item.id}` : `signal-danger-${item.id}`;
     setBusy(actionName);
@@ -500,6 +518,16 @@ export function CurrentTripPage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {separationChecks.length > 0 && (
+        <div className="rounded-2xl border border-orange-300 bg-orange-50 p-4 sm:p-5 shadow-sm">
+          <div className="flex items-start gap-3"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-orange-700" /><div className="min-w-0 flex-1">
+            <h2 className="text-sm font-black text-orange-950">Group separation safety confirmation</h2>
+            <p className="mt-1 text-[11px] leading-5 text-orange-800">A member stayed outside the dynamic 500 m majority-group radius for two consecutive checks. Both the separated member and team leader were emailed this exact trip page. Either can confirm safety. Reporting unsafe, or no safe confirmation within 5 minutes, creates a normal Disaster Management incident.</p>
+            <div className="mt-3 space-y-2">{separationChecks.map((item) => (<div key={item.id} className="rounded-xl border border-orange-200 bg-white p-3 sm:flex sm:items-center sm:justify-between sm:gap-4"><div><p className="text-xs font-black text-slate-900">Member outside group radius · {Math.round(item.details?.distanceM || 0)} m from centroid</p><p className="mt-1 text-[10px] text-slate-500">Respond by {dateText(item.details?.responseDeadlineAt)}</p></div><div className="mt-3 flex gap-2 sm:mt-0"><button disabled={Boolean(busy)} onClick={() => respondToGroupSeparation(item, 'SAFE')} className="rounded-lg bg-emerald-600 px-3 py-2 text-[10px] font-black text-white disabled:opacity-50">Member is safe</button><button disabled={Boolean(busy)} onClick={() => respondToGroupSeparation(item, 'UNSAFE')} className="rounded-lg bg-red-600 px-3 py-2 text-[10px] font-black text-white disabled:opacity-50">Not safe / need help</button></div></div>))}</div>
+          </div></div>
         </div>
       )}
 

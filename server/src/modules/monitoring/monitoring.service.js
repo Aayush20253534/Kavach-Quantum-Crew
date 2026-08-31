@@ -90,16 +90,8 @@ export const createMonitoringService = ({
         await resolveAlert(trip.id, userId, "ROUTE_DEVIATION", "planned-route", now);
       }
 
-      if (trip.group && userId !== trip.group.leaderId) {
-        const leader = await repository.findLatest(trip.id, trip.group.leaderId);
-        const separation = leader ? haversineDistanceM(latest, leader) : null;
-        if (separation !== null && separation > policy.groupSeparationM) {
-          await ensureAlert({ tripId: trip.id, userId, type: "GROUP_SEPARATION", sourceId: trip.group.id, message: "Tourist is separated from the group leader", details: { groupId: trip.group.id, distanceM: Math.round(separation), thresholdM: policy.groupSeparationM } });
-          add("GROUP_SEPARATION", "WARNING", { distanceM: separation });
-        } else {
-          await resolveAlert(trip.id, userId, "GROUP_SEPARATION", trip.group.id, now);
-        }
-      }
+      // Group separation is handled by the dedicated majority-centroid safety workflow.
+      // This replaces the old member-to-leader distance rule.
     }
 
     const level = findings.some((finding) => finding.level === "DANGER") ? "DANGER" : findings.length ? "WARNING" : "SAFE";

@@ -213,10 +213,12 @@ export const createDisasterManagementRepository = ({ db = prisma } = {}) => ({
         alert.type === "TRACKING_INTERRUPTION" &&
         alert.details?.soloMissingCheck === true &&
         alert.details?.escalatedToDisasterManagement !== true;
+      const waitingForGroupSeparationConfirmation = alert.type === "GROUP_SEPARATION" && alert.details?.groupSeparationCheck === true && alert.details?.escalatedToDisasterManagement !== true;
       const activeAlert =
         tripStatusById.get(alert.tripId) === "ACTIVE" &&
         ["OPEN", "ACKNOWLEDGED"].includes(alert.status) &&
-        !waitingForSoloConfirmation;
+        !waitingForSoloConfirmation &&
+        !waitingForGroupSeparationConfirmation;
 
       if (activeAlert && !linked) {
         const latest = await db.latestTrustedLocation.findUnique({

@@ -1,4 +1,5 @@
 import { ApiError } from "../../common/errors/ApiError.js";
+import { haversineDistanceM } from "../../common/utils/geo.js";
 import { incidentService } from "../incident/incident.service.js";
 import { notificationService } from "../notification/notification.service.js";
 import { signalLossRepository } from "./signal-loss.repository.js";
@@ -10,8 +11,28 @@ const FALSE_ALARM_RECHECK_MS = 2 * 60 * MINUTE;
 const SOLO_MISSING_AFTER_MS = 10 * MINUTE;
 const SOLO_RESPONSE_WINDOW_MS = 5 * MINUTE;
 const SOLO_SOURCE_ID = "solo-signal-loss";
+const GROUP_SEPARATION_SOURCE_ID = "group-centroid-separation";
+const GROUP_RADIUS_M = 500;
+const GROUP_SEPARATION_CONFIRMATIONS = 2;
 
 const asDate = (value) => value ? new Date(value) : null;
+
+const centroid = (points) => ({
+  latitude: points.reduce((sum, point) => sum + point.latitude, 0) / points.length,
+  longitude: points.reduce((sum, point) => sum + point.longitude, 0) / points.length,
+});
+
+// Choose the densest 500 m neighbourhood so a member who is already far away
+// cannot drag the group centre toward themselves.
+const majorityCluster = (points, radiusM = GROUP_RADIUS_M) => {
+  if (!points.length) return [];
+  let best = [points[0]];
+  for (const candidate of points) {
+    const cluster = points.filter((point) => haversineDistanceM(candidate, point) <= radiusM);
+    if (cluster.length > best.length) best = cluster;
+  }
+  return best;
+};
 
 export const createSignalLossService = ({
   repository = signalLossRepository,
@@ -155,6 +176,62 @@ export const createSignalLossService = ({
     }
   };
 
+  const sweepGroupSeparation = async (now, result) => {
+    const trips = await repository.listActiveGroupTrips();
+    for (const trip of trips) {
+      if (!trip.group?.members?.length) continue;
+      const located = [];
+      for (const member of trip.group.members) {
+        const latest = await repository.findLatest(trip.id, member.userId);
+        if (!latest) continue;
+        const ageMs = now.getTime() - new Date(latest.capturedAt).getTime();
+        if (ageMs > 2 * MINUTE) continue;
+        located.push({ ...latest, userId: member.userId, member });
+      }
+      if (located.length < 2) continue;
+      const cluster = majorityCluster(located);
+      const center = centroid(cluster);
+      const clusterIds = cluster.map((point) => point.userId);
+
+      for (const point of located) {
+        result.separationChecked += 1;
+        const distanceM = haversineDistanceM(point, center);
+        let alert = await repository.findOpenSeparationAlert(trip.id, point.userId);
+        if (distanceM <= GROUP_RADIUS_M) {
+          if (alert && !await repository.findIncidentByAlert(alert.id)) {
+            await repository.updateSafetyAlert(alert.id, { status: "RESOLVED", resolvedAt: now, details: { ...(alert.details || {}), autoClearedAfterReturn: true, returnedAt: now.toISOString() } });
+            result.separationResolved += 1;
+          }
+          continue;
+        }
+
+        if (!alert) {
+          await repository.createSafetyAlert({ tripId: trip.id, userId: point.userId, type: "GROUP_SEPARATION", level: "WARNING", sourceId: GROUP_SEPARATION_SOURCE_ID, message: "Group member is outside the 500 m majority-group safety radius", details: { groupSeparationCheck: true, consecutiveOutsideEvaluations: 1, confirmationStarted: false, leaderId: trip.group.leaderId, groupId: trip.group.id, thresholdM: GROUP_RADIUS_M, distanceM: Math.round(distanceM), centroid: { latitude: center.latitude, longitude: center.longitude }, majorityMemberIds: clusterIds, firstOutsideAt: now.toISOString(), escalatedToDisasterManagement: false } });
+          continue;
+        }
+
+        const details = alert.details || {};
+        if (!details.confirmationStarted) {
+          const count = Number(details.consecutiveOutsideEvaluations || 1) + 1;
+          const responseDeadlineAt = new Date(now.getTime() + RESPONSE_WINDOW_MS);
+          const updated = await repository.updateSafetyAlert(alert.id, { details: { ...details, consecutiveOutsideEvaluations: count, distanceM: Math.round(distanceM), centroid: { latitude: center.latitude, longitude: center.longitude }, majorityMemberIds: clusterIds, ...(count >= GROUP_SEPARATION_CONFIRMATIONS ? { confirmationStarted: true, promptedAt: now.toISOString(), responseDeadlineAt: responseDeadlineAt.toISOString() } : {}) } });
+          if (count >= GROUP_SEPARATION_CONFIRMATIONS) {
+            await notifier.groupSeparationPrompt?.({ alert: updated, trip, member: point.member.user, leader: trip.group.leader });
+            result.separationPrompted += 1;
+          }
+          continue;
+        }
+
+        const deadline = asDate(details.responseDeadlineAt);
+        if (details.escalatedToDisasterManagement !== true && deadline && now >= deadline) {
+          const escalated = await repository.updateSafetyAlert(alert.id, { level: "DANGER", message: "Group member safety was not confirmed within 5 minutes after separation", details: { ...details, escalatedToDisasterManagement: true, escalationReason: "GROUP_SEPARATION_CONFIRMATION_TIMEOUT", escalatedAt: now.toISOString() } });
+          await incidentReporter.ingestSafetyAlert(escalated);
+          result.separationEscalated += 1;
+        }
+      }
+    }
+  };
+
   const sweepSoloTrips = async (now, result) => {
     const trips = await repository.listActiveSoloTrips?.() ?? [];
     for (const trip of trips) {
@@ -230,8 +307,10 @@ export const createSignalLossService = ({
         soloPrompted: 0,
         soloEscalated: 0,
         soloResolved: 0,
+        separationChecked: 0, separationPrompted: 0, separationEscalated: 0, separationResolved: 0,
       };
       await sweepGroupTrips(now, result);
+      await sweepGroupSeparation(now, result);
       await sweepSoloTrips(now, result);
       return result;
     },
@@ -243,6 +322,28 @@ export const createSignalLossService = ({
     async listSoloForTourist(userId, tripId) {
       const alerts = await repository.listSoloAlertsForTourist(userId, tripId);
       return alerts.filter((alert) => alert.details?.soloMissingCheck === true && alert.details?.escalatedToDisasterManagement !== true);
+    },
+
+    async listSeparationForUser(userId, tripId) {
+      const alerts = await repository.listSeparationAlertsForUser(userId, tripId);
+      return alerts.filter((alert) => alert.details?.groupSeparationCheck === true && alert.details?.confirmationStarted === true && alert.details?.escalatedToDisasterManagement !== true);
+    },
+
+    async respondSeparation(userId, alertId, response) {
+      const alert = await repository.findSeparationAlertForResponder(alertId, userId);
+      if (!alert) throw ApiError.notFound("Group separation safety check not found", { code: "GROUP_SEPARATION_CHECK_NOT_FOUND" });
+      const now = clock();
+      if (await repository.findIncidentByAlert(alert.id)) throw ApiError.conflict("This separation case has already escalated", { code: "GROUP_SEPARATION_ALREADY_ESCALATED" });
+      const isLeader = alert.details?.leaderId === userId;
+      if (response === "SAFE") {
+        return repository.updateSafetyAlert(alert.id, { status: "RESOLVED", resolvedAt: now, details: { ...(alert.details || {}), safetyResponse: "SAFE", respondedBy: userId, responderRole: isLeader ? "LEADER" : "MEMBER", respondedAt: now.toISOString() } });
+      }
+      if (response === "UNSAFE") {
+        const escalated = await repository.updateSafetyAlert(alert.id, { level: "DANGER", message: "Separated group member was reported unsafe", details: { ...(alert.details || {}), safetyResponse: "UNSAFE", respondedBy: userId, responderRole: isLeader ? "LEADER" : "MEMBER", respondedAt: now.toISOString(), escalatedToDisasterManagement: true, escalationReason: isLeader ? "LEADER_REPORTED_UNSAFE" : "MEMBER_REQUESTED_HELP" } });
+        const incident = await incidentReporter.ingestSafetyAlert(escalated);
+        return { ...escalated, incidentId: incident?.id ?? null };
+      }
+      throw ApiError.badRequest("Unsupported group separation response", { code: "GROUP_SEPARATION_RESPONSE_INVALID" });
     },
 
     async respondSolo(userId, alertId, response) {
