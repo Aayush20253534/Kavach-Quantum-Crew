@@ -18,6 +18,7 @@ export function MapComponent({
   currentMarkerColor = '#2563eb',
   currentMarkerTitle = 'Your live location',
   groupLocations = [],
+  groupCentroid = null,
   fleetResponses = [],
   groupGeofenceRadiusM = 0,
   riskZones = [],
@@ -261,7 +262,7 @@ export function MapComponent({
                 {/* Layered low-opacity circles soften the group geofence edge instead
                     of drawing one harsh boundary line. */}
                 <CircleF
-                  center={center}
+                  center={groupCentroid || center}
                   radius={groupGeofenceRadiusM + 35}
                   options={{
                     fillColor: '#2563eb',
@@ -272,7 +273,7 @@ export function MapComponent({
                   }}
                 />
                 <CircleF
-                  center={center}
+                  center={groupCentroid || center}
                   radius={groupGeofenceRadiusM}
                   options={{
                     fillColor: '#2563eb',
@@ -285,7 +286,7 @@ export function MapComponent({
                   }}
                 />
                 <CircleF
-                  center={center}
+                  center={groupCentroid || center}
                   radius={Math.max(0, groupGeofenceRadiusM - 28)}
                   options={{
                     fillColor: '#2563eb',
@@ -322,6 +323,9 @@ export function MapComponent({
           ))
         ) : (
           <>
+            {groupCentroid && groupGeofenceRadiusM > 0 && (
+              <MarkerF position={groupCentroid} icon={participantMarkerIcon('#000000', false)} label={{ text: 'C', color: 'white', fontWeight: '900', fontSize: '10px' }} title="Dynamic majority-group centroid" zIndex={1200} />
+            )}
             {groupLocations.map((loc) => (
               <MarkerF
                 key={loc.userId || loc.id}

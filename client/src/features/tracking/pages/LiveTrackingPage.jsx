@@ -14,6 +14,19 @@ import { useGeolocation } from '../hooks/useGeolocation';
 
 const MEMBER_COLORS = ['#2563eb', '#7c3aed', '#d97706', '#0891b2', '#db2777', '#4f46e5', '#16a34a'];
 
+
+const distanceM = (a, b) => {
+  const R = 6371000; const rad = (v) => v * Math.PI / 180;
+  const dLat = rad(b.lat - a.lat); const dLng = rad(b.lng - a.lng);
+  const x = Math.sin(dLat/2)**2 + Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLng/2)**2;
+  return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+};
+const majorityCentroid = (points) => {
+  if (!points.length) return null; let best = [points[0]];
+  for (const p of points) { const cluster = points.filter((q) => distanceM(p,q) <= GROUP_GEOFENCE_RADIUS_M); if (cluster.length > best.length) best = cluster; }
+  return { lat: best.reduce((n,p)=>n+p.lat,0)/best.length, lng: best.reduce((n,p)=>n+p.lng,0)/best.length };
+};
+
 const memberColor = (member, index) =>
   member?.role === 'LEADER' ? '#dc2626' : MEMBER_COLORS[index % MEMBER_COLORS.length];
 
@@ -233,6 +246,13 @@ export function LiveTrackingPage() {
     return { color: memberColor(member, index), role: member.role };
   }, [group?.members, user?.id]);
 
+  const groupCentroid = useMemo(() => {
+    if (trip?.tripType !== 'GROUP') return null;
+    const points = [...memberLocations.filter((m) => !m.stale).map((m) => ({ lat: m.lat, lng: m.lng }))];
+    if (location && !points.some((p) => Math.abs(p.lat-location.lat)<1e-7 && Math.abs(p.lng-location.lng)<1e-7)) points.push({ lat: location.lat, lng: location.lng });
+    return majorityCentroid(points);
+  }, [trip?.tripType, memberLocations, location?.lat, location?.lng]);
+
   if (isLoading) return <div className="py-24 flex justify-center"><Loader2 className="animate-spin" /></div>;
 
   if (!trip || trip.status !== 'ACTIVE') {
@@ -327,6 +347,7 @@ export function LiveTrackingPage() {
             currentMarkerColor={currentMemberStyle.color}
             currentMarkerTitle={currentMemberStyle.role === 'LEADER' ? 'Team leader · Active' : 'Your live location · Active'}
             groupLocations={memberLocations.filter((member) => member.userId !== user?.id)}
+            groupCentroid={groupCentroid}
             fleetResponses={fleetResponses}
             groupGeofenceRadiusM={trip.tripType === 'GROUP' ? GROUP_GEOFENCE_RADIUS_M : 0}
             riskZones={zones}

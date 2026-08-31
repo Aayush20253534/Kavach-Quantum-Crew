@@ -42,6 +42,12 @@ export const groupService = {
   async rejectJoinRequest(groupId, requestId) {
     return unwrap(await apiClient.post(`/groups/${groupId}/join-requests/${requestId}/reject`));
   },
+  async getGroupSeparationChecks(tripId) {
+    return unwrap(await apiClient.get('/signal-loss-cases/group-separation', { params: { tripId } }));
+  },
+  async respondToGroupSeparation(alertId, response) {
+    return unwrap(await apiClient.post(`/signal-loss-cases/group-separation/${alertId}/respond`, { response }));
+  },
   async getSignalLossCases(tripId) {
     return unwrap(await apiClient.get('/signal-loss-cases', { params: { tripId } }));
   },

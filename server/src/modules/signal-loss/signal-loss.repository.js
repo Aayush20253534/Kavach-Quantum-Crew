@@ -94,6 +94,23 @@ export const createSignalLossRepository = ({ db = prisma } = {}) => ({
   findIncidentByAlert(alertId) {
     return db.incident.findUnique({ where: { sourceSafetyAlertId: alertId } });
   },
+  findOpenSeparationAlert(tripId, userId) {
+    return db.safetyAlert.findFirst({
+      where: { tripId, userId, type: "GROUP_SEPARATION", sourceId: "group-centroid-separation", status: { in: ["OPEN", "ACKNOWLEDGED"] } },
+      orderBy: { createdAt: "desc" },
+    });
+  },
+  listSeparationAlertsForUser(userId, tripId) {
+    return db.safetyAlert.findMany({
+      where: { ...(tripId ? { tripId } : {}), type: "GROUP_SEPARATION", sourceId: "group-centroid-separation", status: { in: ["OPEN", "ACKNOWLEDGED"] }, OR: [{ userId }, { details: { path: ["leaderId"], equals: userId } }] },
+      orderBy: { createdAt: "desc" }, take: 20,
+    });
+  },
+  findSeparationAlertForResponder(alertId, userId) {
+    return db.safetyAlert.findFirst({
+      where: { id: alertId, type: "GROUP_SEPARATION", sourceId: "group-centroid-separation", OR: [{ userId }, { details: { path: ["leaderId"], equals: userId } }] },
+    });
+  },
   resolveAlertByCase(tripId, userId, caseId, now) {
     return db.safetyAlert.updateMany({
       where: { tripId, userId, type: "TRACKING_INTERRUPTION", sourceId: caseId, status: { in: ["OPEN", "ACKNOWLEDGED"] } },

@@ -125,6 +125,18 @@ export const createEmergencyEmailService = ({
       });
     },
 
+    async groupSeparationAlert({ recipients, member, trip, alert }) {
+      const destination = `/tourist/trips/current`;
+      const link = loginLink(config, destination, "TOURIST");
+      const deadline = alert?.details?.responseDeadlineAt ? new Date(alert.details.responseDeadlineAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }) : "within 5 minutes";
+      return Promise.all((recipients || []).filter((recipient, index, all) => recipient?.email && all.findIndex((x) => x?.email === recipient.email) === index).map((recipient) => send({
+        to: recipient.email, name: recipient.name, subject: `KAVACH group safety check: ${member?.name || "member"} is outside the group radius`,
+        context: { kind: "GROUP_SEPARATION", alertId: alert.id, tripId: trip.id },
+        textContent: `${member?.name || "A group member"} is outside the 500 m safety radius around the majority-group centroid during ${trip.locationName}. Either the separated member or team leader can confirm safety. If nobody confirms safety by ${deadline}, or either reports danger, KAVACH creates a Disaster Management incident.\n\nOpen the exact trip page: ${link}`,
+        htmlContent: `<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;padding:24px;color:#0f172a"><h2>Group separation safety check</h2><p><strong>${escapeHtml(member?.name || "A group member")}</strong> is outside the <strong>500 m</strong> radius around the majority-group centroid.</p><p>Either the separated member or team leader can confirm safety. If nobody confirms safety within 5 minutes, or either reports danger, a Disaster Management incident is created.</p><p style="margin:24px 0"><a href="${escapeHtml(link)}" style="display:inline-block;padding:12px 18px;background:#0f172a;color:#fff;text-decoration:none;border-radius:6px">Open current trip safety check</a></p></div>`,
+      })));
+    },
+
     async signalLossAlert({ recipients, member, trip, signalCase, reminder = false }) {
       const destination = `/tourist/trips/current`;
       const link = loginLink(config, destination, "TOURIST");

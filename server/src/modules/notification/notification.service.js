@@ -60,6 +60,17 @@ export const createNotificationService = ({
     await emailer.soloSignalLossAlert?.({ tourist, trip, alert });
   },
 
+  async groupSeparationPrompt({ alert, trip, member, leader }) {
+    const deadline = alert.details?.responseDeadlineAt;
+    const message = `${member?.name || "A group member"} is outside the 500 m majority-group safety radius. Either the member or leader can confirm safety within 5 minutes.`;
+    const suffix = `group-separation:${alert.id}`;
+    const notifications = [];
+    if (member?.id) notifications.push(payload(member.id, ROLES.TOURIST, null, "GROUP_MEMBER_EMERGENCY", "Group separation safety check", message, suffix));
+    if (leader?.id && leader.id !== member?.id) notifications.push(payload(leader.id, ROLES.TOURIST, null, "GROUP_MEMBER_EMERGENCY", "Group member outside safety radius", message, suffix));
+    await emailer.groupSeparationAlert?.({ recipients: [member, leader], member, trip, alert, deadline });
+    await publishCreated(repository, publisher, notifications);
+  },
+
   async signalLoss({ signalCase, trip, member, leader, reminder = false }) {
     const suffix = `${signalCase.id}:${new Date(signalCase.lastNotifiedAt || signalCase.detectedAt).getTime()}`;
     const notifications = [];
